@@ -111,6 +111,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Dynamic caches. */
     private ConcurrentMap<String, DynamicCacheDescriptor> dynamicCaches = new ConcurrentHashMap<>();
 
+    /** */
+    private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -592,163 +595,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
 
-        IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
-
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
             // Initialize defaults.
             initialize(cfg);
 
-            CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
-
-            validate(ctx.config(), cfg, cfgStore);
-
-            CacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
-
-            jta.createTmLookup(cfg);
-
-            // Skip suggestions for system caches.
-            if (!sysCaches.contains(cfg.getName()))
-                suggestOptimizations(cfg, cfgStore != null);
-
-            List<Object> toPrepare = new ArrayList<>();
-
-            toPrepare.add(jta.tmLookup());
-            toPrepare.add(cfgStore);
-
-            if (cfgStore instanceof GridCacheLoaderWriterStore) {
-                toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
-                toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).writer());
-            }
-
-            prepare(cfg, toPrepare.toArray(new Object[toPrepare.size()]));
-
-            U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
-
-            // Init default key mapper.
-            CacheAffinityKeyMapper dfltAffMapper;
-
-            if (cfg.getAffinityMapper().getClass().equals(GridCacheDefaultAffinityKeyMapper.class))
-                dfltAffMapper = cfg.getAffinityMapper();
-            else {
-                dfltAffMapper = new GridCacheDefaultAffinityKeyMapper();
-
-                prepare(cfg, dfltAffMapper, false);
-            }
-
             cfgs[i] = cfg; // Replace original configuration value.
-
-            GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
-            GridCacheEventManager evtMgr = new GridCacheEventManager();
-            GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg));
-            GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
-            GridCacheQueryManager qryMgr = queryManager(cfg);
-            CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
-            CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
-            GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-            GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
-            IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
-
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
-
-            GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
-                ctx,
-                sharedCtx,
-                cfg,
-
-                /*
-                 * Managers in starting order!
-                 * ===========================
-                 */
-                evtMgr,
-                swapMgr,
-                serMgr,
-                storeMgr,
-                evictMgr,
-                qryMgr,
-                contQryMgr,
-                affMgr,
-                dataStructuresMgr,
-                ttlMgr,
-                drMgr,
-                jta);
-
-            cacheCtx.defaultAffMapper(dfltAffMapper);
-
-            GridCacheAdapter cache = null;
-
-            switch (cfg.getCacheMode()) {
-                case LOCAL: {
-                    switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL: {
-                            cache = new GridLocalCache(cacheCtx);
-
-                            break;
-                        }
-                        case ATOMIC: {
-                            cache = new GridLocalAtomicCache(cacheCtx);
-
-                            break;
-                        }
-
-                        default: {
-                            assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
-                        }
-                    }
-
-                    break;
-                }
-                case PARTITIONED:
-                case REPLICATED: {
-                    if (GridCacheUtils.isNearEnabled(cfg)) {
-                        switch (cfg.getAtomicityMode()) {
-                            case TRANSACTIONAL: {
-                                cache = new GridNearTransactionalCache(cacheCtx);
-
-                                break;
-                            }
-                            case ATOMIC: {
-                                cache = new GridNearAtomicCache(cacheCtx);
-
-                                break;
-                            }
-
-                            default: {
-                                assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
-                            }
-                        }
-                    }
-                    else {
-                        switch (cfg.getAtomicityMode()) {
-                            case TRANSACTIONAL: {
-                                cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtColocatedCache(cacheCtx) :
-                                    new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
-
-                                break;
-                            }
-                            case ATOMIC: {
-                                cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
-                                    new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
-
-                                break;
-                            }
-
-                            default: {
-                                assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
-                            }
-                        }
-                    }
-
-                    break;
-                }
-
-                default: {
-                    assert false : "Invalid cache mode: " + cfg.getCacheMode();
-                }
-            }
-
-            cacheCtx.cache(cache);
 
             if (caches.containsKey(cfg.getName())) {
                 String cacheName = cfg.getName();
@@ -761,145 +614,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "assign unique name to each cache).");
             }
 
-            caches.put(cfg.getName(), cache);
+            GridCacheContext cacheCtx = createCache(cfg);
+
+            sharedCtx.addCacheContext(cacheCtx);
+
+            startSeq.add(cacheCtx.cache());
+
+            caches.put(cfg.getName(), cacheCtx.cache());
 
             if (sysCaches.contains(cfg.getName()))
-                stopSeq.addLast(cache);
+                stopSeq.addLast(cacheCtx.cache());
             else
-                stopSeq.addFirst(cache);
-
-            startSeq.add(cache);
-
-            /*
-             * Create DHT cache.
-             * ================
-             */
-            if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
-                /*
-                 * Specifically don't create the following managers
-                 * here and reuse the one from Near cache:
-                 * 1. GridCacheVersionManager
-                 * 2. GridCacheIoManager
-                 * 3. GridCacheDeploymentManager
-                 * 4. GridCacheQueryManager (note, that we start it for DHT cache though).
-                 * 5. CacheContinuousQueryManager (note, that we start it for DHT cache though).
-                 * 6. GridCacheDgcManager
-                 * 7. GridCacheTtlManager.
-                 * ===============================================
-                 */
-                swapMgr = new GridCacheSwapManager(true);
-                evictMgr = new GridCacheEvictionManager();
-                evtMgr = new GridCacheEventManager();
-                drMgr = ctx.createComponent(GridCacheDrManager.class);
-
-                cacheCtx = new GridCacheContext(
-                    ctx,
-                    sharedCtx,
-                    cfg,
-
-                    /*
-                     * Managers in starting order!
-                     * ===========================
-                     */
-                    evtMgr,
-                    swapMgr,
-                    serMgr,
-                    storeMgr,
-                    evictMgr,
-                    qryMgr,
-                    contQryMgr,
-                    affMgr,
-                    dataStructuresMgr,
-                    ttlMgr,
-                    drMgr,
-                    jta);
-
-                cacheCtx.defaultAffMapper(dfltAffMapper);
-
-                GridDhtCacheAdapter dht = null;
-
-                switch (cfg.getAtomicityMode()) {
-                    case TRANSACTIONAL: {
-                        assert cache instanceof GridNearTransactionalCache;
-
-                        GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
-
-                        GridDhtCache dhtCache = !GridCacheUtils.isAffinityNode(cfg) ?
-                            new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                            new GridDhtCache(cacheCtx);
-
-                        dhtCache.near(near);
-
-                        near.dht(dhtCache);
-
-                        dht = dhtCache;
-
-                        break;
-                    }
-                    case ATOMIC: {
-                        assert cache instanceof GridNearAtomicCache;
-
-                        GridNearAtomicCache near = (GridNearAtomicCache)cache;
-
-                        GridDhtAtomicCache dhtCache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
-                            new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
-
-                        dhtCache.near(near);
-
-                        near.dht(dhtCache);
-
-                        dht = dhtCache;
-
-                        break;
-                    }
-
-                    default: {
-                        assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
-                    }
-                }
-
-                cacheCtx.cache(dht);
-            }
-
-            sharedCtx.addCacheContext(cache.context());
+                stopSeq.addFirst(cacheCtx.cache());
         }
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        for (GridCacheAdapter<?, ?> cache : startSeq) {
-            GridCacheContext<?, ?> cacheCtx = cache.context();
-
-            CacheConfiguration cfg = cacheCtx.config();
-
-            // Start managers.
-            for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
-                mgr.start(cacheCtx);
-
-            cacheCtx.initConflictResolver();
-
-            if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
-                GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
-
-                // Start DHT managers.
-                for (GridCacheManager mgr : dhtManagers(dhtCtx))
-                    mgr.start(dhtCtx);
-
-                dhtCtx.initConflictResolver();
-
-                // Start DHT cache.
-                dhtCtx.cache().start();
-
-                if (log.isDebugEnabled())
-                    log.debug("Started DHT cache: " + dhtCtx.cache().name());
-            }
-
-            cacheCtx.cache().start();
-
-            if (log.isInfoEnabled())
-                log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
-        }
+        for (GridCacheAdapter<?, ?> cache : startSeq)
+            startCache(cache);
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
@@ -921,6 +655,515 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        if (ctx.config().isDaemon())
+            return;
+
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (ClusterNode n : ctx.discovery().remoteNodes())
+                checkCache(n);
+        }
+
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
+            GridCacheAdapter cache = e.getValue();
+
+            if (maxPreloadOrder > 0) {
+                CacheConfiguration cfg = cache.configuration();
+
+                int order = cfg.getPreloadOrder();
+
+                if (order > 0 && order != maxPreloadOrder && cfg.getCacheMode() != LOCAL) {
+                    GridCompoundFuture<Object, Object> fut = (GridCompoundFuture<Object, Object>)preloadFuts
+                        .get(order);
+
+                    if (fut == null) {
+                        fut = new GridCompoundFuture<>(ctx);
+
+                        preloadFuts.put(order, fut);
+                    }
+
+                    fut.add(cache.preloader().syncFuture());
+                }
+            }
+        }
+
+        for (IgniteInternalFuture<?> fut : preloadFuts.values())
+            ((GridCompoundFuture<Object, Object>)fut).markInitialized();
+
+        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
+            mgr.onKernalStart();
+
+        for (GridCacheAdapter<?, ?> cache : caches.values())
+            onKernalStart(cache);
+
+        // Wait for caches in SYNC preload mode.
+        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            CacheConfiguration cfg = cache.configuration();
+
+            if (cfg.getPreloadMode() == SYNC) {
+                if (cfg.getCacheMode() == REPLICATED ||
+                    (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadPartitionedDelay() >= 0))
+                    cache.preloader().syncFuture().get();
+            }
+        }
+
+        ctx.portable().onCacheProcessorStarted();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        if (ctx.config().isDaemon())
+            return;
+
+        for (GridCacheAdapter<?, ?> cache : stopSeq)
+            stopCache(cache, cancel);
+
+        List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.stop(cancel);
+        }
+
+        sharedCtx.cleanup();
+
+        if (log.isDebugEnabled())
+            log.debug("Stopped cache processor.");
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onKernalStop(boolean cancel) {
+        if (ctx.config().isDaemon())
+            return;
+
+        for (GridCacheAdapter<?, ?> cache : stopSeq)
+            onKernalStop(cache, cancel);
+
+        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
+            it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.onKernalStop(cancel);
+        }
+    }
+
+    /**
+     * @param cache Cache to start.
+     * @throws IgniteCheckedException If failed to start cache.
+     */
+    @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
+    private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cacheCtx = cache.context();
+
+        CacheConfiguration cfg = cacheCtx.config();
+
+        // Start managers.
+        for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
+            mgr.start(cacheCtx);
+
+        cacheCtx.initConflictResolver();
+
+        if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
+            GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
+
+            // Start DHT managers.
+            for (GridCacheManager mgr : dhtManagers(dhtCtx))
+                mgr.start(dhtCtx);
+
+            dhtCtx.initConflictResolver();
+
+            // Start DHT cache.
+            dhtCtx.cache().start();
+
+            if (log.isDebugEnabled())
+                log.debug("Started DHT cache: " + dhtCtx.cache().name());
+        }
+
+        cacheCtx.cache().start();
+
+        if (log.isInfoEnabled())
+            log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
+    }
+
+    /**
+     * @param cache Cache to stop.
+     * @param cancel Cancel flag.
+     */
+    @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
+    private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel) {
+        GridCacheContext ctx = cache.context();
+
+        sharedCtx.removeCacheContext(ctx);
+
+        cache.stop();
+
+        if (isNearEnabled(ctx)) {
+            GridDhtCacheAdapter dht = ctx.near().dht();
+
+            // Check whether dht cache has been started.
+            if (dht != null) {
+                dht.stop();
+
+                GridCacheContext<?, ?> dhtCtx = dht.context();
+
+                List<GridCacheManager> dhtMgrs = dhtManagers(dhtCtx);
+
+                for (ListIterator<GridCacheManager> it = dhtMgrs.listIterator(dhtMgrs.size()); it.hasPrevious();) {
+                    GridCacheManager mgr = it.previous();
+
+                    mgr.stop(cancel);
+                }
+            }
+        }
+
+        List<GridCacheManager> mgrs = ctx.managers();
+
+        Collection<GridCacheManager> excludes = dhtExcludes(ctx);
+
+        // Reverse order.
+        for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+            GridCacheManager mgr = it.previous();
+
+            if (!excludes.contains(mgr))
+                mgr.stop(cancel);
+        }
+
+        U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
+            ctx.store().configuredStore()));
+
+        if (log.isInfoEnabled())
+            log.info("Stopped cache: " + cache.name());
+
+        cleanup(ctx);
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void onKernalStart(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = cache.context();
+
+        // Start DHT cache as well.
+        if (isNearEnabled(ctx)) {
+            GridDhtCacheAdapter dht = ctx.near().dht();
+
+            GridCacheContext<?, ?> dhtCtx = dht.context();
+
+            for (GridCacheManager mgr : dhtManagers(dhtCtx))
+                mgr.onKernalStart();
+
+            dht.onKernalStart();
+
+            if (log.isDebugEnabled())
+                log.debug("Executed onKernalStart() callback for DHT cache: " + dht.name());
+        }
+
+        for (GridCacheManager mgr : F.view(ctx.managers(), F0.notContains(dhtExcludes(ctx))))
+            mgr.onKernalStart();
+
+        cache.onKernalStart();
+
+        if (log.isDebugEnabled())
+            log.debug("Executed onKernalStart() callback for cache [name=" + cache.name() + ", mode=" +
+                cache.configuration().getCacheMode() + ']');
+    }
+
+    /**
+     * @param cache Cache to stop.
+     * @param cancel Cancel flag.
+     */
+    @SuppressWarnings("unchecked")
+    private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
+        GridCacheContext ctx = cache.context();
+
+        if (isNearEnabled(ctx)) {
+            GridDhtCacheAdapter dht = ctx.near().dht();
+
+            if (dht != null) {
+                GridCacheContext<?, ?> dhtCtx = dht.context();
+
+                for (GridCacheManager mgr : dhtManagers(dhtCtx))
+                    mgr.onKernalStop(cancel);
+
+                dht.onKernalStop();
+            }
+        }
+
+        List<GridCacheManager> mgrs = ctx.managers();
+
+        Collection<GridCacheManager> excludes = dhtExcludes(ctx);
+
+        // Reverse order.
+        for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
+            GridCacheManager mgr = it.previous();
+
+            if (!excludes.contains(mgr))
+                mgr.onKernalStop(cancel);
+        }
+
+        cache.onKernalStop();
+    }
+
+    /**
+     * @param cfg Cache configuration to use to create cache.
+     * @return Cache context.
+     * @throws IgniteCheckedException If failed to create cache.
+     */
+    @SuppressWarnings( {"unchecked"})
+    private GridCacheContext createCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
+        CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+
+        validate(ctx.config(), cfg, cfgStore);
+
+        CacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
+
+        jta.createTmLookup(cfg);
+
+        // Skip suggestions for system caches.
+        if (!sysCaches.contains(cfg.getName()))
+            suggestOptimizations(cfg, cfgStore != null);
+
+        List<Object> toPrepare = new ArrayList<>();
+
+        toPrepare.add(jta.tmLookup());
+        toPrepare.add(cfgStore);
+
+        if (cfgStore instanceof GridCacheLoaderWriterStore) {
+            toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
+            toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).writer());
+        }
+
+        prepare(cfg, toPrepare.toArray(new Object[toPrepare.size()]));
+
+        U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
+
+        // Init default key mapper.
+        CacheAffinityKeyMapper dfltAffMapper;
+
+        if (cfg.getAffinityMapper().getClass().equals(GridCacheDefaultAffinityKeyMapper.class))
+            dfltAffMapper = cfg.getAffinityMapper();
+        else {
+            dfltAffMapper = new GridCacheDefaultAffinityKeyMapper();
+
+            prepare(cfg, dfltAffMapper, false);
+        }
+
+        GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
+        GridCacheEventManager evtMgr = new GridCacheEventManager();
+        GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL || !GridCacheUtils.isNearEnabled(cfg));
+        GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
+        GridCacheQueryManager qryMgr = queryManager(cfg);
+        CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
+        CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
+        GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
+        GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+        IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
+
+        GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
+
+        GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
+            ctx,
+            sharedCtx,
+            cfg,
+
+                /*
+                 * Managers in starting order!
+                 * ===========================
+                 */
+            evtMgr,
+            swapMgr,
+            serMgr,
+            storeMgr,
+            evictMgr,
+            qryMgr,
+            contQryMgr,
+            affMgr,
+            dataStructuresMgr,
+            ttlMgr,
+            drMgr,
+            jta);
+
+        cacheCtx.defaultAffMapper(dfltAffMapper);
+
+        GridCacheAdapter cache = null;
+
+        switch (cfg.getCacheMode()) {
+            case LOCAL: {
+                switch (cfg.getAtomicityMode()) {
+                    case TRANSACTIONAL: {
+                        cache = new GridLocalCache(cacheCtx);
+
+                        break;
+                    }
+                    case ATOMIC: {
+                        cache = new GridLocalAtomicCache(cacheCtx);
+
+                        break;
+                    }
+
+                    default: {
+                        assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                    }
+                }
+
+                break;
+            }
+            case PARTITIONED:
+            case REPLICATED: {
+                if (GridCacheUtils.isNearEnabled(cfg)) {
+                    switch (cfg.getAtomicityMode()) {
+                        case TRANSACTIONAL: {
+                            cache = new GridNearTransactionalCache(cacheCtx);
+
+                            break;
+                        }
+                        case ATOMIC: {
+                            cache = new GridNearAtomicCache(cacheCtx);
+
+                            break;
+                        }
+
+                        default: {
+                            assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                        }
+                    }
+                }
+                else {
+                    switch (cfg.getAtomicityMode()) {
+                        case TRANSACTIONAL: {
+                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtColocatedCache(cacheCtx) :
+                                new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+
+                            break;
+                        }
+                        case ATOMIC: {
+                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                                new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+
+                            break;
+                        }
+
+                        default: {
+                            assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            default: {
+                assert false : "Invalid cache mode: " + cfg.getCacheMode();
+            }
+        }
+
+        cacheCtx.cache(cache);
+
+        GridCacheContext<?, ?> ret = cacheCtx;
+
+        /*
+         * Create DHT cache.
+         * ================
+         */
+        if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
+            /*
+             * Specifically don't create the following managers
+             * here and reuse the one from Near cache:
+             * 1. GridCacheVersionManager
+             * 2. GridCacheIoManager
+             * 3. GridCacheDeploymentManager
+             * 4. GridCacheQueryManager (note, that we start it for DHT cache though).
+             * 5. CacheContinuousQueryManager (note, that we start it for DHT cache though).
+             * 6. GridCacheDgcManager
+             * 7. GridCacheTtlManager.
+             * ===============================================
+             */
+            swapMgr = new GridCacheSwapManager(true);
+            evictMgr = new GridCacheEvictionManager();
+            evtMgr = new GridCacheEventManager();
+            drMgr = ctx.createComponent(GridCacheDrManager.class);
+
+            cacheCtx = new GridCacheContext(
+                ctx,
+                sharedCtx,
+                cfg,
+
+                    /*
+                     * Managers in starting order!
+                     * ===========================
+                     */
+                evtMgr,
+                swapMgr,
+                serMgr,
+                storeMgr,
+                evictMgr,
+                qryMgr,
+                contQryMgr,
+                affMgr,
+                dataStructuresMgr,
+                ttlMgr,
+                drMgr,
+                jta);
+
+            cacheCtx.defaultAffMapper(dfltAffMapper);
+
+            GridDhtCacheAdapter dht = null;
+
+            switch (cfg.getAtomicityMode()) {
+                case TRANSACTIONAL: {
+                    assert cache instanceof GridNearTransactionalCache;
+
+                    GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
+
+                    GridDhtCache dhtCache = !GridCacheUtils.isAffinityNode(cfg) ?
+                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
+                        new GridDhtCache(cacheCtx);
+
+                    dhtCache.near(near);
+
+                    near.dht(dhtCache);
+
+                    dht = dhtCache;
+
+                    break;
+                }
+                case ATOMIC: {
+                    assert cache instanceof GridNearAtomicCache;
+
+                    GridNearAtomicCache near = (GridNearAtomicCache)cache;
+
+                    GridDhtAtomicCache dhtCache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                        new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+
+                    dhtCache.near(near);
+
+                    near.dht(dhtCache);
+
+                    dht = dhtCache;
+
+                    break;
+                }
+
+                default: {
+                    assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
+                }
+            }
+
+            cacheCtx.cache(dht);
+        }
+
+        return ret;
     }
 
     /**
@@ -1003,7 +1246,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param nodeFilter Node filter to select nodes on which the cache should be deployed.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> startCache(CacheConfiguration ccfg, IgnitePredicate<ClusterNode> nodeFilter) {
+    public IgniteInternalFuture<?> dynamicStartCache(CacheConfiguration ccfg, IgnitePredicate<ClusterNode> nodeFilter) {
         if (nodeFilter == null)
             nodeFilter = F.alwaysTrue();
 
@@ -1048,9 +1291,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param startDesc Cache start descriptor.
      */
     private void onCacheDeploymentRequested(DynamicCacheDescriptor startDesc) {
-        // TODO IGNITE-45 remove debug
-        U.debug(log, "Received start notification: " + startDesc);
-
         CacheConfiguration ccfg = startDesc.cacheConfiguration();
 
         // Check if cache with the same name was concurrently started form different node.
@@ -1364,208 +1604,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             locAttr.atomicityMode() == ATOMIC &&
                 (locAttr.partitionedTaxonomy() == CLIENT_ONLY || locAttr.partitionedTaxonomy() == NEAR_ONLY ||
                 rmtAttr.partitionedTaxonomy() == CLIENT_ONLY || rmtAttr.partitionedTaxonomy() == NEAR_ONLY);
-    }
-
-    /**
-     * @param cache Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private void onKernalStart(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = cache.context();
-
-        // Start DHT cache as well.
-        if (isNearEnabled(ctx)) {
-            GridDhtCacheAdapter dht = ctx.near().dht();
-
-            GridCacheContext<?, ?> dhtCtx = dht.context();
-
-            for (GridCacheManager mgr : dhtManagers(dhtCtx))
-                mgr.onKernalStart();
-
-            dht.onKernalStart();
-
-            if (log.isDebugEnabled())
-                log.debug("Executed onKernalStart() callback for DHT cache: " + dht.name());
-        }
-
-        for (GridCacheManager mgr : F.view(ctx.managers(), F0.notContains(dhtExcludes(ctx))))
-            mgr.onKernalStart();
-
-        cache.onKernalStart();
-
-        if (log.isDebugEnabled())
-            log.debug("Executed onKernalStart() callback for cache [name=" + cache.name() + ", mode=" +
-                cache.configuration().getCacheMode() + ']');
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
-        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-            for (ClusterNode n : ctx.discovery().remoteNodes())
-                checkCache(n);
-        }
-
-        for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
-            GridCacheAdapter cache = e.getValue();
-
-            if (maxPreloadOrder > 0) {
-                CacheConfiguration cfg = cache.configuration();
-
-                int order = cfg.getPreloadOrder();
-
-                if (order > 0 && order != maxPreloadOrder && cfg.getCacheMode() != LOCAL) {
-                    GridCompoundFuture<Object, Object> fut = (GridCompoundFuture<Object, Object>)preloadFuts
-                        .get(order);
-
-                    if (fut == null) {
-                        fut = new GridCompoundFuture<>(ctx);
-
-                        preloadFuts.put(order, fut);
-                    }
-
-                    fut.add(cache.preloader().syncFuture());
-                }
-            }
-        }
-
-        for (IgniteInternalFuture<?> fut : preloadFuts.values())
-            ((GridCompoundFuture<Object, Object>)fut).markInitialized();
-
-        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
-            mgr.onKernalStart();
-
-        for (GridCacheAdapter<?, ?> cache : caches.values())
-            onKernalStart(cache);
-
-        // Wait for caches in SYNC preload mode.
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            CacheConfiguration cfg = cache.configuration();
-
-            if (cfg.getPreloadMode() == SYNC) {
-                if (cfg.getCacheMode() == REPLICATED ||
-                    (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadPartitionedDelay() >= 0))
-                    cache.preloader().syncFuture().get();
-            }
-        }
-
-        ctx.portable().onCacheProcessorStarted();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void onKernalStop(boolean cancel) {
-        if (ctx.config().isDaemon())
-            return;
-
-        for (GridCacheAdapter<?, ?> cache : stopSeq) {
-            GridCacheContext ctx = cache.context();
-
-            if (isNearEnabled(ctx)) {
-                GridDhtCacheAdapter dht = ctx.near().dht();
-
-                if (dht != null) {
-                    GridCacheContext<?, ?> dhtCtx = dht.context();
-
-                    for (GridCacheManager mgr : dhtManagers(dhtCtx))
-                        mgr.onKernalStop(cancel);
-
-                    dht.onKernalStop();
-                }
-            }
-
-            List<GridCacheManager> mgrs = ctx.managers();
-
-            Collection<GridCacheManager> excludes = dhtExcludes(ctx);
-
-            // Reverse order.
-            for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
-                GridCacheManager mgr = it.previous();
-
-                if (!excludes.contains(mgr))
-                    mgr.onKernalStop(cancel);
-            }
-
-            cache.onKernalStop();
-        }
-
-        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
-
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
-            it.hasPrevious();) {
-            GridCacheSharedManager<?, ?> mgr = it.previous();
-
-            mgr.onKernalStop(cancel);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
-        for (GridCacheAdapter<?, ?> cache : stopSeq) {
-            cache.stop();
-
-            GridCacheContext ctx = cache.context();
-
-            if (isNearEnabled(ctx)) {
-                GridDhtCacheAdapter dht = ctx.near().dht();
-
-                // Check whether dht cache has been started.
-                if (dht != null) {
-                    dht.stop();
-
-                    GridCacheContext<?, ?> dhtCtx = dht.context();
-
-                    List<GridCacheManager> dhtMgrs = dhtManagers(dhtCtx);
-
-                    for (ListIterator<GridCacheManager> it = dhtMgrs.listIterator(dhtMgrs.size()); it.hasPrevious();) {
-                        GridCacheManager mgr = it.previous();
-
-                        mgr.stop(cancel);
-                    }
-                }
-            }
-
-            List<GridCacheManager> mgrs = ctx.managers();
-
-            Collection<GridCacheManager> excludes = dhtExcludes(ctx);
-
-            // Reverse order.
-            for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-                GridCacheManager mgr = it.previous();
-
-                if (!excludes.contains(mgr))
-                    mgr.stop(cancel);
-            }
-
-            U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
-                ctx.store().configuredStore()));
-
-            if (log.isInfoEnabled())
-                log.info("Stopped cache: " + cache.name());
-
-            cleanup(ctx);
-        }
-
-        List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
-
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
-            GridCacheSharedManager<?, ?> mgr = it.previous();
-
-            mgr.stop(cancel);
-        }
-
-        sharedCtx.cleanup();
-
-        if (log.isDebugEnabled())
-            log.debug("Stopped cache processor.");
     }
 
     /**

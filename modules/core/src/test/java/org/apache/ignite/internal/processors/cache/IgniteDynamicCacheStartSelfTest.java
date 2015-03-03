@@ -65,7 +65,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 ccfg.setName("TestCacheName");
 
-                futs.add(kernal.context().cache().startCache(ccfg, F.<ClusterNode>alwaysTrue()));
+                futs.add(kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()));
 
                 return null;
             }
@@ -109,7 +109,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 IgniteKernal kernal = (IgniteKernal)grid(ThreadLocalRandom.current().nextInt(nodeCount()));
 
-                futs.add(kernal.context().cache().startCache(ccfg, F.<ClusterNode>alwaysTrue()));
+                futs.add(kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()));
 
                 return null;
             }

@@ -35,6 +35,13 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     private long topVer;
 
     /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public AffinityTopologyVersion() {
+        // No-op.
+    }
+
+    /**
      * @param ver Version.
      */
     public AffinityTopologyVersion(long ver) {
@@ -69,10 +76,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (!(o instanceof AffinityTopologyVersion))
-            return false;
-
-        return topVer == ((AffinityTopologyVersion)o).topVer;
+        return o instanceof AffinityTopologyVersion && topVer == ((AffinityTopologyVersion)o).topVer;
     }
 
     /** {@inheritDoc} */

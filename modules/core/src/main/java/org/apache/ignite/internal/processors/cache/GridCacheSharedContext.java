@@ -36,6 +36,7 @@ import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
@@ -69,7 +70,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheDeploymentManager<K, V> depMgr;
 
     /** Cache contexts map. */
-    private Map<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -101,7 +102,7 @@ public class GridCacheSharedContext<K, V> {
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new HashMap<>();
+        ctxMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -116,7 +117,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * Adds cache context to shared cache context.
      *
-     * @param cacheCtx Cache context.
+     * @param cacheCtx Cache context to add.
      */
     @SuppressWarnings("unchecked")
     public void addCacheContext(GridCacheContext cacheCtx) throws IgniteCheckedException {
@@ -129,6 +130,13 @@ public class GridCacheSharedContext<K, V> {
         }
 
         ctxMap.put(cacheCtx.cacheId(), cacheCtx);
+    }
+
+    /**
+     * @param cacheCtx Cache context to remove.
+     */
+    public void removeCacheContext(GridCacheContext cacheCtx) {
+        ctxMap.remove(cacheCtx.cacheId(), cacheCtx);
     }
 
     /**
