@@ -121,7 +121,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx);
+            ctx.system() ? ctx : null);
     }
 
     /**
