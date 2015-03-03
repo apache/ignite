@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
@@ -35,7 +36,11 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -60,7 +65,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * done across it.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
- * {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} about self start (stops when send succeeds)
+ * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
  * and then this info goes to coordinator. When coordinator processes join request
  * and issues node added messages and all other nodes then receive info about new node.
  * <h1 class="header">Configuration</h1>
@@ -70,14 +75,14 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * The following configuration parameters are optional:
  * <ul>
  * <li>IP finder to share info about nodes IP addresses
- * (see {@link #setIpFinder(org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder)}).
+ * (see {@link #setIpFinder(TcpDiscoveryIpFinder)}).
  * See the following IP finder implementations for details on configuration:
  * <ul>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder}</li>
+ * <li>{@link TcpDiscoverySharedFsIpFinder}</li>
  * <li>{@ignitelink org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} - default</li>
+ * <li>{@link TcpDiscoveryJdbcIpFinder}</li>
+ * <li>{@link TcpDiscoveryVmIpFinder}</li>
+ * <li>{@link TcpDiscoveryMulticastIpFinder} - default</li>
  * </ul>
  * </li>
  * </ul>
@@ -136,7 +141,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see org.apache.ignite.spi.discovery.DiscoverySpi
+ * @see DiscoverySpi
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
@@ -373,7 +378,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param joinTimeout Join timeout ({@code 0} means wait forever).
      *
-     * @see org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()
+     * @see TcpDiscoveryIpFinder#isShared()
      */
     @IgniteSpiConfiguration(optional = true)
     public void setJoinTimeout(long joinTimeout) {
@@ -659,7 +664,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * Starts or restarts SPI after stop (to reconnect).
      *
      * @param restart {@code True} if SPI is restarted after stop.
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void spiStart0(boolean restart) throws IgniteSpiException {
         if (!restart)
@@ -772,7 +777,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     @SuppressWarnings("BusyWait")
     private void registerLocalNodeAddress() throws IgniteSpiException {
@@ -803,7 +808,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
@@ -904,7 +909,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * Stops SPI finally or stops SPI for restart.
      *
      * @param disconnect {@code True} if SPI is being disconnected.
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void spiStop0(boolean disconnect) throws IgniteSpiException {
         if (ctxInitLatch.getCount() > 0)
@@ -1059,7 +1064,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      * @return {@code true} if IP finder contains local address.
      */
     private boolean ipFinderHasLocalAddress() throws IgniteSpiException {
@@ -1075,8 +1080,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (resolved.equals(locAddr))
                         return true;
                 }
-                catch (UnknownHostException ignored) {
-                    onException(ignored.getMessage(), ignored);
+                catch (UnknownHostException e) {
+                    onException(e.getMessage(), e);
                 }
         }
 
@@ -1153,7 +1158,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param addr Address of the node.
      * @return ID of the remote node if node alive.
-     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
+     * @throws IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws IgniteCheckedException {
@@ -1251,7 +1256,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * Tries to join this node to topology.
      *
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     private void joinTopology() throws IgniteSpiException {
         synchronized (mux) {
@@ -1378,11 +1383,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Tries to send join request message to a random node presenting in topology.
-     * Address is provided by {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
+     * Address is provided by {@link TcpDiscoveryIpFinder} and message is
      * sent to first node connection succeeded to.
      *
      * @return {@code true} if send succeeded.
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
@@ -1726,7 +1731,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link DiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */
@@ -1743,7 +1748,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -2237,7 +2242,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Thread that sends status check messages to next node if local node has not
-     * been receiving heartbeats ({@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage})
+     * been receiving heartbeats ({@link TcpDiscoveryHeartbeatMessage})
      * for {@link TcpDiscoverySpi#getMaxMissedHeartbeats()} *
      * {@link TcpDiscoverySpi#getHeartbeatFrequency()}.
      */
@@ -2303,7 +2308,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * addresses of the nodes that has left the topology.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
-     * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * if and only if {@link TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
@@ -3956,11 +3961,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         try {
                             ipFinder.unregisterAddresses(leftNode.socketAddresses());
                         }
-                        catch (IgniteSpiException ignored) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister left node address: " + leftNode);
 
-                            onException("Failed to unregister left node address: " + leftNode, ignored);
+                            onException("Failed to unregister left node address: " + leftNode, e);
                         }
                     }
 

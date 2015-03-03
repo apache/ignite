@@ -740,6 +740,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ackSecurity(ctx);
 
+            // Assign discovery manager to context before other processors start so they
+            // are able to register custom event listener.
+            GridManager discoMgr = new GridDiscoveryManager(ctx);
+
+            ctx.add(discoMgr, false);
+
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
@@ -776,7 +782,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(ctx, new GridDiscoveryManager(ctx), attrs);
+                startManager(ctx, discoMgr, attrs);
             }
             finally {
                 gw.writeUnlock();

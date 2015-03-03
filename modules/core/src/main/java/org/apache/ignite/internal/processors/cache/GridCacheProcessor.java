@@ -44,8 +44,10 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
@@ -53,7 +55,9 @@ import org.jetbrains.annotations.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.management.*;
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -101,6 +105,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
+
+    /** Pending cache starts. */
+    private ConcurrentMap<String, IgniteInternalFuture> pendingStarts = new ConcurrentHashMap<>();
+
+    /** Dynamic caches. */
+    private ConcurrentMap<String, DynamicCacheDescriptor> dynamicCaches = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -558,6 +568,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
+        ctx.discovery().setCustomEventListener(new GridPlainInClosure<Serializable>() {
+            @Override public void apply(Serializable evt) {
+                if (evt instanceof DynamicCacheDescriptor)
+                    onCacheDeploymentRequested((DynamicCacheDescriptor)evt);
+            }
+        });
+
         // Internal caches which should not be returned to user.
         IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
 
@@ -916,6 +933,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Callback invoked when first exchange future for dynamic cache is completed.
+     *
+     * @param startDesc Cache start descriptor.
+     */
+    public void onCacheStartFinished(DynamicCacheDescriptor startDesc) {
+        CacheConfiguration ccfg = startDesc.cacheConfiguration();
+
+        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingStarts.get(ccfg.getName());
+
+        if (fut != null && fut.startId().equals(startDesc.startId())) {
+            fut.onDone();
+
+            pendingStarts.remove(ccfg.getName(), fut);
+        }
+    }
+
+    /**
      * Creates shared context.
      *
      * @param kernalCtx Kernal context.
@@ -969,6 +1003,89 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
+    }
+
+    /**
+     * Dynamically starts cache.
+     *
+     * @param ccfg Cache configuration.
+     * @param nodeFilter Node filter to select nodes on which the cache should be deployed.
+     * @return Future that will be completed when cache is deployed.
+     */
+    public IgniteInternalFuture<?> startCache(CacheConfiguration ccfg, IgnitePredicate<ClusterNode> nodeFilter) {
+        if (nodeFilter == null)
+            nodeFilter = F.alwaysTrue();
+
+        DynamicCacheStartFuture fut = new DynamicCacheStartFuture(ctx, IgniteUuid.fromUuid(ctx.localNodeId()));
+
+        try {
+            byte[] filterBytes = ctx.config().getMarshaller().marshal(nodeFilter);
+
+            for (CacheConfiguration ccfg0 : ctx.config().getCacheConfiguration()) {
+                if (ccfg0.getName().equals(ccfg.getName()))
+                    return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
+                        "(a cache with the same name is already configured): " + ccfg.getName()));
+            }
+
+            if (caches.containsKey(ccfg.getName()))
+                return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
+                    "(a cache with the same name is already started): " + ccfg.getName()));
+
+            IgniteInternalFuture<?> old = pendingStarts.putIfAbsent(ccfg.getName(), fut);
+
+            if (old != null)
+                return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
+                    "(a cache with the same name is already started): " + ccfg.getName()));
+
+            ctx.discovery().sendCustomEvent(new DynamicCacheDescriptor(ccfg, filterBytes, fut.startId()));
+
+            return fut;
+        }
+        catch (IgniteCheckedException e) {
+            fut.onDone(e);
+
+            // Safety.
+            pendingStarts.remove(ccfg.getName(), fut);
+
+            return fut;
+        }
+    }
+
+    /**
+     * Callback invoked from discovery thread when cache deployment request is received.
+     *
+     * @param startDesc Cache start descriptor.
+     */
+    private void onCacheDeploymentRequested(DynamicCacheDescriptor startDesc) {
+        // TODO IGNITE-45 remove debug
+        U.debug(log, "Received start notification: " + startDesc);
+
+        CacheConfiguration ccfg = startDesc.cacheConfiguration();
+
+        // Check if cache with the same name was concurrently started form different node.
+        if (dynamicCaches.containsKey(ccfg.getName())) {
+            // If local node initiated start, fail the start future.
+            DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingStarts.get(ccfg.getName());
+
+            if (startFut != null && startFut.startId().equals(startDesc.startId())) {
+                assert !startFut.syncNotify();
+
+                startFut.onDone(new IgniteCheckedException("Failed to start cache " +
+                        "(a cache with the same name is already started): " + ccfg.getName()));
+
+                pendingStarts.remove(ccfg.getName(), startFut);
+            }
+
+            return;
+        }
+
+        DynamicCacheDescriptor old = dynamicCaches.put(ccfg.getName(), startDesc);
+
+        assert old == null : "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
+
+        // TODO IGNITE-45 create cache context here.
+
+        sharedCtx.exchange().onCacheDeployed(startDesc);
     }
 
     /**
@@ -1853,6 +1970,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collections.addAll(ret, objs);
 
         return ret;
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private static class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
+        /** Start ID. */
+        private IgniteUuid startId;
+
+        /**
+         * @param ctx Kernal context.
+         */
+        private DynamicCacheStartFuture(GridKernalContext ctx, IgniteUuid startId) {
+            // Start future can be completed from discovery thread, notification must NOT be sync.
+            super(ctx, false);
+
+            this.startId = startId;
+        }
+
+        /**
+         * @return Start ID.
+         */
+        private IgniteUuid startId() {
+            return startId;
+        }
     }
 
     /**

@@ -163,6 +163,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Metrics update worker. */
     private final MetricsUpdater metricsUpdater = new MetricsUpdater();
 
+    /** Custom event listener. */
+    private GridPlainInClosure<Serializable> customEvtLsnr;
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -304,6 +307,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
 
+                if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    try {
+                        customEvtLsnr.apply(data);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                    }
+                }
+
                 if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)) {
                     boolean set = GridDiscoveryManager.this.topVer.setIfGreater(topVer);
 
@@ -377,6 +389,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * @param customEvtLsnr Custom event listener.
+     */
+    public void setCustomEventListener(GridPlainInClosure<Serializable> customEvtLsnr) {
+        this.customEvtLsnr = customEvtLsnr;
     }
 
     /**
@@ -1488,17 +1507,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
-                    DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
+                    if (ctx.event().isRecordable(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)) {
+                        DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
 
-                    customEvt.node(ctx.discovery().localNode());
-                    customEvt.eventNode(node);
-                    customEvt.type(type);
-                    customEvt.topologySnapshot(topVer, null);
-                    customEvt.data(evt.get5());
+                        customEvt.node(ctx.discovery().localNode());
+                        customEvt.eventNode(node);
+                        customEvt.type(type);
+                        customEvt.topologySnapshot(topVer, null);
+                        customEvt.data(evt.get5());
 
-                    assert ctx.event().isRecordable(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
-
-                    ctx.event().record(customEvt);
+                        ctx.event().record(customEvt);
+                    }
 
                     return;
                 }

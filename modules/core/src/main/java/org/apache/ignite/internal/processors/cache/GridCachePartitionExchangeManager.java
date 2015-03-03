@@ -385,6 +385,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Callback to start exchange for dynamically started cache.
+     *
+     * @param cacheDesc Cache descriptor.
+     */
+    public void onCacheDeployed(DynamicCacheDescriptor cacheDesc) {
+        // TODO IGNITE-45 move to exchange future.
+        cctx.kernalContext().cache().onCacheStartFinished(cacheDesc);
+    }
+
+    /**
      * @return {@code True} if topology has changed.
      */
     public boolean topologyChanged() {
