@@ -17,22 +17,27 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  *
  */
-public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable {
+public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
     /** */
-    public static final AffinityTopologyVersion NONE = new AffinityTopologyVersion(-1);
+    public static final AffinityTopologyVersion NONE = new AffinityTopologyVersion(-1, 0);
 
     /** */
-    public static final AffinityTopologyVersion ZERO = new AffinityTopologyVersion(0);
+    public static final AffinityTopologyVersion ZERO = new AffinityTopologyVersion(0, 0);
 
     /** */
     private long topVer;
+
+    /** */
+    private int minorTopVer;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -42,10 +47,14 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @param ver Version.
+     * @param topVer Version.
      */
-    public AffinityTopologyVersion(long ver) {
-        topVer = ver;
+    public AffinityTopologyVersion(
+        long topVer,
+        int minorTopVer
+    ) {
+        this.topVer = topVer;
+        this.minorTopVer = minorTopVer;
     }
 
     /**
@@ -66,7 +75,8 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
      *
      */
     public AffinityTopologyVersion previous() {
-        return new AffinityTopologyVersion(topVer - 1);
+        // TODO IGNITE-45.
+        return new AffinityTopologyVersion(topVer - 1, 0);
     }
 
     /** {@inheritDoc} */
@@ -87,11 +97,36 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(topVer);
+        out.writeInt(minorTopVer);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
+        minorTopVer = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: implement.
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: implement.
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 89;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        // TODO: implement.
+        return 0;
     }
 
     /**
@@ -107,11 +142,11 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     public static AffinityTopologyVersion readFrom(MessageReader msgReader) {
         long topVer = msgReader.readLong("topVer.idx");
 
-        return new AffinityTopologyVersion(topVer);
+        return new AffinityTopologyVersion(topVer, 0);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return String.valueOf(topVer);
+        return S.toString(AffinityTopologyVersion.class, this);
     }
 }

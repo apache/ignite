@@ -25,7 +25,10 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.events.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -565,7 +568,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(new GridPlainInClosure<Serializable>() {
             @Override public void apply(Serializable evt) {
                 if (evt instanceof DynamicCacheDescriptor)
-                    onCacheDeploymentRequested((DynamicCacheDescriptor)evt);
+                    onCacheStartRequested((DynamicCacheDescriptor)evt);
             }
         });
 
@@ -1290,7 +1293,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param startDesc Cache start descriptor.
      */
-    private void onCacheDeploymentRequested(DynamicCacheDescriptor startDesc) {
+    private void onCacheStartRequested(DynamicCacheDescriptor startDesc) {
         CacheConfiguration ccfg = startDesc.cacheConfiguration();
 
         // Check if cache with the same name was concurrently started form different node.

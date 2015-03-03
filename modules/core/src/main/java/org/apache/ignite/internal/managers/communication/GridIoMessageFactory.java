@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -489,6 +490,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 88:
                 msg = new GridCacheValueBytes();
+
+                break;
+
+            case 89:
+                msg = new AffinityTopologyVersion();
 
                 break;
 

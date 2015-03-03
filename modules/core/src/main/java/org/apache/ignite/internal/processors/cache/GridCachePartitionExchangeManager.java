@@ -46,6 +46,7 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 
@@ -82,6 +83,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringExclude
     private final ConcurrentMap<Integer, GridClientPartitionTopology<K, V>> clientTops = new ConcurrentHashMap8<>();
 
+    /** Minor topology version incremented each time a new dynamic cache is started. */
+    private volatile int minorTopVer;
+
     /** */
     private volatile GridDhtPartitionsExchangeFuture<K, V> lastInitializedFuture;
 
@@ -105,52 +109,61 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 ClusterNode loc = cctx.localNode();
 
-                assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED;
+                assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED ||
+                    e.type() == EVT_DISCOVERY_CUSTOM_EVT;
 
                 final ClusterNode n = e.eventNode();
 
-                assert !loc.id().equals(n.id());
+                if (e.type() != EVT_DISCOVERY_CUSTOM_EVT) {
+                    assert !loc.id().equals(n.id());
 
-                if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
-                    assert cctx.discovery().node(n.id()) == null;
+                    if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
+                        assert cctx.discovery().node(n.id()) == null;
 
-                    for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
-                        f.onNodeLeft(n.id());
-                }
-
-                assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
-                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
-
-                GridDhtPartitionExchangeId exchId = exchangeId(n.id(), new AffinityTopologyVersion(e.topologyVersion()),
-                    e.type());
-
-                GridDhtPartitionsExchangeFuture<K, V> exchFut = exchangeFuture(exchId, e);
-
-                // Start exchange process.
-                pendingExchangeFuts.add(exchFut);
-
-                // Event callback - without this callback future will never complete.
-                exchFut.onEvent(exchId, e);
-
-                if (log.isDebugEnabled())
-                    log.debug("Discovery event (will start exchange): " + exchId);
-
-                locExchFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        if (!enterBusy())
-                            return;
-
-                        try {
-                            // Unwind in the order of discovery events.
-                            for (GridDhtPartitionsExchangeFuture<K, V> f = pendingExchangeFuts.poll(); f != null;
-                                f = pendingExchangeFuts.poll())
-                                addFuture(f);
-                        }
-                        finally {
-                            leaveBusy();
-                        }
+                        for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
+                            f.onNodeLeft(n.id());
                     }
-                });
+
+                    assert
+                        e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
+                        "Node joined with smaller-than-local " +
+                            "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
+
+                    GridDhtPartitionExchangeId exchId = exchangeId(n.id(),
+                        new AffinityTopologyVersion(e.topologyVersion(), minorTopVer = 0),
+                        e.type());
+
+                    GridDhtPartitionsExchangeFuture<K, V> exchFut = exchangeFuture(exchId, e);
+
+                    // Start exchange process.
+                    pendingExchangeFuts.add(exchFut);
+
+                    // Event callback - without this callback future will never complete.
+                    exchFut.onEvent(exchId, e);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Discovery event (will start exchange): " + exchId);
+
+                    locExchFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> t) {
+                            if (!enterBusy())
+                                return;
+
+                            try {
+                                // Unwind in the order of discovery events.
+                                for (GridDhtPartitionsExchangeFuture<K, V> f = pendingExchangeFuts.poll(); f != null;
+                                    f = pendingExchangeFuts.poll())
+                                    addFuture(f);
+                            }
+                            finally {
+                                leaveBusy();
+                            }
+                        }
+                    });
+                }
+                else {
+                    // TODO.
+                }
             }
             finally {
                 leaveBusy();
@@ -166,7 +179,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         exchWorker = new ExchangeWorker();
 
-        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
+            EVT_DISCOVERY_CUSTOM_EVT);
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage<K, V>>() {
@@ -200,7 +214,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         assert startTime > 0;
 
-        final AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(loc.order());
+        final AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(loc.order(), minorTopVer);
 
         GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
