@@ -15,18 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.internal.util.offheap.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Unsafe partitioned map performance test.
+ *
  */
-public class GridUnsafePartitionedMapPerformanceTest extends GridOffHeapPartitionedMapPerformanceAbstractTest {
+public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
+    /**
+     *
+     */
+    public GridCacheReplicatedLocalStoreSelfTest() {
+        super();
+    }
+
     /** {@inheritDoc} */
-    @Override protected GridOffHeapPartitionedMap newMap() {
-        return GridOffHeapMapFactory.unsafePartitionedMap(CacheRendezvousAffinityFunction.DFLT_PARTITION_COUNT,
-            Runtime.getRuntime().availableProcessors(), load, LOAD_CNT, mem, lruStripes, null);
+    @Override protected CacheDistributionMode getDistributionMode() {
+        return PARTITIONED_ONLY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode getAtomicMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode getCacheMode() {
+        return REPLICATED;
     }
 }

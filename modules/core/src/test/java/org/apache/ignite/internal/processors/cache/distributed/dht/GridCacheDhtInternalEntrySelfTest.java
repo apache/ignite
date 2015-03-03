@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -65,7 +65,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 2));
+        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);

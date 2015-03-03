@@ -230,6 +230,15 @@ public class CacheTypeMetadata {
     }
 
     /**
+     * Sets value fields.
+     *
+     * @param valFields New value fields.
+     */
+    public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
+        this.valFields = valFields;
+    }
+
+    /**
      * Gets query-enabled fields.
      *
      * @return Collection of fields available for query.
@@ -317,14 +326,5 @@ public class CacheTypeMetadata {
      */
     public void setGroups(Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps) {
         this.grps = grps;
-    }
-
-    /**
-     * Sets value fields.
-     *
-     * @param valFields New value fields.
-     */
-    public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
-        this.valFields = valFields;
     }
 }
