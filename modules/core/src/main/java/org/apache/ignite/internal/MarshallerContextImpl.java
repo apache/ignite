@@ -74,7 +74,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
-        if (clsNameById.putIfAbsent(id, cls.getName()) == null) {
+        if (!clsNameById.containsKey(id)) {
             try {
                 if (cache == null)
                     U.awaitQuiet(latch);
@@ -85,6 +85,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                     throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
                         "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + cls.getName() +
                         "clsName2=" + old + ']');
+
+                clsNameById.putIfAbsent(id, cls.getName());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -97,22 +99,22 @@ public class MarshallerContextImpl implements MarshallerContext {
         String clsName = clsNameById.get(id);
 
         if (clsName == null) {
-            if (cache == null)
-                U.awaitQuiet(latch);
-
             try {
+                if (cache == null)
+                    U.awaitQuiet(latch);
+
                 clsName = cache.get(id);
+
+                assert clsName != null : id;
+
+                String old = clsNameById.putIfAbsent(id, clsName);
+
+                if (old != null)
+                    clsName = old;
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
-
-            assert clsName != null : id;
-
-            String old = clsNameById.putIfAbsent(id, clsName);
-
-            if (old != null)
-                clsName = old;
         }
 
         return U.forName(clsName, ldr);
