@@ -137,7 +137,7 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid();
 
-            final IgniteDataStreamer<Integer, String> ldr = ignite.dataLoader(null);
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
 
             ldr.perNodeBufferSize(8192);
             ldr.updater(GridDataLoadCacheUpdaters.<Integer, String>batchedSorted());

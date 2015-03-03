@@ -304,7 +304,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private IgniteDataStreamer<IgfsBlockKey, byte[]> dataLoader() {
         IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
-            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
+            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
 
         IgfsConfiguration cfg = igfsCtx.configuration();
 

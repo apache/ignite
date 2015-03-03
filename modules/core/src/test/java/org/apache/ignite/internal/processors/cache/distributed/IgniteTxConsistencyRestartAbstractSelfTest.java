@@ -99,7 +99,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        IgniteDataStreamer<Object, Object> ldr = grid(0).dataLoader(null);
+        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);

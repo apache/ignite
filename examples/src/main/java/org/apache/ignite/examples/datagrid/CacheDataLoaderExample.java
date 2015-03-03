@@ -63,7 +63,7 @@ public class CacheDataLoaderExample {
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataStreamer<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
+            try (IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);

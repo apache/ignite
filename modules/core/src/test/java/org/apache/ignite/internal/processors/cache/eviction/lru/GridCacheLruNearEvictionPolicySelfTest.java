@@ -108,7 +108,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataLoader(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(null)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }

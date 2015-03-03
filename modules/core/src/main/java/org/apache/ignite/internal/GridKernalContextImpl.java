@@ -660,7 +660,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> IgniteDataStreamerProcessor<K, V> dataLoad() {
+    @Override public <K, V> IgniteDataStreamerProcessor<K, V> dataStream() {
         return (IgniteDataStreamerProcessor<K, V>)dataLdrProc;
     }
 

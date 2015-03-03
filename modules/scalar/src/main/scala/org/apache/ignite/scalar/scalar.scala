@@ -295,7 +295,7 @@ object scalar extends ScalarConversions {
     @inline def dataLoader$[K, V](
         @Nullable cacheName: String,
         bufSize: Int): IgniteDataStreamer[K, V] = {
-        val dl = ignite$.dataLoader[K, V](cacheName)
+        val dl = ignite$.dataStreamer[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)
 

@@ -142,7 +142,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
      * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public IgniteDataStreamerImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
+    public IgniteDataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
@@ -173,8 +173,8 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public IgniteDataStreamer<K, V> dataLoader(@Nullable String cacheName) {
-        return dataLoader(cacheName, true);
+    public IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
+        return dataStreamer(cacheName, true);
     }
 
     /**

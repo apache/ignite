@@ -92,7 +92,7 @@ public class CachePopularNumbersExample {
      * @throws IgniteException If failed.
      */
     private static void streamData(final Ignite ignite) throws IgniteException {
-        try (IgniteDataStreamer<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = ignite.dataStreamer(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 

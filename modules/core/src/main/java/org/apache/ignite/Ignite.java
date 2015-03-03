@@ -210,7 +210,7 @@ public interface Ignite extends AutoCloseable {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public <K, V> IgniteDataStreamer<K, V> dataLoader(@Nullable String cacheName);
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName);
 
     /**
      * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
