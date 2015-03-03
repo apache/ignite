@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Message, OptimizedMarshallable {
+public class IgniteTxEntry implements GridPeerDeployAware, Message, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -929,74 +929,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Messa
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(depEnabled);
-
-        if (depEnabled) {
-            U.writeByteArray(out, transformClosBytes);
-            U.writeByteArray(out, filterBytes);
-        }
-        else {
-            U.writeCollection(out, entryProcessorsCol);
-            U.writeArray(out, filters);
-        }
-
-        out.writeObject(key);
-
-        out.writeInt(cacheId);
-
-        val.writeTo(out);
-
-        out.writeLong(ttl);
-
-        CU.writeVersion(out, explicitVer);
-        out.writeBoolean(grpLock);
-
-        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
-            out.writeBoolean(true);
-            out.writeLong(conflictExpireTime);
-        }
-        else
-            out.writeBoolean(false);
-
-        CU.writeVersion(out, conflictVer);
-
-        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        depEnabled = in.readBoolean();
-
-        if (depEnabled) {
-            transformClosBytes = U.readByteArray(in);
-            filterBytes = U.readByteArray(in);
-        }
-        else {
-            entryProcessorsCol = U.readCollection(in);
-            filters = GridCacheUtils.readEntryFilterArray(in);
-        }
-
-        key = (KeyCacheObject)in.readObject();
-
-        cacheId = in.readInt();
-
-        val.readFrom(in);
-
-        ttl = in.readLong();
-
-        explicitVer = CU.readVersion(in);
-        grpLock = in.readBoolean();
-
-        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
-        conflictVer = CU.readVersion(in);
-
-        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /**

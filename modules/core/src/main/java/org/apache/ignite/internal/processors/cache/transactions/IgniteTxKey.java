@@ -30,7 +30,7 @@ import java.nio.*;
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey implements Externalizable, Message {
+public class IgniteTxKey implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -178,18 +178,6 @@ public class IgniteTxKey implements Externalizable, Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
-        out.writeObject(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
-        key = (KeyCacheObject)in.readObject();
     }
 
     /** {@inheritDoc} */

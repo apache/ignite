@@ -61,17 +61,16 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @GridDirectTransient
     private Collection<IgniteTxEntry> nearWrites;
 
-    /** Serialized near writes. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearWritesBytes;
-
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
     private Map<IgniteTxKey, GridCacheVersion> owned;
 
-    /** Owned versions bytes. */
-    private byte[] ownedBytes;
+    /** Owned keys. */
+    private Collection<IgniteTxKey> ownedKeys;
+
+    /** Owned values. */
+    private Collection<GridCacheVersion> ownedVals;
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
@@ -272,8 +271,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (ownedBytes == null && owned != null) {
-            ownedBytes = CU.marshal(ctx, owned);
+        if (owned != null) {
+            ownedKeys = owned.keySet();
+
+            ownedVals = owned.values();
+
+            for (IgniteTxKey key: ownedKeys)
+                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
 
             if (ctx.deploymentEnabled()) {
                 for (IgniteTxKey k : owned.keySet())
@@ -281,31 +285,35 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             }
         }
 
-        if (nearWrites != null) {
+        if (nearWrites != null)
             marshalTx(nearWrites, ctx);
-
-            nearWritesBytes = new ArrayList<>(nearWrites.size());
-
-            for (IgniteTxEntry e : nearWrites)
-                nearWritesBytes.add(ctx.marshaller().marshal(e));
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (ownedBytes != null && owned == null)
-            owned = ctx.marshaller().unmarshal(ownedBytes, ldr);
+        if (ownedKeys != null && owned == null) {
+            owned = new HashMap<>();
 
-        if (nearWritesBytes != null) {
-            nearWrites = new ArrayList<>(nearWritesBytes.size());
+            assert ownedKeys.size() == ownedVals.size();
 
-            for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<IgniteTxEntry>unmarshal(arr, ldr));
+            Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
 
-            unmarshalTx(nearWrites, true, ctx, ldr);
+            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
+
+            while (keyIter.hasNext()) {
+                IgniteTxKey key = keyIter.next();
+
+                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
+
+                owned.put(key, valIter.next());
+            }
+
         }
+
+        unmarshalTx(nearWrites, true, ctx, ldr);
+
     }
 
     /** {@inheritDoc} */
@@ -359,7 +367,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearWrites", nearWrites, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -371,30 +379,36 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeByteArray("ownedBytes", ownedBytes))
+                if (!writer.writeCollection("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeBitSet("preloadKeys", preloadKeys))
+                if (!writer.writeCollection("ownedVals", ownedVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 writer.incrementState();
 
             case 34:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 35:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 36:
                 if (!writer.writeLong("topVer", topVer))
                     return false;
 
@@ -457,7 +471,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 29:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", MessageCollectionItemType.BYTE_ARR);
+                nearWrites = reader.readCollection("nearWrites", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -473,7 +487,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 31:
-                ownedBytes = reader.readByteArray("ownedBytes");
+                ownedKeys = reader.readCollection("ownedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -481,7 +495,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 32:
-                preloadKeys = reader.readBitSet("preloadKeys");
+                ownedVals = reader.readCollection("ownedVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -489,7 +503,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 33:
-                subjId = reader.readUuid("subjId");
+                preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
                     return false;
@@ -497,7 +511,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 34:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -505,6 +519,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 35:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 36:
                 topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
@@ -524,6 +546,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 36;
+        return 37;
     }
 }

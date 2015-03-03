@@ -541,6 +541,10 @@ public class GridIoMessageFactory implements MessageFactory {
                 msg = new IgniteTxEntry.TxEntryValueHolder();
 
                 break;
+            case 99:
+                msg = new GridNearTxPrepareResponse.OwnedValue();
+
+                break;
 
             default:
                 if (ext != null) {
