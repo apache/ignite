@@ -306,7 +306,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private IgniteExceptionRegistry registry;
 
     /** Marshaller context. */
-    private final MarshallerContextImpl marshCtx = new MarshallerContextImpl();
+    private MarshallerContextImpl marshCtx;
 
     /**
      * No-arg constructor is required by externalization.
@@ -318,17 +318,17 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * Creates new kernal context.
      *
-     *  @param log Logger.
-     *  @param grid Grid instance managed by kernal.
-     *  @param cfg Grid configuration.
-     *  @param gw Kernal gateway.
-     *  @param utilityCachePool Utility cache pool.
-     *  @param execSvc Public executor service.
-     *  @param sysExecSvc System executor service.
-     *  @param p2pExecSvc P2P executor service.
-     *  @param mgmtExecSvc Management executor service.
-     *  @param igfsExecSvc IGFS executor service.
-     *  @param restExecSvc REST executor service.
+     * @param log Logger.
+     * @param grid Grid instance managed by kernal.
+     * @param cfg Grid configuration.
+     * @param gw Kernal gateway.
+     * @param utilityCachePool Utility cache pool.
+     * @param execSvc Public executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param igfsExecSvc IGFS executor service.
+     * @param restExecSvc REST executor service.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -359,6 +359,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+
+        marshCtx = new MarshallerContextImpl(log);
 
         try {
             spring = SPRING.create(false);

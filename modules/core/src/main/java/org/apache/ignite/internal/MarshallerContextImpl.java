@@ -45,13 +45,16 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** */
     private volatile GridCacheAdapter<Integer, String> cache;
 
-    MarshallerContextImpl() {
+    /**
+     * @param log Logger.
+     */
+    MarshallerContextImpl(IgniteLogger log) {
+        String clsName = null;
+
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
             BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
-
-            String clsName;
 
             while ((clsName = rdr.readLine()) != null) {
                 Class cls = U.forName(clsName, ldr);
@@ -59,8 +62,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                 clsById.put(cls.getName().hashCode(), F.t(cls, true));
             }
         }
-        catch (IOException | ClassNotFoundException e) {
-            throw new IllegalStateException(e);
+        catch (ClassNotFoundException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Class defined in classnames.properties doesn't exist (ignoring): " + clsName);
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Failed to initialize marshaller context.", e);
         }
     }
 
