@@ -36,6 +36,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /** Memory mode. */
     private CacheMemoryMode memMode;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

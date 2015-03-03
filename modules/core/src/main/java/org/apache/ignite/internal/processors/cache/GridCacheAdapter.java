@@ -963,7 +963,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    Object val0 = v.value(ctx, true);
+                    Object val0 = CU.value(v, ctx, true);
 
                     if (ctx.portableEnabled())
                         val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());

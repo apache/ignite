@@ -1800,15 +1800,21 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @param bytes Key bytes.
+     * @param transferOnly If {@code true} creates temporary object which is valid only for marshalling.
      * @return Cache object.
      * @throws IgniteCheckedException If failed.
      */
-    public KeyCacheObject toCacheKeyObject(Object obj, byte[] bytes) throws IgniteCheckedException {
+    public KeyCacheObject toCacheKeyObject(Object obj, byte[] bytes, boolean transferOnly)
+        throws IgniteCheckedException {
         // TODO IGNITE-51 move to processor.
         assert obj != null || bytes != null;
 
-        if (obj == null)
+        if (obj == null) {
+            if (transferOnly)
+                return new KeyCacheObjectTransferImpl(bytes);
+
             obj = marshaller().unmarshal(bytes, deploy().globalLoader());
+        }
 
         return new KeyCacheObjectImpl(obj, bytes);
     }
