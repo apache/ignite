@@ -18,9 +18,10 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jdk8.backport.*;
 
 import java.io.*;
-import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Test marshaller context.
@@ -30,7 +31,7 @@ public class MarshallerContextTestImpl implements MarshallerContext {
     private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
 
     /** */
-    private final Map<Integer, Class> map = new HashMap<>();
+    private final ConcurrentMap<Integer, Class> map = new ConcurrentHashMap8<>();
 
     /**
      */
@@ -60,11 +61,19 @@ public class MarshallerContextTestImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
-        map.put(id, cls);
+        Class old = map.putIfAbsent(id, cls);
+
+        if (old != null && !cls.getName().equals(old.getName()))
+            throw new IllegalStateException("Collision [id=" + id + ", cls1=" + cls.getName() +
+                ", cls2=" + old.getName() + ']');
     }
 
     /** {@inheritDoc} */
     @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-        return map.get(id);
+        Class cls = map.get(id);
+
+        assert cls != null;
+
+        return cls;
     }
 }

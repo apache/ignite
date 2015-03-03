@@ -19,14 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -37,7 +34,7 @@ public class MarshallerContextImpl implements MarshallerContext {
     private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
 
     /** */
-    private final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> clsById = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, String> clsNameById = new ConcurrentHashMap8<>();
 
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
@@ -46,9 +43,9 @@ public class MarshallerContextImpl implements MarshallerContext {
     private volatile GridCacheAdapter<Integer, String> cache;
 
     /**
-     * @param log Logger.
+     * Constructor.
      */
-    MarshallerContextImpl(IgniteLogger log) {
+    MarshallerContextImpl() {
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
@@ -56,17 +53,8 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             String clsName;
 
-            while ((clsName = rdr.readLine()) != null) {
-                try {
-                    Class cls = U.forName(clsName, ldr);
-
-                    clsById.put(cls.getName().hashCode(), F.t(cls, true));
-                }
-                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Class defined in classnames.properties doesn't exist (ignoring): " + clsName);
-                }
-            }
+            while ((clsName = rdr.readLine()) != null)
+                clsNameById.put(clsName.hashCode(), clsName);
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -84,29 +72,9 @@ public class MarshallerContextImpl implements MarshallerContext {
         latch.countDown();
     }
 
-    /**
-     * @param ldr Undeployed class loader.
-     */
-    public void onUndeployed(ClassLoader ldr) {
-        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : clsById.entrySet()) {
-            if (!e.getValue().get2() && ldr.equals(e.getValue().get1().getClassLoader()))
-                clsById.remove(e.getKey());
-        }
-    }
-
-    /**
-     * Clears cached classes.
-     */
-    public void clear() {
-        for (Map.Entry<Integer, IgniteBiTuple<Class, Boolean>> e : clsById.entrySet()) {
-            if (!e.getValue().get2())
-                clsById.remove(e.getKey());
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
-        if (clsById.putIfAbsent(id, F.t(cls, false)) == null) {
+        if (clsNameById.putIfAbsent(id, cls.getName()) == null) {
             try {
                 if (cache == null)
                     U.awaitQuiet(latch);
@@ -126,13 +94,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-        IgniteBiTuple<Class, Boolean> t = clsById.get(id);
+        String clsName = clsNameById.get(id);
 
-        if (t == null) {
+        if (clsName == null) {
             if (cache == null)
                 U.awaitQuiet(latch);
-
-            String clsName;
 
             try {
                 clsName = cache.get(id);
@@ -143,14 +109,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             assert clsName != null : id;
 
-            Class cls = U.forName(clsName, ldr);
-
-            IgniteBiTuple<Class, Boolean> old = clsById.putIfAbsent(id, t = F.t(cls, false));
+            String old = clsNameById.putIfAbsent(id, clsName);
 
             if (old != null)
-                t = old;
+                clsName = old;
         }
 
-        return t.get1();
+        return U.forName(clsName, ldr);
     }
 }

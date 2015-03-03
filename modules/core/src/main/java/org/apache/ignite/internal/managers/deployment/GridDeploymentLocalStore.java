@@ -522,7 +522,6 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (dep.obsolete()) {
                 // Resource cleanup.
                 ctx.resource().onUndeployed(dep);
-                ctx.marshallerContext().onUndeployed(ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
                 OptimizedMarshaller.onUndeploy(ldr);

@@ -360,7 +360,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
 
-        marshCtx = new MarshallerContextImpl(log);
+        marshCtx = new MarshallerContextImpl();
 
         try {
             spring = SPRING.create(false);
