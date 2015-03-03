@@ -66,7 +66,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** Transaction read set. */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(IgniteTxEntry.class)
     private Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
