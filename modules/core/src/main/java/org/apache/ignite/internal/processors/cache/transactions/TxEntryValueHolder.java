@@ -235,28 +235,28 @@ public class TxEntryValueHolder implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("hasWriteVal", hasWriteVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeBoolean("hasReadVal", hasReadVal))
                     return false;
 
                 writer.incrementState();
 
+            case 1:
+                if (!writer.writeBoolean("hasWriteVal", hasWriteVal))
+                    return false;
+
+                writer.incrementState();
+
             case 2:
-                if (!writer.writeInt("op", op.ordinal()))
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
+
             case 3:
-                if (!writer.writeMessage("cacheObject", val))
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
-
 
         }
 
@@ -272,7 +272,7 @@ public class TxEntryValueHolder implements Message {
 
         switch (reader.state()) {
             case 0:
-                hasWriteVal = reader.readBoolean("hasWriteVal");
+                hasReadVal = reader.readBoolean("hasReadVal");
 
                 if (!reader.isLastRead())
                     return false;
@@ -280,22 +280,26 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 1:
-                hasReadVal = reader.readBoolean("hasReadVal");
+                hasWriteVal = reader.readBoolean("hasWriteVal");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
             case 2:
-                op = GridCacheOperation.fromOrdinal(reader.readInt("op"));
+                byte opOrd = reader.readByte("op");
 
                 if (!reader.isLastRead())
                     return false;
+
+                if (opOrd != -1)
+                    op = GridCacheOperation.fromOrdinal(opOrd);
 
                 reader.incrementState();
 
             case 3:
-                val = reader.readMessage("cacheObject");
+                val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
                     return false;
