@@ -21,6 +21,8 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+
 /**
  * Cache interceptor. Cache interceptor can be used for getting callbacks before
  * and after cache {@code get(...)}, {@code put(...)}, and {@code remove(...)}
@@ -61,13 +63,12 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param key Key.
-     * @param oldVal Old value.
+     * @param entry Old entry.
      * @param newVal New value.
      * @return Value to be put to cache. Returning {@code null} cancels the update.
      * @see CacheProjection#put(Object, Object, IgnitePredicate[])
      */
-    @Nullable public V onBeforePut(K key, @Nullable V oldVal, V newVal);
+    @Nullable public V onBeforePut(Cache.Entry<K, V> entry, V newVal);
 
     /**
      * This method is called after new value has been stored.
@@ -79,10 +80,9 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param key Key.
-     * @param val Current value.
+     * @param entry Current entry.
      */
-    public void onAfterPut(K key, V val);
+    public void onAfterPut(Cache.Entry<K, V> entry);
 
     /**
      * This method is called within {@link CacheProjection#remove(Object, IgnitePredicate[])}
@@ -95,14 +95,13 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param key Key.
-     * @param val Old value.
+     * @param entry Old entry.
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.
      * @see CacheProjection#remove(Object, IgnitePredicate[])
      */
-    @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val);
+    @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
 
     /**
      * This method is called after value has been removed.
@@ -114,8 +113,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param key Key.
-     * @param val Removed value.
+     * @param entry Removed entry.
      */
-    public void onAfterRemove(K key, V val);
+    public void onAfterRemove(Cache.Entry<K, V> entry);
 }

@@ -3320,7 +3320,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 V retVal = CU.value(ret, ctx, true);
 
                 if (ctx.config().getInterceptor() != null)
-                    return (V)ctx.config().getInterceptor().onBeforeRemove(key, retVal).get2();
+                    return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, retVal)).get2();
 
                 return retVal;
             }

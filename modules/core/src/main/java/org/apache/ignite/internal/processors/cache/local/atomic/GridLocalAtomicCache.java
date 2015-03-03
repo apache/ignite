@@ -1205,8 +1205,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (updated == null) {
                             if (intercept) {
-                                IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                    keyVal, oldVal);
+                                IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
+                                    .onBeforeRemove(new CacheEntryImpl(keyVal, oldVal));
 
                                 if (ctx.cancelRemove(interceptorRes))
                                     continue;
@@ -1237,8 +1237,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         }
                         else {
                             if (intercept) {
-                                Object interceptorVal =
-                                    ctx.config().getInterceptor().onBeforePut(keyVal, oldVal, updatedVal);
+                                Object interceptorVal = ctx.config().getInterceptor()
+                                    .onBeforePut(new CacheLazyEntry(keyVal, oldVal), updatedVal);
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1286,10 +1286,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 taskName,
                                 null);
 
-                            Object interceptorVal = ctx.config().getInterceptor().onBeforePut(
-                                entry.key().value(ctx, false),
-                                CU.value(old, ctx, false),
-                                val);
+                            Object interceptorVal = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
+                                entry.key(), old, ctx), val);
 
                             if (interceptorVal == null)
                                 continue;
@@ -1319,9 +1317,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 taskName,
                                 null);
 
-                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                entry.key().value(ctx, false),
-                                CU.value(old, ctx, false));
+                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
+                                .onBeforeRemove(new CacheLazyEntry(entry.key(), old, ctx));
 
                             if (ctx.cancelRemove(interceptorRes))
                                 continue;
@@ -1468,12 +1465,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     taskName);
 
                 if (intercept) {
-                    if (op == UPDATE) {
-                        ctx.config().getInterceptor().onAfterPut(entry.key().value(ctx, false),
-                            writeVal.value(ctx, false));
-                    }
+                    if (op == UPDATE)
+                        ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(entry.key(), writeVal, ctx));
                     else
-                        ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false), t.get2());
+                        ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(entry.key(), null, null,
+                            t.get2(), ctx));
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
