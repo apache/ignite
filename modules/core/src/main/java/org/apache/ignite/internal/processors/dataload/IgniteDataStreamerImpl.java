@@ -243,7 +243,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         if (log.isDebugEnabled())
             log.debug("Added response listener within topic: " + topic);
 
-        fut = new GridDataLoaderFuture(ctx, this);
+        fut = new IgniteDataStreamerFuture(ctx, this);
 
         publicFut = new IgniteFutureImpl<>(fut);
     }

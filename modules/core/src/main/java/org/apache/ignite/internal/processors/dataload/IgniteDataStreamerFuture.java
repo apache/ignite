@@ -28,7 +28,7 @@ import java.io.*;
 /**
  * Data loader future.
  */
-class GridDataLoaderFuture extends GridFutureAdapter<Object> {
+class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +39,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
     /**
      * Default constructor for {@link Externalizable} support.
      */
-    public GridDataLoaderFuture() {
+    public IgniteDataStreamerFuture() {
         // No-op.
     }
 
@@ -47,7 +47,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
      * @param ctx Context.
      * @param dataLdr Data loader.
      */
-    GridDataLoaderFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
+    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
         super(ctx);
 
         assert dataLdr != null;
@@ -70,6 +70,6 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDataLoaderFuture.class, this, super.toString());
+        return S.toString(IgniteDataStreamerFuture.class, this, super.toString());
     }
 }
