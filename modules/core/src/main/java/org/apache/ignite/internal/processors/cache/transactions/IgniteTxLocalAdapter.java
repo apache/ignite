@@ -2398,7 +2398,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             ret.value(v);
                     }
 
-                    boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached.wrapLazyValue(), filter);;
+                    boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
 
                     // For remove operation we return true only if we are removing s/t,
                     // i.e. cached value is not null.
@@ -2423,7 +2423,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         txEntry.filters(CU.empty0());
                         txEntry.filtersSet(false);
 
-                        updateTtl = filter != cacheCtx.noPeekArray();
+                        updateTtl = !cacheCtx.putIfAbsentFilter(filter);
                     }
 
                     if (updateTtl) {

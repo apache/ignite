@@ -3441,7 +3441,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             locKeys.addAll(cache.keySet(new CacheEntryPredicateAdapter() {
                 @Override public boolean apply(GridCacheEntryEx e) {
-                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.key());
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.key().value(e.context(), false));
                 }
             }));
 
@@ -3896,18 +3896,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
-        final int SIZE = 20000;
+        final int SIZE = 10_000;
 
         Map<String, Integer> entries = new HashMap<>();
 
+        Map<String, Integer> putMap = new HashMap<>();
+
         for (int i = 0; i < SIZE; ++i) {
-            cache.put(Integer.toString(i), i);
+            String key = Integer.toString(i);
 
-            entries.put(Integer.toString(i), i);
+            putMap.put(key, i);
 
-            if (i > 0 && i % 500 == 0)
-                info("Puts finished: " + i);
+            entries.put(key, i);
+
+            if (putMap.size() == 500) {
+                cache.putAll(putMap);
+
+                info("Puts finished: " + (i + 1));
+
+                putMap.clear();
+            }
         }
+
+        cache.putAll(putMap);
 
         checkIteratorHasNext();
 

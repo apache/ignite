@@ -1391,7 +1391,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Apply metrics.
             if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
                 // PutIfAbsent methods mustn't update hit/miss statistics
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || filter != cctx.noValArray())
+                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
                     cctx.cache().metrics0().onRead(old != null);
             }
 
@@ -1400,7 +1400,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 boolean pass = cctx.isAll(this, filter);
 
                 if (!pass) {
-                    if (expiryPlc != null && !readThrough && filter != cctx.noValArray() && hasValueUnlocked())
+                    if (expiryPlc != null && !readThrough && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
                     return new T3<>(false, retval ? CU.value(old, cctx, false) : null, null);
@@ -1834,7 +1834,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Apply metrics.
             if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
                 // PutIfAbsent methods mustn't update hit/miss statistics
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || filter != cctx.noValArray())
+                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
                     cctx.cache().metrics0().onRead(oldVal != null);
             }
 
@@ -1843,7 +1843,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 boolean pass = cctx.isAll(this, filter);
 
                 if (!pass) {
-                    if (expiryPlc != null && !readThrough && hasValueUnlocked() && filter != cctx.noValArray())
+                    if (expiryPlc != null && !readThrough && hasValueUnlocked() && !cctx.putIfAbsentFilter(filter))
                         updateTtl(expiryPlc);
 
                     return new GridCacheUpdateAtomicResult(false,

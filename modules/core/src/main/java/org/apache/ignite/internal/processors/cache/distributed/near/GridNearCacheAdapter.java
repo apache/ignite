@@ -374,6 +374,49 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
+        @Nullable final CacheEntryPredicate... filter) {
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
+        Collection<Cache.Entry<K, V>> entries =
+            F.flatCollections(
+                F.viewReadOnly(
+                    dht().topology().currentLocalPartitions(),
+                    new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
+                        @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
+                            Collection<GridDhtCacheEntry> entries0 = p.entries();
+
+                            if (!F.isEmpty(filter))
+                                entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {
+                                    @Override public boolean apply(GridCacheEntryEx e) {
+                                        return F.isAll(e, filter);
+                                    }
+                                });
+
+                            return F.viewReadOnly(
+                                entries0,
+                                new C1<GridDhtCacheEntry, Cache.Entry<K, V>>() {
+                                    @Override public Cache.Entry<K, V> apply(GridDhtCacheEntry e) {
+                                        return e.wrapLazyValue();
+                                    }
+                                },
+                                new P1<GridDhtCacheEntry>() {
+                                    @Override public boolean apply(GridDhtCacheEntry e) {
+                                        return !e.obsoleteOrDeleted();
+                                    }
+                                });
+                        }
+                    },
+                    new P1<GridDhtLocalPartition>() {
+                        @Override public boolean apply(GridDhtLocalPartition p) {
+                            return p.primary(topVer);
+                        }
+                    }));
+
+        return new GridCacheEntrySet<>(ctx, entries, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> keySet(@Nullable CacheEntryPredicate[] filter) {
         return new GridCacheKeySet<>(ctx, entrySet(filter), null);
     }

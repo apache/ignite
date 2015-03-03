@@ -1035,7 +1035,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
 
-                                            tx.entry(cctx.txKey(k)).filters(pass ? CU.empty0() : CU.alwaysFalse0());
+                                            tx.entry(cctx.txKey(k)).filters(pass ? CU.empty0() : CU.alwaysFalse0Arr());
                                         }
 
                                         if (record) {
@@ -1390,7 +1390,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);
 
-                                tx.entry(cctx.txKey(k)).filters(pass ? CU.empty0() : CU.alwaysFalse0());
+                                tx.entry(cctx.txKey(k)).filters(pass ? CU.empty0() : CU.alwaysFalse0Arr());
                             }
 
                             entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(),

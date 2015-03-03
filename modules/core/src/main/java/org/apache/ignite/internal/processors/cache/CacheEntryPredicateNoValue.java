@@ -23,6 +23,6 @@ package org.apache.ignite.internal.processors.cache;
 public class CacheEntryPredicateNoValue extends CacheEntryPredicateAdapter {
     /** {@inheritDoc} */
     @Override public boolean apply(GridCacheEntryEx e) {
-        return !e.hasValue();
+        return !hasValue(e);
     }
 }

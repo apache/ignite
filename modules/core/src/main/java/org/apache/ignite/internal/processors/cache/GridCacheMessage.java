@@ -168,18 +168,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @param filters Predicate filters.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final void prepareFilter(@Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filters,
-        GridCacheSharedContext ctx) throws IgniteCheckedException {
-        if (filters != null)
-            for (IgnitePredicate filter : filters)
-                prepareObject(filter, ctx);
-    }
-
-    /**
      * @param o Object to prepare for marshalling.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
@@ -205,18 +193,6 @@ public abstract class GridCacheMessage implements Message {
                     prepare((GridDeploymentInfo)ldr);
             }
         }
-    }
-
-    /**
-     * @param col Collection of objects to prepare for marshalling.
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final void prepareObjects(@Nullable Iterable<?> col, GridCacheSharedContext ctx)
-        throws IgniteCheckedException {
-        if (col != null)
-            for (Object o : col)
-                prepareObject(o, ctx);
     }
 
     /**
@@ -346,13 +322,6 @@ public abstract class GridCacheMessage implements Message {
             for (IgniteTxEntry e : txEntries) {
                 e.marshal(ctx, transferExpiry);
 
-                if (e.filters() != null) {
-                    GridCacheContext cctx = ctx.cacheContext(e.cacheId());
-
-                    for (CacheEntryPredicate p : e.filters())
-                        p.prepareMarshal(cctx);
-                }
-
                 if (ctx.deploymentEnabled()) {
                     prepareObject(e.key(), ctx);
                     prepareObject(e.value(), ctx);
@@ -382,16 +351,8 @@ public abstract class GridCacheMessage implements Message {
         assert ctx != null;
 
         if (txEntries != null) {
-            for (IgniteTxEntry e : txEntries) {
+            for (IgniteTxEntry e : txEntries)
                 e.unmarshal(ctx, near, ldr);
-
-                if (e.filters() != null) {
-                    GridCacheContext cctx = ctx.cacheContext(e.cacheId());
-
-                    for (CacheEntryPredicate p : e.filters())
-                        p.finishUnmarshal(cctx, ldr);
-                }
-            }
         }
     }
 
@@ -447,65 +408,6 @@ public abstract class GridCacheMessage implements Message {
             args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
 
         return args;
-    }
-
-    /**
-     * @param filter Collection to marshal.
-     * @param ctx Context.
-     * @return Marshalled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected final <T> byte[][] marshalFilter(
-        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
-        GridCacheSharedContext ctx)
-        throws IgniteCheckedException
-    {
-        assert ctx != null;
-
-        if (filter == null)
-            return null;
-
-        byte[][] filterBytes = new byte[filter.length][];
-
-        for (int i = 0; i < filter.length; i++) {
-            IgnitePredicate<Cache.Entry<Object, Object>> p = filter[i];
-
-            if (ctx.deploymentEnabled())
-                prepareObject(p, ctx);
-
-            filterBytes[i] = p == null ? null : CU.marshal(ctx, p);
-        }
-
-        return filterBytes;
-    }
-
-    /**
-     * @param byteCol Collection to unmarshal.
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @return Unmarshalled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable protected final <T> IgnitePredicate<Cache.Entry<Object, Object>>[] unmarshalFilter(
-        @Nullable byte[][] byteCol, GridCacheSharedContext<Object, Object> ctx, ClassLoader ldr)
-        throws IgniteCheckedException
-    {
-        assert ldr != null;
-        assert ctx != null;
-
-        if (byteCol == null)
-            return null;
-
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter = new IgnitePredicate[byteCol.length];
-
-        Marshaller marsh = ctx.marshaller();
-
-        for (int i = 0; i < byteCol.length; i++)
-            filter[i] = byteCol[i] == null ? null :
-                marsh.<IgnitePredicate<Cache.Entry<Object, Object>>>unmarshal(byteCol[i], ldr);
-
-        return filter;
     }
 
     /**

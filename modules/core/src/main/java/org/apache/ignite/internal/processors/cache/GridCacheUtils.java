@@ -132,32 +132,26 @@ public class GridCacheUtils {
     /** Empty predicate array. */
     private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
 
-    /** Always false predicat array. */
-    private static final IgnitePredicate[] ALWAYS_FALSE = new IgnitePredicate[] {
-        new P1() {
-            @Override public boolean apply(Object e) {
-                return false;
-            }
-        }
-    };
-
     /** */
-    private static final CacheEntryPredicate[] ALWAYS_FALSE0 = new CacheEntryPredicate[] {
+    private static final CacheEntryPredicate ALWAYS_FALSE0 = new CacheEntrySerializablePredicate(
         new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
                 return false;
             }
         }
-    };
+    );
 
     /** */
-    private static final CacheEntryPredicate[] ALWAYS_TRUE0 = new CacheEntryPredicate[] {
+    private static final CacheEntryPredicate ALWAYS_TRUE0 = new CacheEntrySerializablePredicate(
         new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
                 return true;
             }
         }
-    };
+    );
+
+    /** */
+    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
     private static final IgnitePredicate READ_FILTER = new P1<Object>() {
@@ -780,16 +774,38 @@ public class GridCacheUtils {
     /**
      * @return Always false filter.
      */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])ALWAYS_FALSE;
+    public static CacheEntryPredicate alwaysFalse0() {
+        return ALWAYS_FALSE0;
     }
 
     /**
      * @return Always false filter.
      */
-    public static CacheEntryPredicate[] alwaysFalse0() {
-        return ALWAYS_FALSE0;
+    public static CacheEntryPredicate alwaysTrue0() {
+        return ALWAYS_TRUE0;
+    }
+
+    /**
+     * @return Always false filter.
+     */
+    public static CacheEntryPredicate[] alwaysFalse0Arr() {
+        return ALWAYS_FALSE0_ARR;
+    }
+
+    /**
+     * @param p Predicate.
+     * @return {@code True} if always false filter.
+     */
+    public static boolean isAlwaysFalse0(@Nullable CacheEntryPredicate[] p) {
+        return p != null && p.length == 1 && p[0]  == ALWAYS_FALSE0;
+    }
+
+    /**
+     * @param p Predicate.
+     * @return {@code True} if always false filter.
+     */
+    public static boolean isAlwaysTrue0(@Nullable CacheEntryPredicate[] p) {
+        return p != null && p.length == 1 && p[0]  == ALWAYS_TRUE0;
     }
 
     /**
@@ -1809,7 +1825,7 @@ public class GridCacheUtils {
     ) {
         return new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key());
+                return aff.isPrimary(n, e.key().value(e.context(), false));
             }
         };
     }

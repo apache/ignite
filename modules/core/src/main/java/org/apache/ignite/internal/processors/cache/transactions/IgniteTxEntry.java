@@ -684,6 +684,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
      * @throws IgniteCheckedException If failed.
      */
     public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
+        if (filters != null) {
+            for (CacheEntryPredicate p : filters) {
+                if (p != null)
+                    p.prepareMarshal(ctx.cacheContext(cacheId));
+            }
+        }
+
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (transformClosBytes == null && entryProcessorsCol != null)
@@ -733,6 +740,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
                 if (filters == null)
                     filters = CU.empty0();
+                else {
+                    for (CacheEntryPredicate p : filters) {
+                        if (p != null)
+                            p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+                    }
+                }
             }
         }
 

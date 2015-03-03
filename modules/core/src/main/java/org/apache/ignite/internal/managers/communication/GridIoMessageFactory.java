@@ -539,6 +539,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 98:
+                msg = new CacheEntryPredicateContainsValue();
+
+                break;
+
+            case 99:
+                msg = new CacheEntrySerializablePredicate();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

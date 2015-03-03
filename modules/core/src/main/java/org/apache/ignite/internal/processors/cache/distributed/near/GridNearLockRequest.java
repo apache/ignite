@@ -49,7 +49,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private IgniteUuid miniId;
 
     /** Filter. */
-    @GridDirectTransient
     private CacheEntryPredicate[] filter;
 
     /** Implicit flag. */
@@ -307,8 +306,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         if (filter != null) {
             GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            for (CacheEntryPredicate p : filter)
-                p.prepareMarshal(cctx);
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.prepareMarshal(cctx);
+            }
         }
     }
 
@@ -319,8 +320,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         if (filter != null) {
             GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            for (CacheEntryPredicate p : filter)
-                p.finishUnmarshal(cctx, ldr);
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
         }
     }
 
@@ -347,6 +350,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
             case 23:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -431,6 +440,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
             case 23:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;

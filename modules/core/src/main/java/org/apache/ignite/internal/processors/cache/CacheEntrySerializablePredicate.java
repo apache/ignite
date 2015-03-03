@@ -31,7 +31,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private CacheEntryPredicate[] p;
+    private CacheEntryPredicate p;
 
     /** */
     private byte[] bytes;
@@ -44,12 +44,19 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     }
 
     /**
-     * @param p Predicate.
+     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
      */
-    public CacheEntrySerializablePredicate(CacheEntryPredicate... p) {
+    public CacheEntrySerializablePredicate(CacheEntryPredicate p) {
         assert p != null;
 
         this.p = p;
+    }
+
+    /**
+     * @return Predicate.
+     */
+    public CacheEntryPredicate predicate() {
+        return p;
     }
 
     /** {@inheritDoc} */
@@ -57,11 +64,15 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
         assert bytes != null;
 
         p = ctx.marshaller().unmarshal(bytes, ldr);
+
+        p.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         assert p != null;
+
+        p.prepareMarshal(ctx);
 
         bytes = ctx.marshaller().marshal(p);
     }
@@ -70,31 +81,60 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     @Override public boolean apply(GridCacheEntryEx e) {
         assert p != null;
 
-        for (CacheEntryPredicate p0 : p) {
-            if (!p0.apply(e))
+        return p.apply(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByteArray("bytes", bytes))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                bytes = reader.readByteArray("bytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0;
+        return 99;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0;
+        return 1;
     }
 }

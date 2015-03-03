@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
@@ -28,39 +29,68 @@ import java.nio.*;
 public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert false;
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        assert false;
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        assert false;
+        assert false : this;
 
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        assert false;
+        assert false : this;
 
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        assert false;
+        assert false : this;
 
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert false;
+        assert false : this;
 
         return false;
+    }
+
+    /**
+     * @param e Entry.
+     * @return {@code True} if given entry has value.
+     */
+    protected boolean hasValue(GridCacheEntryEx e) {
+        try {
+            if (e.hasValue())
+                return true;
+
+            GridCacheContext cctx = e.context();
+
+            if (cctx.transactional()) {
+                IgniteInternalTx tx = cctx.tm().userTx();
+
+                if (tx != null)
+                    return tx.peek(cctx, false, e.key(), null) != null;
+            }
+
+            return false;
+        }
+        catch (GridCacheFilterFailedException err) {
+            assert false;
+
+            err.printStackTrace();
+
+            return false;
+        }
     }
 }

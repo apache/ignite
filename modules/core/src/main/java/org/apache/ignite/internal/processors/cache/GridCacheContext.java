@@ -148,16 +148,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAdapter<K, V> cache;
 
     /** No value filter array. */
-    private CacheEntryPredicate[] noValArr0;
+    private CacheEntryPredicate[] noValArr;
 
     /** Has value filter array. */
-    private CacheEntryPredicate[] hasValArr0;
-
-    /** No-peek-value filter array. */
-    private IgnitePredicate<Cache.Entry<Object, Object>>[] noPeekArr;
-
-    /** Has-peek-value filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
+    private CacheEntryPredicate[] hasValArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -287,11 +281,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         log = ctx.log(getClass());
 
-        noPeekArr = new IgnitePredicate[]{F.cacheNoPeekValue()};
-        hasPeekArr = new IgnitePredicate[]{F.cacheHasPeekValue()};
-
-        noValArr0 = new CacheEntryPredicate[]{new CacheEntryPredicateNoValue()};
-        hasValArr0 = new CacheEntryPredicate[]{new CacheEntryPredicateHasValue()};
+        noValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
+        hasValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
 
         cacheObjCtx = new CacheObjectContext(ctx);
 
@@ -963,43 +954,34 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return No get-value filter.
+     * @param p Predicate.
+     * @return {@code True} if given predicate is filter for {@code putIfAbsent} operation.
      */
-    @SuppressWarnings("unchecked")
-    public <K, V> IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])((IgnitePredicate[])noPeekArr);
-    }
+    public boolean putIfAbsentFilter(@Nullable CacheEntryPredicate[] p) {
+        if (p == null || p.length == 0)
+            return false;
 
-    /**
-     * @return Has get-value filer.
-     */
-    public IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArray() {
-        return hasPeekArr;
+        for (CacheEntryPredicate p0 : p) {
+            if ((p0 instanceof CacheEntrySerializablePredicate) &&
+               ((CacheEntrySerializablePredicate) p0).predicate() instanceof CacheEntryPredicateNoValue)
+            return true;
+        }
+
+        return false;
     }
 
     /**
      * @return No value filter.
      */
     public CacheEntryPredicate[] noValArray() {
-        return noValArr0;
+        return noValArr;
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate[] hasValArray() {
-        return noValArr0;
-    }
-
-    /**
-     * @param val Value to check.
-     * @return Predicate array that checks for value.
-     */
-    @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<Cache.Entry<K, V>>[] equalsPeekArray(V val) {
-        assert val != null;
-
-        return new IgnitePredicate[]{F.cacheContainsPeek(val)};
+        return hasValArr;
     }
 
     /**
