@@ -21,19 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
+public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Message, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -134,7 +135,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     private boolean grpLock;
 
     /** Deployment enabled flag. */
-    private boolean depEnabled;
+    private boolean depEnabled = true;
 
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -756,6 +757,182 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+            case 1:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+            case 2:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+            case 3:
+                if (!writer.writeLong("ttl", ttl))
+                    return false;
+
+                writer.incrementState();
+            case 4:
+                if (!writer.writeMessage("conflictVer", conflictVer))
+                    return false;
+
+                writer.incrementState();
+            case 5:
+                if (!writer.writeBoolean("grpLock", grpLock))
+                    return false;
+
+                writer.incrementState();
+            case 6:
+                if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
+                    return false;
+
+                writer.incrementState();
+            case 7:
+                if (!writer.writeByteArray("filterBytes", filterBytes))
+                    return false;
+
+                writer.incrementState();
+            case 8:
+                if (!(writer.writeLong("conflictExpireTime", conflictExpireTime)))
+                    return false;
+
+                writer.incrementState();
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                key = reader.readMessage("key");
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 1:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 2:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 3:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 4:
+                conflictVer = reader.readMessage("conflictVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 5:
+                grpLock = reader.readBoolean("grpLock");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 6:
+                transformClosBytes = reader.readByteArray("transformClosBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 7:
+                filterBytes = reader.readByteArray("filterBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+            case 8:
+                conflictExpireTime = reader.readLong("conflictExpireTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 97;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 9;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object ggClassId() {
+        return GG_CLASS_ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> deployClass() {
+        ClassLoader clsLdr = getClass().getClassLoader();
+
+        CacheObject val = value();
+
+        // First of all check classes that may be loaded by class loader other than application one.
+        return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
+            key.getClass() : val != null ? val.getClass() : getClass();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassLoader classLoader() {
+        return deployClass().getClassLoader();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
+    }
+
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeBoolean(depEnabled);
 
@@ -822,36 +999,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<?> deployClass() {
-        ClassLoader clsLdr = getClass().getClassLoader();
-
-        CacheObject val = value();
-
-        // First of all check classes that may be loaded by class loader other than application one.
-        return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
-            key.getClass() : val != null ? val.getClass() : getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClassLoader classLoader() {
-        return deployClass().getClassLoader();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
-    }
-
     /**
      * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
      */
-    private static class TxEntryValueHolder {
+    public static class TxEntryValueHolder implements Message {
         /** */
         @GridToStringInclude
         private CacheObject val;
@@ -948,6 +1099,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
             throws IgniteCheckedException {
             if (hasWriteVal && val != null)
                 val.prepareMarshal(ctx.cacheObjectContext());
+
 // TODO IGNITE-51.
 //            boolean valIsByteArr = val != null && val instanceof byte[];
 //
@@ -968,6 +1120,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
             if (val != null)
                 val.finishUnmarshal(ctx, ldr);
+
 // TODO IGNITE-51.
 //            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
 //                val = ctx.marshaller().unmarshal(valBytes, ldr);
@@ -1038,6 +1191,101 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         /** {@inheritDoc} */
         @Override public String toString() {
             return "[op=" + op +", val=" + val + ']';
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(directType(), fieldsCount()))
+                    return false;
+
+                writer.onHeaderWritten();
+            }
+
+            switch (writer.state()) {
+                case 0:
+                    if (!writer.writeBoolean("hasWriteVal", hasWriteVal))
+                        return false;
+
+                    writer.incrementState();
+
+                case 1:
+                    if (!writer.writeBoolean("hasReadVal", hasReadVal))
+                        return false;
+
+                    writer.incrementState();
+
+                case 2:
+                    if (!writer.writeInt("op", op.ordinal()))
+                        return false;
+
+                    writer.incrementState();
+                case 3:
+                    if (!writer.writeMessage("cacheObject", val))
+                        return false;
+
+                    writer.incrementState();
+
+
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            reader.setBuffer(buf);
+
+            if (!reader.beforeMessageRead())
+                return false;
+
+            switch (reader.state()) {
+                case 0:
+                    hasWriteVal = reader.readBoolean("hasWriteVal");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 1:
+                    hasReadVal = reader.readBoolean("hasReadVal");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+                case 2:
+                    op = GridCacheOperation.fromOrdinal(reader.readInt("op"));
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 3:
+                    val = reader.readMessage("cacheObject");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte directType() {
+            return 98;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 4;
         }
     }
 }
