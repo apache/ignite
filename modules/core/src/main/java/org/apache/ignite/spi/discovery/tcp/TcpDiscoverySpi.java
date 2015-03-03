@@ -3784,7 +3784,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             boolean fireEvt = false;
 
-            if (node != null && msg.verified()) {
+            if (msg.verified()) {
                 assert topVer > 0 : "Invalid topology version: " + msg;
 
                 if (node.order() == 0)
@@ -4471,24 +4471,31 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Message.
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
-            if (msg.creatorNodeId().equals(getLocalNodeId())) {
-                if (msg.senderNodeId() != null)
-                    return;
+            if (isLocalNodeCoordinator()) {
+                if (msg.verified()) {
+                    stats.onRingMessageReceived(msg);
 
-                msg.senderNodeId(getLocalNodeId());
+                    addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
+
+                    return;
+                }
+
+                msg.verify(getLocalNodeId());
             }
 
-            DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+            if (msg.verified()) {
+                DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
 
-            TcpDiscoverySpiState spiState = spiStateCopy();
+                TcpDiscoverySpiState spiState = spiStateCopy();
 
-            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
-                lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                    msg.topologyVersion(),
-                    ring.node(msg.creatorNodeId()),
-                    null,
-                    null,
-                    msg.message());
+                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
+                    lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                        msg.topologyVersion(),
+                        ring.node(msg.creatorNodeId()),
+                        null,
+                        null,
+                        msg.message());
+            }
 
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
