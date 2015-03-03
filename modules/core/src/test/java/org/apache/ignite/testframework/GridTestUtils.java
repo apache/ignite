@@ -20,7 +20,6 @@ package org.apache.ignite.testframework;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
@@ -877,14 +876,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param cache Cache.
-     * @return Affinity.
-     */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
-        return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
-    }
-
-    /**
      * @param cacheName Cache name.
      * @param backups Number of backups.
      * @param log Logger.
@@ -901,7 +892,7 @@ public final class GridTestUtils {
             while (true) {
                 boolean wait = false;
 
-                for (int p = 0; p < affinity(cache).partitions(); p++) {
+                for (int p = 0; p < g.affinity(cacheName).partitions(); p++) {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -77,7 +77,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 18));
+        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(CachePreloadMode.SYNC);
 

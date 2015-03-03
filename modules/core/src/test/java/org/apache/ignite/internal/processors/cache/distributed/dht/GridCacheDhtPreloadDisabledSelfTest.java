@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -84,7 +84,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
         cacheCfg.setPreloadMode(NONE);
-        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
+        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);

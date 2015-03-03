@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -44,7 +44,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
         aff.setHashIdResolver(rslvr);
 
