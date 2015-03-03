@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  */
 public class MarshallerContextImpl implements MarshallerContext {
     /** */
-    private static final String CLS_NAMES_FILE = "org/apache/ignite/marshaller/optimized/classnames.properties";
+    private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
 
     /** */
     private final ConcurrentMap<Integer, IgniteBiTuple<Class, Boolean>> clsById = new ConcurrentHashMap8<>(256);
@@ -97,11 +97,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
-        if (cache == null)
-            U.awaitQuiet(latch);
-
         if (clsById.putIfAbsent(id, F.t(cls, false)) == null) {
             try {
+                if (cache == null)
+                    U.awaitQuiet(latch);
+
                 String old = cache.putIfAbsent(id, cls.getName());
 
                 if (old != null && !old.equals(cls.getName()))
@@ -117,12 +117,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-        if (cache == null)
-            U.awaitQuiet(latch);
-
         IgniteBiTuple<Class, Boolean> t = clsById.get(id);
 
         if (t == null) {
+            if (cache == null)
+                U.awaitQuiet(latch);
+
             String clsName;
 
             try {
