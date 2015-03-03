@@ -46,9 +46,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     /** Cache affinity partitions. */
     private Integer partitions;
 
-    /** Cache partitioned affinity default replicas. */
-    private Integer dfltReplicas;
-
     /** Cache partitioned affinity exclude neighbors. */
     private Boolean excludeNeighbors;
 
@@ -104,13 +101,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
      */
     public Integer partitions() {
         return partitions;
-    }
-
-    /**
-     * @return Cache partitioned affinity default replicas.
-     */
-    @Nullable public Integer defaultReplicas() {
-        return dfltReplicas;
     }
 
     /**

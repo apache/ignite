@@ -805,7 +805,6 @@ object VisorCacheCommand {
         cacheT += ("Affinity Function", safe(affinityCfg.function()))
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
         cacheT += ("Affinity Partitions", safe(affinityCfg.partitions()))
-        cacheT += ("Affinity Default Replicas", safe(affinityCfg.defaultReplicas()))
         cacheT += ("Affinity Exclude Neighbors", safe(affinityCfg.excludeNeighbors()))
         cacheT += ("Affinity Mapper", safe(affinityCfg.mapper()))
 
