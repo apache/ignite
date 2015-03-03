@@ -278,8 +278,8 @@ public abstract class GridCacheMessage implements Message {
             info.marshal(ctx);
 
             if (ctx.deploymentEnabled()) {
-                prepareObject(info.key(), ctx.shared());
-                prepareObject(info.value(), ctx.shared());
+                prepareObject(info.key().value(ctx, false), ctx.shared());
+                prepareObject(CU.value(info.value(), ctx, false), ctx.shared());
             }
         }
     }
@@ -495,61 +495,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @param col Values collection to marshal.
-     * @param ctx Context.
-     * @return Marshaled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected List<GridCacheValueBytes> marshalValuesCollection(@Nullable Collection<?> col,
-        GridCacheSharedContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
-        if (col == null)
-            return null;
-
-        List<GridCacheValueBytes> byteCol = new ArrayList<>(col.size());
-
-        for (Object o : col) {
-            if (ctx.deploymentEnabled())
-                prepareObject(o, ctx);
-
-            byteCol.add(o == null ? null : o instanceof byte[] ? GridCacheValueBytes.plain(o) :
-                GridCacheValueBytes.marshaled(CU.marshal(ctx, o)));
-        }
-
-        return byteCol;
-    }
-
-    /**
-     * @param byteCol Collection to unmarshal.
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @return Unmarshalled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected <T> List<T> unmarshalValueBytesCollection(@Nullable Collection<GridCacheValueBytes> byteCol,
-        GridCacheSharedContext ctx, ClassLoader ldr)
-        throws IgniteCheckedException {
-        assert ldr != null;
-        assert ctx != null;
-
-        if (byteCol == null)
-            return null;
-
-        List<T> col = new ArrayList<>(byteCol.size());
-
-        Marshaller marsh = ctx.marshaller();
-
-        for (GridCacheValueBytes item : byteCol) {
-            assert item == null || item.get() != null;
-
-            col.add(item != null ? item.isPlain() ? (T)item.get() : marsh.<T>unmarshal(item.get(), ldr) : null);
-        }
-
-        return col;
-    }
-
-    /**
      * @param col Collection to marshal.
      * @param ctx Context.
      * @return Marshalled collection.
@@ -587,11 +532,17 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
+        boolean depEnabled = ctx.deploymentEnabled();
+
         for (int i = 0 ; i < size; i++) {
             CacheObject obj = col.get(i);
 
-            if (obj != null)
+            if (obj != null) {
                 obj.prepareMarshal(ctx.cacheObjectContext());
+
+                if (depEnabled)
+                    prepareObject(obj.value(ctx, false), ctx.shared());
+            }
         }
     }
 
@@ -605,9 +556,15 @@ public abstract class GridCacheMessage implements Message {
         if (col == null)
             return;
 
+        boolean depEnabled = ctx.deploymentEnabled();
+
         for (CacheObject obj : col) {
-            if (obj != null)
+            if (obj != null) {
                 obj.prepareMarshal(ctx.cacheObjectContext());
+
+                if (depEnabled)
+                    prepareObject(obj.value(ctx, false), ctx.shared());
+            }
         }
     }
 

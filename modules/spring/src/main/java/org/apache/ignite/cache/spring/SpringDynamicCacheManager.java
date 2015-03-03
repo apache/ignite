@@ -121,11 +121,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
 
             if (cache == null) {
                 cache = new SpringCache(name, grid, dataCache.projection(new ProjectionFilter(name)),
-                    new IgniteClosure<Object, Object>() {
-                        @Override public Object apply(Object o) {
-                            return new DataKey(name, o);
-                        }
-                    });
+                    new DataKeyFactory(name));
 
                 org.springframework.cache.Cache old = metaCache.putIfAbsent(key, cache);
 
@@ -158,6 +154,26 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
                         return e.getKey().name;
                     }
                 }));
+    }
+
+    /**
+     *
+     */
+    private static class DataKeyFactory implements IgniteClosure<Object, Object> {
+        /** */
+        private String name;
+
+        /**
+         * @param name Name.
+         */
+        public DataKeyFactory(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object o) {
+            return new DataKey(name, o);
+        }
     }
 
     /**

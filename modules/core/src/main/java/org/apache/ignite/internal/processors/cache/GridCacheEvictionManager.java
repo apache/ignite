@@ -383,27 +383,25 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         // Partition -> {{Key, Version}, ...}.
         // Group DHT and replicated cache entries by their partitions.
-        Map<Integer, Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>> dhtEntries =
-            new HashMap<>();
+        Map<Integer, Collection<CacheEvictionEntry>> dhtEntries = new HashMap<>();
 
-        Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> nearEntries =
-            new LinkedList<>();
+        Collection<CacheEvictionEntry> nearEntries = new LinkedList<>();
 
-        for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : req.entries()) {
-            Boolean near = t.get3();
+        for (CacheEvictionEntry e : req.entries()) {
+            boolean near = e.near();
 
             if (!near) {
                 // Lock is required.
-                Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> col =
-                    F.addIfAbsent(dhtEntries, cctx.affinity().partition(t.get1()),
-                        new LinkedList<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>());
+                Collection<CacheEvictionEntry> col =
+                    F.addIfAbsent(dhtEntries, cctx.affinity().partition(e.key()),
+                        new LinkedList<CacheEvictionEntry>());
 
                 assert col != null;
 
-                col.add(t);
+                col.add(e);
             }
             else
-                nearEntries.add(t);
+                nearEntries.add(e);
         }
 
         GridCacheEvictionResponse res = new GridCacheEvictionResponse(cctx.cacheId(), req.futureId());
@@ -411,17 +409,16 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         GridCacheVersion obsoleteVer = cctx.versions().next();
 
         // DHT and replicated cache entries.
-        for (Map.Entry<Integer, Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>> e :
-            dhtEntries.entrySet()) {
+        for (Map.Entry<Integer, Collection<CacheEvictionEntry>> e : dhtEntries.entrySet()) {
             int part = e.getKey();
 
             boolean locked = lockPartition(part); // Will return false if preloading is disabled.
 
             try {
-                for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : e.getValue()) {
-                    KeyCacheObject key = t.get1();
-                    GridCacheVersion ver = t.get2();
-                    Boolean near = t.get3();
+                for (CacheEvictionEntry t : e.getValue()) {
+                    KeyCacheObject key = t.key();
+                    GridCacheVersion ver = t.version();
+                    boolean near = t.near();
 
                     assert !near;
 
@@ -446,10 +443,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         }
 
         // Near entries.
-        for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : nearEntries) {
-            KeyCacheObject key = t.get1();
-            GridCacheVersion ver = t.get2();
-            Boolean near = t.get3();
+        for (CacheEvictionEntry t : nearEntries) {
+            KeyCacheObject key = t.key();
+            GridCacheVersion ver = t.version();
+            boolean near = t.near();
 
             assert near;
 
@@ -1830,12 +1827,12 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                     GridCacheEvictionRequest req = reqMap.remove(nodeId);
 
-                    for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : req.entries()) {
-                        EvictionInfo info = entries.get(t.get1());
+                    for (CacheEvictionEntry t : req.entries()) {
+                        EvictionInfo info = entries.get(t.key());
 
                         assert info != null;
 
-                        rejectedEntries.put(t.get1(), info);
+                        rejectedEntries.put(t.key(), info);
                     }
                 }
                 finally {
