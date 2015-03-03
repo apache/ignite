@@ -3877,7 +3877,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+            IgniteDataStreamerImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
 
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
@@ -4043,7 +4043,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
-        try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+        try (final IgniteDataStreamer<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
             ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
@@ -4086,7 +4086,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+            IgniteDataStreamerImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
 
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
@@ -6134,7 +6134,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final Collection<Map.Entry<K, V>> col;
 
         /** */
-        final IgniteDataLoaderImpl<K, V> ldr;
+        final IgniteDataStreamerImpl<K, V> ldr;
 
         /** */
         final ExpiryPolicy plc;
@@ -6145,7 +6145,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param plc Optional expiry policy.
          */
         private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p,
-            IgniteDataLoaderImpl<K, V> ldr,
+            IgniteDataStreamerImpl<K, V> ldr,
             @Nullable ExpiryPolicy plc) {
             this.p = p;
             this.ldr = ldr;

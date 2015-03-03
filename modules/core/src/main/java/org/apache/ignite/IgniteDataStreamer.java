@@ -74,7 +74,7 @@ import java.util.*;
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(IgniteDataLoader.Updater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(IgniteDataStreamer.Updater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -87,7 +87,7 @@ import java.util.*;
  *  </li>
  * </ul>
  */
-public interface IgniteDataLoader<K, V> extends AutoCloseable {
+public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /** Default max concurrent put operations count. */
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 
@@ -111,7 +111,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoader.Updater)} method.
+     * Should not be used when custom cache updater set using {@link #updater(IgniteDataStreamer.Updater)} method.
      * Default is {@code true}. When this flag is set, updates will not be propagated to the cache store.
      *
      * @param allowOverwrite Flag value.
@@ -359,12 +359,12 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
     @Override public void close() throws IgniteException, IgniteInterruptedException;
 
     /**
-     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#allowOverwrite(boolean)}
+     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataStreamer#allowOverwrite(boolean)}
      * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
      * performance custom user-defined implementation may help.
      * <p>
      * Data loader can be configured to use custom implementation of updater instead of default one using
-     * {@link IgniteDataLoader#updater(IgniteDataLoader.Updater)} method.
+     * {@link IgniteDataStreamer#updater(IgniteDataStreamer.Updater)} method.
      */
     interface Updater<K, V> extends Serializable {
         /**

@@ -17,15 +17,15 @@
 
 package org.apache.ignite.scalar
 
-import java.net.URL
-import java.util.UUID
-
 import org.apache.ignite._
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
+
+import java.net.URL
+import java.util.UUID
 
 import scala.annotation.meta.field
 
@@ -294,7 +294,7 @@ object scalar extends ScalarConversions {
      */
     @inline def dataLoader$[K, V](
         @Nullable cacheName: String,
-        bufSize: Int): IgniteDataLoader[K, V] = {
+        bufSize: Int): IgniteDataStreamer[K, V] = {
         val dl = ignite$.dataLoader[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)

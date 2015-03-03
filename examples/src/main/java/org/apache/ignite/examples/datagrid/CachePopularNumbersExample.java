@@ -92,7 +92,7 @@ public class CachePopularNumbersExample {
      * @throws IgniteException If failed.
      */
     private static void streamData(final Ignite ignite) throws IgniteException {
-        try (IgniteDataLoader<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 
@@ -140,7 +140,7 @@ public class CachePopularNumbersExample {
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {

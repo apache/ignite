@@ -48,7 +48,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final boolean skipStore;
 
     /** */
-    private final IgniteDataLoader.Updater<K, V> updater;
+    private final IgniteDataStreamer.Updater<K, V> updater;
 
     /**
      * @param ctx Context.
@@ -65,7 +65,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDataLoader.Updater<K, V> updater) {
+        IgniteDataStreamer.Updater<K, V> updater) {
         this.ctx = ctx;
         this.log = log;
 

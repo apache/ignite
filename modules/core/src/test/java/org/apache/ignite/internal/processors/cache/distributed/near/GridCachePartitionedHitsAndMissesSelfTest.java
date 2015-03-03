@@ -140,7 +140,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @param g Grid.
      */
     private static void realTimePopulate(final Ignite g) {
-        try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = g.dataLoader(null)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelLoadOperations(1);
 
@@ -155,7 +155,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {

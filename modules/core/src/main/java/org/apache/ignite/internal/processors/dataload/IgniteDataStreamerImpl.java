@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Data loader implementation.
  */
 @SuppressWarnings("unchecked")
-public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
+public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
     /** Isolated updater. */
     private static final Updater ISOLATED_UPDATER = new IsolatedUpdater();
 
@@ -151,7 +151,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ;
+    private final DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ;
 
     /** */
     private boolean skipStore;
@@ -166,10 +166,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
      * @param compact If {@code true} data is transferred in compact mode (only keys and values).
      *                Otherwise full map entry will be transferred (this is required by DR internal logic).
      */
-    public IgniteDataLoaderImpl(
+    public IgniteDataStreamerImpl(
         final GridKernalContext ctx,
         @Nullable final String cacheName,
-        DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ,
+        DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ,
         boolean compact
     ) {
         assert ctx != null;
@@ -179,7 +179,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         this.flushQ = flushQ;
         this.compact = compact;
 
-        log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
+        log = U.logger(ctx, logRef, IgniteDataStreamerImpl.class);
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
@@ -521,7 +521,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                         if (cancelled) {
                             resFut.onDone(new IgniteCheckedException("Data loader has been cancelled: " +
-                                IgniteDataLoaderImpl.this, e1));
+                                IgniteDataStreamerImpl.this, e1));
                         }
                         else if (remaps + 1 > maxRemapCnt) {
                             resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
@@ -777,7 +777,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteDataLoaderImpl.class, this);
+        return S.toString(IgniteDataStreamerImpl.class, this);
     }
 
     /** {@inheritDoc} */
@@ -794,7 +794,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** {@inheritDoc} */
     @Override public int compareTo(Delayed o) {
-        return nextFlushTime() > ((IgniteDataLoaderImpl)o).nextFlushTime() ? 1 : -1;
+        return nextFlushTime() > ((IgniteDataStreamerImpl)o).nextFlushTime() ? 1 : -1;
     }
 
     /**
@@ -887,7 +887,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 submit(entries0, curFut0);
 
                 if (cancelled)
-                    curFut0.onDone(new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this));
+                    curFut0.onDone(new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataStreamerImpl.this));
             }
 
             return curFut0;
@@ -1160,7 +1160,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
          *
          */
         void cancelAll() {
-            IgniteCheckedException err = new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this);
+            IgniteCheckedException err = new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataStreamerImpl.this);
 
             for (IgniteInternalFuture<?> f : locFuts) {
                 try {
@@ -1231,7 +1231,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     }
 
                     if (cls0 == null || U.isJdk(cls0))
-                        cls0 = IgniteDataLoaderImpl.class;
+                        cls0 = IgniteDataStreamerImpl.class;
                 }
 
                 assert cls0 != null : "Failed to detect deploy class [objs=" + objs + ']';

@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
@@ -205,12 +205,12 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets a new instance of data loader associated with given cache name. Data loader
      * is responsible for loading external data into in-memory data grid. For more information
-     * refer to {@link IgniteDataLoader} documentation.
+     * refer to {@link IgniteDataStreamer} documentation.
      *
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
+    public <K, V> IgniteDataStreamer<K, V> dataLoader(@Nullable String cacheName);
 
     /**
      * Gets an instance of IGFS - Ignite In-Memory File System, if one is not

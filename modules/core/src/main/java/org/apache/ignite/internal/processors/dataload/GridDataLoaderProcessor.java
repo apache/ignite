@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
-    private Collection<IgniteDataLoaderImpl> ldrs = new GridConcurrentHashSet<>();
+    private Collection<IgniteDataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -50,7 +50,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     private Thread flusher;
 
     /** */
-    private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ = new DelayQueue<>();
+    private final DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -80,7 +80,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
-                    IgniteDataLoaderImpl<K, V> ldr = flushQ.take();
+                    IgniteDataStreamerImpl<K, V> ldr = flushQ.take();
 
                     if (!busyLock.enterBusy())
                         return;
@@ -118,7 +118,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         U.interrupt(flusher);
         U.join(flusher, log);
 
-        for (IgniteDataLoaderImpl<?, ?> ldr : ldrs) {
+        for (IgniteDataStreamerImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
                 log.debug("Closing active data loader on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
@@ -142,12 +142,12 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
      * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public IgniteDataLoaderImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
+    public IgniteDataStreamerImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
         try {
-            final IgniteDataLoaderImpl<K, V> ldr = new IgniteDataLoaderImpl<>(ctx, cacheName, flushQ, compact);
+            final IgniteDataStreamerImpl<K, V> ldr = new IgniteDataStreamerImpl<>(ctx, cacheName, flushQ, compact);
 
             ldrs.add(ldr);
 
@@ -173,7 +173,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    public IgniteDataStreamer<K, V> dataLoader(@Nullable String cacheName) {
         return dataLoader(cacheName, true);
     }
 
@@ -234,7 +234,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             }
 
             Collection<Map.Entry<K, V>> col;
-            IgniteDataLoader.Updater<K, V> updater;
+            IgniteDataStreamer.Updater<K, V> updater;
 
             try {
                 col = marsh.unmarshal(req.collectionBytes(), clsLdr);

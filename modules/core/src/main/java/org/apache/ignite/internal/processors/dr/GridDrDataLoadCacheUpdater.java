@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Data center replication cache updater for data loader.
  */
-public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoader.Updater<K, V> {
+public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -88,7 +87,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g4 = grid(4);
 
-            IgniteDataLoader<Object, Object> dataLdr = g4.dataLoader(null);
+            IgniteDataStreamer<Object, Object> dataLdr = g4.dataLoader(null);
 
             dataLdr.perNodeBufferSize(32);
 
@@ -135,7 +134,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             else
                 fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
 
-            IgniteDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
+            IgniteDataStreamer<Integer, String> dataLdr = g0.dataLoader(null);
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 

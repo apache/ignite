@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
 
 /**
- * Demonstrates how cache can be populated with data utilizing {@link IgniteDataLoader} API.
- * {@link IgniteDataLoader} is a lot more efficient to use than standard
+ * Demonstrates how cache can be populated with data utilizing {@link IgniteDataStreamer} API.
+ * {@link IgniteDataStreamer} is a lot more efficient to use than standard
  * {@code put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
@@ -63,7 +63,7 @@ public class CacheDataLoaderExample {
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
+            try (IgniteDataStreamer<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);

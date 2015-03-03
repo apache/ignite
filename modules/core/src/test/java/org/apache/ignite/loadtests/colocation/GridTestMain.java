@@ -180,7 +180,7 @@ public class GridTestMain {
         ExecutorCompletionService<Object> execSvc =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(numThreads));
 
-        try (IgniteDataLoader<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
+        try (IgniteDataStreamer<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
 

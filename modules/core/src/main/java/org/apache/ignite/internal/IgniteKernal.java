@@ -2346,7 +2346,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataStreamer<K, V> dataLoader(@Nullable String cacheName) {
         guard();
 
         try {

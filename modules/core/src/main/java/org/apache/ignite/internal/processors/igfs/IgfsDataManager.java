@@ -302,8 +302,8 @@ public class IgfsDataManager extends IgfsManager {
      *
      * @return New instance of data loader.
      */
-    private IgniteDataLoader<IgfsBlockKey, byte[]> dataLoader() {
-        IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
+    private IgniteDataStreamer<IgfsBlockKey, byte[]> dataLoader() {
+        IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
             igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
         IgfsConfiguration cfg = igfsCtx.configuration();
@@ -641,7 +641,7 @@ public class IgfsDataManager extends IgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
                     ldr.removeData(new IgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
@@ -667,7 +667,7 @@ public class IgfsDataManager extends IgfsManager {
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
@@ -1705,7 +1705,7 @@ public class IgfsDataManager extends IgfsManager {
                         break;
                     }
 
-                    IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataLoader();
 
                     try {
                         IgfsFileMap map = fileInfo.fileMap();
