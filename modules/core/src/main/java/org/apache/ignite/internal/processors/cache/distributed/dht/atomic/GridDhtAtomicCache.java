@@ -1415,7 +1415,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (val == null)
                                 continue;
 
-                            updated = ctx.toCacheKeyObject(ctx.unwrapTemporary(val));
+                            updated = ctx.toCacheObject(ctx.unwrapTemporary(val));
                         }
 
                         // Update previous batch.
@@ -1979,13 +1979,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     assert updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null;
 
                     if (intercept) {
-                        if (op == UPDATE)
-                            ctx.config().getInterceptor().onAfterPut(entry.key(), updRes.newValue());
+                        if (op == UPDATE) {
+                            ctx.config().getInterceptor().onAfterPut(
+                                entry.key().value(ctx, false),
+                                CU.value(updRes.newValue(), ctx, false));
+                        }
                         else {
                             assert op == DELETE : op;
 
                             // Old value should be already loaded for 'CacheInterceptor.onBeforeRemove'.
-                            ctx.config().getInterceptor().onAfterRemove(entry.key(), updRes.oldValue());
+                            ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false),
+                                CU.value(updRes.oldValue(), ctx, false));
                         }
                     }
 

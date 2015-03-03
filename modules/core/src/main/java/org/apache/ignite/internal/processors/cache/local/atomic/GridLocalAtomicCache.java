@@ -1287,7 +1287,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 null);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(
-                                entry.key(),
+                                entry.key().value(ctx, false),
                                 CU.value(old, ctx, false),
                                 val);
 
@@ -1320,7 +1320,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 null);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                entry.key(),
+                                entry.key().value(ctx, false),
                                 CU.value(old, ctx, false));
 
                             if (ctx.cancelRemove(interceptorRes))

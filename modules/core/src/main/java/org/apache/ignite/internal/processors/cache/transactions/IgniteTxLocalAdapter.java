@@ -538,7 +538,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (intercept) {
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
-                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(key, oldVal, val);
+                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
+                                    key.value(cacheCtx, false),
+                                    oldVal,
+                                    CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -579,7 +582,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(key, oldVal);
+                                    .onBeforeRemove(key.value(cacheCtx, false), oldVal);
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;

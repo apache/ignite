@@ -1040,7 +1040,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 if (interceptorVal == null)
                     return new GridCacheUpdateTxResult(false, (CacheObject)cctx.unwrapTemporary(old));
                 else if (interceptorVal != val0)
-                    val = cctx.toCacheKeyObject(cctx.unwrapTemporary(interceptorVal));
+                    val0 = cctx.unwrapTemporary(interceptorVal);
+
+                    val = cctx.toCacheObject(val0);
             }
 
             // Determine new ttl and expire time.
@@ -1185,7 +1187,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(key0, old0);
 
                 if (cctx.cancelRemove(interceptRes)) {
-                    CacheObject ret = cctx.toCacheKeyObject(cctx.unwrapTemporary(interceptRes.get2()));
+                    CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
 
                     return new GridCacheUpdateTxResult(false, ret);
                 }
@@ -1467,6 +1469,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                     if (interceptorVal == null)
                         return new GridTuple3<>(false, cctx.unwrapTemporary(old0), invokeRes);
+                    else {
+                        updated0 = cctx.unwrapTemporary(interceptorVal);
+
+                        updated = cctx.toCacheObject(updated0);
+                    }
                 }
                 else {
                     key0 = value(key0, key, false);
@@ -1583,7 +1590,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(key0, val);
+                    cctx.config().getInterceptor().onAfterPut(key0, updated0);
                 else
                     cctx.config().getInterceptor().onAfterRemove(key0, old0);
             }
@@ -2001,8 +2008,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             null,
                             null,
                             false);
-                    else if (interceptorVal != updated0)
-                        updated = cctx.toCacheObject(cctx.unwrapTemporary(updated0));
+                    else if (interceptorVal != updated0) {
+                        updated0 = cctx.unwrapTemporary(interceptorVal);
+
+                        updated = cctx.toCacheObject(updated0);
+                    }
                 }
 
                 // Try write-through.
@@ -2159,10 +2169,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
             if (intercept) {
-                key0 = value(key0, key, false);
-
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(key0, val.value(cctx, false));
+                    cctx.config().getInterceptor().onAfterPut(key0, updated0);
                 else {
                     old0 = value(old0, oldVal, false);
 
@@ -2170,7 +2178,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 if (interceptRes != null)
-                    oldVal = cctx.unwrapTemporary(interceptRes.get2());
+                    oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
             }
         }
 

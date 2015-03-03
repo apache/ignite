@@ -600,9 +600,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(null, interceptor.beforeRemoveMap.get(key));
+        assertEquals(null, interceptor.beforeRmvMap.get(key));
 
         log.info("Remove 2 " + op);
 
@@ -623,9 +623,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(null, interceptor.beforeRemoveMap.get(key));
+        assertEquals(null, interceptor.beforeRmvMap.get(key));
 
         // Disable interceptor and update cache.
 
@@ -660,9 +660,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
 
         interceptor.reset();
 
@@ -681,9 +681,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
     }
 
     /**
@@ -727,9 +727,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         log.info("Remove 2 " + op);
 
@@ -750,9 +750,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         // Disable interceptor and update cache.
 
@@ -787,13 +787,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
 
-        assertEquals(1, interceptor.afterRemoveMap.size());
+        assertEquals(1, interceptor.afterRmvMap.size());
 
-        assertEquals(1, interceptor.afterRemoveMap.get(key));
+        assertEquals(1, interceptor.afterRmvMap.get(key));
 
         // Disable interceptor and update cache.
 
@@ -826,13 +826,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(2, interceptor.beforeRemoveMap.get(key));
+        assertEquals(2, interceptor.beforeRmvMap.get(key));
 
-        assertEquals(1, interceptor.afterRemoveMap.size());
+        assertEquals(1, interceptor.afterRmvMap.size());
 
-        assertEquals(2, interceptor.afterRemoveMap.get(key));
+        assertEquals(2, interceptor.afterRmvMap.get(key));
     }
 
     /**
@@ -1062,9 +1062,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         // Disable interceptor and put some values in cache.
 
@@ -1091,17 +1091,17 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(3, interceptor.beforeRemoveMap.size());
+        assertEquals(3, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key1));
-        assertEquals(2, interceptor.beforeRemoveMap.get(key2));
-        assertEquals(3, interceptor.beforeRemoveMap.get(key3));
+        assertEquals(1, interceptor.beforeRmvMap.get(key1));
+        assertEquals(2, interceptor.beforeRmvMap.get(key2));
+        assertEquals(3, interceptor.beforeRmvMap.get(key3));
 
-        assertEquals(3, interceptor.afterRemoveMap.size());
+        assertEquals(3, interceptor.afterRmvMap.size());
 
-        assertEquals(1, interceptor.afterRemoveMap.get(key1));
-        assertEquals(2, interceptor.afterRemoveMap.get(key2));
-        assertEquals(3, interceptor.afterRemoveMap.get(key3));
+        assertEquals(1, interceptor.afterRmvMap.get(key1));
+        assertEquals(2, interceptor.afterRmvMap.get(key2));
+        assertEquals(3, interceptor.afterRmvMap.get(key3));
 
         // Disable interceptor and put some values in cache.
 
@@ -1128,16 +1128,16 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(3, interceptor.beforeRemoveMap.size());
+        assertEquals(3, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key1));
-        assertEquals(2, interceptor.beforeRemoveMap.get(key2));
-        assertEquals(3, interceptor.beforeRemoveMap.get(key3));
+        assertEquals(1, interceptor.beforeRmvMap.get(key1));
+        assertEquals(2, interceptor.beforeRmvMap.get(key2));
+        assertEquals(3, interceptor.beforeRmvMap.get(key3));
 
-        assertEquals(2, interceptor.afterRemoveMap.size());
+        assertEquals(2, interceptor.afterRmvMap.size());
 
-        assertEquals(2, interceptor.afterRemoveMap.get(key2));
-        assertEquals(3, interceptor.afterRemoveMap.get(key3));
+        assertEquals(2, interceptor.afterRmvMap.get(key2));
+        assertEquals(3, interceptor.afterRmvMap.get(key3));
     }
 
     /**
@@ -1531,10 +1531,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         private final Map<Object, IgniteBiTuple> beforePutMap = new ConcurrentHashMap8<>();
 
         /** */
-        private final Map<Object, Object> beforeRemoveMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> beforeRmvMap = new ConcurrentHashMap8<>();
 
         /** */
-        private final Map<Object, Object> afterRemoveMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> afterRmvMap = new ConcurrentHashMap8<>();
 
         /** */
         private final AtomicInteger invokeCnt = new AtomicInteger();
@@ -1622,7 +1622,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             invokeCnt.incrementAndGet();
 
             if (val != null) {
-                Object old = beforeRemoveMap.put(key, val);
+                Object old = beforeRmvMap.put(key, val);
 
                 if (old != null)
                     assertEquals(old, val);
@@ -1641,7 +1641,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             invokeCnt.incrementAndGet();
 
             if (val != null) {
-                Object old = afterRemoveMap.put(key, val);
+                Object old = afterRmvMap.put(key, val);
 
                 if (old != null)
                     assertEquals(old, val);
@@ -1657,8 +1657,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             getMap.clear();
             beforePutMap.clear();
             afterPutMap.clear();
-            afterRemoveMap.clear();
-            beforeRemoveMap.clear();
+            afterRmvMap.clear();
+            beforeRmvMap.clear();
 
             retInterceptor = null;
         }
