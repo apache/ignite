@@ -540,7 +540,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 98:
-                msg = new IgniteTxEntry.TxEntryValueHolder();
+                msg = new TxEntryValueHolder();
 
                 break;
 
