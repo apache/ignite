@@ -23,7 +23,9 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -321,9 +323,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
         assertEquals(0, cache2.size() - cache2.nearSize());
 
-        IgniteBiPredicate<String, Integer> prjFilter = new P2<String, Integer>() {
-            @Override public boolean apply(String key, Integer val) {
-                return val >= 1 && val <= 3;
+        CacheEntryPredicateAdapter prjFilter = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                Integer val = CU.value(e.rawGet(), e.context(), false);
+
+                return val != null && val >= 1 && val <= 3;
             }
         };
 

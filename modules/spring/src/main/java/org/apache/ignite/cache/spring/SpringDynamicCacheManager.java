@@ -120,7 +120,9 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
             cache = metaCache.get(key);
 
             if (cache == null) {
-                cache = new SpringCache(name, grid, dataCache.projection(new ProjectionFilter(name)),
+                cache = new SpringCache(name,
+                    grid,
+                    dataCache.projection(new CacheEntrySerializablePredicate(new ProjectionFilter(name))),
                     new DataKeyFactory(name));
 
                 org.springframework.cache.Cache old = metaCache.putIfAbsent(key, cache);
@@ -294,7 +296,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     /**
      * Projection filter.
      */
-    private static class ProjectionFilter implements IgniteBiPredicate<DataKey, Object>, Externalizable {
+    private static class ProjectionFilter extends CacheEntryPredicateAdapter implements Externalizable {
         /** Cache name. */
         private String name;
 
@@ -313,7 +315,9 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(DataKey key, Object val) {
+        @Override public boolean apply(GridCacheEntryEx e) {
+            DataKey key = e.key().value(e.context(), false);
+
             return name != null ? name.equals(key.name) : key.name == null;
         }
 

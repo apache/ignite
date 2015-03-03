@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
@@ -222,9 +223,11 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testOnProjection() throws Exception {
-        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
-            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
-                return val.orgId == 1;
+        CacheEntryPredicateAdapter p = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                Person val = CU.value(e.rawGet(), e.context(), false);
+
+                return val != null && val.orgId == 1;
             }
         };
 

@@ -103,7 +103,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<Cache.Entry<Object, Object>>[] filters;
+    private CacheEntryPredicate[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -211,7 +211,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         Object[] invokeArgs,
         long ttl,
         GridCacheEntryEx entry,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filters,
+        CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer) {
         assert ctx != null;
         assert tx != null;
@@ -637,14 +637,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<Cache.Entry<Object, Object>>[] filters() {
+    public CacheEntryPredicate[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<Cache.Entry<Object, Object>>[] filters) {
+    public void filters(CacheEntryPredicate[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -732,7 +732,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
                 filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
 
                 if (filters == null)
-                    filters = CU.empty();
+                    filters = CU.empty0();
             }
         }
 

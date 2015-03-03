@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -101,6 +102,17 @@ public class F0 {
                 return F.eq(t, target);
             }
         };
+    }
+
+    public static CacheEntryPredicate and0(@Nullable final CacheEntryPredicate[] p1,
+        @Nullable final CacheEntryPredicate... p2) {
+        return null;
+    }
+
+    public static CacheEntryPredicate and0(
+        @Nullable final CacheEntryPredicate p,
+        @Nullable final CacheEntryPredicate... ps) {
+        return null;
     }
 
     /**

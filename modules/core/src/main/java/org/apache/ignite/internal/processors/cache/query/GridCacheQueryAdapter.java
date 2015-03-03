@@ -43,7 +43,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
+    private final CacheEntryPredicate prjPred;
 
     /** */
     private final GridCacheQueryType type;
@@ -105,7 +105,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
-        @Nullable IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
+        @Nullable CacheEntryPredicate prjPred,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
@@ -148,7 +148,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param taskHash Task hash.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
-        IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
+        CacheEntryPredicate prjPred,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -186,7 +186,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return cache projection filter.
      */
-    @Nullable public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
+    @Nullable public CacheEntryPredicate projectionFilter() {
         return prjPred;
     }
 

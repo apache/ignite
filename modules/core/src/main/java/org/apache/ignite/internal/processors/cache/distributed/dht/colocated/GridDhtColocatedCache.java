@@ -378,7 +378,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean retval,
         @Nullable TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
@@ -413,7 +413,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -431,9 +431,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                Cache.Entry<K, V> Entry = entry == null ? entry(key) : entry.<K, V>wrapLazyValue();
-
-                if (!ctx.isAll(Entry, filter))
+                if (entry == null || !ctx.isAll(entry, filter))
                     break; // While.
 
                 GridCacheMvccCandidate lock =
@@ -617,7 +615,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         final long timeout,
         final long accessTtl,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
+        @Nullable final CacheEntryPredicate[] filter
     ) {
         assert keys != null;
 
@@ -690,7 +688,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         final long timeout,
         final long accessTtl,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        @Nullable final CacheEntryPredicate[] filter) {
         int cnt = keys.size();
 
         if (tx == null) {

@@ -416,7 +416,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
@@ -467,7 +467,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, CacheEntryPredicate[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -486,7 +486,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                    if (entry == null || !ctx.isAll(entry.<K, V>wrapLazyValue(), filter))
+                    if (entry == null || !ctx.isAll(entry, filter))
                         break; // While.
 
                     try {

@@ -501,7 +501,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key,
-         @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws GridCacheFilterFailedException;
+         @Nullable CacheEntryPredicate[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

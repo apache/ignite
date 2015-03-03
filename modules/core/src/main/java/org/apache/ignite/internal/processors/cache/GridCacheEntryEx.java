@@ -212,7 +212,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If swap could not be released.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> boolean invalidate(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    public <K, V> boolean invalidate(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -223,7 +223,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If operation failed.
      * @return {@code true} if entry was not being used and could be removed.
      */
-    public <K, V> boolean compact(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    public <K, V> boolean compact(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -234,7 +234,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException;
+        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
      * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
@@ -360,7 +360,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -396,7 +396,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
@@ -449,7 +449,7 @@ public interface GridCacheEntryEx {
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
         long conflictExpireTime,
@@ -490,7 +490,7 @@ public interface GridCacheEntryEx {
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
@@ -507,7 +507,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
     public <K, V> boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException;
+        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -578,7 +578,7 @@ public interface GridCacheEntryEx {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public <K, V> CacheObject peek(GridCachePeekMode mode, IgnitePredicate<Cache.Entry<K, V>>... filter)
+    @Nullable public <K, V> CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -609,7 +609,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @Nullable public <K, V> CacheObject peek(Collection<GridCachePeekMode> modes,
-        IgnitePredicate<Cache.Entry<K, V>>... filter) throws GridCacheEntryRemovedException;
+        CacheEntryPredicate... filter) throws GridCacheEntryRemovedException;
 
     /**
      * @param failFast Fail-fast flag.
@@ -624,7 +624,7 @@ public interface GridCacheEntryEx {
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public <K, V> GridTuple<CacheObject> peek0(boolean failFast,
         GridCachePeekMode mode,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable CacheEntryPredicate[] filter,
         @Nullable IgniteInternalTx tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
 

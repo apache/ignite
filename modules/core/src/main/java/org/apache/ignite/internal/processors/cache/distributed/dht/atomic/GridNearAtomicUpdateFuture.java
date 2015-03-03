@@ -112,7 +112,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private long topVer;
 
     /** Optional filter. */
-    private final IgnitePredicate<Cache.Entry<Object, Object>>[] filter;
+    private final CacheEntryPredicate[] filter;
 
     /** Write synchronization mode. */
     private final CacheWriteSynchronizationMode syncMode;
@@ -192,7 +192,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         final boolean retval,
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        final CacheEntryPredicate[] filter,
         UUID subjId,
         int taskNameHash
     ) {

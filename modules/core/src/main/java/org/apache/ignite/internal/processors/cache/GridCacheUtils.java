@@ -129,11 +129,32 @@ public class GridCacheUtils {
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
 
+    /** Empty predicate array. */
+    private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
+
     /** Always false predicat array. */
     private static final IgnitePredicate[] ALWAYS_FALSE = new IgnitePredicate[] {
         new P1() {
             @Override public boolean apply(Object e) {
                 return false;
+            }
+        }
+    };
+
+    /** */
+    private static final CacheEntryPredicate[] ALWAYS_FALSE0 = new CacheEntryPredicate[] {
+        new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                return false;
+            }
+        }
+    };
+
+    /** */
+    private static final CacheEntryPredicate[] ALWAYS_TRUE0 = new CacheEntryPredicate[] {
+        new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                return true;
             }
         }
     };
@@ -749,11 +770,26 @@ public class GridCacheUtils {
     }
 
     /**
+     * @return Empty filter.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static CacheEntryPredicate[] empty0() {
+        return EMPTY_FILTER0;
+    }
+
+    /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] alwaysFalse() {
         return (IgnitePredicate<Cache.Entry<K, V>>[])ALWAYS_FALSE;
+    }
+
+    /**
+     * @return Always false filter.
+     */
+    public static CacheEntryPredicate[] alwaysFalse0() {
+        return ALWAYS_FALSE0;
     }
 
     /**
@@ -839,6 +875,28 @@ public class GridCacheUtils {
                 return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
             }
         };
+    }
+
+    /**
+     * @param keyType Key type.
+     * @param valType Value type.
+     * @return Type filter.
+     */
+    public static CacheEntryPredicate typeFilter0(final Class<?> keyType, final Class<?> valType) {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                try {
+                    Object val = CU.value(e.rawGetOrUnmarshal(true), e.context(), false);
+
+                    return val != null &&
+                        valType.isAssignableFrom(val.getClass()) &&
+                        keyType.isAssignableFrom(e.key().value(e.context(), false).getClass());
+                }
+                catch (IgniteCheckedException err) {
+                    throw new IgniteException(err);
+                }
+            }
+        });
     }
 
     /**
@@ -1724,17 +1782,17 @@ public class GridCacheUtils {
      * @throws ClassNotFoundException If class not found.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
+    @Nullable public static <K, V> CacheEntryPredicate[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        IgnitePredicate<Cache.Entry<K, V>>[] arr = null;
+        CacheEntryPredicate[] arr = null;
 
         if (len > 0) {
-            arr = new IgnitePredicate[len];
+            arr = new CacheEntryPredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<Cache.Entry<K, V>>)in.readObject();
+                arr[i] = (CacheEntryPredicate)in.readObject();
         }
 
         return arr;
@@ -1745,7 +1803,23 @@ public class GridCacheUtils {
      * @param n Node.
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary(
+    public static CacheEntryPredicate cachePrimary(
+        final CacheAffinity aff,
+        final ClusterNode n
+    ) {
+        return new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                return aff.isPrimary(n, e.key());
+            }
+        };
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param n Node.
+     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     */
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
         final CacheAffinity<K> aff,
         final ClusterNode n
     ) {

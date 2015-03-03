@@ -346,10 +346,16 @@ public abstract class GridCacheMessage implements Message {
             for (IgniteTxEntry e : txEntries) {
                 e.marshal(ctx, transferExpiry);
 
+                if (e.filters() != null) {
+                    GridCacheContext cctx = ctx.cacheContext(e.cacheId());
+
+                    for (CacheEntryPredicate p : e.filters())
+                        p.prepareMarshal(cctx);
+                }
+
                 if (ctx.deploymentEnabled()) {
                     prepareObject(e.key(), ctx);
                     prepareObject(e.value(), ctx);
-                    prepareFilter(e.filters(), ctx);
                 }
             }
         }
@@ -376,8 +382,16 @@ public abstract class GridCacheMessage implements Message {
         assert ctx != null;
 
         if (txEntries != null) {
-            for (IgniteTxEntry e : txEntries)
+            for (IgniteTxEntry e : txEntries) {
                 e.unmarshal(ctx, near, ldr);
+
+                if (e.filters() != null) {
+                    GridCacheContext cctx = ctx.cacheContext(e.cacheId());
+
+                    for (CacheEntryPredicate p : e.filters())
+                        p.finishUnmarshal(cctx, ldr);
+                }
+            }
         }
     }
 

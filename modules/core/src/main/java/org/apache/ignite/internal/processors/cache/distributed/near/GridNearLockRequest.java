@@ -49,11 +49,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private IgniteUuid miniId;
 
     /** Filter. */
-    private byte[][] filterBytes;
-
-    /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<Object, Object>>[] filter;
+    private CacheEntryPredicate[] filter;
 
     /** Implicit flag. */
     private boolean implicitTx;
@@ -225,7 +222,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /**
      * @return Filter.
      */
-    public IgnitePredicate<Cache.Entry<Object, Object>>[] filter() {
+    public CacheEntryPredicate[] filter() {
         return filter;
     }
 
@@ -234,7 +231,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void filter(IgnitePredicate<Cache.Entry<Object, Object>>[] filter, GridCacheContext ctx)
+    public void filter(CacheEntryPredicate[] filter, GridCacheContext ctx)
         throws IgniteCheckedException {
         this.filter = filter;
     }
@@ -307,16 +304,24 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (filterBytes == null)
-            filterBytes = marshalFilter(filter, ctx);
+        if (filter != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEntryPredicate p : filter)
+                p.prepareMarshal(cctx);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (filter == null && filterBytes != null)
-            filter = unmarshalFilter(filterBytes, ctx, ldr);
+        if (filter != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEntryPredicate p : filter)
+                p.finishUnmarshal(cctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -342,12 +347,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
             case 23:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -432,14 +431,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
             case 23:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;

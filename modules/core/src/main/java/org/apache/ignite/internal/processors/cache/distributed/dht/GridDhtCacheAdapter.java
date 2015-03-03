@@ -803,7 +803,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         assert false;
     }
 
@@ -1059,7 +1059,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 while (partIt.hasNext()) {
                     GridDhtCacheEntry next = partIt.next();
 
-                    if (next.isInternal() || !next.visitable(CU.<K, V>empty()))
+                    if (next.isInternal() || !next.visitable(CU.empty0()))
                         continue;
 
                     entry = next.wrapLazyValue();
