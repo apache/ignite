@@ -55,11 +55,11 @@ public class VisorSegmentationConfiguration implements Serializable {
     public static VisorSegmentationConfiguration from(IgniteConfiguration c) {
         VisorSegmentationConfiguration cfg = new VisorSegmentationConfiguration();
 
-        cfg.policy(c.getSegmentationPolicy());
-        cfg.resolvers(compactArray(c.getSegmentationResolvers()));
-        cfg.checkFrequency(c.getSegmentCheckFrequency());
-        cfg.waitOnStart(c.isWaitForSegmentOnStart());
-        cfg.passRequired(c.isAllSegmentationResolversPassRequired());
+        cfg.plc = c.getSegmentationPolicy();
+        cfg.resolvers = compactArray(c.getSegmentationResolvers());
+        cfg.checkFreq = c.getSegmentCheckFrequency();
+        cfg.waitOnStart = c.isWaitForSegmentOnStart();
+        cfg.passRequired = c.isAllSegmentationResolversPassRequired();
 
         return cfg;
     }
@@ -72,24 +72,10 @@ public class VisorSegmentationConfiguration implements Serializable {
     }
 
     /**
-     * @param plc New segmentation policy.
-     */
-    public void policy(GridSegmentationPolicy plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Segmentation resolvers.
      */
     @Nullable public String resolvers() {
         return resolvers;
-    }
-
-    /**
-     * @param resolvers New segmentation resolvers.
-     */
-    public void resolvers(@Nullable String resolvers) {
-        this.resolvers = resolvers;
     }
 
     /**
@@ -100,13 +86,6 @@ public class VisorSegmentationConfiguration implements Serializable {
     }
 
     /**
-     * @param checkFreq New frequency of network segment check by discovery manager.
-     */
-    public void checkFrequency(long checkFreq) {
-        this.checkFreq = checkFreq;
-    }
-
-    /**
      * @return Whether or not node should wait for correct segment on start.
      */
     public boolean waitOnStart() {
@@ -114,24 +93,10 @@ public class VisorSegmentationConfiguration implements Serializable {
     }
 
     /**
-     * @param waitOnStart New whether or not node should wait for correct segment on start.
-     */
-    public void waitOnStart(boolean waitOnStart) {
-        this.waitOnStart = waitOnStart;
-    }
-
-    /**
      * @return Whether or not all resolvers should succeed for node to be in correct segment.
      */
     public boolean passRequired() {
         return passRequired;
-    }
-
-    /**
-     * @param passRequired New whether or not all resolvers should succeed for node to be in correct segment.
-     */
-    public void passRequired(boolean passRequired) {
-        this.passRequired = passRequired;
     }
 
     /** {@inheritDoc} */

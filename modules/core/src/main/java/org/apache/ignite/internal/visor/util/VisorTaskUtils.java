@@ -229,7 +229,7 @@ public class VisorTaskUtils {
      * @param obj Object for compact.
      * @return Compacted string.
      */
-    @Nullable public static String compactClass(Object obj) {
+    @Nullable public static String compactClass(@Nullable Object obj) {
         if (obj == null)
             return null;
 
@@ -613,7 +613,7 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy plc) {
+    public static Integer evictionPolicyMaxSize(@Nullable CacheEvictionPolicy plc) {
         if (plc instanceof CacheLruEvictionPolicyMBean)
             return ((CacheLruEvictionPolicyMBean)plc).getMaxSize();
 

@@ -98,9 +98,9 @@ public class GridHadoopUtils {
     }
 
     /**
-     * Convert GG job status to Hadoop job status.
+     * Convert Ignite job status to Hadoop job status.
      *
-     * @param status GG job status.
+     * @param status Ignite job status.
      * @return Hadoop job status.
      */
     public static JobStatus status(GridHadoopJobStatus status, Configuration conf) {

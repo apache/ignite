@@ -87,7 +87,7 @@ public class IgfsHadoopUtils {
     }
 
     /**
-     * Cast GG exception to appropriate IO exception.
+     * Cast Ignite exception to appropriate IO exception.
      *
      * @param e Exception to cast.
      * @return Casted exception.
@@ -97,7 +97,7 @@ public class IgfsHadoopUtils {
     }
 
     /**
-     * Cast GG exception to appropriate IO exception.
+     * Cast Ignite exception to appropriate IO exception.
      *
      * @param e Exception to cast.
      * @param path Path for exceptions.
