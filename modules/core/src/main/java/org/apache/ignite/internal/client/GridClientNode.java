@@ -99,14 +99,6 @@ public interface GridClientNode {
     public Map<String, GridClientCacheMode> caches();
 
     /**
-     * Gets node replica count for consistent hash ring (valid only for
-     * {@code PARTITIONED} caches).
-     *
-     * @return Node replica count for consistent hash ring.
-     */
-    public int replicaCount();
-
-    /**
      * Gets collection of addresses on which REST binary protocol is bound.
      *
      * @param proto Protocol for which addresses are obtained.

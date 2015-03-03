@@ -56,9 +56,6 @@ public class GridClientNodeBean implements Externalizable {
     /** Node caches. */
     private Map<String, String> caches;
 
-    /** Default replica count for partitioned cache. */
-    private int replicaCnt;
-
     /**
      * Gets node ID.
      *
@@ -209,24 +206,6 @@ public class GridClientNodeBean implements Externalizable {
     }
 
     /**
-     * Gets node replica count on consistent hash ring.
-     *
-     * @return Node replica count.
-     */
-    public int getReplicaCount() {
-        return replicaCnt;
-    }
-
-    /**
-     * Sets node replica count on consistent hash ring.
-     *
-     * @param replicaCnt Node replica count.
-     */
-    public void setReplicaCount(int replicaCnt) {
-        this.replicaCnt = replicaCnt;
-    }
-
-    /**
      * Sets REST binary protocol port.
      *
      * @param tcpPort Port on which REST binary protocol is bound.
@@ -257,7 +236,6 @@ public class GridClientNodeBean implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(tcpPort);
         out.writeInt(0); // Jetty port.
-        out.writeInt(replicaCnt);
 
         U.writeString(out, dfltCacheMode);
 
@@ -279,7 +257,6 @@ public class GridClientNodeBean implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         tcpPort = in.readInt();
         in.readInt(); // Jetty port.
-        replicaCnt = in.readInt();
 
         dfltCacheMode = U.readString(in);
 
