@@ -112,10 +112,17 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (fetched == null)
             throw new IgniteException("Fetched result set was too large.");
 
-        if (fetched.size() == cnt.get())  // We've fetched all the rows.
+        if (fetchedAll())
             return findAllFetched(fetched, first, last);
 
         return findInStream(first, last);
+    }
+
+    /**
+     * @return {@code true} If we have fetched all the remote rows.
+     */
+    public boolean fetchedAll() {
+        return fetched.size() == cnt.get();
     }
 
     /**

@@ -32,10 +32,12 @@ import org.h2.result.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
 
+import javax.cache.*;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 
@@ -95,9 +97,11 @@ public class GridMapQueryExecutor {
                     boolean processed = true;
 
                     if (msg instanceof GridQueryRequest)
-                        executeLocalQuery(node, (GridQueryRequest)msg);
+                        onQueryRequest(node, (GridQueryRequest)msg);
                     else if (msg instanceof GridQueryNextPageRequest)
-                        sendNextPage(node, (GridQueryNextPageRequest)msg);
+                        onNextPageRequest(node, (GridQueryNextPageRequest)msg);
+                    else if (msg instanceof GridQueryCancelRequest)
+                        onCancel(node, (GridQueryCancelRequest)msg);
                     else
                         processed = false;
 
@@ -115,33 +119,56 @@ public class GridMapQueryExecutor {
 
     /**
      * @param node Node.
+     * @param msg Message.
+     */
+    private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
+        ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
+
+        QueryResults results = nodeRess.remove(msg.queryRequestId());
+
+        if (results == null)
+            return;
+
+        results.cancel();
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return Results for node.
+     */
+    private ConcurrentMap<Long, QueryResults> resultsForNode(UUID nodeId) {
+        ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(nodeId);
+
+        if (nodeRess == null) {
+            nodeRess = new ConcurrentHashMap8<>();
+
+            ConcurrentMap<Long, QueryResults> old = qryRess.putIfAbsent(nodeId, nodeRess);
+
+            if (old != null)
+                nodeRess = old;
+        }
+
+        return nodeRess;
+    }
+
+    /**
+     * Executing queries locally.
+     *
+     * @param node Node.
      * @param req Query request.
      */
-    private void executeLocalQuery(ClusterNode node, GridQueryRequest req) {
+    private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
+        ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
+
+        QueryResults qr = new QueryResults(req.requestId(), req.queries().size());
+
+        if (nodeRess.putIfAbsent(req.requestId(), qr) != null)
+            throw new IllegalStateException();
+
         h2.setFilters(h2.backupFilter());
 
         try {
-            QueryResults qr = new QueryResults(req.requestId(), req.queries().size());
-
-            ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(node.id());
-
-            if (nodeRess == null) {
-                nodeRess = new ConcurrentHashMap8<>();
-
-                ConcurrentMap<Long, QueryResults> old = qryRess.putIfAbsent(node.id(), nodeRess);
-
-                if (old != null)
-                    nodeRess = old;
-            }
-
-            QueryResults old = nodeRess.putIfAbsent(req.requestId(), qr);
-
-            assert old == null;
-
-            // Prepare snapshots for all the needed tables before actual run.
-            for (GridCacheSqlQuery qry : req.queries()) {
-                // TODO
-            }
+            // TODO Prepare snapshots for all the needed tables before the run.
 
             // Run queries.
             int i = 0;
@@ -151,13 +178,6 @@ public class GridMapQueryExecutor {
             for (GridCacheSqlQuery qry : req.queries()) {
                 ResultSet rs = h2.executeSqlQueryWithTimer(space, h2.connectionForSpace(space), qry.query(),
                     F.asList(qry.parameters()));
-
-                assert rs instanceof JdbcResultSet : rs.getClass();
-
-                ResultInterface res = (ResultInterface)RESULT_FIELD.get(rs);
-
-                qr.results[i] = res;
-                qr.resultSets[i] = rs;
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -175,13 +195,27 @@ public class GridMapQueryExecutor {
                         null));
                 }
 
+                assert rs instanceof JdbcResultSet : rs.getClass();
+
+                qr.addResult(i, rs);
+
+                if (qr.canceled) {
+                    qr.result(i).close();
+
+                    throw new IgniteException("Query was canceled.");
+                }
+
                 // Send the first page.
-                sendNextPage(node, qr, i, req.pageSize(), res.getRowCount());
+                sendNextPage(nodeRess, node, qr, i, req.pageSize());
 
                 i++;
             }
         }
         catch (Throwable e) {
+            nodeRess.remove(req.requestId(), qr);
+
+            qr.cancel();
+
             U.error(log, "Failed to execute local query: " + req, e);
 
             sendError(node, req.requestId(), e);
@@ -212,16 +246,15 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Request.
      */
-    private void sendNextPage(ClusterNode node, GridQueryNextPageRequest req) {
+    private void onNextPageRequest(ClusterNode node, GridQueryNextPageRequest req) {
         ConcurrentMap<Long, QueryResults> nodeRess = qryRess.get(node.id());
 
         QueryResults qr = nodeRess == null ? null : nodeRess.get(req.queryRequestId());
 
-        if (qr == null)
-            sendError(node, req.queryRequestId(),
-                new IllegalStateException("No query result found for request: " + req));
+        if (qr == null || qr.canceled)
+            sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else
-            sendNextPage(node, qr, req.query(), req.pageSize(), -1);
+            sendNextPage(nodeRess, node, qr, req.query(), req.pageSize());
     }
 
     /**
@@ -229,36 +262,29 @@ public class GridMapQueryExecutor {
      * @param qr Query results.
      * @param qry Query.
      * @param pageSize Page size.
-     * @param allRows All rows count.
      */
-    private void sendNextPage(ClusterNode node, QueryResults qr, int qry, int pageSize, int allRows) {
-        int page;
-
-        List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
-
-        ResultInterface res = qr.results[qry];
+    private void sendNextPage(ConcurrentMap<Long, QueryResults> nodeRess, ClusterNode node, QueryResults qr, int qry,
+        int pageSize) {
+        QueryResult res = qr.result(qry);
 
         assert res != null;
 
-        boolean last = false;
+        int page = res.page;
 
-        synchronized (res) {
-            page = qr.pages[qry]++;
+        List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-            for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next()) {
-                    last = true;
+        boolean last = res.fetchNextPage(rows, pageSize);
 
-                    break;
-                }
+        if (last) {
+            res.close();
 
-                rows.add(res.currentRow());
-            }
+            if (qr.isAllClosed())
+                nodeRess.remove(qr.qryReqId, qr);
         }
 
         try {
             ctx.io().sendUserMessage(F.asList(node),
-                new GridQueryNextPageResponse(qr.qryReqId, qry, page, allRows, last, rows),
+                new GridQueryNextPageResponse(qr.qryReqId, qry, page, page == 0 ? res.rowCount : -1, last, rows),
                 GridTopic.TOPIC_QUERY, false, 0);
         }
         catch (IgniteCheckedException e) {
@@ -271,29 +297,146 @@ public class GridMapQueryExecutor {
     /**
      *
      */
-    private static class QueryResults {
+    private class QueryResults {
         /** */
-        private long qryReqId;
+        private final long qryReqId;
 
         /** */
-        private ResultInterface[] results;
+        private final AtomicReferenceArray<QueryResult> results;
 
         /** */
-        private ResultSet[] resultSets;
-
-        /** */
-        private int[] pages;
+        private volatile boolean canceled;
 
         /**
          * @param qryReqId Query request ID.
-         * @param qrys Queries.
+         * @param qrys Number of queries.
          */
         private QueryResults(long qryReqId, int qrys) {
             this.qryReqId = qryReqId;
 
-            results = new ResultInterface[qrys];
-            resultSets = new ResultSet[qrys];
-            pages = new int[qrys];
+            results = new AtomicReferenceArray<>(qrys);
+        }
+
+        /**
+         * @param qry Query result index.
+         * @return Query result.
+         */
+        QueryResult result(int qry) {
+            return results.get(qry);
+        }
+
+        /**
+         * @param qry Query result index.
+         * @param rs Result set.
+         */
+        void addResult(int qry, ResultSet rs) {
+            if (!results.compareAndSet(qry, null, new QueryResult(rs)))
+                throw new IllegalStateException();
+        }
+
+        /**
+         * @return {@code true} If all results are closed.
+         */
+        boolean isAllClosed() {
+            for (int i = 0; i < results.length(); i++) {
+                QueryResult res = results.get(i);
+
+                if (res == null || !res.closed)
+                    return false;
+            }
+
+            return true;
+        }
+
+        void cancel() {
+            if (canceled)
+                return;
+
+            canceled = true;
+
+            for (int i = 0; i < results.length(); i++) {
+                QueryResult res = results.get(i);
+
+                if (res != null)
+                    res.close();
+            }
+        }
+    }
+
+    /**
+     * Result for a single part of the query.
+     */
+    private class QueryResult implements AutoCloseable {
+        /** */
+        private final ResultInterface res;
+
+        /** */
+        private final ResultSet rs;
+
+        /** */
+        private int page;
+
+        /** */
+        private final int rowCount;
+
+        /** */
+        private volatile boolean closed;
+
+        /**
+         * @param rs Result set.
+         */
+        private QueryResult(ResultSet rs) {
+            this.rs = rs;
+
+            try {
+                res = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            rowCount = res.getRowCount();
+        }
+
+        /**
+         * @param rows Collection to fetch into.
+         * @param pageSize Page size.
+         * @return {@code true} If there are no more rows available.
+         */
+        synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+            if (closed)
+                return true;
+
+            page++;
+
+            for (int i = 0 ; i < pageSize; i++) {
+                if (!res.next())
+                    return true;
+
+                rows.add(res.currentRow());
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void close() {
+            if (closed)
+                return;
+
+            closed = true;
+
+            Statement stmt;
+
+            try {
+                stmt = rs.getStatement();
+            }
+            catch (SQLException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            U.close(rs, log);
+            U.close(stmt, log);
         }
     }
 }

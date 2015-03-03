@@ -70,6 +70,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ignite = startGridsMultiThreaded(3);
+
+        fillCaches();
     }
 
     /** {@inheritDoc} */
@@ -117,8 +119,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoStep() throws Exception {
-        fillCaches();
-
         String cache = "partitioned";
 
         GridCacheQueriesEx<Integer, FactPurchase> qx =
@@ -141,8 +141,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoStepGroupAndAggregates() throws Exception {
-        fillCaches();
-
         GridCacheQueriesEx<Integer, FactPurchase> qx =
             (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
                 .<Integer, FactPurchase>cache("partitioned").queries();
@@ -235,8 +233,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApiQueries() throws Exception {
-        fillCaches();
-
         IgniteCache<Object,Object> c = ignite.jcache("partitioned");
 
         c.queryFields(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
@@ -247,6 +243,34 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
         assertEquals("aaa", res.get(0).get(0));
         assertEquals(8, res.get(0).get(1));
+    }
+
+    public void _testLoop() throws InterruptedException {
+        IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+
+        X.println("___ GET READY");
+
+        Thread.sleep(20000);
+
+        X.println("___ GO");
+
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < 1000000; i++) {
+            if (i % 1000 == 0) {
+                long t = System.currentTimeMillis();
+
+                X.println("__ " + i + " -> " + (t - start));
+
+                start = t;
+            }
+
+            c.queryFields(new SqlFieldsQuery("select * from FactPurchase")).getAll();
+        }
+
+        X.println("___ OK");
+
+        Thread.sleep(300000);
     }
 
     /**
@@ -260,8 +284,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
-        fillCaches();
-
         CacheProjection<Integer, FactPurchase> prj = ((IgniteKernal)ignite)
             .<Integer, FactPurchase>cache("partitioned").projection(
             new IgnitePredicate<Cache.Entry<Integer, FactPurchase>>() {

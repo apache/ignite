@@ -164,7 +164,7 @@ public class GridReduceQueryExecutor {
         r.conn = h2.connectionForSpace(space);
 
         // TODO Add topology version.
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(space).nodes();
+        final Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(space).nodes();
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl;
@@ -198,8 +198,12 @@ public class GridReduceQueryExecutor {
 
             final ResultSet res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
 
-            for (GridMergeTable tbl : r.tbls)
+            for (GridMergeTable tbl : r.tbls) {
+                if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
+                    ctx.io().sendUserMessage(nodes, new GridQueryCancelRequest(qryReqId), GridTopic.TOPIC_QUERY, false, 0);
+
                 dropTable(r.conn, tbl.getName());
+            }
 
             return new QueryCursorImpl<>(new Iter(res));
         }
