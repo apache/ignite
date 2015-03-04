@@ -349,12 +349,12 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     }
 
     /** {@inheritDoc} */
-    @Override public int perNodeParallelLoadOperations() {
+    @Override public int perNodeParallelStreamOperations() {
         return parallelOps;
     }
 
     /** {@inheritDoc} */
-    @Override public void perNodeParallelLoadOperations(int parallelOps) {
+    @Override public void perNodeParallelStreamOperations(int parallelOps) {
         this.parallelOps = parallelOps;
     }
 

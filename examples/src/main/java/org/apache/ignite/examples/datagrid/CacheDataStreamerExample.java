@@ -66,7 +66,7 @@ public class CacheDataStreamerExample {
             try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(CACHE_NAME)) {
                 // Configure loader.
                 stmr.perNodeBufferSize(1024);
-                stmr.perNodeParallelLoadOperations(8);
+                stmr.perNodeParallelStreamOperations(8);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
                     stmr.addData(i, Integer.toString(i));

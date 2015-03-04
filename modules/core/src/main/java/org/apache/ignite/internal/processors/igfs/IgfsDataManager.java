@@ -312,7 +312,7 @@ public class IgfsDataManager extends IgfsManager {
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
 
         if (cfg.getPerNodeParallelBatchCount() > 0)
-            ldr.perNodeParallelLoadOperations(cfg.getPerNodeParallelBatchCount());
+            ldr.perNodeParallelStreamOperations(cfg.getPerNodeParallelBatchCount());
 
         ldr.updater(IgniteDataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
