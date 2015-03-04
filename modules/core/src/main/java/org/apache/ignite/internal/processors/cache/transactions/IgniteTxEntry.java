@@ -825,24 +825,18 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeBoolean("transferExpiryPlc", transferExpiryPlc))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
                 if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -926,14 +920,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 8:
-                transferExpiryPlc = reader.readBoolean("transferExpiryPlc");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
                 transformClosBytes = reader.readByteArray("transformClosBytes");
 
                 if (!reader.isLastRead())
@@ -941,7 +927,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 ttl = reader.readLong("ttl");
 
                 if (!reader.isLastRead())
@@ -949,7 +935,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -969,7 +955,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 11;
     }
 
     /** {@inheritDoc} */
