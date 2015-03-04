@@ -549,6 +549,21 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 100:
+                msg = new IgniteTxEntry();
+
+                break;
+
+            case 101:
+                msg = new TxEntryValueHolder();
+
+                break;
+
+            case 102:
+                msg = new NearTxPrepareResponseOwnedValue();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

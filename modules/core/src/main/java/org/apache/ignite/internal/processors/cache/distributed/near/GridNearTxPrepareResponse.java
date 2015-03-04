@@ -23,9 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -63,12 +61,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> ownedVals;
+    private Map<IgniteTxKey, NearTxPrepareResponseOwnedValue> ownedVals;
 
-    /** Marshalled owned bytes. */
+    /** OwnedVals' keys for marshalling. */
     @GridToStringExclude
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> ownedValsBytes;
+    @GridDirectCollection(IgniteTxKey.class)
+    private Collection<IgniteTxKey> ownedValKeys;
+
+    /** OwnedVals' values for marshalling. */
+    @GridToStringExclude
+    @GridDirectCollection(NearTxPrepareResponseOwnedValue.class)
+    private Collection<NearTxPrepareResponseOwnedValue> ownedValVals;
 
     /** Cache return value. */
     @GridDirectTransient
@@ -171,15 +174,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        ownedVals.put(key, F.t(ver, val));
+        NearTxPrepareResponseOwnedValue oVal = new NearTxPrepareResponseOwnedValue(ver, val);
+
+        ownedVals.put(key, oVal);
     }
 
     /**
      * @return Owned values map.
      */
-    public Map<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> ownedValues() {
+    public Map<IgniteTxKey, NearTxPrepareResponseOwnedValue> ownedValues() {
         return ownedVals == null ?
-            Collections.<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>>emptyMap() :
+            Collections.<IgniteTxKey, NearTxPrepareResponseOwnedValue>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
     }
 
@@ -224,22 +229,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (ownedVals != null && ownedValsBytes == null) {
-            ownedValsBytes = new ArrayList<>(ownedVals.size());
+        if (ownedVals != null) {
+            ownedValKeys = ownedVals.keySet();
 
-            for (Map.Entry<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> entry : ownedVals.entrySet()) {
-                IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
+            ownedValVals = ownedVals.values();
 
-                GridCacheContext cctx = ctx.cacheContext(entry.getKey().cacheId());
+            for (Map.Entry<IgniteTxKey, NearTxPrepareResponseOwnedValue> entry : ownedVals.entrySet()) {
+                GridCacheContext cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
-                entry.getKey().prepareMarshal(cctx);
+                entry.getKey().prepareMarshal(cacheCtx);
 
-                CacheObject val = tup.get2();
-
-                if (val != null)
-                    val.prepareMarshal(cctx.cacheObjectContext());
-
-                ownedValsBytes.add(ctx.marshaller().marshal(F.t(entry.getKey(), tup.get1(), val)));
+                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
             }
         }
 
@@ -259,22 +259,27 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (ownedValsBytes != null && ownedVals == null) {
-            ownedVals = new HashMap<>();
+        if (ownedValKeys != null && ownedVals == null) {
+            ownedVals = U.newHashMap(ownedValKeys.size());
 
-            for (byte[] bytes : ownedValsBytes) {
-                GridTuple3<IgniteTxKey, GridCacheVersion, CacheObject> tup = ctx.marshaller().unmarshal(bytes, ldr);
+            assert ownedValKeys.size() == ownedValVals.size();
 
-                CacheObject val = tup.get3();
+            Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
 
-                GridCacheContext cctx = ctx.cacheContext(tup.get1().cacheId());
+            Iterator<NearTxPrepareResponseOwnedValue> valueIter = ownedValVals.iterator();
 
-                tup.get1().finishUnmarshal(cctx, ldr);
+            while (keyIter.hasNext()) {
+                IgniteTxKey key = keyIter.next();
 
-                if (val != null)
-                    val.finishUnmarshal(cctx, ldr);
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-                ownedVals.put(tup.get1(), F.t(tup.get2(), val));
+                NearTxPrepareResponseOwnedValue value = valueIter.next();
+
+                key.finishUnmarshal(cctx, ldr);
+
+                value.finishUnmarshal(cctx, ldr);
+
+                ownedVals.put(key, value);
             }
         }
 
@@ -336,18 +341,24 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("ownedValsBytes", ownedValsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("ownedValKeys", ownedValKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("ownedValVals", ownedValVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 17:
+                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 18:
                 if (!writer.writeByteArray("retValBytes", retValBytes))
                     return false;
 
@@ -410,7 +421,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 15:
-                ownedValsBytes = reader.readCollection("ownedValsBytes", MessageCollectionItemType.BYTE_ARR);
+                ownedValKeys = reader.readCollection("ownedValKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -418,7 +429,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 16:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
+                ownedValVals = reader.readCollection("ownedValVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -426,6 +437,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 17:
+                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 18:
                 retValBytes = reader.readByteArray("retValBytes");
 
                 if (!reader.isLastRead())
@@ -445,11 +464,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 18;
+        return 19;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxPrepareResponse.class, this, "super", super.toString());
     }
+
 }
