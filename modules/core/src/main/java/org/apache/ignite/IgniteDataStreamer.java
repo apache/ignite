@@ -249,6 +249,10 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Note that loader will load data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
      * the loader.
+     * <p>
+     * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
+     * then data streamer will not overwrite existing cache entries for better performance
+     * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param key Key.
      * @param val Value or {@code null} if respective entry must be removed from cache.
@@ -257,6 +261,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
+     * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(K key, @Nullable V val) throws IgniteException, IgniteInterruptedException,
         IllegalStateException;
@@ -268,6 +273,10 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Note that loader will load data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
      * the loader.
+     * <p>
+     * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
+     * then data streamer will not overwrite existing cache entries for better performance
+     * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entry Entry.
      * @return Future fo this operation.
@@ -275,6 +284,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
+     * @see #allowOverwrite()      
      */
     public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteException, IgniteInterruptedException,
         IllegalStateException;
@@ -286,11 +296,16 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Note that loader will load data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
      * the loader.
+     * <p>
+     * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
+     * then data streamer will not overwrite existing cache entries for better performance 
+     * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Collection of entries to be loaded.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
+     * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
 
@@ -301,11 +316,16 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Note that loader will load data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
      * the loader.
+     * <p>
+     * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
+     * then data streamer will not overwrite existing cache entries for better performance 
+     * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Map to be loaded.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
+     * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
 

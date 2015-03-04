@@ -98,7 +98,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;
@@ -158,6 +158,9 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
     /** */
     private int maxRemapCnt = DFLT_MAX_REMAP_CNT;
+
+    /** Whether a warning at {@link IgniteDataStreamerImpl#allowOverwrite()} printed */
+    private static boolean isWarningPrinted;
 
     /**
      * @param ctx Grid kernal context.
@@ -289,7 +292,20 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return updater != ISOLATED_UPDATER;
+        boolean allow = updater != ISOLATED_UPDATER;
+        
+        if (!allow && !isWarningPrinted) {
+            synchronized (this) {
+                if (!isWarningPrinted) {
+                    log.warning("Data streamer will not overwrite existing cache entries for better performance " +
+                        "(to change, set allowOverwrite to true)");
+
+                    isWarningPrinted = true;
+                }
+            }
+        }
+        
+        return allow;
     }
 
     /** {@inheritDoc} */
