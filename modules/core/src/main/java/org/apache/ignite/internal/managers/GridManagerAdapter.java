@@ -90,38 +90,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         log = ctx.log(getClass());
     }
 
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        for (T spi : spis) {
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
-
-            // Inject SPI internal objects.
-            inject(spi);
-
-            try {
-                Map<String, Object> retval = spi.getNodeAttributes();
-
-                if (retval != null) {
-                    for (Map.Entry<String, Object> e : retval.entrySet()) {
-                        if (ctx.hasNodeAttribute(e.getKey()))
-                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
-                                ", attr=" + e.getKey() + ']' +
-                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
-                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
-                                "attribute name collisions.");
-
-                        ctx.addNodeAttribute(e.getKey(), e.getValue());
-                    }
-                }
-            }
-            catch (IgniteSpiException e) {
-                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
-            }
-        }
-    }
-
     /**
      * Gets wrapped SPI.
      *
@@ -199,6 +167,33 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+
+            try {
+                Map<String, Object> retval = spi.getNodeAttributes();
+
+                if (retval != null) {
+                    for (Map.Entry<String, Object> e : retval.entrySet()) {
+                        if (ctx.hasNodeAttribute(e.getKey()))
+                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
+                                ", attr=" + e.getKey() + ']' +
+                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
+                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
+                                "attribute name collisions.");
+
+                        ctx.addNodeAttribute(e.getKey(), e.getValue());
+                    }
+                }
+            }
+            catch (IgniteSpiException e) {
+                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
+            }
+
             // Print-out all SPI parameters only in DEBUG mode.
             if (log.isDebugEnabled())
                 log.debug("Starting SPI: " + spi);

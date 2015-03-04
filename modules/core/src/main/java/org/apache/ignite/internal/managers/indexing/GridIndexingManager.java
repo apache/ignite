@@ -45,8 +45,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         if (ctx.config().isDaemon())
             return;
 

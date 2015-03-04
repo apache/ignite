@@ -50,8 +50,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         if (ctx.config().isDaemon())
             return;
 
