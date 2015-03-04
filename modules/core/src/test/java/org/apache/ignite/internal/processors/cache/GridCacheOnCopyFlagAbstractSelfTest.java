@@ -27,19 +27,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
+import javax.cache.processor.*;
 import java.io.*;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-public abstract class GridCacheOnFlagAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

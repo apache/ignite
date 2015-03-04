@@ -1860,8 +1860,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     Object computed = entryProcessor.process(entry, invokeArgs);
 
                     if (entry.modified()) {
-                        updated = cctx.toCacheObject(updated0);
                         updated0 = cctx.unwrapTemporary(entry.getValue());
+                        updated = cctx.toCacheObject(updated0);
                     }
                     else
                         updated = oldVal;

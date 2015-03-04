@@ -25,11 +25,11 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-public class GridCacheOnFlagAtomicSelfTest extends
-    GridCacheOnFlagAbstractSelfTest {
+public class GridCacheOnCopyFlagLocalSelfTest extends
+    GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+        return LOCAL;
     }
 
     /** {@inheritDoc} */
