@@ -263,8 +263,8 @@
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
-                                    <doctitle>Ignite ${ignite.version}</doctitle>
-                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
+                                    <doctitle>Ignite ${project.version}</doctitle>
+                                    <windowtitle>Ignite ${project.version}</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
@@ -417,7 +417,7 @@
                                                             <b>Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${ignite.version}</strong>
+                                                            ver. <strong>${project.version}</strong>
                                                         </td>
                                                     </tr>
                                                     <tr style="padding: 0; margin: 0">
@@ -457,8 +457,8 @@
                                     </taglets>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <doctitle>Ignite ${ignite.version}</doctitle>
-                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
+                                    <doctitle>Ignite ${project.version}</doctitle>
+                                    <windowtitle>Ignite ${project.version}</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
@@ -620,7 +620,7 @@
                                                             <b>Apache Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${ignite.version}</strong>
+                                                            ver. <strong>${project.version}</strong>
                                                         </td>
                                                     </tr>
                                                     <tr style="padding: 0; margin: 0">
@@ -732,15 +732,15 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${ignite.version}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${ignite.version}" filemode="755">
+                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${ignite.version}">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />

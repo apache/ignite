@@ -145,7 +145,7 @@
                          <phase>prepare-package</phase>
                          <configuration>
                              <target>
-                                 <zip destfile="target/ignite-visor-console-${ignite.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
+                                 <zip destfile="target/ignite-visor-console-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
                              </target>
                          </configuration>
                      </execution>
