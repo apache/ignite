@@ -205,8 +205,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DiscoverySpi spi = getSpi();
 
-        spi.setNodeAttributes(ctx.nodeAttributes(), VER);
-
         discoOrdered = discoOrdered();
 
         histSupported = historySupported();
