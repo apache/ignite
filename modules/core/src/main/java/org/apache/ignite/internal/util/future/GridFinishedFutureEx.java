@@ -165,11 +165,6 @@ public class GridFinishedFutureEx<T> implements IgniteInternalFuture<T>, Externa
             lsnr.apply(this);
     }
 
-    /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<T>>... lsnr) {
-        // No-op.
-    }
-
     /**
      * @return {@code True} if future failed.
      */

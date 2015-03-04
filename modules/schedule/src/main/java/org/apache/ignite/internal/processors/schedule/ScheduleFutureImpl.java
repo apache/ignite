@@ -582,7 +582,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+    @Override public void listen(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         if (lsnr != null) {
             Throwable err;
             R res;
@@ -612,15 +612,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-        A.notNull(lsnr, "lsnr");
-
-        synchronized (mux) {
-            lsnrs.remove(lsnr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
@@ -629,7 +620,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
             }
         };
 
-        listenAsync(new CI1<IgniteFuture<R>>() {
+        listen(new CI1<IgniteFuture<R>>() {
             @Override public void apply(IgniteFuture<R> fut0) {
                 try {
                     fut.onDone(doneCb.apply(fut0));
@@ -964,13 +955,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-            ref.listenAsync(lsnr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-            ref.stopListenAsync(lsnr);
+        @Override public void listen(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+            ref.listen(lsnr);
         }
 
         /** {@inheritDoc} */

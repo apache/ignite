@@ -77,7 +77,7 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
 
                         // Add a listener to the future, that will resume the
                         // parent task once the child one is completed.
-                        fut.listenAsync(new CI1<IgniteFuture<int[]>>() {
+                        fut.listen(new CI1<IgniteFuture<int[]>>() {
                             @Override public void apply(IgniteFuture<int[]> fut) {
                                 // CONTINUATION:
                                 // =============

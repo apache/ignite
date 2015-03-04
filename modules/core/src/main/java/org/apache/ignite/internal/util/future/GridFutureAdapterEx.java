@@ -250,23 +250,6 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>>... lsnr) {
-        if (lsnr == null || lsnr.length == 0)
-            lsnrs.clear();
-        else {
-            // Iterate through the whole list, removing all occurrences, if any.
-            for (Iterator<IgniteInClosure<? super IgniteInternalFuture<R>>> it = lsnrs.iterator(); it.hasNext(); ) {
-                IgniteInClosure<? super IgniteInternalFuture<R>> l1 = it.next();
-
-                for (IgniteInClosure<? super IgniteInternalFuture<R>> l2 : lsnr)
-                    // Must be l1.equals(l2), not l2.equals(l1), because of the way listeners are added.
-                    if (l1.equals(l2))
-                        it.remove();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
         final GridFutureAdapterEx<T> fut = new GridFutureAdapterEx<T>() {
             @Override public String toString() {

@@ -153,14 +153,7 @@ public interface IgniteFuture<V> extends Future<V> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr);
-
-    /**
-     * Removes given listener from the future.
-     *
-     * @param lsnr Listener to remove.
-     */
-    public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr);
+    public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.

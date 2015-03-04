@@ -183,11 +183,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<T>>... lsnr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public <R> IgniteInternalFuture<R> chain(final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
         GridFutureAdapter<R> fut = new GridFutureAdapter<R>(ctx, syncNotify) {
             @Override public String toString() {
