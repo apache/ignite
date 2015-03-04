@@ -25,4 +25,5 @@ import org.apache.ignite.internal.util.tostring.*;
  */
 @GridToStringExclude
 public interface GridProcessor extends GridComponent {
+    // No-op.
 }

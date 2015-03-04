@@ -282,7 +282,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private Map<String, Object> attrs = new HashMap<>(150);
+    private Map<String, Object> attrs = new HashMap<>();
 
     /** */
     private IgniteEx grid;
