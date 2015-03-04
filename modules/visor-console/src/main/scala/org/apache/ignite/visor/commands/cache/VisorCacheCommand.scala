@@ -582,7 +582,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@),", "Nodes", "Size")
+        sumT #= ("#", "Name(@)", "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
