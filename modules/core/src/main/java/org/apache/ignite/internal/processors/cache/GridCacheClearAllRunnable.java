@@ -80,7 +80,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         // Clear swapped entries.
         if (!ctx.isNear()) {
             if (ctx.swap().offHeapEnabled()) {
-                if (GridQueryProcessor.isQueryIndexEnabled(ctx.config())) {
+                if (GridQueryProcessor.isEnabled(ctx.config())) {
                     for (Iterator<Map.Entry<K, V>> it = ctx.swap().lazyOffHeapIterator(); it.hasNext();) {
                         Map.Entry<K, V> e = it.next();
 
@@ -95,7 +95,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
             if (ctx.isSwapOrOffheapEnabled()) {
                 if (ctx.swap().swapEnabled()) {
-                    if (GridQueryProcessor.isQueryIndexEnabled(ctx.config())) {
+                    if (GridQueryProcessor.isEnabled(ctx.config())) {
                         Iterator<Map.Entry<K, V>> it = null;
 
                         try {

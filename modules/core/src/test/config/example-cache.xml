@@ -135,9 +135,6 @@
 
         <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-        <!-- Set to true to enable indexing for query examples, default value is false. -->
-        <property name="queryIndexEnabled" value="true"/>
     </bean>
 </beans>
 

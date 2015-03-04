@@ -85,9 +85,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Flag indicating whether Ignite should use swap storage by default. */
     protected boolean swapEnabled;
 
-    /** Flag indicating whether  query indexing is enabled. */
-    private boolean qryIdxEnabled;
-
     /** Flag indicating whether Ignite should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
@@ -409,13 +406,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether  query indexing is enabled.
-     */
-    public boolean queryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
      * @return Flag indicating whether read-through behaviour is enabled.
      */
     public boolean readThrough() {
@@ -485,7 +475,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeEnum(out, partDistro);
         out.writeInt(preloadBatchSize);
         U.writeEnum(out, preloadMode);
-        out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
         out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
@@ -526,7 +515,6 @@ public class GridCacheAttributes implements Externalizable {
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
         preloadBatchSize = in.readInt();
         preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
-        qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
         storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();

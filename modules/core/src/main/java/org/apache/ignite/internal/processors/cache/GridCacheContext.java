@@ -1442,7 +1442,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if values should be always unmarshalled.
      */
     public boolean isUnmarshalValues() {
-        return GridQueryProcessor.isQueryIndexEnabled(cacheCfg) || !cacheCfg.isStoreValueBytes();
+        return GridQueryProcessor.isEnabled(cacheCfg) || !cacheCfg.isStoreValueBytes();
     }
 
     /**

@@ -43,8 +43,6 @@
                     <property name="startSize" value="400000"/>
 
                     <property name="distributionMode" value="CLIENT_ONLY"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="local"/>

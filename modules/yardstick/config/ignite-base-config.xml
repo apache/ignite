@@ -54,8 +54,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -68,8 +66,6 @@
                     <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -83,7 +79,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -95,7 +90,6 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -109,7 +103,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -123,7 +116,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -134,9 +126,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <!-- Enable query indexing for query cache. -->
-                    <property name="queryIndexEnabled" value="true"/>
 
                     <property name="indexedTypes">
                         <list>
@@ -157,9 +146,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <!-- Enable query indexing for query cache. -->
-                    <property name="queryIndexEnabled" value="true"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
@@ -182,8 +168,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <!--<property name="queryIndexEnabled" value="false"/>-->
                 </bean>
             </list>
         </property>

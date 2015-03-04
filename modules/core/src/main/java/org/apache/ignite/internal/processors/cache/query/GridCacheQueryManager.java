@@ -327,7 +327,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert key != null;
         assert val != null || valBytes != null;
 
-        if (!GridQueryProcessor.isQueryIndexEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
@@ -355,7 +355,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public void remove(K key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
-        if (!GridQueryProcessor.isQueryIndexEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())

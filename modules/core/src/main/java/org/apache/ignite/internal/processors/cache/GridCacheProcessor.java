@@ -424,7 +424,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES) {
-            if (GridQueryProcessor.isQueryIndexEnabled(cc))
+            if (GridQueryProcessor.isEnabled(cc))
                 throw new IgniteCheckedException("Cannot have query indexing enabled while values are stored off-heap. " +
                     "You must either disable query indexing or disable off-heap values only flag for cache: " +
                     cc.getName());
@@ -1159,14 +1159,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
                             rmtAttr.evictMaxOverflowRatio(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                            "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
                             "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                            "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",

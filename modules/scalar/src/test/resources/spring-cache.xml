@@ -29,7 +29,6 @@
                 <property name="atomicityMode" value="TRANSACTIONAL"/>
                 <property name="distributionMode" value="NEAR_PARTITIONED"/>
                 <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                <property name="queryIndexEnabled" value="true"/>
                 <property name="indexedTypes">
                     <list>
                         <value>java.lang.Integer</value>

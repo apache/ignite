@@ -32,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.*;
 
 /**
- * Test {@link CacheConfiguration#setQueryIndexEnabled} checked before executing query
  */
 public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest {
     /** */
