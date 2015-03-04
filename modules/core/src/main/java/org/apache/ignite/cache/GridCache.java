@@ -211,7 +211,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction#setHashIdResolver(org.apache.ignite.cache.affinity.CacheAffinityNodeHashResolver)} to make sure that
+     * {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link org.apache.ignite.configuration.CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.top;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -173,13 +172,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
-
-        Integer dfltReplicaCnt = node.attribute(CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
-
-        if (dfltReplicaCnt == null)
-            dfltReplicaCnt = CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
-
-        nodeBean.setReplicaCount(dfltReplicaCnt);
 
         GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
