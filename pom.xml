@@ -1121,38 +1121,6 @@
                                 <configuration>
                                     <target>
                                         <replaceregexp byline="true">
-                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
-                                            <substitution expression='pushd "%~dp0"/..'/>
-                                            <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
-                                            <substitution expression=""/>
-                                            <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
-                                            <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
-                                            <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true">
                                             <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
                                             <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package/bin">
@@ -1184,23 +1152,14 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <replace token="@sh.file.version" value="${ignite.version}">
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='-DIGNITE_UPDATE_NOTIFIER=false'/>
+                                            <substitution expression=""/>
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
-                                            </fileset>
-                                        </replace>
-
-                                        <replace token="@bat.file.version" value="${ignite.version}">
-                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
-                                        </replace>
-
-                                        <replace token="@xml.file.version" value="${ignite.version}">
-                                            <fileset dir="${basedir}/target/release-package">
-                                                <include name="**/*.xml"/>
-                                            </fileset>
-                                        </replace>
+                                        </replaceregexp>
 
                                         <zip destfile="${basedir}/target/ignite-${ignite.edition}-${ignite.version}.zip"
                                              encoding="UTF-8">
