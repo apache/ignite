@@ -18,14 +18,18 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
+import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import javax.cache.configuration.*;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -76,6 +80,10 @@ public class CacheNodeWithStoreStartup {
         // store = new CacheJdbcPersonStore();
         // store = new CacheHibernatePersonStore();
 
+        // Uncomment two lines for try .
+        // store = new CacheJdbcPojoPersonStore();
+        // cacheCfg.setTypeMetadata(typeMetadata());
+
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
@@ -84,5 +92,26 @@ public class CacheNodeWithStoreStartup {
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
+    }
+
+    private static Collection<CacheTypeMetadata> typeMetadata() {
+        CacheTypeMetadata tm = new CacheTypeMetadata();
+
+        tm.setDatabaseTable("PERSON");
+
+        tm.setKeyType("org.apache.ignite.examples.datagrid.store.model.PersonKey");
+        tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
+
+        CacheTypeFieldMetadata keyFld = new CacheTypeFieldMetadata("id", long.class, "ID", Types.BIGINT);
+
+        tm.setKeyFields(F.asList(keyFld));
+
+        tm.setValueFields(F.asList(keyFld,
+            new CacheTypeFieldMetadata("firstName", String.class, "FIRST_NAME", Types.VARCHAR),
+            new CacheTypeFieldMetadata("lastName", String.class, "LAST_NAME", Types.VARCHAR)
+        ));
+
+        return F.asList(tm);
+
     }
 }

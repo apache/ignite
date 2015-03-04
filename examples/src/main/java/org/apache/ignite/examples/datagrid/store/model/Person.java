@@ -29,13 +29,13 @@ public class Person implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Value for id. */
-    private int id;
+    private long id;
 
-    /** Value for orgId. */
-    private Integer orgId;
+    /** Value for first name. */
+    private String firstName;
 
-    /** Value for name. */
-    private String name;
+    /** Value for last name. */
+    private String lastName;
 
     /**
      * Empty constructor.
@@ -48,13 +48,13 @@ public class Person implements Serializable {
      * Full constructor.
      */
     public Person(
-        int id,
-        Integer orgId,
-        String name
+        long id,
+        String firstName,
+        String lastName
     ) {
         this.id = id;
-        this.orgId = orgId;
-        this.name = name;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 
     /**
@@ -62,7 +62,7 @@ public class Person implements Serializable {
      *
      * @return Value for id.
      */
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -71,44 +71,44 @@ public class Person implements Serializable {
      *
      * @param id New value for id.
      */
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
     /**
-     * Gets orgId.
+     * Gets first name.
      *
-     * @return Value for orgId.
+     * @return Value for first name.
      */
-    public Integer getOrgId() {
-        return orgId;
+    public String getFirstName() {
+        return firstName;
     }
 
     /**
-     * Sets orgId.
+     * Sets first name.
      *
-     * @param orgId New value for orgId.
+     * @param firstName New value for first name.
      */
-    public void setOrgId(Integer orgId) {
-        this.orgId = orgId;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
     /**
-     * Gets name.
+     * Gets last name.
      *
-     * @return Value for name.
+     * @return Value for last name.
      */
-    public String getName() {
-        return name;
+    public String getLastName() {
+        return lastName;
     }
 
     /**
-     * Sets name.
+     * Sets last name.
      *
-     * @param name New value for name.
+     * @param lastName New value for last name.
      */
-    public void setName(String name) {
-        this.name = name;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     /** {@inheritDoc} */
@@ -124,10 +124,10 @@ public class Person implements Serializable {
         if (id != that.id)
             return false;
 
-        if (orgId != null ? !orgId.equals(that.orgId) : that.orgId != null)
+        if (firstName != null ? !firstName.equals(that.firstName) : that.firstName != null)
             return false;
 
-        if (name != null ? !name.equals(that.name) : that.name != null)
+        if (lastName != null ? !lastName.equals(that.lastName) : that.lastName != null)
             return false;
 
         return true;
@@ -135,11 +135,11 @@ public class Person implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = id;
+        int res = (int)(id ^ (id >>> 32));
 
-        res = 31 * res + (orgId != null ? orgId.hashCode() : 0);
+        res = 31 * res + (firstName != null ? firstName.hashCode() : 0);
 
-        res = 31 * res + (name != null ? name.hashCode() : 0);
+        res = 31 * res + (lastName != null ? lastName.hashCode() : 0);
 
         return res;
     }
@@ -147,8 +147,8 @@ public class Person implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Person [id=" + id +
-            ", orgId=" + orgId +
-            ", name=" + name +
+            ", firstName=" + firstName +
+            ", lastName=" + lastName +
             "]";
     }
 }

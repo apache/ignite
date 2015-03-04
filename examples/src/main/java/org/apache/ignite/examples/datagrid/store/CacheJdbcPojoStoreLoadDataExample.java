@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid;
+package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.datagrid.store.model.*;
@@ -23,12 +23,14 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.tools.*;
 
 import java.sql.*;
-import java.util.*;
 
 /**
  * This examples demonstrates loading data into cache from underlying JDBC store.
+ * <p>
+ * Remote nodes should always be started with special configuration file:
+ * {@code 'ignite.{sh|bat} examples/config/store/example-jdbc-pojo-store.xml'}.
  */
-public class CacheJdbcPojoStoreExample {
+public class CacheJdbcPojoStoreLoadDataExample {
     /** DB connection URL. */
     private static final String CONN_URL = "jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1";
 
@@ -48,23 +50,30 @@ public class CacheJdbcPojoStoreExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        System.out.println("Populate database with sample data.");
-
-        createDb();
-
-        // Start H2 database TCP server in order to access sample in-memory database from other processes.
-        // This is H2 specific only.
-        Server srv = Server.createTcpServer().start();
+        Server srv = null;
 
         // Start node and load cache from database.
         try (Ignite ignite = Ignition.start("examples/config/store/example-jdbc-pojo-store.xml")) {
+            System.out.println();
+            System.out.println(">>> Cache auto-loading data example started.");
+
+            prepareDb();
+
+            // Start H2 database TCP server in order to access sample in-memory database from other processes.
+            srv = Server.createTcpServer().start();
+
             IgniteCache<Object, Object> cache = ignite.jcache(CACHE_NAME);
 
-            System.out.println("Load whole DB into cache.");
+            // Clean up caches on all nodes before run.
+            cache.clear();
+
+            System.out.println();
+            System.out.println(">>> Load whole DB into cache.");
 
             cache.loadCache(null);
 
-            System.out.println("Print loaded content.");
+            System.out.println();
+            System.out.println(">>> Print loaded content.");
 
             System.out.println("Organizations:");
             for (int i = 0; i < ORGANIZATION_CNT; i++) {
@@ -80,13 +89,13 @@ public class CacheJdbcPojoStoreExample {
                 System.out.println("    " + cache.get(prnKey));
             }
 
-            System.out.println("Clear cache for next demo.");
+            System.out.println(">>> Clear cache for next demo.");
 
             cache.clear();
 
-            System.out.println("Cache size = " + cache.size());
+            System.out.println(">>> Cache size = " + cache.size());
 
-            System.out.println("Load cache by custom SQL.");
+            System.out.println(">>> Load cache by custom SQL.");
 
             // JDBC cache store accept pairs of "full key class name -> SQL statement"
             cache.loadCache(null,
@@ -95,13 +104,15 @@ public class CacheJdbcPojoStoreExample {
                 "org.apache.ignite.examples.datagrid.store.model.PersonKey",
                 "SELECT * FROM Person WHERE id = 5");
 
-            System.out.println("Check custom SQL.");
-            System.out.println("    Organization: " + cache.get(new OrganizationKey(2)));
-            System.out.println("    Person: " + cache.get(new PersonKey(5)));
+            System.out.println(">>> Check custom SQL.");
+            System.out.println(">>>     Organization: " + cache.get(new OrganizationKey(2)));
+            System.out.println(">>>     Person: " + cache.get(new PersonKey(5)));
         }
-
-        // Stop H2 TCP server. H2 specific only.
-        srv.stop();
+        finally {
+            // Stop H2 TCP server.
+            if (srv != null)
+                srv.stop();
+        }
 
         System.exit(0);
     }
@@ -109,11 +120,9 @@ public class CacheJdbcPojoStoreExample {
     /**
      * Create example DB and populate it with sample data.
      *
-     * @throws Exception If failed to create databse and populate it with sample data.
+     * @throws Exception If failed to create database and populate it with sample data.
      */
-    private static void createDb() throws Exception {
-        Class.forName("org.h2.Driver");
-
+    private static void prepareDb() throws Exception {
         Connection conn = DriverManager.getConnection(CONN_URL, "sa", "");
 
         Statement stmt = conn.createStatement();
@@ -122,43 +131,41 @@ public class CacheJdbcPojoStoreExample {
             "(id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person" +
-            "(id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
+            "(id integer not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id))");
 
         U.closeQuiet(stmt);
 
         conn.commit();
 
-        PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
+        PreparedStatement st = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
         for (int i = 0; i < ORGANIZATION_CNT; i++) {
-            orgStmt.setInt(1, i);
-            orgStmt.setString(2, "org-name-" + i);
-            orgStmt.setString(3, "city-" + i);
+            st.setInt(1, i);
+            st.setString(2, "name-" + i);
+            st.setString(3, "city-" + i);
 
-            orgStmt.addBatch();
+            st.addBatch();
         }
 
-        orgStmt.executeBatch();
+        st.executeBatch();
 
-        U.closeQuiet(orgStmt);
+        U.closeQuiet(st);
 
         conn.commit();
 
-        PreparedStatement prnStmt = conn.prepareStatement("INSERT INTO Person(id, org_id, name) VALUES (?, ?, ?)");
-
-        Random rnd = new Random();
+        st = conn.prepareStatement("INSERT INTO Person(id, first_name, last_name) VALUES (?, ?, ?)");
 
         for (int i = 0; i < PERSON_CNT; i++) {
-            prnStmt.setInt(1, i);
-            prnStmt.setInt(2, rnd.nextInt(ORGANIZATION_CNT));
-            prnStmt.setString(3, "person-name-" + i);
+            st.setInt(1, i);
+            st.setString(3, "firstName-" + i);
+            st.setString(3, "lastName-" + i);
 
-            prnStmt.addBatch();
+            st.addBatch();
         }
 
-        prnStmt.executeBatch();
+        st.executeBatch();
 
-        U.closeQuiet(prnStmt);
+        U.closeQuiet(st);
 
         conn.commit();
 

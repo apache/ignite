@@ -23,8 +23,14 @@ import ro.fortsoft.pf4j.*;
  * Base class for Visor plugins.
  */
 public abstract class VisorPlugin extends Plugin {
-    /** {@inheritDoc} */
-    public VisorPlugin(PluginWrapper wrapper) {
+    /**
+     * Constructor to be used by plugin manager for plugin instantiation.
+     * Your plugins have to provide constructor with this exact signature to
+     * be successfully loaded by manager.
+     *
+     * @param wrapper A wrapper over plugin instance.
+     */
+    protected VisorPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 

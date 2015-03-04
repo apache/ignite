@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -42,13 +43,16 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
         protected final Class<?> cls;
 
         /** Constructor for POJO object. */
-        private final Constructor ctor;
+        private Constructor ctor;
+
+        /** Key have simple type. */
+        private final boolean simpleKey;
 
         /** Cached setters for POJO object. */
-        private final Map<String, Method> getters;
+        private Map<String, Method> getters;
 
         /** Cached getters for POJO object. */
-        private final Map<String, Method> setters;
+        private Map<String, Method> setters;
 
         /**
          * POJO methods cache.
@@ -59,6 +63,9 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
         public PojoMethodsCache(String clsName, Collection<CacheTypeFieldMetadata> fields) throws CacheException {
             try {
                 cls = Class.forName(clsName);
+
+                if (simpleKey = cls.isAssignableFrom(Number.class) || cls.isInstance(String.class))
+                    return;
 
                 ctor = cls.getDeclaredConstructor();
 
@@ -112,21 +119,6 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
             return str == null ? null :
                 str.isEmpty() ? "" : Character.toUpperCase(str.charAt(0)) + str.substring(1);
         }
-
-        /**
-         * Construct new instance of pojo object.
-         *
-         * @return pojo object.
-         * @throws CacheLoaderException If construct new instance failed.
-         */
-        protected Object newInstance() throws CacheLoaderException {
-            try {
-                return ctor.newInstance();
-            }
-            catch (Exception e) {
-                throw new CacheLoaderException("Failed to create new instance for class: " + cls, e);
-            }
-        }
     }
 
     /** Methods cache. */
@@ -136,6 +128,8 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
     @Override protected void prepareBuilders(@Nullable String cacheName, Collection<CacheTypeMetadata> types)
         throws CacheException {
         Map<String, PojoMethodsCache> typeMethods = U.newHashMap(types.size() * 2);
+
+        // TODO Check for diff type of key
 
         for (CacheTypeMetadata type : types) {
             String keyType = type.getKeyType();
@@ -160,9 +154,15 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
         if (mc == null)
             throw new CacheLoaderException("Failed to find cache type metadata for type: " + typeName);
 
-        Object obj = mc.newInstance();
-
         try {
+            if (mc.simpleKey) {
+                CacheTypeFieldMetadata field = F.first(fields);
+
+                return (R)getColumnValue(rs, loadColIdxs.get(field.getDatabaseName()), mc.cls);
+            }
+
+            Object obj = mc.ctor.newInstance();
+
             for (CacheTypeFieldMetadata field : fields) {
                 Method setter = mc.setters.get(field.getJavaName());
 
@@ -177,8 +177,11 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
 
             return (R)obj;
         }
-        catch (Exception e) {
+        catch (SQLException e) {
             throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
+        }
+        catch (Exception e) {
+            throw new CacheLoaderException("Failed to construct instance of class: " + typeName, e);
         }
     }
 
@@ -190,6 +193,9 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
 
             if (mc == null)
                 throw new CacheException("Failed to find cache type metadata for type: " + typeName);
+
+            if (mc.simpleKey)
+                return obj;
 
             Method getter = mc.getters.get(fieldName);
 

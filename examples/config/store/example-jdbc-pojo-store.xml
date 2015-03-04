@@ -31,20 +31,6 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean id="jdbcPojoStore" class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-        <property name="dialect">
-            <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
-        </property>
-
-        <property name="dataSource">
-            <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                <constructor-arg value="jdbc:h2:tcp://localhost/mem:ExampleDb"/>
-                <constructor-arg value="sa"/>
-                <constructor-arg value=""/>
-            </bean>
-        </property>
-    </bean>
-
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
@@ -69,14 +55,27 @@
 
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg ref="jdbcPojoStore"/>
+                            <constructor-arg>
+                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
+                                    <property name="dialect">
+                                        <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
+                                    </property>
+
+                                    <property name="dataSource">
+                                        <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
+                                            <constructor-arg value="jdbc:h2:tcp://localhost/mem:ExampleDb"/>
+                                            <constructor-arg value="sa"/>
+                                            <constructor-arg value=""/>
+                                        </bean>
+                                    </property>
+                                </bean>
+                            </constructor-arg>
                         </bean>
                     </property>
 
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="databaseSchema" value="PUBLIC"/>
                                 <property name="databaseTable" value="ORGANIZATION"/>
                                 <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.OrganizationKey"/>
                                 <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Organization"/>
@@ -114,7 +113,6 @@
                                 </property>
                             </bean>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="databaseSchema" value="PUBLIC"/>
                                 <property name="databaseTable" value="PERSON"/>
                                 <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.PersonKey"/>
                                 <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Person"/>
@@ -124,7 +122,7 @@
                                             <property name="databaseName" value="ID"/>
                                             <property name="databaseType" value="4"/>
                                             <property name="javaName" value="id"/>
-                                            <property name="javaType" value="int"/>
+                                            <property name="javaType" value="long"/>
                                         </bean>
                                     </list>
                                 </property>
@@ -134,18 +132,18 @@
                                             <property name="databaseName" value="ID"/>
                                             <property name="databaseType" value="4"/>
                                             <property name="javaName" value="id"/>
-                                            <property name="javaType" value="int"/>
+                                            <property name="javaType" value="long"/>
                                         </bean>
                                         <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="ORG_ID"/>
-                                            <property name="databaseType" value="4"/>
-                                            <property name="javaName" value="orgId"/>
-                                            <property name="javaType" value="java.lang.Integer"/>
-                                        </bean>
-                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="NAME"/>
+                                            <property name="databaseName" value="FIRST_NAME"/>
                                             <property name="databaseType" value="12"/>
-                                            <property name="javaName" value="name"/>
+                                            <property name="javaName" value="firstName"/>
+                                            <property name="javaType" value="java.lang.String"/>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
+                                            <property name="databaseName" value="LAST_NAME"/>
+                                            <property name="databaseType" value="12"/>
+                                            <property name="javaName" value="lastName"/>
                                             <property name="javaType" value="java.lang.String"/>
                                         </bean>
                                     </list>

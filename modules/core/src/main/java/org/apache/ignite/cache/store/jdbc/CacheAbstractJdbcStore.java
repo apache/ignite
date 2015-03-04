@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -135,8 +136,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param obj Cache object.
      * @return Field value from object.
      */
-    @Nullable protected abstract Object extractField(String cacheName, String typeName, String fieldName, Object obj)
-        throws CacheException;
+    @Nullable protected abstract Object extractField(@Nullable String cacheName, String typeName, String fieldName,
+        Object obj) throws CacheException;
 
     /**
      * Construct object from query result.
@@ -149,8 +150,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String cacheName, String typeName, Collection<CacheTypeFieldMetadata> fields,
-        Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException;
+    protected abstract <R> R buildObject(@Nullable String cacheName, String typeName,
+        Collection<CacheTypeFieldMetadata> fields, Map<String, Integer> loadColIdxs, ResultSet rs)
+        throws CacheLoaderException;
 
     /**
      * Extract key type id from key object.
@@ -477,8 +479,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
-                .getTypeMetadata();
+            CacheConfiguration ccfg = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            Collection<CacheTypeMetadata> types = ccfg.getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
 
@@ -1312,7 +1315,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
          */
-        public EntryMapping(String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
+        public EntryMapping(@Nullable String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
             this.cacheName = cacheName;
 
             this.dialect = dialect;

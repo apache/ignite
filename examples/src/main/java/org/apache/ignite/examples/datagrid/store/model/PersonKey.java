@@ -29,7 +29,7 @@ public class PersonKey implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Value for id. */
-    private int id;
+    private long id;
 
     /**
      * Empty constructor.
@@ -42,7 +42,7 @@ public class PersonKey implements Serializable {
      * Full constructor.
      */
     public PersonKey(
-        int id
+        long id
     ) {
         this.id = id;
     }
@@ -52,7 +52,7 @@ public class PersonKey implements Serializable {
      *
      * @return Value for id.
      */
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -61,7 +61,7 @@ public class PersonKey implements Serializable {
      *
      * @param id New value for id.
      */
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -83,7 +83,7 @@ public class PersonKey implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = id;
+        int res = (int)(id ^ (id >>> 32));
 
         return res;
     }
