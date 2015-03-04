@@ -112,8 +112,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
-            IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
-                F.<Cache.Entry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
+            CacheEntryPredicate prjPred = qry.query().projectionFilter();
 
             Marshaller marsh = cctx.marshaller();
 

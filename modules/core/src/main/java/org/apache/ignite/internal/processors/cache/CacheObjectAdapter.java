@@ -57,6 +57,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         assert valBytes != null;
 
         out.writeBoolean(byteArray());
+
         U.writeByteArray(out, valBytes);
     }
 

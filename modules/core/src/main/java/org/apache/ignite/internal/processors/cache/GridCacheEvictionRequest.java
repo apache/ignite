@@ -42,12 +42,8 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
 
     /** Entries to clear from near and backup nodes. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> entries;
-
-    /** Serialized entries. */
-    @GridToStringExclude
-    private byte[] entriesBytes;
+    @GridDirectCollection(CacheEvictionEntry.class)
+    private Collection<CacheEvictionEntry> entries;
 
     /** Topology version. */
     private long topVer;
@@ -84,10 +80,16 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
         super.prepareMarshal(ctx);
 
         if (entries != null) {
-            if (ctx.deploymentEnabled())
-                prepareObjects(entries, ctx);
+            boolean depEnabled = ctx.deploymentEnabled();
 
-            entriesBytes = ctx.marshaller().marshal(entries);
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEvictionEntry e : entries) {
+                e.prepareMarshal(cctx);
+
+                if (depEnabled)
+                    prepareObject(e.key().value(cctx, false), ctx);
+            }
         }
     }
 
@@ -95,8 +97,12 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entriesBytes != null)
-            entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
+        if (entries != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEvictionEntry e : entries)
+                e.finishUnmarshal(cctx, ldr);
+        }
     }
 
     /**
@@ -109,7 +115,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
     /**
      * @return Entries - {{Key, Version, Boolean (near or not)}, ...}.
      */
-    Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> entries() {
+    Collection<CacheEvictionEntry> entries() {
         return entries;
     }
 
@@ -131,7 +137,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
         assert key != null;
         assert ver != null;
 
-        entries.add(F.t(key, ver, near));
+        entries.add(new CacheEvictionEntry(key, ver, near));
     }
 
     /** {@inheritDoc} */
@@ -155,7 +161,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("entriesBytes", entriesBytes))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -189,7 +195,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
 
         switch (reader.state()) {
             case 3:
-                entriesBytes = reader.readByteArray("entriesBytes");
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

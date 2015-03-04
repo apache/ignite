@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.affinity;
-
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Tests consistent hash affinity function.
+ *
  */
-public class GridAffinityProcessorConsistentHashSelfTest extends GridAffinityProcessorAbstractSelfTest {
+public class CacheEntryPredicateHasValue extends CacheEntryPredicateAdapter {
     /** {@inheritDoc} */
-    @Override protected CacheAffinityFunction affinityFunction() {
-        return new CacheConsistentHashAffinityFunction();
+    @Override public boolean apply(GridCacheEntryEx e) {
+        return hasValue(e);
     }
 }

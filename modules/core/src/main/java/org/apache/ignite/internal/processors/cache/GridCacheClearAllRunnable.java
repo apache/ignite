@@ -133,7 +133,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      */
     protected void clearEntry(GridCacheEntryEx e) {
         try {
-            e.clear(obsoleteVer, false, CU.<K, V>empty());
+            e.clear(obsoleteVer, false, CU.empty0());
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);

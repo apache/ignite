@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.portable;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.math.*;
 import java.util.*;
@@ -30,6 +35,9 @@ import java.util.*;
  *
  */
 public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAdapter implements GridPortableProcessor {
+    /** */
+    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
+
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -60,6 +68,79 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
      */
     public IgniteCacheObjectProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) {
+        if (obj == null)
+            return null;
+
+        return obj.prepareForCache(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
+        return CU.marshal(ctx.kernalContext().cache().context(), val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException
+    {
+        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, byte[] bytes) {
+        if (obj instanceof KeyCacheObject)
+            return (KeyCacheObject)obj;
+
+        return new UserKeyCacheObjectImpl(obj, bytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
+        throws IgniteCheckedException
+    {
+        long ptr = valPtr;
+
+        int size = UNSAFE.getInt(ptr);
+
+        ptr += 4;
+
+        boolean plainByteArr = UNSAFE.getByte(ptr++) == 1;
+
+        byte[] bytes = U.copyMemory(ptr, size);
+
+        if (plainByteArr)
+            return new CacheObjectImpl(bytes, null);
+
+        if (ctx.offheapTiered()) {
+            IgniteUuid valClsLdrId = U.readGridUuid(ptr + size);
+
+            ClassLoader ldr =
+                valClsLdrId != null ? ctx.deploy().getClassLoader(valClsLdrId) : ctx.deploy().localLoader();
+
+            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, ldr), bytes);
+        }
+        else
+            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, U.gridClassLoader()), bytes);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes) {
+        if ((obj == null && bytes == null) || obj instanceof CacheObject)
+            return (CacheObject)obj;
+
+        if (bytes != null)
+            return new CacheObjectImpl(obj, bytes);
+
+        return new UserCacheObjectImpl(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName) {
+        return new CacheObjectContext(ctx);
     }
 
     /** {@inheritDoc} */

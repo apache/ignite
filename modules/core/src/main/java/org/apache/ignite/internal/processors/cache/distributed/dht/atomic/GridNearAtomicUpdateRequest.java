@@ -116,11 +116,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private byte[] expiryPlcBytes;
 
     /** Filter. */
-    @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<Object, Object>>[] filter;
-
-    /** Filter bytes. */
-    private byte[][] filterBytes;
+    private CacheEntryPredicate[] filter;
 
     /** Flag indicating whether request contains primary keys. */
     private boolean hasPrimary;
@@ -173,7 +169,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         boolean forceTransformBackups,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
-        @Nullable IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -282,7 +278,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Filter.
      */
-    @Nullable public IgnitePredicate<Cache.Entry<Object, Object>>[] filter() {
+    @Nullable public CacheEntryPredicate[] filter() {
         return filter;
     }
 
@@ -511,7 +507,21 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         else
             prepareMarshalCacheObjects(vals, cctx);
 
-        filterBytes = marshalFilter(filter, ctx);
+        if (filter != null) {
+            boolean hasFilter = false;
+
+            for (CacheEntryPredicate p : filter) {
+                if (p != null) {
+                    hasFilter = true;
+
+                    p.prepareMarshal(cctx);
+                }
+            }
+
+            if (!hasFilter)
+                filter = null;
+        }
+
         invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
 
         if (expiryPlc != null)
@@ -531,7 +541,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
 
-        filter = unmarshalFilter(filterBytes, ctx, ldr);
+        if (filter != null) {
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
+        }
+
         invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
 
         if (expiryPlcBytes != null)
@@ -590,7 +606,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeObjectArray("filterBytes", filterBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -626,7 +642,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeByte("op", op != null ? (byte) op.ordinal() : -1))
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -644,7 +660,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte) syncMode.ordinal() : -1))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -738,7 +754,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 9:
-                filterBytes = reader.readObjectArray("filterBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
