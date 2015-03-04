@@ -33,6 +33,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
@@ -42,6 +43,7 @@ import java.util.*;
 
 import static java.util.Arrays.*;
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -206,6 +208,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
             if (log.isDebugEnabled())
                 log.debug("Starting SPI implementation: " + spi.getClass().getName());
+
+            if (spi instanceof DiscoverySpi)
+                ((DiscoverySpi)spi).setNodeAttributes(ctx.nodeAttributes(), VER);
 
             try {
                 spi.spiStart(ctx.gridName());
