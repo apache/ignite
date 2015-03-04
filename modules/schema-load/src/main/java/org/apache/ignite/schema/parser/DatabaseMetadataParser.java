@@ -23,11 +23,15 @@ import org.apache.ignite.schema.parser.dialect.*;
 
 import java.sql.*;
 import java.util.*;
+import java.util.logging.*;
 
 /**
  * Database metadata parser.
  */
 public class DatabaseMetadataParser {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(DatabaseMetadataParser.class.getName());
+
     /**
      * Parse database metadata.
      *
@@ -50,8 +54,7 @@ public class DatabaseMetadataParser {
                 dialect = new JdbcMetadataDialect();
         }
         catch (SQLException e) {
-            System.err.println("Failed to resolve dialect (JdbcMetaDataDialect will be used.");
-            e.printStackTrace();
+            log.log(Level.SEVERE, "Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
 
             dialect = new JdbcMetadataDialect();
         }

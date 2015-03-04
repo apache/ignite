@@ -157,5 +157,5 @@ object VisorAckCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromAck2Visor(vs: VisorTag) = cmd
+    implicit def fromAck2Visor(vs: VisorTag): VisorAckCommand = cmd
 }
