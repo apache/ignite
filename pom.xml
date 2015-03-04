@@ -1138,7 +1138,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?'/>
                                             <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
