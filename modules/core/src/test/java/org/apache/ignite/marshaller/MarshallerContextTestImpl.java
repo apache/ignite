@@ -41,11 +41,14 @@ public class MarshallerContextTestImpl implements MarshallerContext {
 
             BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
 
-            String clsName;
+            String line;
 
-            while ((clsName = rdr.readLine()) != null) {
+            while ((line = rdr.readLine()) != null) {
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+
                 try {
-                    Class cls = U.forName(clsName, ldr);
+                    Class cls = U.forName(line.trim(), ldr);
 
                     map.put(cls.getName().hashCode(), cls);
                 }

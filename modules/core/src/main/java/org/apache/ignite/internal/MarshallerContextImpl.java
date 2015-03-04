@@ -51,10 +51,14 @@ public class MarshallerContextImpl implements MarshallerContext {
 
             BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
 
-            String clsName;
+            String line;
 
-            while ((clsName = rdr.readLine()) != null)
-                clsNameById.put(clsName.hashCode(), clsName);
+            while ((line = rdr.readLine()) != null) {
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+
+                clsNameById.put(line.hashCode(), line.trim());
+            }
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
