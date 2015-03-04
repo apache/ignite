@@ -803,14 +803,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 5:
-                if (!F.isEmptyOrNulls(filters)) {
-                    for (CacheEntryPredicate filter : filters) {
-                        if (filter == null) {
-                            System.out.println("TEST FAIL");
-                        }
-                    }
-                }
-                if (!writer.writeObjectArray("filters", filters, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray("filters", !F.isEmptyOrNulls(filters) ? filters : null, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
