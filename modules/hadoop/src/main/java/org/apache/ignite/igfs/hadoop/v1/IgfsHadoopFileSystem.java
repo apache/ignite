@@ -26,9 +26,9 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -44,6 +44,7 @@ import static org.apache.ignite.configuration.IgfsConfiguration.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 /**
  * {@code IGFS} Hadoop 1.x file system driver over file system API. To use
@@ -57,7 +58,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  *
  *  &lt;property&gt;
  *      &lt;name&gt;fs.igfs.impl&lt;/name&gt;
- *      &lt;value&gt;org.apache.ignite.igfs.hadoop.IgfsHadoopFileSystem&lt;/value&gt;
+ *      &lt;value&gt;org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
  * You should also add Ignite JAR and all libraries to Hadoop classpath. To
@@ -271,50 +272,29 @@ public class IgfsHadoopFileSystem extends FileSystem {
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 
-            if (paths.pathModes() != null && !paths.pathModes().isEmpty()) {
+            if (!initSecondary && paths.pathModes() != null && !paths.pathModes().isEmpty()) {
                 for (T2<IgfsPath, IgfsMode> pathMode : paths.pathModes()) {
                     IgfsMode mode = pathMode.getValue();
 
-                    initSecondary |= mode == PROXY;
+                    if (mode == PROXY) {
+                        initSecondary = true;
+
+                        break;
+                    }
                 }
             }
 
             if (initSecondary) {
                 Map<String, String> props = paths.properties();
 
-                String secUri = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
-                String secConfPath = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
-
-                if (secConfPath == null)
-                    throw new IOException("Failed to connect to the secondary file system because configuration " +
-                        "path is not provided.");
-
-                if (secUri == null)
-                    throw new IOException("Failed to connect to the secondary file system because URI is not " +
-                        "provided.");
+                String secUri = props.get(SECONDARY_FS_URI);
+                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
                 try {
-                    secondaryUri = new URI(secUri);
+                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
-                    URL secondaryCfgUrl = U.resolveIgniteUrl(secConfPath);
-
-                    Configuration conf = new Configuration();
-
-                    if (secondaryCfgUrl != null)
-                        conf.addResource(secondaryCfgUrl);
-
-                    String prop = String.format("fs.%s.impl.disable.cache", secondaryUri.getScheme());
-
-                    conf.setBoolean(prop, true);
-
-                    secondaryFs = FileSystem.get(secondaryUri, conf);
-                }
-                catch (URISyntaxException ignore) {
-                    if (!mgmt)
-                        throw new IOException("Failed to resolve secondary file system URI: " + secUri);
-                    else
-                        LOG.warn("Visor failed to create secondary file system (operations on paths with PROXY mode " +
-                            "will have no effect).");
+                    secondaryFs = secProvider.createFileSystem();
+                    secondaryUri = secProvider.uri();
                 }
                 catch (IOException e) {
                     if (!mgmt)

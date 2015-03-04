@@ -29,6 +29,12 @@ import java.net.*;
  * Internal API extension for {@link org.apache.ignite.IgniteFs}.
  */
 public interface IgfsEx extends IgniteFs {
+    /** Property name for path to Hadoop configuration. */
+    String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
+
+    /** Property name for URI of file system. */
+    String SECONDARY_FS_URI = "SECONDARY_FS_URI";
+
     /**
      * Stops IGFS cleaning all used resources.
      */
