@@ -100,7 +100,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Put filters. */
     @GridToStringInclude
+    @GridDirectTransient
     private CacheEntryPredicate[] filters;
+
+    /** Filter bytes. */
+    private byte[] filterBytes;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     @GridDirectTransient
@@ -647,6 +651,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param filters Put filters.
      */
     public void filters(CacheEntryPredicate[] filters) {
+        filterBytes = null;
+
         this.filters = filters;
     }
 
@@ -695,6 +701,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (transformClosBytes == null && entryProcessorsCol != null)
             transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
+        if (F.isEmptyOrNulls(filters))
+            filterBytes = null;
+        else if (filterBytes == null)
+            filterBytes = CU.marshal(ctx, filters);
+
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
@@ -729,12 +740,16 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (transformClosBytes != null && entryProcessorsCol == null)
             entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
-        if (filters == null)
-            filters = CU.empty0();
-        else {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+        if (filters == null && filterBytes != null) {
+            filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
+
+            if (filters == null)
+                filters = CU.empty0();
+            else {
+                for (CacheEntryPredicate p : filters) {
+                    if (p != null)
+                        p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
+                }
             }
         }
 
@@ -803,7 +818,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeObjectArray("filters", filters, MessageCollectionItemType.MSG))
+                if (!writer.writeByteArray("filterBytes", filterBytes))
                     return false;
 
                 writer.incrementState();
@@ -892,7 +907,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 5:
-                filters = reader.readObjectArray("filters", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                filterBytes = reader.readByteArray("filterBytes");
 
                 if (!reader.isLastRead())
                     return false;
