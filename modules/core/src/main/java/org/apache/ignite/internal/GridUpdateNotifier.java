@@ -33,9 +33,7 @@ import java.util.concurrent.*;
 import static java.net.URLEncoder.*;
 
 /**
- * This class is responsible for notification about new version availability. Note that this class
- * does not send any information and merely accesses the {@code www.gridgain.com} web site for the
- * latest version data.
+ * This class is responsible for notification about new version availability.
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
@@ -90,7 +88,7 @@ class GridUpdateNotifier {
      * @param gw Kernal gateway.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, String site, GridKernalGateway gw, boolean reportOnlyNew)
+    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, boolean reportOnlyNew)
         throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -108,7 +106,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://" + site + "/update_status.php";
+            url = "http://tiny.cc/updater/update_status.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;

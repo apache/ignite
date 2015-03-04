@@ -44,8 +44,6 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         if (ctx.config().isDaemon())
             return;
 

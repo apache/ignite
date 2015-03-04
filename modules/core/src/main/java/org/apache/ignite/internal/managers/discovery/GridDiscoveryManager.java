@@ -192,8 +192,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         long totSysMemory = -1;
 
         try {

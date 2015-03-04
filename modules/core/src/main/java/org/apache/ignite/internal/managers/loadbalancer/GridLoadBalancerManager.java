@@ -45,8 +45,6 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         startSpi();
 
         if (log.isDebugEnabled())
