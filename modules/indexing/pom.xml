@@ -66,4 +66,8 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>ignite-release-test-branch-5</tag>
+  </scm>
 </project>

@@ -46,4 +46,8 @@
             <version>1.6.4</version>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>ignite-release-test-branch-5</tag>
+  </scm>
 </project>

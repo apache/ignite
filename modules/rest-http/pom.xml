@@ -113,4 +113,8 @@
             <version>1.8.3</version>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>ignite-release-test-branch-5</tag>
+  </scm>
 </project>

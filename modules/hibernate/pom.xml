@@ -106,4 +106,8 @@
             </testResource>
         </testResources>
     </build>
+
+  <scm>
+    <tag>ignite-release-test-branch-5</tag>
+  </scm>
 </project>
