@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -147,7 +148,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            return cache.size();
+            return cache.size(CachePeekMode.PRIMARY);
         }
     }
 
