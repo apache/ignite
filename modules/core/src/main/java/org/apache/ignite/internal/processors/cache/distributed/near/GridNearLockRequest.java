@@ -404,7 +404,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 writer.incrementState();
 
             case 33:
-                if (!topVer.writeTo(writer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -514,7 +514,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 reader.incrementState();
 
             case 33:
-                topVer = AffinityTopologyVersion.readFrom(reader);
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

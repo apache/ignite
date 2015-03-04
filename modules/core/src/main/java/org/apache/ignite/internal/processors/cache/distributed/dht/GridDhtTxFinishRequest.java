@@ -282,7 +282,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 writer.incrementState();
 
             case 26:
-                if (!topVer.writeTo(writer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -370,7 +370,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 reader.incrementState();
 
             case 26:
-                topVer = AffinityTopologyVersion.readFrom(reader);
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

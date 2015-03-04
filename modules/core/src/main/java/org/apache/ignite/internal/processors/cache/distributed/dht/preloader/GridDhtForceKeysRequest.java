@@ -197,7 +197,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 writer.incrementState();
 
             case 6:
-                if (!topVer.writeTo(writer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -243,7 +243,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 reader.incrementState();
 
             case 6:
-                topVer = AffinityTopologyVersion.readFrom(reader);
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

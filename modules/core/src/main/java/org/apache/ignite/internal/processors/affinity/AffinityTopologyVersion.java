@@ -47,7 +47,15 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @param topVer Version.
+     * @param topVer Topology version.
+     */
+    public AffinityTopologyVersion(long topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param minorTopVer Minor topology version.
      */
     public AffinityTopologyVersion(
         long topVer,
@@ -108,14 +116,60 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO: implement.
-        return false;
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("minorTopVer", minorTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO: implement.
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                minorTopVer = reader.readInt("minorTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -125,24 +179,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        // TODO: implement.
-        return 0;
-    }
-
-    /**
-     * @param msgWriter Message writer.
-     */
-    public boolean writeTo(MessageWriter msgWriter) {
-        return msgWriter.writeLong("topVer.idx", topVer);
-    }
-
-    /**
-     * @param msgReader Message reader.
-     */
-    public static AffinityTopologyVersion readFrom(MessageReader msgReader) {
-        long topVer = msgReader.readLong("topVer.idx");
-
-        return new AffinityTopologyVersion(topVer, 0);
+        return 2;
     }
 
     /** {@inheritDoc} */

@@ -89,7 +89,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
 
         switch (writer.state()) {
             case 3:
-                if (!topVer.writeTo(writer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -111,7 +111,7 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
 
         switch (reader.state()) {
             case 3:
-                topVer = AffinityTopologyVersion.readFrom(reader);
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

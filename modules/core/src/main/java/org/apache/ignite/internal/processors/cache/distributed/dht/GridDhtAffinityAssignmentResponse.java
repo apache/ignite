@@ -136,7 +136,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
                 writer.incrementState();
 
             case 4:
-                if (!topVer.writeTo(writer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -166,7 +166,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
                 reader.incrementState();
 
             case 4:
-                topVer = AffinityTopologyVersion.readFrom(reader);
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
