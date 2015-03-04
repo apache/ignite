@@ -17,20 +17,27 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.concurrent.*;
 
 /**
- *
+ * Implementation for node-local storage.
+ * <p>
+ * {@code ClusterNodeLocalMapImpl} is similar to {@link ThreadLocal} in a way that its values are not
+ * distributed and kept only on local node (similar like {@link ThreadLocal} values are attached to the
+ * current thread only). Node-local values are used primarily by jobs executed from the remote
+ * nodes to keep intermediate state on the local node between executions.
+ * <p>
+ * {@code ClusterNodeLocalMapImpl} is a {@link ConcurrentMap} so it is trivial to use.
+ * <p>
+ * You can get an instance of {@code ClusterNodeLocalMapImpl} by calling {@link IgniteCluster#nodeLocalMap()} method.
  */
-public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements ClusterNodeLocalMap<K, V>,
+public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements ConcurrentMap<K, V>,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -56,16 +63,6 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
         assert ctx != null;
 
         this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V addIfAbsent(K key, @Nullable Callable<V> dflt) {
-        return F.addIfAbsent(this, key, dflt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V addIfAbsent(K key, V val) {
-        return F.addIfAbsent(this, key, val);
     }
 
     /** {@inheritDoc} */

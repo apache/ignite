@@ -138,6 +138,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
+        suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
+        suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
 
         // Heuristic exception handling. TODO IGNITE-257
 //        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
@@ -174,7 +178,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearReadersSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearReadersSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAffinitySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConsistentHashAffinityFunctionExcludeNeighborsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityClientSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedProjectionAffinitySelfTest.class));
@@ -393,8 +396,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
         // suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
-        // TODO IGNITE-285.
-        // suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
+        suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
 
         return suite;
     }

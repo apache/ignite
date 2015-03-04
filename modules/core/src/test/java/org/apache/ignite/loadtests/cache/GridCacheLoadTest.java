@@ -47,8 +47,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     /** Write closure. */
     private final CIX1<IgniteCache<Integer, Integer>> writeClos =
         new CIX1<IgniteCache<Integer, Integer>>() {
-        @Override public void applyx(IgniteCache<Integer, Integer> cache)
-            throws IgniteCheckedException {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache) {
             for (int i = 0; i < operationsPerTx; i++) {
                 int kv = RAND.nextInt(KEY_RANGE);
 
@@ -65,8 +64,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     /** Read closure. */
     private final CIX1<IgniteCache<Integer, Integer>> readClos =
         new CIX1<IgniteCache<Integer, Integer>>() {
-        @Override public void applyx(IgniteCache<Integer, Integer> cache)
-            throws IgniteCheckedException {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache) {
             for (int i = 0; i < operationsPerTx; i++) {
                 int k = RAND.nextInt(KEY_RANGE);
 

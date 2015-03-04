@@ -37,7 +37,7 @@ import java.util.concurrent.*;
  * each instance a different name.
  * <p>
  * Note that {@code Grid} extends {@link ClusterGroup} which means that it provides grid projection
- * functionality over the whole grid (instead os a subgroup of nodes).
+ * functionality over the whole grid (instead of a subgroup of nodes).
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
@@ -159,7 +159,7 @@ public interface Ignite extends AutoCloseable {
      * Creates new {@link ExecutorService} which will execute all submitted
      * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
      * This essentially
-     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
+     * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
      * replacement for local thread pools.
      *
      * @return Grid-enabled {@code ExecutorService}.

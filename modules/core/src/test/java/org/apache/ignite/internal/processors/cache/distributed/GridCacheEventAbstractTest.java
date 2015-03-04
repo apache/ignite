@@ -135,10 +135,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /**
      * Clear caches without generating events.
-     *
-     * @throws IgniteCheckedException If failed to clear caches.
      */
-    private void clearCaches() throws IgniteCheckedException {
+    private void clearCaches() {
         for (int i = 0; i < gridCnt; i++) {
             IgniteCache<String, Integer> cache = jcache(i);
 

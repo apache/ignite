@@ -76,7 +76,11 @@ public class QueryConfiguration {
         this.maxOffHeapMemory = maxOffHeapMemory;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets maximum amount of memory available to off-heap storage.
+     *
+     * @return Maximum memory in bytes available to off-heap memory space.
+     */
     public long getMaxOffHeapMemory() {
         return maxOffHeapMemory;
     }
@@ -103,12 +107,20 @@ public class QueryConfiguration {
         this.searchPath = searchPath;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets the optional search path consisting of space names to search SQL schema objects.
+     *
+     * @return Search path.
+     */
     @Nullable public String[] getSearchPath() {
         return searchPath;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets script path to be ran against H2 database after opening.
+     *
+     * @return Script path.
+     */
     @Nullable public String getInitialScriptPath() {
         return initScriptPath;
     }
@@ -133,12 +145,21 @@ public class QueryConfiguration {
         this.idxCustomFuncClss = idxCustomFuncClss;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @return List of classes.
+     */
     @Nullable public Class<?>[] getIndexCustomFunctionClasses() {
         return idxCustomFuncClss;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Get long query execution time timeout.
+     *
+     * @return Long query execution timeout.
+     */
     public long getLongQueryExecutionTimeout() {
         return longQryExecTimeout;
     }
@@ -157,7 +178,11 @@ public class QueryConfiguration {
         this.longQryExecTimeout = longQryExecTimeout;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets flag marking SPI should print SQL execution plan for long queries (explain SQL query).
+     *
+     * @return Flag marking SPI should print SQL execution plan for long queries (explain SQL query).
+     */
     public boolean isLongQueryExplain() {
         return longQryExplain;
     }

@@ -80,7 +80,7 @@ public class IgfsHadoopWrapper implements IgfsHadoop {
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgfsHandshakeResponse>() {
             @Override public IgfsHandshakeResponse apply(IgfsHadoopEx hadoop,
-                IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {
+                IgfsHandshakeResponse hndResp) {
                 return hndResp;
             }
         });

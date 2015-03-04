@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -71,7 +71,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
         cfg.setWriteThrough(false);
-        cfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 32));
+        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 32));
         cfg.setBackups(1);
 
         return cfg;

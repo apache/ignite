@@ -54,9 +54,8 @@ public class GridHadoopSplitWrapper extends GridHadoopInputSplit {
      * @param clsName Class name.
      * @param bytes Serialized class.
      * @param hosts Hosts where split is located.
-     * @throws IOException If failed.
      */
-    public GridHadoopSplitWrapper(int id, String clsName, byte[] bytes, String[] hosts) throws IOException {
+    public GridHadoopSplitWrapper(int id, String clsName, byte[] bytes, String[] hosts) {
         assert hosts != null;
         assert clsName != null;
         assert bytes != null;

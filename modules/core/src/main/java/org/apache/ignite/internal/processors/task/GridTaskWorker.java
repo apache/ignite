@@ -411,7 +411,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
                 new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() throws IgniteCheckedException {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() {
                         return task.map(shuffledNodes, arg);
                     }
                 });
@@ -902,7 +902,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             try {
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Nullable @Override public R call() throws IgniteCheckedException {
+                    @Nullable @Override public R call() {
                         return task.reduce(results);
                     }
                 });

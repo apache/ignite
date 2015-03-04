@@ -272,7 +272,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
                     return null;
                 }
 
-                @Override public float getProgress() throws IOException, InterruptedException {
+                @Override public float getProgress() {
                     return 0;
                 }
 

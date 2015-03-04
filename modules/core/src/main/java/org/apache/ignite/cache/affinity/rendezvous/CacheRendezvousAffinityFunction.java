@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -58,7 +59,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     private static final long serialVersionUID = 0L;
 
     /** Default number of partitions. */
-    public static final int DFLT_PARTITION_COUNT = 10000;
+    public static final int DFLT_PARTITION_COUNT = 1024;
 
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR =

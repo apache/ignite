@@ -17,19 +17,19 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
-import org.apache.ignite.internal.util.typedef._
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.util.typedef._
+import org.apache.ignite.internal.visor.cache._
+import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
-import org.apache.ignite.visor.VisorTag
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
+import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
@@ -244,10 +244,11 @@ class VisorCacheCommand {
                 }
 
                 val cacheName = argValue("c", argLst) match {
-                    case Some("<default>") | Some(CACHE_DFLT) =>
+                    case Some(dfltName) if dfltName == DFLT_CACHE_KEY || dfltName == DFLT_CACHE_NAME =>
                         argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
 
                         Some(null)
+
                     case cn => cn
                 }
 
@@ -423,9 +424,9 @@ class VisorCacheCommand {
      */
     private def mkCacheName(@Nullable s: String): String = {
         if (s == null) {
-            val v = mfind(CACHE_DFLT)
+            val v = mfind(DFLT_CACHE_KEY)
 
-            "<default>" + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
+            DFLT_CACHE_NAME + (if (v.isDefined) "(@" + v.get._1 + ')' else "")
         }
         else {
             val v = mfind(s)
@@ -439,7 +440,7 @@ class VisorCacheCommand {
      *
      * @param s Cache host.
      */
-    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else CACHE_DFLT, "c")
+    private def registerCacheName(@Nullable s: String) = setVarIfAbsent(if (s != null) s else DFLT_CACHE_KEY, "c")
 
     /**
      * ===Command===
@@ -745,8 +746,11 @@ object VisorCacheCommand {
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
 
+    /** Default cache name to show on screen. */
+    private final val DFLT_CACHE_NAME = escapeName(null)
+    
     /** Default cache key. */
-    protected val CACHE_DFLT = "<default>-" + UUID.randomUUID().toString
+    protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
 
     /** Singleton command */
     private val cmd = new VisorCacheCommand
@@ -776,33 +780,33 @@ object VisorCacheCommand {
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
-        val writeBehind = cfg.writeBehind()
+        val queryCfg = cfg.queryConfiguration()
 
         val cacheT = VisorTextTable()
 
         cacheT #= ("Name", "Value")
 
         cacheT += ("Mode", cfg.mode)
-        cacheT += ("Atomicity Mode", cfg.atomicityMode)
-        cacheT += ("Atomic Sequence Reserve Size", cfg.atomicSequenceReserveSize)
-        cacheT += ("Atomic Write Ordering Mode", cfg.atomicWriteOrderMode)
+        cacheT += ("Atomicity Mode", safe(cfg.atomicityMode))
+        cacheT += ("Atomic Write Ordering Mode", safe(cfg.atomicWriteOrderMode))
+        cacheT += ("Statistic Enabled", bool2Str(cfg.statisticsEnabled()))
+        cacheT += ("Management Enabled", bool2Str(cfg.managementEnabled()))
 
         cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
 
-        cacheT += ("Write Synchronization Mode", cfg.writeSynchronizationMode)
-        cacheT += ("Swap Enabled", cfg.swapEnabled())
-        cacheT += ("Invalidate", cfg.invalidate())
+        cacheT += ("Write Synchronization Mode", safe(cfg.writeSynchronizationMode))
+        cacheT += ("Swap Enabled", bool2Str(cfg.swapEnabled()))
+        cacheT += ("Invalidate", bool2Str(cfg.invalidate()))
         cacheT += ("Start Size", cfg.startSize())
 
-        cacheT += ("Transaction Manager Lookup", cfg.transactionManagerLookupClassName())
+        cacheT += ("Transaction Manager Lookup", safe(cfg.transactionManagerLookupClassName()))
 
-        cacheT += ("Affinity Function", affinityCfg.function())
+        cacheT += ("Affinity Function", safe(affinityCfg.function()))
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
-        cacheT += ("Affinity Partitions", affinityCfg.partitions())
-        cacheT += ("Affinity Default Replicas", affinityCfg.defaultReplicas())
-        cacheT += ("Affinity Exclude Neighbors", affinityCfg.excludeNeighbors())
-        cacheT += ("Affinity Mapper", affinityCfg.mapper())
+        cacheT += ("Affinity Partitions", safe(affinityCfg.partitions()))
+        cacheT += ("Affinity Exclude Neighbors", safe(affinityCfg.excludeNeighbors()))
+        cacheT += ("Affinity Mapper", safe(affinityCfg.mapper()))
 
         cacheT += ("Preload Mode", preloadCfg.mode())
         cacheT += ("Preload Batch Size", preloadCfg.batchSize())
@@ -811,12 +815,12 @@ object VisorCacheCommand {
         cacheT += ("Preloading Delay", preloadCfg.partitionedDelay())
         cacheT += ("Time Between Preload Messages", preloadCfg.throttle())
 
-        cacheT += ("Eviction Policy Enabled", evictCfg.policy() != null)
-        cacheT += ("Eviction Policy", evictCfg.policy())
-        cacheT += ("Eviction Policy Max Size", evictCfg.policyMaxSize())
-        cacheT += ("Eviction Filter", evictCfg.filter())
+        cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.policy() != null))
+        cacheT += ("Eviction Policy", safe(evictCfg.policy()))
+        cacheT += ("Eviction Policy Max Size", safe(evictCfg.policyMaxSize()))
+        cacheT += ("Eviction Filter", safe(evictCfg.filter()))
         cacheT += ("Eviction Key Buffer Size", evictCfg.synchronizedKeyBufferSize())
-        cacheT += ("Eviction Synchronized", evictCfg.evictSynchronized())
+        cacheT += ("Eviction Synchronized", bool2Str(evictCfg.evictSynchronized()))
         cacheT += ("Eviction Overflow Ratio", evictCfg.maxOverflowRatio())
         cacheT += ("Synchronous Eviction Timeout", evictCfg.synchronizedTimeout())
         cacheT += ("Synchronous Eviction Concurrency Level", evictCfg.synchronizedConcurrencyLevel())
@@ -824,32 +828,49 @@ object VisorCacheCommand {
         cacheT += ("Distribution Mode", cfg.distributionMode())
 
         cacheT += ("Near Start Size", nearCfg.nearStartSize())
-        cacheT += ("Near Eviction Policy", nearCfg.nearEvictPolicy())
-        cacheT += ("Near Eviction Enabled", nearCfg.nearEnabled())
-        cacheT += ("Near Eviction Synchronized", evictCfg.nearSynchronized())
-        cacheT += ("Near Eviction Policy Max Size", nearCfg.nearEvictMaxSize())
+        cacheT += ("Near Eviction Policy", safe(nearCfg.nearEvictPolicy()))
+        cacheT += ("Near Eviction Enabled", bool2Str(nearCfg.nearEnabled()))
+        cacheT += ("Near Eviction Synchronized", bool2Str(evictCfg.nearSynchronized()))
+        cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.nearEvictMaxSize()))
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
-        cacheT += ("Query Indexing Enabled", cfg.queryIndexEnabled())
+        cacheT += ("Query Indexing Enabled", bool2Str(cfg.queryIndexEnabled()))
         cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
-        cacheT += ("Indexing SPI Name", cfg.indexingSpiName())
-        cacheT += ("Cache Interceptor", cfg.interceptor())
+        cacheT += ("Metadata type count", cfg.typeMeta().size())
+        cacheT += ("Indexing SPI Name", safe(cfg.indexingSpiName()))
+        cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 
-        cacheT += ("Store Enabled", storeCfg.enabled())
-        cacheT += ("Store", storeCfg.store())
-        cacheT += ("Store Values In Bytes", storeCfg.valueBytes())
+        cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
+        cacheT += ("Store Сlass", safe(storeCfg.store()))
+        cacheT += ("Store Factory Сlass", storeCfg.storeFactory())
+        cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
+        cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 
-        cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory())
-
-        cacheT += ("Write-Behind Enabled", writeBehind.enabled())
-        cacheT += ("Write-Behind Flush Size", writeBehind.flushSize())
-        cacheT += ("Write-Behind Frequency", writeBehind.flushFrequency())
-        cacheT += ("Write-Behind Flush Threads Count", writeBehind.flushThreadCount())
-        cacheT += ("Write-Behind Batch Size", writeBehind.batchSize())
+        cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.enabled()))
+        cacheT += ("Write-Behind Flush Size", storeCfg.flushSize())
+        cacheT += ("Write-Behind Frequency", storeCfg.flushFrequency())
+        cacheT += ("Write-Behind Flush Threads Count", storeCfg.flushThreadCount())
+        cacheT += ("Write-Behind Batch Size", storeCfg.batchSize())
 
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
+        cacheT += ("Keep Values Bytes", cfg.valueBytes())
+        cacheT += ("Off-Heap Size", if (cfg.offsetHeapMaxMemory() >= 0) cfg.offsetHeapMaxMemory() else NA)
+
+        cacheT += ("Loader Factory Class Name", safe(cfg.loaderFactory()))
+        cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))
+        cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
+
+        if (queryCfg != null) {
+            cacheT +=("Query Type Resolver", safe(queryCfg.typeResolver()))
+            cacheT +=("Query Indexing Primitive Key", bool2Str(queryCfg.indexPrimitiveKey()))
+            cacheT +=("Query Indexing Primitive Value", bool2Str(queryCfg.indexPrimitiveValue()))
+            cacheT +=("Query Fixed Typing", bool2Str(queryCfg.indexFixedTyping()))
+            cacheT +=("Query Escaped Names", bool2Str(queryCfg.escapeAll()))
+        }
+        else
+            cacheT += ("Query Configuration", NA)
 
         println(title)
 

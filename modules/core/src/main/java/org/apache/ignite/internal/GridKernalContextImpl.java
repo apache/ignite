@@ -36,11 +36,12 @@ import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.schedule.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -125,10 +126,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridSecurityProcessor authProc;
-
-    /** */
-    @GridToStringExclude
-    private GridSecureSessionProcessor secProc;
 
     /** */
     @GridToStringExclude
@@ -249,6 +246,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private ClusterProcessor cluster;
+
+    /** */
+    @GridToStringExclude
     private DataStructuresProcessor dataStructuresProc;
 
     /** */
@@ -301,6 +302,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
+    /** Exception registry. */
+    private IgniteExceptionRegistry registry;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -329,6 +333,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
+        IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
@@ -343,6 +348,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
+        this.registry = registry;
         this.utilityCachePool = utilityCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
@@ -398,8 +404,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
             authProc = (GridSecurityProcessor)comp;
-        else if (comp instanceof GridSecureSessionProcessor)
-            secProc = (GridSecureSessionProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridSwapSpaceManager)
@@ -462,6 +466,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             qryProc = (GridQueryProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
+        else if (comp instanceof ClusterProcessor)
+            cluster = (ClusterProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -620,11 +626,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
         return authProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSecureSessionProcessor secureSession() {
-        return secProc;
     }
 
     /** {@inheritDoc} */
@@ -852,6 +853,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRestExecutorService() {
         return restExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteExceptionRegistry exceptionRegistry() {
+        return registry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterProcessor cluster() {
+        return cluster;
     }
 
     /** {@inheritDoc} */

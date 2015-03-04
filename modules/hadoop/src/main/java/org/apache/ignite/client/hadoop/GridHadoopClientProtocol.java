@@ -57,7 +57,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /** Configuration. */
     private final Configuration conf;
 
-    /** GG client. */
+    /** Ignite client. */
     private volatile GridClient cli;
 
     /** Last received version. */
@@ -70,7 +70,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
      * Constructor.
      *
      * @param conf Configuration.
-     * @param cli GG client.
+     * @param cli Ignite client.
      */
     GridHadoopClientProtocol(Configuration conf, GridClient cli) {
         assert cli != null;
@@ -104,7 +104,8 @@ public class GridHadoopClientProtocol implements ClientProtocol {
             GridHadoopJobStatus status = cli.compute().execute(GridHadoopProtocolSubmitJobTask.class.getName(),
                 new GridHadoopProtocolTaskArguments(jobId.getJtIdentifier(), jobId.getId(), createJobInfo(conf)));
 
-            assert status != null;
+            if (status == null)
+                throw new IOException("Failed to submit job (null status obtained): " + jobId);
 
             return processStatus(status);
         }
@@ -310,7 +311,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
     /**
      * Process received status update.
      *
-     * @param status GG status.
+     * @param status Ignite status.
      * @return Hadoop status.
      */
     private JobStatus processStatus(GridHadoopJobStatus status) {
