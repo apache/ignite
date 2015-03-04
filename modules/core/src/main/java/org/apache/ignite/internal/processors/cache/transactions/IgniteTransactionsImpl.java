@@ -103,7 +103,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             timeout,
             txSize,
-            ctx);
+            ctx.system() ? ctx : null);
     }
 
     /** {@inheritDoc} */
