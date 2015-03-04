@@ -147,7 +147,7 @@ public class NearTxPrepareResponseOwnedValue implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 99;
+        return 102;
     }
 
     /** {@inheritDoc} */

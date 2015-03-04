@@ -223,7 +223,7 @@ public class TxEntryValueHolder implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 98;
+        return 101;
     }
 
     /** {@inheritDoc} */

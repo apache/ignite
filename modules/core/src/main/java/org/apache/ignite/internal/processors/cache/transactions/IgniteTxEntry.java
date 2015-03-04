@@ -26,11 +26,9 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -74,9 +72,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
 
-    /** Filter bytes. */
-    private byte[] filterBytes;
-
     /** Transform. */
     @GridToStringInclude
     @GridDirectTransient
@@ -105,7 +100,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Put filters. */
     @GridToStringInclude
-    @GridDirectTransient
     private CacheEntryPredicate[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
@@ -653,8 +647,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param filters Put filters.
      */
     public void filters(CacheEntryPredicate[] filters) {
-        filterBytes = null;
-
         this.filters = filters;
     }
 
@@ -703,11 +695,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (transformClosBytes == null && entryProcessorsCol != null)
             transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
-        if (F.isEmptyOrNulls(filters))
-            filterBytes = null;
-        else if (filterBytes == null)
-            filterBytes = CU.marshal(ctx, filters);
-
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
@@ -742,17 +729,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (transformClosBytes != null && entryProcessorsCol == null)
             entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
-        if (filters == null && filterBytes != null) {
-            filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
-
-                if (filters == null)
-                    filters = CU.empty0();
-                else {
-                    for (CacheEntryPredicate p : filters) {
-                        if (p != null)
-                            p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
-                    }
-                }
+        if (filters == null)
+            filters = CU.empty0();
+        else {
+            for (CacheEntryPredicate p : filters) {
+                if (p != null)
+                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
             }
         }
 
@@ -821,7 +803,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("filterBytes", filterBytes))
+                if (!writer.writeObjectArray("filters", filters, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -910,7 +892,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 5:
-                filterBytes = reader.readByteArray("filterBytes");
+                filters = reader.readObjectArray("filters", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -964,7 +946,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 97;
+        return 100;
     }
 
     /** {@inheritDoc} */
