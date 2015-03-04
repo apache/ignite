@@ -1780,6 +1780,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param obj Object.
+     * @param bytes Optional value bytes.
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj, byte[] bytes) {
@@ -1791,7 +1792,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return portable().toCacheKeyObject(cacheObjCtx, obj);
+        return portable().toCacheKeyObject(cacheObjCtx, obj, null);
     }
 
     /**
@@ -1803,17 +1804,16 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public KeyCacheObject toCacheKeyObject(Object obj, byte[] bytes, boolean transferOnly)
         throws IgniteCheckedException {
-        // TODO IGNITE-51 move to processor.
         assert obj != null || bytes != null;
 
         if (obj == null) {
             if (transferOnly)
                 return new KeyCacheObjectTransferImpl(bytes);
 
-            obj = marshaller().unmarshal(bytes, deploy().globalLoader());
+            obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().globalLoader());
         }
 
-        return new KeyCacheObjectImpl(obj, bytes);
+        return ctx.portable().toCacheKeyObject(cacheObjCtx, obj, bytes);
     }
 
     /**
@@ -1826,7 +1826,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public CacheObject unswapCacheObject(byte[] bytes, boolean valIsByteArr, @Nullable IgniteUuid clsLdrId)
         throws IgniteCheckedException
     {
-        // TODO IGNITE-51 move to processor.
         if (valIsByteArr)
             return new CacheObjectImpl(bytes, null);
 
@@ -1835,11 +1834,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (ldr == null)
             return null;
 
-        return new CacheObjectImpl(marshaller().unmarshal(bytes, ldr), bytes);
+        return new CacheObjectImpl(portable().unmarshal(cacheObjCtx, bytes, ldr), bytes);
     }
-
-    /** */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /**
      * @param valPtr Value pointer.
@@ -1849,33 +1845,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheObject fromOffheap(long valPtr, boolean tmp) throws IgniteCheckedException {
         assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES;
+        assert valPtr != 0;
 
-        // TODO IGNITE-51.
-        if (portableEnabled())
-            return (CacheObject)portable().unmarshal(valPtr, !tmp);
-
-        long ptr = valPtr;
-
-        int size = UNSAFE.getInt(ptr);
-
-        ptr += 4;
-
-        boolean plainByteArr = UNSAFE.getByte(ptr++) == 1;
-
-        byte[] bytes = U.copyMemory(ptr, size);
-
-        if (plainByteArr)
-            return new CacheObjectImpl(bytes, null);
-
-        if (offheapTiered()) {
-            IgniteUuid valClsLdrId = U.readGridUuid(ptr + size);
-
-            ClassLoader ldr = valClsLdrId != null ? deploy().getClassLoader(valClsLdrId) : deploy().localLoader();
-
-            return new CacheObjectImpl(marshaller().unmarshal(bytes, ldr), bytes);
-        }
-        else
-            return new CacheObjectImpl(marshaller().unmarshal(bytes, U.gridClassLoader()), bytes);
+        return ctx.portable().toCacheObject(this, valPtr, tmp);
     }
 
     /**
@@ -1885,6 +1857,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param deserializePortable Deserialize portable flag.
+     * @param cpy Copy flag.
      */
     @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,

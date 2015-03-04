@@ -26,9 +26,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     /**
      * @param val Key value.
+     * @param bytes Bytes.
      */
-    public UserKeyCacheObjectImpl(Object val) {
-        super(val, null);
+    public UserKeyCacheObjectImpl(Object val, byte[] bytes) {
+        super(val, bytes);
     }
 
     /**
@@ -41,7 +42,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = CU.marshal(ctx.shared(), val);
+            valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
 
         return valBytes;
     }
@@ -50,10 +51,12 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     @Override public CacheObject prepareForCache(GridCacheContext ctx) {
         try {
             if (valBytes == null)
-                valBytes = ctx.marshaller().marshal(val);
+                valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
 
             if (needCopy(ctx)) {
-                Object val = ctx.marshaller().unmarshal(valBytes, ctx.deploy().globalLoader());
+                Object val = ctx.portable().unmarshal(ctx.cacheObjectContext(),
+                    valBytes,
+                    ctx.deploy().globalLoader());
 
                 return new KeyCacheObjectImpl(val, valBytes);
             }

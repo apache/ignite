@@ -2535,43 +2535,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             invokeMap0 = null;
         }
-// TODO IGNITE-51.
-//        else if (cacheCtx.portableEnabled()) {
-//            if (map != null) {
-//                map0 = U.newHashMap(map.size());
-//
-//                try {
-//                    for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
-//                        K key = (K)cacheCtx.marshalToPortable(e.getKey());
-//                        V val = (V)cacheCtx.marshalToPortable(e.getValue());
-//
-//                        map0.put(key, val);
-//                    }
-//                }
-//                catch (IgniteException e) {
-//                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//                }
-//            }
-//            else
-//                map0 = null;
-//
-//            if (invokeMap != null) {
-//                invokeMap0 = U.newHashMap(invokeMap.size());
-//
-//                try {
-//                    for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, Object>> e : invokeMap.entrySet()) {
-//                        K key = (K)cacheCtx.marshalToPortable(e.getKey());
-//
-//                        invokeMap0.put(key, e.getValue());
-//                    }
-//                }
-//                catch (IgniteException e) {
-//                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//                }
-//            }
-//            else
-//                invokeMap0 = null;
-//        }
         else {
             map0 = (Map<K, V>)map;
             invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
@@ -2786,24 +2749,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             keys0 = drMap.keySet();
         }
-// TODO IGNITE-51.
-//        else if (cacheCtx.portableEnabled()) {
-//            try {
-//                if (keys != null) {
-//                    Collection<K> pKeys = new ArrayList<>(keys.size());
-//
-//                    for (K key : keys)
-//                        pKeys.add((K)cacheCtx.marshalToPortable(key));
-//
-//                    keys0 = pKeys;
-//                }
-//                else
-//                    keys0 = null;
-//            }
-//            catch (IgniteException e) {
-//                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//            }
-//        }
         else
             keys0 = keys;
 
