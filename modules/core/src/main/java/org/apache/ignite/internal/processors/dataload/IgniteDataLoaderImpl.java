@@ -446,8 +446,11 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             return new IgniteFutureImpl<>(resFut);
         }
-        catch (IgniteException e) {
+        catch (Throwable e) {
             resFut.onDone(e);
+
+            if (e instanceof Error)
+                throw e;
 
             return new IgniteFinishedFutureImpl<>(ctx, e);
         }
@@ -505,8 +508,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataLoaderPda(key.value(null, false),
-                        CU.value(entry.getValue(), null, false),
+                    jobPda = new DataLoaderPda(key.value(cacheObjCtx, false),
+                        entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
                         updater);
 
                     initPda = false;
@@ -1343,7 +1346,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             for (Map.Entry<KeyCacheObject, CacheObject> e : entries) {
                 try {
-                    e.getKey().finishUnmarshal(cctx, cctx.deploy().globalLoader());
+                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                     GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 

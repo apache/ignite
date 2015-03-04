@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.portable.*;
 
@@ -30,13 +31,52 @@ public class CacheObjectContext {
     /** */
     private GridPortableProcessor proc;
 
+    /** */
+    private CacheAffinityKeyMapper dfltAffMapper;
+
+    /** */
+    private boolean cpyOnGet;
+
+    /** */
+    private boolean unmarshalVals;
+
     /**
      * @param kernalCtx Kernal context.
+     * @param dfltAffMapper Default affinity mapper.
+     * @param cpyOnGet Copy on get flag.
+     * @param unmarshalVals Unmarshal values flag.
      */
-    public CacheObjectContext(GridKernalContext kernalCtx) {
+    public CacheObjectContext(GridKernalContext kernalCtx,
+        CacheAffinityKeyMapper dfltAffMapper,
+        boolean cpyOnGet,
+        boolean unmarshalVals) {
         this.kernalCtx = kernalCtx;
+        this.dfltAffMapper = dfltAffMapper;
+        this.cpyOnGet = cpyOnGet;
+        this.unmarshalVals = unmarshalVals;
 
         proc = kernalCtx.portable();
+    }
+
+    /**
+     * @return Copy on get flag.
+     */
+    public boolean copyOnGet() {
+        return cpyOnGet;
+    }
+
+    /**
+     * @return Unmarshal values flag.
+     */
+    public boolean unmarshalValues() {
+        return unmarshalVals;
+    }
+
+    /**
+     * @return Default affinity mapper.
+     */
+    public CacheAffinityKeyMapper defaultAffMapper() {
+        return dfltAffMapper;
     }
 
     /**

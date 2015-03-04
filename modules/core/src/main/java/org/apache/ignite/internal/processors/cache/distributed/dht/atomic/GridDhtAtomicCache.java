@@ -1323,7 +1323,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         null);
 
-                    Object keyVal = entry.key().value(ctx, false);
+                    Object keyVal = entry.key().value(ctx.cacheObjectContext(), false);
                     Object oldVal = CU.value(old, ctx, false);
                     Object updatedVal = null;
 
@@ -1464,9 +1464,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             taskName,
                             null);
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(entry.key().value(ctx, false),
+                        Object val = ctx.config().getInterceptor().onBeforePut(
+                            entry.key().value(ctx.cacheObjectContext(), false),
                             CU.value(old, ctx, false),
-                            updated.value(ctx, false));
+                            updated.value(ctx.cacheObjectContext(), false));
 
                         if (val == null)
                             continue;
@@ -1500,7 +1501,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                            entry.key().value(ctx, false),
+                            entry.key().value(ctx.cacheObjectContext(), false),
                             CU.value(old, ctx, false));
 
                         if (ctx.cancelRemove(interceptorRes))
@@ -1970,14 +1971,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         if (op == UPDATE) {
                             ctx.config().getInterceptor().onAfterPut(
-                                entry.key().value(ctx, false),
+                                entry.key().value(ctx.cacheObjectContext(), false),
                                 CU.value(updRes.newValue(), ctx, false));
                         }
                         else {
                             assert op == DELETE : op;
 
                             // Old value should be already loaded for 'CacheInterceptor.onBeforeRemove'.
-                            ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false),
+                            ctx.config().getInterceptor().onAfterRemove(
+                                entry.key().value(ctx.cacheObjectContext(), false),
                                 CU.value(updRes.oldValue(), ctx, false));
                         }
                     }

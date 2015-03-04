@@ -84,7 +84,7 @@ public class IgniteTxKey implements Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert key != null;
 
-        key.finishUnmarshal(ctx, ldr);
+        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

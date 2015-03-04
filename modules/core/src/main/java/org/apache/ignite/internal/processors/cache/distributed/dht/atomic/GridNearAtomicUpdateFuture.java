@@ -901,7 +901,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 CacheInvokeResult<?> res0 = res.error() == null ?
                     new CacheInvokeResult<>(CU.value(res.result(), cctx, false)) : new CacheInvokeResult<>(res.error());
 
-                map0.put(res.key().value(cctx, false), res0);
+                map0.put(res.key().value(cctx.cacheObjectContext(), false), res0);
             }
 
             if (opRes != null) {
@@ -933,7 +933,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         List<Object> keys = new ArrayList<>(failedKeys.size());
 
         for (KeyCacheObject key : failedKeys)
-            keys.add(key.value(cctx, false));
+            keys.add(key.value(cctx.cacheObjectContext(), false));
 
         err0.add(keys, err);
 

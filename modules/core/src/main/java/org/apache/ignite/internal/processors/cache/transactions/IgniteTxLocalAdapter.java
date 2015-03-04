@@ -539,7 +539,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
-                                    key.value(cacheCtx, false),
+                                    key.value(cacheCtx.cacheObjectContext(), false),
                                     oldVal,
                                     CU.value(val, cacheCtx, false));
 
@@ -582,7 +582,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(key.value(cacheCtx, false), oldVal);
+                                    .onBeforeRemove(key.value(cacheCtx.cacheObjectContext(), false), oldVal);
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -1647,7 +1647,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1790,7 +1791,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2463,7 +2465,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx, false);
+        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), false);
         Object val = CU.value(cacheVal, ctx, false);
 
         try {
@@ -2598,21 +2600,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 // Loose all skipped.
                 final Set<KeyCacheObject> loaded = loadFut.get();
 
-                final Collection<KeyCacheObject> keys;
-
-                if (keySet != null ) {
-                    keys = new ArrayList<>(keySet.size());
-
-                    // TODO IGNITE-51.
-                    for (K k : keySet) {
-                        KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(k);
-
-                        if (k != null && (loaded == null || !loaded.contains(cacheKey)))
-                            keys.add(cacheKey);
-                    }
-                }
-                else
-                    keys = Collections.emptyList();
+                final Collection<KeyCacheObject> keys = F.view(enlisted, F0.notIn(loaded));
 
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + keys);

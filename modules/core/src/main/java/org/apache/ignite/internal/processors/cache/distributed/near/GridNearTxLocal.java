@@ -302,7 +302,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                         // Must loop through keys, not map entries,
                         // as map entries may not have all the keys.
                         for (KeyCacheObject key : keys)
-                            c.apply(key, map.get(key.value(cacheCtx, false)));
+                            c.apply(key, map.get(key.value(cacheCtx.cacheObjectContext(), false)));
 
                         return true;
                     }
@@ -332,7 +332,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                             // Must loop through keys, not map entries,
                             // as map entries may not have all the keys.
                             for (KeyCacheObject key : keys)
-                                c.apply(key, map.get(key.value(cacheCtx, false)));
+                                c.apply(key, map.get(key.value(cacheCtx.cacheObjectContext(), false)));
 
                             return true;
                         }

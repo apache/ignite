@@ -41,7 +41,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         if (needCopy(ctx)) {
             if (val instanceof byte[]) {
                 byte[] byteArr = (byte[])val;
@@ -51,7 +51,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
             else {
                 try {
                     if (valBytes == null)
-                        valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
+                        valBytes = ctx.processor().marshal(ctx, val);
 
                     return new CacheObjectImpl(null, valBytes);
                 }

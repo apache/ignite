@@ -906,7 +906,7 @@ public class GridCacheUtils {
 
                     return val != null &&
                         valType.isAssignableFrom(val.getClass()) &&
-                        keyType.isAssignableFrom(e.key().value(e.context(), false).getClass());
+                        keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
                 }
                 catch (IgniteCheckedException err) {
                     throw new IgniteException(err);
@@ -1825,7 +1825,7 @@ public class GridCacheUtils {
     ) {
         return new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key().value(e.context(), false));
+                return aff.isPrimary(n, e.key().value(e.context().cacheObjectContext(), false));
             }
         };
     }
@@ -1870,9 +1870,10 @@ public class GridCacheUtils {
     /**
      * @param cacheObj Cache object.
      * @param ctx Cache context.
+     * @param cpy Copy flag.
      * @return Cache object value.
      */
     @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
-        return cacheObj != null ? cacheObj.<T>value(ctx, cpy) : null;
+        return cacheObj != null ? cacheObj.<T>value(ctx.cacheObjectContext(), cpy) : null;
     }
 }

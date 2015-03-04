@@ -156,9 +156,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cached local rich node. */
     private ClusterNode locNode;
 
-    /** Default cache affinity mapper. */
-    private CacheAffinityKeyMapper affMapper;
-
     /**
      * Thread local projection. If it's set it means that method call was initiated
      * by child projection of initial cache.
@@ -291,8 +288,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         gate = new GridCacheGateway<>(this);
 
         cacheName = cacheCfg.getName();
-
-        cacheObjCtx = ctx.portable().contextForCache(null, cacheName);
 
         if (cacheName != null) {
             int hash = cacheName.hashCode();
@@ -1003,14 +998,16 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Default affinity key mapper.
      */
     public CacheAffinityKeyMapper defaultAffMapper() {
-        return affMapper;
+        return cacheObjCtx.defaultAffMapper();
     }
 
     /**
-     * Sets default affinity key mapper.
+     * Sets cache object context.
+     *
+     * @param cacheObjCtx Cache object context.
      */
-    public void defaultAffMapper(CacheAffinityKeyMapper dfltAffMapper) {
-        this.affMapper = dfltAffMapper;
+    public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
+        this.cacheObjCtx = cacheObjCtx;
     }
 
     /**
@@ -1418,13 +1415,6 @@ public class GridCacheContext<K, V> implements Externalizable {
                 }
             }
         };
-    }
-
-    /**
-     * @return {@code True} if values should be always unmarshalled.
-     */
-    public boolean isUnmarshalValues() {
-        return cacheCfg.isQueryIndexEnabled();
     }
 
     /**
@@ -1871,8 +1861,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert val != null;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(this, false);
-            Object val0 = skipVals ? true : val.value(this, cpy);
+            Object key0 = key.value(cacheObjCtx, false);
+            Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
 
             if (portableEnabled() && deserializePortable) {
                 key0 = unwrapPortableIfNeeded(key0, false);
@@ -1899,7 +1889,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         evictMgr = null;
         qryMgr = null;
         dataStructuresMgr = null;
-        affMapper = null;
+        cacheObjCtx = null;
 
         mgrs.clear();
     }

@@ -839,7 +839,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             else
                 cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, modes.swap, plc);
 
-            Object val = cacheVal != null ? cacheVal.value(ctx, true) : null;
+            Object val = CU.value(cacheVal, ctx, true);
 
             if (ctx.portableEnabled())
                 val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -948,7 +948,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    Object val0 = v.value(ctx, true);
+                    Object val0 = v.value(ctx.cacheObjectContext(), true);
 
                     if (ctx.portableEnabled())
                         val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
@@ -1038,7 +1038,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
 
                 if (val != null)
-                    return F.t((V)val.get().value(ctx, true));
+                    return F.t((V)val.get().value(ctx.cacheObjectContext(), true));
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
@@ -1751,11 +1751,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                                     if (map != null) {
                                         if (set || wasNew)
-                                            map.put(key.<K>value(ctx, false), (V)val);
+                                            map.put(key.<K>value(ctx.cacheObjectContext(), false), (V)val);
                                         else {
                                             try {
                                                 // TODO IGNITE-51.
-                                                K k = key.<K>value(ctx, false);
+                                                K k = key.<K>value(ctx.cacheObjectContext(), false);
 
                                                 GridTuple<V> v = peek0(false, k, GLOBAL);
 
@@ -4057,7 +4057,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         long topVer,
         boolean replicate,
         long ttl) {
-        if (p != null && !p.apply(key.value(ctx, false), val))
+        if (p != null && !p.apply(key.value(ctx.cacheObjectContext(), false), val))
             return;
 
         CacheObject cacheVal = ctx.toCacheObject(val);
@@ -4487,7 +4487,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         CacheObject val = unswapped.value();
 
-        Object val0 = val != null ? val.value(ctx, true) : null;
+        Object val0 = val != null ? val.value(ctx.cacheObjectContext(), true) : null;
 
         if (ctx.portableEnabled())
             return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
@@ -5302,7 +5302,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 CacheObject val = entryEx(cacheKey).innerReload();
 
-                return (V)(val != null ? val.value(ctx, true) : null);
+                return (V)(val != null ? val.value(ctx.cacheObjectContext(), true) : null);
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isDebugEnabled())
@@ -5535,8 +5535,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             KeyCacheObject key = entry.key();
 
-            Object key0 = key.value(ctx, true);
-            Object val0 = val.value(ctx, true);
+            Object key0 = key.value(ctx.cacheObjectContext(), true);
+            Object val0 = val.value(ctx.cacheObjectContext(), true);
 
             if (deserializePortable && ctx.portableEnabled()) {
                 key0 = ctx.unwrapPortableIfNeeded(key0, true);
@@ -6287,7 +6287,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         {
             assert ver != null;
 
-            if (p != null && !p.apply(key.<K>value(ctx, false), (V)val))
+            if (p != null && !p.apply(key.<K>value(ctx.cacheObjectContext(), false), (V)val))
                 return;
 
             long ttl = 0;

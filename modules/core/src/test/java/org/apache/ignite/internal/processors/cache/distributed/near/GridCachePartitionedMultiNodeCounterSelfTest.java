@@ -270,7 +270,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNotNull(dhtEntry);
 
-        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context(), false));
+        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
         final AtomicInteger globalCntr = new AtomicInteger(0);
 
@@ -560,7 +560,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNotNull(dhtEntry);
 
-        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context(), false));
+        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
         startLatchMultiNode = new CountDownLatch(gridCnt);
 
