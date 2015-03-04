@@ -103,7 +103,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Gets flag value indicating that this data streamer assumes that there are no other concurrent updates to the cache.
-     * Default is {@code true}.
+     * Default is {@code false}.
      *
      * @return Flag value.
      */
@@ -112,7 +112,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /**
      * Sets flag indicating that this data streamer should assume that there are no other concurrent updates to the cache.
      * Should not be used when custom cache updater set using {@link #updater(IgniteDataStreamer.Updater)} method.
-     * Default is {@code true}. When this flag is set, updates will not be propagated to the cache store.
+     * Default is {@code false}. When this flag is set, updates will not be propagated to the cache store.
      *
      * @param allowOverwrite Flag value.
      * @throws IgniteException If failed.
