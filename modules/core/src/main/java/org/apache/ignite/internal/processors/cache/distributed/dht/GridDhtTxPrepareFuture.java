@@ -349,7 +349,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             ret.value(val);
                     }
 
-                    if (hasFilters && !cacheCtx.isAll(cached.wrapLazyValue(), txEntry.filters())) {
+                    if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
                         if (expiry != null)
                             txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
 

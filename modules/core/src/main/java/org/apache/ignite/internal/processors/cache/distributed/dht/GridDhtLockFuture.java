@@ -107,7 +107,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private CacheEntryPredicate[] filter;
 
     /** Transaction. */
     private GridDhtTxLocalAdapter tx;
@@ -161,7 +161,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridDhtTxLocalAdapter tx,
         long threadId,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;

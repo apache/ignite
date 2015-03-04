@@ -556,7 +556,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         return lockAllAsyncInternal(
             keys,
             timeout,
@@ -591,7 +591,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -665,7 +665,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
         final GridNearLockRequest req,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter0) {
+        @Nullable final CacheEntryPredicate[] filter0) {
         final List<KeyCacheObject> keys = req.keys();
 
         IgniteInternalFuture<Object> keyFut = null;
@@ -691,7 +691,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
-                    IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
+                    CacheEntryPredicate[] filter = filter0;
 
                     // Set message into thread context.
                     GridDhtTxLocal tx = null;
@@ -710,7 +710,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         // Unmarshal filter first.
                         if (filter == null)
-                            filter = (IgnitePredicate[])req.filter();
+                            filter = req.filter();
 
                         GridDhtLockFuture<K, V> fut = null;
 

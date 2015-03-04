@@ -147,20 +147,11 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Grid cache. */
     private GridCacheAdapter<K, V> cache;
 
-    /** No-value filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] noValArr;
+    /** No value filter array. */
+    private CacheEntryPredicate[] noValArr;
 
-    /** Has-value filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] hasValArr;
-
-    /** No-peek-value filter array. */
-    private IgnitePredicate<Cache.Entry<Object, Object>>[] noPeekArr;
-
-    /** Has-peek-value filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
-
-    /** No-op filter array. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] trueArr;
+    /** Has value filter array. */
+    private CacheEntryPredicate[] hasValArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -290,13 +281,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         log = ctx.log(getClass());
 
-        noValArr = new IgnitePredicate[]{F.cacheNoGetValue()};
-        hasValArr = new IgnitePredicate[]{F.cacheHasGetValue()};
-        noPeekArr = new IgnitePredicate[]{F.cacheNoPeekValue()};
-        hasPeekArr = new IgnitePredicate[]{F.cacheHasPeekValue()};
-        trueArr = new IgnitePredicate[]{F.alwaysTrue()};
-
-        cacheObjCtx = new CacheObjectContext(ctx);
+        noValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
+        hasValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
 
         // Create unsafe memory only if writing values
         unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
@@ -305,6 +291,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         gate = new GridCacheGateway<>(this);
 
         cacheName = cacheCfg.getName();
+
+        cacheObjCtx = ctx.portable().contextForCache(null, cacheName);
 
         if (cacheName != null) {
             int hash = cacheName.hashCode();
@@ -964,58 +952,44 @@ public class GridCacheContext<K, V> implements Externalizable {
     public CacheJtaManagerAdapter<K, V> jta() {
         return jtaMgr;
     }
+
     /**
-     * @return No get-value filter.
+     * @param p Predicate.
+     * @return {@code True} if given predicate is filter for {@code putIfAbsent} operation.
      */
-    public IgnitePredicate<Cache.Entry<K, V>>[] noGetArray() {
+    public boolean putIfAbsentFilter(@Nullable CacheEntryPredicate[] p) {
+        if (p == null || p.length == 0)
+            return false;
+
+        for (CacheEntryPredicate p0 : p) {
+            if ((p0 instanceof CacheEntrySerializablePredicate) &&
+               ((CacheEntrySerializablePredicate) p0).predicate() instanceof CacheEntryPredicateNoValue)
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return No value filter.
+     */
+    public CacheEntryPredicate[] noValArray() {
         return noValArr;
     }
 
     /**
-     * @return Has get-value filer.
+     * @return Has value filter.
      */
-    public IgnitePredicate<Cache.Entry<K, V>>[] hasGetArray() {
+    public CacheEntryPredicate[] hasValArray() {
         return hasValArr;
-    }
-
-    /**
-     * @return No get-value filter.
-     */
-    @SuppressWarnings("unchecked")
-    public <K, V> IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])((IgnitePredicate[])noPeekArr);
-    }
-
-    /**
-     * @return Has get-value filer.
-     */
-    public IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArray() {
-        return hasPeekArr;
     }
 
     /**
      * @param val Value to check.
      * @return Predicate array that checks for value.
      */
-    @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<Cache.Entry<K, V>>[] equalsPeekArray(V val) {
-        assert val != null;
-
-        return new IgnitePredicate[]{F.cacheContainsPeek(val)};
-    }
-
-    /**
-     * @return Empty filter.
-     */
-    public IgnitePredicate<Cache.Entry<K, V>> truex() {
-        return F.alwaysTrue();
-    }
-
-    /**
-     * @return No-op array.
-     */
-    public IgnitePredicate<Cache.Entry<K, V>>[] trueArray() {
-        return trueArr;
+    public CacheEntryPredicate[] equalsValArray(V val) {
+        return new CacheEntryPredicate[]{new CacheEntryPredicateContainsValue(toCacheObject(val))};
     }
 
     /**
@@ -1095,6 +1069,29 @@ public class GridCacheContext<K, V> implements Externalizable {
         finally {
             forceFlags(oldFlags);
         }
+    }
+
+    /**
+     * @param e Entry.
+     * @param p Predicates.
+     * @return {@code True} if predicates passed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean isAll(GridCacheEntryEx e, CacheEntryPredicate[] p) throws IgniteCheckedException {
+        if (p == null || p.length == 0)
+            return true;
+
+        try {
+            for (CacheEntryPredicate p0 : p) {
+                if (p0 != null && !p0.apply(e))
+                    return false;
+            }
+        }
+        catch (RuntimeException ex) {
+            throw U.cast(ex);
+        }
+
+        return true;
     }
 
     /**

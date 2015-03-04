@@ -1919,7 +1919,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         @Nullable @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
             KeyCacheObject key,
-            @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+            @Nullable CacheEntryPredicate[] filter) {
             return null;
         }
 

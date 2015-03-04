@@ -125,12 +125,7 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObjectContext dataLoadContext(@Nullable String cacheName) {
-        ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
-
-        if (node == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
-
+    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName) {
         return new CacheObjectContext(ctx);
     }
 
