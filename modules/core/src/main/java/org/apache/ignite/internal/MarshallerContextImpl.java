@@ -57,7 +57,9 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (line.isEmpty() || line.startsWith("#"))
                     continue;
 
-                clsNameById.put(line.hashCode(), line.trim());
+                String clsName = line.trim();
+
+                clsNameById.put(clsName.hashCode(), clsName);
             }
         }
         catch (IOException e) {
