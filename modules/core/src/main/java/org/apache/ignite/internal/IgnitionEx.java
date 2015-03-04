@@ -1868,7 +1868,6 @@ public class IgnitionEx {
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
-            cache.setQueryIndexEnabled(false);
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
@@ -1892,7 +1891,6 @@ public class IgnitionEx {
             ccfg.setName(CU.ATOMICS_CACHE_NAME);
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setSwapEnabled(false);
-            ccfg.setQueryIndexEnabled(false);
             ccfg.setPreloadMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());

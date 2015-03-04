@@ -52,8 +52,6 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        ccfg.setQueryIndexEnabled(false);
-
         cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

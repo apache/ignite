@@ -70,9 +70,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for cache distribution mode. */
     public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = CacheDistributionMode.PARTITIONED_ONLY;
 
-    /** Default query timeout. */
-    public static final long DFLT_QUERY_TIMEOUT = 0;
-
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
@@ -127,9 +124,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
-    /** Default value for 'queryIndexEnabled' flag. */
-    public static final boolean DFLT_QUERY_INDEX_ENABLED = false;
-
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
 
@@ -147,9 +141,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
-
-    /** Default maximum number of query iterators that can be stored. */
-    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
@@ -211,9 +202,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
 
-    /** Default query timeout. */
-    private long dfltQryTimeout = DFLT_QUERY_TIMEOUT;
-
     /** Default cache start size. */
     private int startSize = DFLT_START_SIZE;
 
@@ -274,9 +262,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
-    /** */
-    private boolean qryIdxEnabled = DFLT_QUERY_INDEX_ENABLED;
-
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
@@ -291,9 +276,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
-
-    /** Maximum number of query iterators that can be stored. */
-    private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
 
     /** Memory mode. */
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
@@ -350,7 +332,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         if (!(cfg instanceof CacheConfiguration))
             return;
 
-        CacheConfiguration cc = (CacheConfiguration)cfg;
+        CacheConfiguration<K,V> cc = (CacheConfiguration<K,V>)cfg;
 
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
@@ -365,7 +347,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
         dfltLockTimeout = cc.getDefaultLockTimeout();
-        dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
@@ -387,7 +368,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        maxQryIterCnt = cc.getMaximumQueryIteratorCount();
         memMode = cc.getMemoryMode();
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
@@ -399,7 +379,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         preloadPoolSize = cc.getPreloadThreadPoolSize();
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
-        qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
@@ -974,25 +953,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets default query timeout. Default value is defined by {@link #DFLT_QUERY_TIMEOUT}. {@code 0} (zero)
-     * means that the query will never timeout and will wait for completion.
-     *
-     * @return Default query timeout, {@code 0} for never.
-     */
-    public long getDefaultQueryTimeout() {
-        return dfltQryTimeout;
-    }
-
-    /**
-     * Sets default query timeout, {@code 0} for never. For more information see {@link #getDefaultQueryTimeout()}.
-     *
-     * @param dfltQryTimeout Default query timeout.
-     */
-    public void setDefaultQueryTimeout(long dfltQryTimeout) {
-        this.dfltQryTimeout = dfltQryTimeout;
-    }
-
-    /**
      * Invalidation flag. If {@code true}, values will be invalidated (nullified) upon commit in near cache.
      *
      * @return Invalidation flag.
@@ -1166,28 +1126,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-    }
-
-    /**
-     * Flag indicating whether Ignite should attempt to index value and/or key instances
-     * stored in cache. If this property is {@code false}, then all indexing annotations
-     * inside of any class will be ignored. By default query indexing is disabled and
-     * defined via {@link #DFLT_QUERY_INDEX_ENABLED} constant.
-     *
-     * @return {@code True} if query indexing is enabled.
-     * @see #getMemoryMode()
-     */
-    public boolean isQueryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
-     * Flag indicating whether query indexing is enabled or not.
-     *
-     * @param qryIdxEnabled {@code True} if query indexing is enabled.
-     */
-    public void setQueryIndexEnabled(boolean qryIdxEnabled) {
-        this.qryIdxEnabled = qryIdxEnabled;
     }
 
     /**
@@ -1486,28 +1424,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setOffHeapMaxMemory(long offHeapMaxMem) {
         this.offHeapMaxMem = offHeapMaxMem;
-    }
-
-    /**
-     * Gets maximum number of query iterators that can be stored. Iterators are stored to
-     * support query pagination when each page of data is sent to user's node only on demand.
-     * Increase this property if you are running and processing lots of queries in parallel.
-     * <p>
-     * Default value is {@link #DFLT_MAX_QUERY_ITERATOR_CNT}.
-     *
-     * @return Maximum number of query iterators that can be stored.
-     */
-    public int getMaximumQueryIteratorCount() {
-        return maxQryIterCnt;
-    }
-
-    /**
-     * Sets maximum number of query iterators that can be stored.
-     *
-     * @param maxQryIterCnt Maximum number of query iterators that can be stored.
-     */
-    public void setMaximumQueryIteratorCount(int maxQryIterCnt) {
-        this.maxQryIterCnt = maxQryIterCnt;
     }
 
     /**

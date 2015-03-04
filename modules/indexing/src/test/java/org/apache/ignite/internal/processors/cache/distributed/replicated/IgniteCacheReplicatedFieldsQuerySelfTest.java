@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -51,8 +51,7 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
 
         QueryCursor<List<?>> qry = null;
 
-        int maximumQueryIteratorCount =
-            cache.getConfiguration(CacheConfiguration.class).getMaximumQueryIteratorCount();
+        int maximumQueryIteratorCount = GridCacheQueryManager.MAX_ITERATORS;
 
         for (int i = 0; i < maximumQueryIteratorCount + 1; i++) {
             QueryCursor<List<?>> q = cache

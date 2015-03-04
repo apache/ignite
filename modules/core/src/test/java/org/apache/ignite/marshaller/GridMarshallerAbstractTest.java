@@ -101,7 +101,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
-        namedCache.setQueryIndexEnabled(true);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setStreamerConfiguration(streamerConfiguration());

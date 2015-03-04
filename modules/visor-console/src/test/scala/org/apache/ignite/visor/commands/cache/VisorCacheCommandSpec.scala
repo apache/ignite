@@ -50,7 +50,6 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg.setCacheMode(REPLICATED)
         cfg.setAtomicityMode(TRANSACTIONAL)
         cfg.setName(name)
-        cfg.setQueryIndexEnabled(true)
 
         cfg
     }

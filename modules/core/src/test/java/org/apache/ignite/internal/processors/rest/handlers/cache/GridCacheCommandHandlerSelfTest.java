@@ -56,7 +56,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(CacheMode.LOCAL);
-        cacheCfg.setQueryIndexEnabled(false);
 
         // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();

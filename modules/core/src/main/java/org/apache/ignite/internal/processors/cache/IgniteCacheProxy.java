@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -476,7 +477,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @throws CacheException If query indexing disabled for sql query.
      */
     private void validate(Query qry) {
-        if (!ctx.config().isQueryIndexEnabled() && !(qry instanceof ScanQuery) && !(qry instanceof ContinuousQuery))
+        if (!GridQueryProcessor.isQueryIndexEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
+            !(qry instanceof ContinuousQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
     }
 

@@ -107,6 +107,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param ccfg Cache configuration.
+     * @return {@code true} If query index must be enabled.
+     */
+    public static boolean isQueryIndexEnabled(CacheConfiguration<?, ?> ccfg) {
+        return !F.isEmpty(ccfg.getIndexedTypes()) || !F.isEmpty(ccfg.getTypeMetadata());
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      */
     public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
         Map<TypeName,CacheTypeMetadata> declaredTypes = new HashMap<>();

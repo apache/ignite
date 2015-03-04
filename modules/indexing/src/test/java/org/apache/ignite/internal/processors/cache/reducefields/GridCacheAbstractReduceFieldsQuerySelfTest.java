@@ -88,7 +88,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setDistributionMode(distributionMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setPreloadMode(SYNC);
-        cache.setQueryIndexEnabled(true);
         cache.setIndexedTypes(
             String.class, Organization.class,
             CacheAffinityKey.class, Person.class

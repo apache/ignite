@@ -52,11 +52,10 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration<?,?> ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setDistributionMode(PARTITIONED_ONLY);
-        ccfg.setQueryIndexEnabled(true);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setIndexedTypes(

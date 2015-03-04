@@ -115,7 +115,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
@@ -123,7 +122,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 

@@ -145,12 +145,10 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.eagerTtl = ccfg.isEagerTtl();
         cfg.writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         cfg.swapEnabled = ccfg.isSwapEnabled();
-        cfg.qryIdxEnabled = ccfg.isQueryIndexEnabled();
         cfg.invalidate = ccfg.isInvalidate();
         cfg.startSize = ccfg.getStartSize();
         cfg.tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         cfg.offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
-        cfg.maxQryIterCnt = ccfg.getMaximumQueryIteratorCount();
         cfg.maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         cfg.memoryMode = ccfg.getMemoryMode();
         cfg.interceptor = compactClass(ccfg.getInterceptor());

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -1441,7 +1442,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if values should be always unmarshalled.
      */
     public boolean isUnmarshalValues() {
-        return cacheCfg.isQueryIndexEnabled() || !cacheCfg.isStoreValueBytes();
+        return GridQueryProcessor.isQueryIndexEnabled(cacheCfg) || !cacheCfg.isStoreValueBytes();
     }
 
     /**

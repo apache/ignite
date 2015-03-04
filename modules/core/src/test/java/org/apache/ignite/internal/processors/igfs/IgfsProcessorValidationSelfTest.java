@@ -132,7 +132,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfNoDataCacheIsConfigured() throws Exception {
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setQueryIndexEnabled(false);
         cc.setName("someName");
 
         g1Cfg.setCacheConfiguration(cc);
@@ -146,7 +145,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setQueryIndexEnabled(false);
         cc.setName(dataCache1Name);
 
         g1Cfg.setCacheConfiguration(cc);
@@ -186,7 +184,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
         CacheConfiguration[] dataCaches = dataCaches(1024);
 
-        dataCaches[0].setQueryIndexEnabled(true);
 
         g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
 
@@ -198,8 +195,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
         CacheConfiguration[] metaCaches = metaCaches();
-
-        metaCaches[0].setQueryIndexEnabled(true);
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
 
@@ -500,7 +495,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
             dataCache.setName(cacheNames[i]);
             dataCache.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(grpSize));
             dataCache.setAtomicityMode(TRANSACTIONAL);
-            dataCache.setQueryIndexEnabled(false);
 
             res[i] = dataCache;
         }
@@ -525,7 +519,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
             metaCache.setName(cacheNames[i]);
             metaCache.setAtomicityMode(TRANSACTIONAL);
-            metaCache.setQueryIndexEnabled(false);
 
             res[i] = metaCache;
         }

@@ -56,7 +56,6 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setQueryIndexEnabled(false);
         cc.setPreloadMode(SYNC);
 
         return cc;

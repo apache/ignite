@@ -84,7 +84,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         repCacheCfg.setCacheMode(REPLICATED);
         repCacheCfg.setPreloadMode(mode);
         repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        repCacheCfg.setQueryIndexEnabled(false);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         if (offheap)
@@ -100,7 +99,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setEvictNearSynchronized(false);
-        partCacheCfg.setQueryIndexEnabled(false);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
         partCacheCfg.setDistributionMode(NEAR_PARTITIONED);
 

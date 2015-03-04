@@ -135,7 +135,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         dataCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCfg.setPreloadMode(SYNC);
         dataCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
@@ -145,7 +144,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCfg.setPreloadMode(SYNC);
-        metaCfg.setQueryIndexEnabled(false);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

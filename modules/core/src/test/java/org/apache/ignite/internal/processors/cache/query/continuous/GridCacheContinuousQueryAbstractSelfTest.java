@@ -85,7 +85,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
-        cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);
 

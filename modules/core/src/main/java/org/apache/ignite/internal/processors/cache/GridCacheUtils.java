@@ -1509,7 +1509,6 @@ public class GridCacheUtils {
 
         cache.setEvictionPolicy(null);
         cache.setSwapEnabled(false);
-        cache.setQueryIndexEnabled(false);
         cache.setCacheStoreFactory(null);
         cache.setEagerTtl(true);
         cache.setPreloadMode(SYNC);

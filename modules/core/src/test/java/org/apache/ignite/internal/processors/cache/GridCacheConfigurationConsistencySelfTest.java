@@ -547,26 +547,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAttributesError() throws Exception {
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setQueryIndexEnabled(true);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setQueryIndexEnabled(false);
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAffinityFunctionConsistency() throws Exception {
         cacheEnabled = true;
         cacheMode = PARTITIONED;
@@ -633,7 +613,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(1000);
-                cfg.setDefaultQueryTimeout(1000);
                 cfg.setDefaultTimeToLive(1000);
 
                 return null;
@@ -648,7 +627,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(2 * 1000);
-                cfg.setDefaultQueryTimeout(2 * 1000);
                 cfg.setDefaultTimeToLive(2 * 1000);
 
                 return null;

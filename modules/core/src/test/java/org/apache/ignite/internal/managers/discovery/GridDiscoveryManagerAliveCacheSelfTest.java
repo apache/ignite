@@ -84,7 +84,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         cCfg.setBackups(1);
         cCfg.setDistributionMode(NEAR_PARTITIONED);
         cCfg.setPreloadMode(SYNC);
-        cCfg.setQueryIndexEnabled(false);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();

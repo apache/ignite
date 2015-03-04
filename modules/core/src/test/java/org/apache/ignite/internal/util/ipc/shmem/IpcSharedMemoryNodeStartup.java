@@ -70,7 +70,6 @@ public class IpcSharedMemoryNodeStartup {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);
 

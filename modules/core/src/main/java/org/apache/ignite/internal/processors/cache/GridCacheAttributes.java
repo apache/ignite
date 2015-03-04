@@ -153,7 +153,6 @@ public class GridCacheAttributes implements Externalizable {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
-        dfltQryTimeout = cfg.getDefaultQueryTimeout();
         evictMaxOverflowRatio = cfg.getEvictMaxOverflowRatio();
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
@@ -162,7 +161,6 @@ public class GridCacheAttributes implements Externalizable {
         partDistro = GridCacheUtils.distributionMode(cfg);
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
-        qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();

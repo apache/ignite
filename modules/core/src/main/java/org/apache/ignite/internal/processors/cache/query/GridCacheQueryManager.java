@@ -61,6 +61,9 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
+    public static int MAX_ITERATORS = 1000;
+
+    /** */
     protected GridQueryProcessor qryProc;
 
     /** */
@@ -90,7 +93,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
+        maxIterCnt = MAX_ITERATORS;
 
         cctx.events().addListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -324,7 +327,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert key != null;
         assert val != null || valBytes != null;
 
-        if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isQueryIndexEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
@@ -352,7 +355,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public void remove(K key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
-        if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isQueryIndexEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
