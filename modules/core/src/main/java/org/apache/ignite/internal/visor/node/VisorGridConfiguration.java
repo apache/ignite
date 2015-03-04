@@ -90,9 +90,6 @@ public class VisorGridConfiguration implements Serializable {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
-    /** Query configuration */
-    private VisorQueryConfiguration qryCfg;
-
     /**
      * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
@@ -248,13 +245,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public VisorTransactionConfiguration transaction() {
         return txCfg;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public VisorQueryConfiguration queryConfiguration() {
-        return qryCfg;
     }
 
     /** {@inheritDoc} */

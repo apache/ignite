@@ -126,9 +126,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Class name of expiry policy factory. */
     private String expiryPlcFactory;
 
-    /** Query configuration. */
-    private VisorCacheQueryConfiguration qryCfg;
-
     /**
      * @param ignite Grid.
      * @param ccfg Cache configuration.
@@ -402,13 +399,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public VisorCacheStoreConfiguration storeConfiguration() {
         return storeCfg;
-    }
-
-    /**
-     * @return Cache query configuration.
-     */
-    public VisorCacheQueryConfiguration queryConfiguration() {
-        return qryCfg;
     }
 
     /** {@inheritDoc} */

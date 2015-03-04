@@ -26,9 +26,9 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.hadoop.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -44,6 +44,7 @@ import static org.apache.ignite.configuration.IgfsConfiguration.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 import static org.apache.ignite.igfs.hadoop.IgfsHadoopParameters.*;
 import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 /**
  * {@code IGFS} Hadoop 2.x file system driver over file system API. To use
@@ -57,7 +58,7 @@ import static org.apache.ignite.internal.igfs.hadoop.IgfsHadoopUtils.*;
  *
  *  &lt;property&gt;
  *      &lt;name&gt;fs.igfs.impl&lt;/name&gt;
- *      &lt;value&gt;org.apache.ignite.igfs.hadoop.IgfsHadoopFileSystem&lt;/value&gt;
+ *      &lt;value&gt;org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
  * You should also add Ignite JAR and all libraries to Hadoop classpath. To
@@ -266,56 +267,29 @@ public class IgfsHadoopFileSystem extends AbstractFileSystem implements Closeabl
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 
-            if (paths.pathModes() != null) {
+            if (!initSecondary && paths.pathModes() != null) {
                 for (T2<IgfsPath, IgfsMode> pathMode : paths.pathModes()) {
                     IgfsMode mode = pathMode.getValue();
 
-                    initSecondary |= mode == PROXY;
+                    if (mode == PROXY) {
+                        initSecondary = true;
+
+                        break;
+                    }
                 }
             }
 
             if (initSecondary) {
                 Map<String, String> props = paths.properties();
 
-                String secUri = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_URI);
-                String secConfPath = props.get(IgfsHadoopFileSystemWrapper.SECONDARY_FS_CONFIG_PATH);
-
-                if (secConfPath == null)
-                    throw new IOException("Failed to connect to the secondary file system because configuration " +
-                            "path is not provided.");
-
-                if (secUri == null)
-                    throw new IOException("Failed to connect to the secondary file system because URI is not " +
-                            "provided.");
-
-                if (secConfPath == null)
-                    throw new IOException("Failed to connect to the secondary file system because configuration " +
-                        "path is not provided.");
-
-                if (secUri == null)
-                    throw new IOException("Failed to connect to the secondary file system because URI is not " +
-                        "provided.");
+                String secUri = props.get(SECONDARY_FS_URI);
+                String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
 
                 try {
-                    secondaryUri = new URI(secUri);
+                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
 
-                    URL secondaryCfgUrl = U.resolveIgniteUrl(secConfPath);
-
-                    if (secondaryCfgUrl == null)
-                        throw new IOException("Failed to resolve secondary file system config URL: " + secConfPath);
-
-                    Configuration conf = new Configuration();
-
-                    conf.addResource(secondaryCfgUrl);
-
-                    String prop = String.format("fs.%s.impl.disable.cache", secondaryUri.getScheme());
-
-                    conf.setBoolean(prop, true);
-
-                    secondaryFs = AbstractFileSystem.get(secondaryUri, conf);
-                }
-                catch (URISyntaxException ignore) {
-                    throw new IOException("Failed to resolve secondary file system URI: " + secUri);
+                    secondaryFs = secProvider.createAbstractFileSystem();
+                    secondaryUri = secProvider.uri();
                 }
                 catch (IOException e) {
                     throw new IOException("Failed to connect to the secondary file system: " + secUri, e);
