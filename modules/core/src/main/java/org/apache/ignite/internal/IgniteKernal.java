@@ -802,12 +802,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                if (!skipDaemon(comp)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping onKernalStart on daemon node for component: " + comp);
-
+                if (!skipDaemon(comp))
                     comp.onKernalStart();
-                }
             }
 
             // Register MBeans.
@@ -1381,7 +1377,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.add(mgr);
 
         try {
-            mgr.start();
+            if (!skipDaemon(mgr))
+                mgr.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
@@ -1396,7 +1393,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.add(proc);
 
         try {
-            proc.start();
+            if (!skipDaemon(proc))
+                proc.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
@@ -1705,12 +1703,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 GridComponent comp = it.previous();
 
                 try {
-                    if (!skipDaemon(comp)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping onKernalStop on daemon node for component: " + comp);
-
+                    if (!skipDaemon(comp))
                         comp.onKernalStop(cancel);
-                    }
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -1784,10 +1778,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.stop(cancel);
+                    if (!skipDaemon(comp)) {
+                        comp.stop(cancel);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Component stopped: " + comp);
+                        if (log.isDebugEnabled())
+                            log.debug("Component stopped: " + comp);
+                    }
                 }
                 catch (Throwable e) {
                     errOnStop = true;
