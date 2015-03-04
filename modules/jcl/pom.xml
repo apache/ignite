@@ -28,9 +28,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../../</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1.0.1-RC1-SNAPSHOT</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-jcl</artifactId>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
