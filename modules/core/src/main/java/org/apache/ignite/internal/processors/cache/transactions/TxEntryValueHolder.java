@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.nio.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
@@ -147,74 +146,12 @@ public class TxEntryValueHolder implements Message {
      * @throws org.apache.ignite.IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
+        if (hasWriteVal && val != null)
             val.finishUnmarshal(ctx, ldr);
 
 // TODO IGNITE-51.
 //            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
 //                val = ctx.marshaller().unmarshal(valBytes, ldr);
-    }
-
-    /**
-     * @param out Data output.
-     * @throws java.io.IOException If failed.
-     */
-    public void writeTo(ObjectOutput out) throws IOException {
-        out.writeBoolean(hasWriteVal);
-
-        if (hasWriteVal)
-            out.writeObject(val);
-
-        out.writeInt(op.ordinal());
-// TODO IGNITE-51.
-//            out.writeBoolean(hasWriteVal);
-//            out.writeBoolean(valBytesSent);
-//
-//            if (hasWriteVal) {
-//                if (valBytesSent)
-//                    U.writeByteArray(out, valBytes);
-//                else {
-//                    if (val != null && val instanceof byte[]) {
-//                        out.writeBoolean(true);
-//
-//                        U.writeByteArray(out, (byte[]) val);
-//                    }
-//                    else {
-//                        out.writeBoolean(false);
-//
-//                        out.writeObject(val);
-//                    }
-//                }
-//            }
-//
-//            out.writeInt(op.ordinal());
-    }
-
-    /**
-     * @param in Data input.
-     * @throws java.io.IOException If failed.
-     * @throws ClassNotFoundException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
-        hasWriteVal = in.readBoolean();
-
-        if (hasWriteVal)
-            val = (CacheObject)in.readObject();
-
-        op = fromOrdinal(in.readInt());
-// TODO IGNITE-51.
-//            hasWriteVal = in.readBoolean();
-//            valBytesSent = in.readBoolean();
-//
-//            if (hasWriteVal) {
-//                if (valBytesSent)
-//                    valBytes = U.readByteArray(in);
-//                else
-//                    val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
-//            }
-//
-//            op = fromOrdinal(in.readInt());
     }
 
     /** {@inheritDoc} */
@@ -247,7 +184,7 @@ public class TxEntryValueHolder implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("val", val))
+                if (hasWriteVal && !writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
@@ -286,10 +223,12 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 2:
-                val = reader.readMessage("val");
+                if (hasWriteVal) {
+                    val = reader.readMessage("val");
 
-                if (!reader.isLastRead())
-                    return false;
+                    if (!reader.isLastRead())
+                        return false;
+                }
 
                 reader.incrementState();
 

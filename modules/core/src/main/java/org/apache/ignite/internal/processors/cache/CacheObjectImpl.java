@@ -94,6 +94,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        assert val != null || valBytes != null;
+
         if (valBytes == null && !byteArray())
             valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
     }
