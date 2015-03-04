@@ -17,16 +17,17 @@
 
 package org.apache.ignite.visor.commands
 
-import java.awt.Image
-import java.io._
-import java.text.SimpleDateFormat
-import java.util
-import javax.swing.ImageIcon
-
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
+
+import javax.swing.ImageIcon
+import java._
+import java.awt.Image
+import java.io._
+import java.text.SimpleDateFormat
+import java.util._
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -117,7 +118,7 @@ object VisorConsole extends App {
         visor.quit()
     }
 
-    var inputStream: InputStream = new FileInputStream(FileDescriptor.in)
+    var batchStream: Option[InputStream] = None
 
     batchFile.foreach(name => {
         val f = U.resolveIgnitePath(name)
@@ -131,16 +132,19 @@ object VisorConsole extends App {
             visor.quit()
         }
 
-        inputStream = new FileInputStream(f)
+        batchStream = Some(new FileInputStream(f))
     })
 
-    batchCommand.foreach(commands => {
-        val ended = if (commands.endsWith(";")) commands else commands + ";"
+    batchCommand.foreach(commands =>
+        batchStream = Some(new ByteArrayInputStream(commands.replaceAll(";", "\n").getBytes("UTF-8"))))
 
-        val input = (if (ended.endsWith("exit;")) ended else ended + "exit;").replace(";", "\n")
+    val inputStream = batchStream match {
+        case Some(stream) =>
+            new SequenceInputStream(Collections.enumeration(util.Arrays.asList(stream,
+                new ByteArrayInputStream("\nquit\n".getBytes("UTF-8")))))
 
-        inputStream = new ByteArrayInputStream(input.getBytes("UTF-8"))
-    })
+        case None => new FileInputStream(FileDescriptor.in)
+    }
 
     private val reader = new ConsoleReader(inputStream, System.out, null, null)
 
