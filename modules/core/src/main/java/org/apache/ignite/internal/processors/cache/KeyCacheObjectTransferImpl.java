@@ -45,7 +45,7 @@ public class KeyCacheObjectTransferImpl implements KeyCacheObject {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(GridCacheContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         throw new IllegalStateException();
     }
 
@@ -65,17 +65,17 @@ public class KeyCacheObjectTransferImpl implements KeyCacheObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         throw new IllegalStateException();
     }
 

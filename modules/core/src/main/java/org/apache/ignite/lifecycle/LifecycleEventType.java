@@ -20,36 +20,36 @@ package org.apache.ignite.lifecycle;
 import org.jetbrains.annotations.*;
 
 /**
- * Grid lifecycle event types. These events are used to notify lifecycle beans
- * about changes in grid lifecycle state.
+ * Node lifecycle event types. These events are used to notify lifecycle beans
+ * about changes in node lifecycle state.
  * <p>
  * For more information and detailed examples refer to {@link org.apache.ignite.lifecycle.LifecycleBean}
  * documentation.
  */
 public enum LifecycleEventType {
     /**
-     * Invoked before grid startup routine. Grid is not
+     * Invoked before node startup routine. Node is not
      * initialized and cannot be used.
      */
-    BEFORE_GRID_START,
+    BEFORE_NODE_START,
 
     /**
-     * Invoked after grid startup is complete. Grid is fully
+     * Invoked after node startup is complete. Node is fully
      * initialized and fully functional.
      */
-    AFTER_GRID_START,
+    AFTER_NODE_START,
 
     /**
-     * Invoked before grid stopping routine. Grid is fully functional
+     * Invoked before node stopping routine. Node is fully functional
      * at this point.
      */
-    BEFORE_GRID_STOP,
+    BEFORE_NODE_STOP,
 
     /**
-     * Invoked after grid had stopped. Grid is stopped and
+     * Invoked after node had stopped. Node is stopped and
      * cannot be used.
      */
-    AFTER_GRID_STOP;
+    AFTER_NODE_STOP;
 
     /** Enumerated values. */
     private static final LifecycleEventType[] VALS = values();

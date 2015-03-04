@@ -254,7 +254,7 @@ public abstract class GridCacheMessage implements Message {
             info.marshal(ctx);
 
             if (ctx.deploymentEnabled()) {
-                prepareObject(info.key().value(ctx, false), ctx.shared());
+                prepareObject(info.key().value(ctx.cacheObjectContext(), false), ctx.shared());
                 prepareObject(CU.value(info.value(), ctx, false), ctx.shared());
             }
         }
@@ -457,7 +457,7 @@ public abstract class GridCacheMessage implements Message {
                 obj.prepareMarshal(ctx.cacheObjectContext());
 
                 if (depEnabled)
-                    prepareObject(obj.value(ctx, false), ctx.shared());
+                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
         }
     }
@@ -479,7 +479,7 @@ public abstract class GridCacheMessage implements Message {
                 obj.prepareMarshal(ctx.cacheObjectContext());
 
                 if (depEnabled)
-                    prepareObject(obj.value(ctx, false), ctx.shared());
+                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
         }
     }
@@ -505,7 +505,7 @@ public abstract class GridCacheMessage implements Message {
             CacheObject obj = col.get(i);
 
             if (obj != null)
-                obj.finishUnmarshal(ctx, ldr);
+                obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
         }
     }
 
@@ -525,7 +525,7 @@ public abstract class GridCacheMessage implements Message {
 
         for (CacheObject obj : col) {
             if (obj != null)
-                obj.finishUnmarshal(ctx, ldr);
+                obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
         }
     }
 

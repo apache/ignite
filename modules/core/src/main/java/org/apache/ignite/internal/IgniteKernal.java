@@ -699,7 +699,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             // Lifecycle notification.
-            notifyLifecycleBeans(BEFORE_GRID_START);
+            notifyLifecycleBeans(BEFORE_NODE_START);
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
@@ -814,7 +814,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
 
             // Lifecycle bean notifications.
-            notifyLifecycleBeans(AFTER_GRID_START);
+            notifyLifecycleBeans(AFTER_NODE_START);
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -1720,7 +1720,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (log.isDebugEnabled())
                     log.debug("Notifying lifecycle beans.");
 
-                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
+                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
             GridCacheProcessor cacheProcessor = ctx.cache();
@@ -1823,7 +1823,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             OptimizedMarshaller.clearCache();

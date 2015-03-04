@@ -490,8 +490,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
 
                 if (v != null && !reload) {
-                    K key0 = key.value(cctx, false);
-                    V val0 = v.value(cctx, true);
+                    K key0 = key.value(cctx.cacheObjectContext(), false);
+                    V val0 = v.value(cctx.cacheObjectContext(), true);
 
                     if (cctx.portableEnabled()) {
                         val0 = (V)cctx.unwrapPortableIfNeeded(val0, !deserializePortable);

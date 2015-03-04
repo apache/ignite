@@ -88,7 +88,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
                 e.prepareMarshal(cctx);
 
                 if (depEnabled)
-                    prepareObject(e.key().value(cctx, false), ctx);
+                    prepareObject(e.key().value(cctx.cacheObjectContext(), false), ctx);
             }
         }
     }

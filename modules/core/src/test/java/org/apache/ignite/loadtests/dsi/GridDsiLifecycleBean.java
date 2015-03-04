@@ -43,18 +43,18 @@ public class GridDsiLifecycleBean implements LifecycleBean {
     @Override public void onLifecycleEvent(LifecycleEventType evt) {
         try {
             switch (evt) {
-                case BEFORE_GRID_START:
+                case BEFORE_NODE_START:
                     break;
 
-                case AFTER_GRID_START:
+                case AFTER_NODE_START:
                     ignite.atomicSequence("ID", 0, true);
 
                     break;
 
-                case BEFORE_GRID_STOP:
+                case BEFORE_NODE_STOP:
                     break;
 
-                case AFTER_GRID_STOP:
+                case AFTER_NODE_STOP:
                     break;
             }
         }

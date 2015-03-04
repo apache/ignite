@@ -97,7 +97,7 @@ public class CacheEvictionEntry implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, ldr);
+        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */
