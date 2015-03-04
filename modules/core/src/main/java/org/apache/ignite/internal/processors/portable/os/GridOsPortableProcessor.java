@@ -50,17 +50,7 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws IgniteException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Object unmarshal(byte[] arr, int off) throws IgniteException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object unmarshal(long ptr, boolean forceHeap) throws IgniteException {
         return null;
     }
 
@@ -72,16 +62,6 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws IgniteException {
         return obj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object detachPortable(@Nullable Object obj, GridCacheContext cctx) {
-        if (obj == null)
-            return obj;
-
-        assert obj instanceof CacheObject : obj;
-
-        return ((CacheObject)obj).prepareForCache(cctx);
     }
 
     /** {@inheritDoc} */
@@ -122,29 +102,5 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName) {
-        return new CacheObjectContext(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj) {
-        if (obj instanceof KeyCacheObject)
-            return (KeyCacheObject)obj;
-
-        return new UserKeyCacheObjectImpl(obj);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes) {
-        if ((obj == null && bytes == null) || obj instanceof CacheObject)
-            return (CacheObject)obj;
-
-        if (bytes != null)
-            return new CacheObjectImpl(obj, bytes);
-
-        return new UserCacheObjectImpl(obj);
     }
 }

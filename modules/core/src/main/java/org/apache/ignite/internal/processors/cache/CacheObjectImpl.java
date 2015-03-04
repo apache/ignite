@@ -59,7 +59,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                 if (byteArray())
                     return (T)Arrays.copyOf(bytes, bytes.length);
                 else
-                    return ctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
+                    return (T)ctx.portable().unmarshal(ctx.cacheObjectContext(), valBytes, U.gridClassLoader());
             }
 
             if (val != null)
@@ -67,7 +67,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            val = ctx.marshaller().unmarshal(valBytes, U.gridClassLoader());
+            val = ctx.portable().unmarshal(ctx.cacheObjectContext(), valBytes, U.gridClassLoader());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal object.", e);
@@ -87,7 +87,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
             return (byte[])val;
 
         if (valBytes == null)
-            valBytes = CU.marshal(ctx.shared(), val);
+            valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
 
         return valBytes;
     }
@@ -95,7 +95,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null && !byteArray())
-            valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
+            valBytes = ctx.kernalContext().portable().marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
@@ -103,7 +103,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.isUnmarshalValues())
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+            val = ctx.portable().unmarshal(ctx.cacheObjectContext(), valBytes, ldr);
     }
 
     /** {@inheritDoc} */

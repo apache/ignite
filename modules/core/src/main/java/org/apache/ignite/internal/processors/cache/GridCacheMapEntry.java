@@ -149,7 +149,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         GridCacheMapEntry next, long ttl, int hdrId) {
         log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
-        key = (KeyCacheObject)cctx.kernalContext().portable().detachPortable(key, cctx);
+        key = (KeyCacheObject)cctx.kernalContext().portable().prepareForCache(key, cctx);
 
         assert key != null;
 
@@ -159,7 +159,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         ttlAndExpireTimeExtras(ttl, CU.toExpireTime(ttl));
 
-        val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+        val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
         synchronized (this) {
             value(val);
@@ -499,7 +499,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (delta >= 0) {
                         CacheObject val = e.value();
 
-                        val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+                        val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                         // Set unswapped value.
                         update(val, e.expireTime(), e.ttl(), e.version());
@@ -846,7 +846,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (startVer.equals(ver)) {
                 if (ret != null) {
                     // Detach value before index update.
-                    ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret, cctx);
+                    ret = (CacheObject)cctx.kernalContext().portable().prepareForCache(ret, cctx);
 
                     GridCacheVersion nextVer = nextVersion();
 
@@ -929,7 +929,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     long expTime = CU.toExpireTime(ttl);
 
                     // Detach value before index update.
-                    ret = (CacheObject)cctx.kernalContext().portable().detachPortable(ret, cctx);
+                    ret = (CacheObject)cctx.kernalContext().portable().prepareForCache(ret, cctx);
 
                     // Update indexes.
                     if (ret != null) {
@@ -1066,7 +1066,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             assert expireTime >= 0 : expireTime;
 
             // Detach value before index update.
-            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+            val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             // Update index inside synchronization since it can be updated
             // in load methods without actually holding entry lock.
@@ -1378,7 +1378,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 // Detach value before index update.
-                old = (CacheObject)cctx.kernalContext().portable().detachPortable(old, cctx);
+                old = (CacheObject)cctx.kernalContext().portable().prepareForCache(old, cctx);
 
                 if (old != null)
                     updateIndex(old, expireTime, ver, null);
@@ -1514,7 +1514,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
                 // Detach value before index update.
-                updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated, cctx);
+                updated = (CacheObject)cctx.kernalContext().portable().prepareForCache(updated, cctx);
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
@@ -1803,7 +1803,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 readThrough = true;
 
                 // Detach value before index update.
-                oldVal = (CacheObject)cctx.kernalContext().portable().detachPortable(oldVal, cctx);
+                oldVal = (CacheObject)cctx.kernalContext().portable().prepareForCache(oldVal, cctx);
 
                 // Calculate initial TTL and expire time.
                 long initTtl;
@@ -2036,7 +2036,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     // Do not change size.
                 }
 
-                updated = (CacheObject)cctx.kernalContext().portable().detachPortable(updated, cctx);
+                updated = (CacheObject)cctx.kernalContext().portable().prepareForCache(updated, cctx);
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -2957,7 +2957,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // in load methods without actually holding entry lock.
             long expireTime = expireTimeExtras();
 
-            val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+            val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             updateIndex(val, expireTime, nextVer, old);
 
@@ -3237,7 +3237,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (isNew() || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (val != null)
                     updateIndex(val, expTime, ver, null);
@@ -3290,7 +3290,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             CacheObject val = unswapped.value();
 
             if (cctx.portableEnabled()) {
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (cctx.offheapTiered() && !unswapped.valueIsByteArray())
                     unswapped.valueBytes(cctx.convertPortableBytes(unswapped.valueBytes()));
@@ -3337,7 +3337,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 long expTime = CU.toExpireTime(ttl);
 
                 // Detach value before index update.
-                val = (CacheObject)cctx.kernalContext().portable().detachPortable(val, cctx);
+                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (val != null) {
                     updateIndex(val, expTime, newVer, old);
@@ -4301,61 +4301,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     private int extrasSize() {
         return extras != null ? extras.size() : 0;
-    }
-
-    /**
-     * @return Value bytes read from offheap.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridCacheValueBytes offheapValueBytes() throws IgniteCheckedException {
-        assert cctx.offheapTiered() && valPtr != 0;
-
-        long ptr = valPtr;
-
-        boolean plainByteArr = UNSAFE.getByte(ptr++) != 0;
-
-        if (plainByteArr || !cctx.portableEnabled()) {
-            int size = UNSAFE.getInt(ptr);
-
-            byte[] bytes = U.copyMemory(ptr + 4, size);
-
-            return plainByteArr ? GridCacheValueBytes.plain(bytes) : GridCacheValueBytes.marshaled(bytes);
-        }
-
-        assert cctx.portableEnabled();
-
-        return GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), cctx.portable().unmarshal(valPtr, true)));
-    }
-
-    /**
-     * @param tmp If {@code true} can return temporary object.
-     * @return Unmarshalled value.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    private CacheObject unmarshalOffheap(boolean tmp) throws IgniteCheckedException {
-        assert cctx.offheapTiered() && valPtr != 0;
-
-        if (cctx.portableEnabled())
-            return (CacheObject)cctx.portable().unmarshal(valPtr, !tmp);
-
-        long ptr = valPtr;
-
-        boolean plainByteArr = UNSAFE.getByte(ptr++) != 0;
-
-        int size = UNSAFE.getInt(ptr);
-
-        byte[] res = U.copyMemory(ptr + 4, size);
-
-// TODO IGNITE-51.
-//        if (plainByteArr)
-//            return (V)res;
-
-        IgniteUuid valClsLdrId = U.readGridUuid(ptr + 4 + size);
-
-        ClassLoader ldr = valClsLdrId != null ? cctx.deploy().getClassLoader(valClsLdrId) :
-            cctx.deploy().localLoader();
-
-        return cctx.marshaller().unmarshal(res, ldr);
     }
 
     /** {@inheritDoc} */

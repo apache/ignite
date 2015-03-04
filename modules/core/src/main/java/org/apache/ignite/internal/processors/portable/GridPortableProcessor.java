@@ -49,28 +49,12 @@ public interface GridPortableProcessor extends GridProcessor {
     public int typeId(Object obj);
 
     /**
-     * @param obj Object to marshal.
-     * @param trim If {@code true} trims result byte buffer.
-     * @return Object bytes.
-     * @throws IgniteException In case of error.
-     */
-    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws IgniteException;
-
-    /**
      * @param arr Byte array.
      * @param off Offset.
      * @return Unmarshalled object.
      * @throws IgniteException In case of error.
      */
     public Object unmarshal(byte[] arr, int off) throws IgniteException;
-
-    /**
-     * @param ptr Offheap pointer.
-     * @param forceHeap If {@code true} creates heap-based object.
-     * @return Unmarshalled object.
-     * @throws IgniteException In case of error.
-     */
-    public Object unmarshal(long ptr, boolean forceHeap) throws IgniteException;
 
     /**
      * Converts temporary offheap object to heap-based.
@@ -89,13 +73,13 @@ public interface GridPortableProcessor extends GridProcessor {
     public Object marshalToPortable(@Nullable Object obj) throws IgniteException;
 
     /**
-     * TODO IGNITE-51: rename.
+     * Prepares cache object for cache (e.g. copies user-provided object if needed).
      *
-     * @param obj Object (portable or not).
+     * @param obj Cache object.
      * @param cctx Cache context.
-     * @return Detached portable object or original object.
+     * @return Object to be store in cache.
      */
-    public Object detachPortable(@Nullable Object obj, GridCacheContext cctx);
+    @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
 
     /**
      * @return Portable marshaller for client connectivity or {@code null} if it's not
@@ -149,22 +133,51 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean hasField(Object obj, String fieldName);
 
     /**
+     * @param ctx Cache object context.
+     * @param val Value.
+     * @return Value bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException;
+
+    /**
+     * @param bytes Bytes.
+     * @param clsLdr Class loader.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
+
+    /**
+     * @param node Node.
      * @param cacheName Cache name.
      * @return Cache object context.
      */
     public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName);
 
     /**
+     * @param ctx Cache context.
      * @param obj Object.
+     * @param bytes Object bytes.
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes);
 
     /**
+     * @param ctx Context.
+     * @param valPtr Value pointer.
+     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
+     * @return Cache object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
      * @param obj Key value.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj);
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, byte[] bytes);
 
     /**
      * @param obj Value.

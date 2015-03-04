@@ -490,9 +490,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        if (ctx.portableEnabled())
-            key = (K)ctx.marshalToPortable(key);
-
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
@@ -518,14 +515,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
-
-        if (ctx.portableEnabled() && !F.isEmpty(keys)) {
-            keys = F.viewReadOnly(keys, new C1<K, K>() {
-                @Override public K apply(K k) {
-                    return (K)ctx.marshalToPortable(k);
-                }
-            });
-        }
 
         return getAllInternal(keys,
             ctx.isSwapOrOffheapEnabled(),

@@ -51,7 +51,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
             else {
                 try {
                     if (valBytes == null)
-                        valBytes = CU.marshal(ctx.shared(), val);
+                        valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
 
                     return new CacheObjectImpl(null, valBytes);
                 }
