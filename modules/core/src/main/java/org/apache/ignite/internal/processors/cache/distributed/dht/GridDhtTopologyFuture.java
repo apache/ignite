@@ -42,4 +42,11 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @throws IgniteCheckedException If topology future failed.
      */
     public GridDiscoveryTopologySnapshot topologySnapshot() throws IgniteCheckedException;
+
+    /**
+     * Gets topology version of this future.
+     *
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion();
 }

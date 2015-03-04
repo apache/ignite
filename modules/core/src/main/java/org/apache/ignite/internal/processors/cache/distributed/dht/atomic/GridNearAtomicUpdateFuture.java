@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -107,9 +106,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Return value require flag. */
     private final boolean retval;
 
-    /** Cached entry if keys size is 1. */
-    private GridCacheEntryEx<K, V> cached;
-
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
@@ -179,7 +175,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param conflictRmvVals Conflict remove values (optional).
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
-     * @param cached Cached entry if keys size is 1.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param subjId Subject ID.
@@ -197,7 +192,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
         final IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
@@ -210,7 +204,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
         assert conflictRmvVals == null || conflictRmvVals.size() == keys.size();
-        assert cached == null || keys.size() == 1;
         assert subjId != null;
 
         this.cctx = cctx;
@@ -223,7 +216,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.conflictPutVals = conflictPutVals;
         this.conflictRmvVals = conflictRmvVals;
         this.retval = retval;
-        this.cached = cached;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.subjId = subjId;
@@ -431,18 +423,18 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private void mapOnTopology(final Collection<? extends K> keys, final boolean remap, final UUID oldNodeId) {
         cache.topology().readLock();
 
-        GridDiscoveryTopologySnapshot snapshot = null;
+        AffinityTopologyVersion topVer = null;
 
         try {
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                topVer = fut.topologyVersion();
+
                 if (futVer == null)
                     // Assign future version in topology read lock before first exception may be thrown.
                     futVer = cctx.versions().next(topVer);
 
-                // We are holding topology read lock and current topology is ready, we can start mapping.
-                snapshot = fut.topologySnapshot();
             }
             else {
                 fut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
@@ -454,23 +446,16 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 return;
             }
 
-            topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
-
             mapTime = U.currentTimeMillis();
 
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
         }
-        catch (IgniteCheckedException e) {
-            onDone(new IgniteCheckedException("Failed to get topology snapshot for update operation: " + this, e));
-
-            return;
-        }
         finally {
             cache.topology().readUnlock();
         }
 
-        map0(snapshot, keys, remap, oldNodeId);
+        map0(topVer, keys, remap, oldNodeId);
     }
 
     /**
@@ -488,18 +473,16 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     }
 
     /**
-     * @param topSnapshot Topology snapshot to map on.
      * @param keys Keys to map.
      * @param remap Flag indicating if this is partial remap for this future.
      * @param oldNodeId Old node ID if was remap.
      */
-    private void map0(GridDiscoveryTopologySnapshot topSnapshot,
+    private void map0(
+        AffinityTopologyVersion topVer,
         Collection<? extends K> keys,
         boolean remap,
         @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
-
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(topSnapshot.topologyVersion());
 
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 

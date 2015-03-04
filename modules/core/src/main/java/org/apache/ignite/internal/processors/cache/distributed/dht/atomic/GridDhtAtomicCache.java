@@ -323,7 +323,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            entry,
             filter);
     }
 
@@ -340,7 +339,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            entry,
             filter);
     }
 
@@ -425,7 +423,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (ctx.portableEnabled())
             val = (V)ctx.marshalToPortable(val);
 
-        return removeAllAsync0(F.asList(key), null, null, true, true, ctx.equalsPeekArray(val));
+        return removeAllAsync0(F.asList(key), null, true, true, ctx.equalsPeekArray(val));
     }
 
     /** {@inheritDoc} */
@@ -441,7 +439,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             true,
-            null,
             ctx.equalsPeekArray(oldVal));
     }
 
@@ -461,7 +458,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             filter);
     }
 
@@ -482,7 +478,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             null);
     }
 
@@ -498,7 +493,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
-        return removeAllAsync0(Collections.singletonList(key), null, entry, true, false, filter);
+        return removeAllAsync0(Collections.singletonList(key), null, true, false, filter);
     }
 
     /** {@inheritDoc} */
@@ -512,7 +507,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         A.notNull(keys, "keys");
 
-        return removeAllAsync0(keys, null, null, false, false, filter);
+        return removeAllAsync0(keys, null, false, false, filter);
     }
 
     /** {@inheritDoc} */
@@ -527,7 +522,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
-        return removeAllAsync0(Collections.singletonList(key), null, entry, false, false, filter);
+        return removeAllAsync0(Collections.singletonList(key), null, false, false, filter);
     }
 
     /** {@inheritDoc} */
@@ -565,7 +560,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> conflictMap) {
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, null, false, false, null);
+        return removeAllAsync0(null, conflictMap, false, false, null);
     }
 
     /**
@@ -669,7 +664,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            null,
             null);
 
         return fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, EntryProcessorResult<T>>() {
@@ -713,7 +707,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            null,
             null);
     }
 
@@ -743,7 +736,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            null,
             null);
     }
 
@@ -757,7 +749,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param conflictRmvMap Conflict remove map.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
-     * @param cached Cached cache entry for key. May be passed if and only if map size is {@code 1}.
      * @param filter Cache entry filter for atomic updates.
      * @return Completion future.
      */
@@ -770,7 +761,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Map<? extends K, GridCacheVersion> conflictRmvMap,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         if (map != null && keyCheck)
@@ -797,7 +787,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             conflictRmvMap != null ? conflictRmvMap.values() : null,
             retval,
             rawRetval,
-            cached,
             prj != null ? prj.expiry() : null,
             filter,
             subjId,
@@ -817,7 +806,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param keys Keys to remove.
      * @param conflictMap Conflict map.
-     * @param cached Cached cache entry for key. May be passed if and only if keys size is {@code 1}.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter for atomic removes.
@@ -826,7 +814,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture removeAllAsync0(
         @Nullable final Collection<? extends K> keys,
         @Nullable final Map<? extends K, GridCacheVersion> conflictMap,
-        @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
         boolean rawRetval,
         @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
@@ -860,7 +847,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             keys != null ? null : conflictMap.values(),
             retval,
             rawRetval,
-            cached,
             (filter != null && prj != null) ? prj.expiry() : null,
             filter,
             subjId,
@@ -2321,7 +2307,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drRmvVals,
             req.returnValue(),
             false,
-            null,
             req.expiry(),
             req.filter(),
             req.subjectId(),

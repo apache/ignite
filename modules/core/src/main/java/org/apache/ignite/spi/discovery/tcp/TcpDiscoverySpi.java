@@ -4489,12 +4489,20 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 TcpDiscoverySpiState spiState = spiStateCopy();
 
+                Map<Long, Collection<ClusterNode>> hist;
+
+                synchronized (mux) {
+                    hist = new TreeMap<>(topHist);
+                }
+
+                Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
+
                 if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
                     lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                         msg.topologyVersion(),
                         ring.node(msg.creatorNodeId()),
-                        null,
-                        null,
+                        snapshot,
+                        hist,
                         msg.message());
             }
 

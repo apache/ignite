@@ -1191,6 +1191,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         startCache(cacheCtx.cache());
         onKernalStart(cacheCtx.cache());
+
+        caches.put(cacheCtx.name(), cacheCtx.cache());
     }
 
     /**
@@ -1198,7 +1200,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param startDesc Cache start descriptor.
      */
+    @SuppressWarnings("unchecked")
     public void onCacheStartFinished(DynamicCacheDescriptor startDesc) {
+        GridCacheAdapter<?, ?> cache = caches.get(startDesc.cacheConfiguration().getName());
+
+        if (cache != null)
+            jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+
         CacheConfiguration ccfg = startDesc.cacheConfiguration();
 
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingStarts.get(ccfg.getName());

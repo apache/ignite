@@ -261,6 +261,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         return topSnapshot.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return exchId.topologyVersion();
+    }
+
     /**
      * @return Dummy flag.
      */
@@ -662,11 +667,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
-        if (err == null) {
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+            if (err == null) {
                 if (!cacheCtx.isLocal())
                     cacheCtx.affinity().cleanUpCache(res.topologyVersion() - 10);
             }
+
+            if (startDesc != null && F.eq(startDesc.cacheConfiguration().getName(), cacheCtx.name()))
+                cacheCtx.preloader().onInitialExchangeComplete(err);
         }
 
         cctx.exchange().onExchangeDone(this);

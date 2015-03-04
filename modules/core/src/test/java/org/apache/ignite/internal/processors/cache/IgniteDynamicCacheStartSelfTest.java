@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -144,9 +145,26 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         final IgniteKernal kernal = (IgniteKernal)grid(0);
 
         CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        ccfg.setName("TestCacheName3");
+        String cacheName = "TestCacheName3";
+
+        ccfg.setName(cacheName);
 
         kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()).get();
+
+        for (int g = 0; g < nodeCount(); g++) {
+            IgniteKernal kernal0 = (IgniteKernal)grid(g);
+
+            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
+                f.get();
+
+            assertNotNull(grid(g).jcache(cacheName));
+        }
+
+        grid(0).jcache(cacheName).put("1", "1");
+
+        for (int g = 0; g < nodeCount(); g++)
+            assertEquals("1", grid(g).jcache(cacheName).get("1"));
     }
 }
