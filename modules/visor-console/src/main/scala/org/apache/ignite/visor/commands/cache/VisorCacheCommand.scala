@@ -780,7 +780,6 @@ object VisorCacheCommand {
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
-        val queryCfg = cfg.queryConfiguration()
 
         val cacheT = VisorTextTable()
 
@@ -860,16 +859,6 @@ object VisorCacheCommand {
         cacheT += ("Loader Factory Class Name", safe(cfg.loaderFactory()))
         cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
-
-        if (queryCfg != null) {
-            cacheT +=("Query Type Resolver", safe(queryCfg.typeResolver()))
-            cacheT +=("Query Indexing Primitive Key", bool2Str(queryCfg.indexPrimitiveKey()))
-            cacheT +=("Query Indexing Primitive Value", bool2Str(queryCfg.indexPrimitiveValue()))
-            cacheT +=("Query Fixed Typing", bool2Str(queryCfg.indexFixedTyping()))
-            cacheT +=("Query Escaped Names", bool2Str(queryCfg.escapeAll()))
-        }
-        else
-            cacheT += ("Query Configuration", NA)
 
         println(title)
 
