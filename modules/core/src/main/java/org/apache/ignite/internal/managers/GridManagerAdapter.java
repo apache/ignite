@@ -33,7 +33,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +42,6 @@ import java.util.*;
 
 import static java.util.Arrays.*;
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -160,19 +158,14 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         }
     }
 
-    /**
-     * Inject resources into wrapped SPI.
-     *
-     * @throws IgniteCheckedException If injection failed.
-     */
-    protected final void injectSpi() throws IgniteCheckedException {
-        for (T spi : spis) {
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        // No-op.
+    }
 
-            // Inject SPI internal objects.
-            inject(spi);
-        }
+    /** {@inheritDoc} */
+    @Override public void onAfterSpiStart() {
+        // No-op.
     }
 
     /**
@@ -183,9 +176,13 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     protected final void startSpi() throws IgniteCheckedException {
         Collection<String> names = U.newHashSet(spis.length);
 
-        injectSpi();
-
         for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+
             try {
                 Map<String, Object> retval = spi.getNodeAttributes();
 
@@ -220,8 +217,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             if (log.isDebugEnabled())
                 log.debug("Starting SPI implementation: " + spi.getClass().getName());
 
-            if (spi instanceof DiscoverySpi)
-                ((DiscoverySpi)spi).setNodeAttributes(ctx.nodeAttributes(), VER);
+            onBeforeSpiStart();
 
             try {
                 spi.spiStart(ctx.gridName());
@@ -229,6 +225,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
             }
+
+            onAfterSpiStart();
 
             if (log.isDebugEnabled())
                 log.debug("SPI module started OK: " + spi.getClass().getName());

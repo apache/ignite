@@ -453,8 +453,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -803,7 +802,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                comp.onKernalStart();
+                if (!skipDaemon(comp)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping onKernalStart on daemon node for component: " + comp);
+
+                    comp.onKernalStart();
+                }
             }
 
             // Register MBeans.
@@ -1701,7 +1705,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.onKernalStop(cancel);
+                    if (!skipDaemon(comp)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping onKernalStop on daemon node for component: " + comp);
+
+                        comp.onKernalStop(cancel);
+                    }
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -2665,6 +2674,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
+    }
+
+    /**
+     * @param comp Grid component class.
+     * @return {@code true} if node running in daemon mode and component marked by {@code SkipDaemon} annotation.
+     */
+    private boolean skipDaemon(GridComponent comp) {
+        return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
     }
 
     /** {@inheritDoc} */

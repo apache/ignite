@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.*;
 /**
  * This class defines a collision manager.
  */
+@SkipDaemon
 public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     /** Reference for external listener. */
     private final AtomicReference<CollisionExternalListener> extLsnr =
@@ -44,12 +45,6 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon()) {
-            injectSpi();
-
-            return;
-        }
-
         startSpi();
 
         if (enabled()) {

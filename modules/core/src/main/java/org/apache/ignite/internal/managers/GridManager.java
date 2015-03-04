@@ -31,4 +31,14 @@ public interface GridManager extends GridComponent {
      * @return {@code true} if at least one SPI does not have a {@code NO-OP} implementation, {@code false} otherwise.
      */
     public boolean enabled();
+
+    /**
+     * This method is called before manager will start SPI.
+     */
+    public void onBeforeSpiStart();
+
+    /**
+     * This method is called after manager started SPI.
+     */
+    public void onAfterSpiStart();
 }

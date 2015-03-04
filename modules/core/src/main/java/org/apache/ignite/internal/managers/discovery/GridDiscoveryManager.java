@@ -53,6 +53,7 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -187,6 +188,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        DiscoverySpi spi = getSpi();
+
+        spi.setNodeAttributes(ctx.nodeAttributes(), VER);
     }
 
     /** {@inheritDoc} */
@@ -2137,8 +2145,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param id Node ID.
          * @return Node.
          */
-        @Nullable
-        ClusterNode node(UUID id) {
+        @Nullable ClusterNode node(UUID id) {
             return nodeMap.get(id);
         }
 

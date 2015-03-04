@@ -15,25 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi;
+package org.apache.ignite.internal;
 
 import java.lang.annotation.*;
 
 /**
- * SPIs that have this annotation present will be checked for consistency within grid.
- * If SPIs are not consistent, then warning will be printed out to the log.
- * <p>
- * Note that SPI consistency courtesy log can also be disabled by disabling
- * {@link org.apache.ignite.configuration.IgniteConfiguration#COURTESY_LOGGER_NAME} category in log configuration.
+ * Lifecycle callbacks will not be called for grid components marked with this annotation.
  */
-@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface IgniteSpiConsistencyChecked {
-    /**
-     * Optional consistency check means that check will be performed only if
-     * SPI class names and versions match.
-     */
-    @SuppressWarnings("JavaDoc")
-    public boolean optional();
+public @interface SkipDaemon {
+    // No-op.
 }
