@@ -20,10 +20,8 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -34,6 +32,7 @@
     </parent>
 
     <artifactId>ignite-extdata-p2p</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -86,10 +85,9 @@
                         <configuration>
                             <target>
                                 <taskdef name="gar"
-                                    classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
+                                         classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
 
-                                <gar destfile="${basedir}/deploy/p2p.gar"
-                                     descrdir="${basedir}/META-INF"
+                                <gar destfile="${basedir}/deploy/p2p.gar" descrdir="${basedir}/META-INF"
                                      basedir="${basedir}/target/classes"/>
                             </target>
                         </configuration>

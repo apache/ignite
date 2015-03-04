@@ -20,10 +20,8 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -34,6 +32,7 @@
     </parent>
 
     <artifactId>ignite-extdata-uri</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -116,10 +115,9 @@
                                       todir="${basedir}/target/classes/lib"/>
 
                                 <taskdef name="gar"
-                                    classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
+                                         classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
 
-                                <gar destfile="${basedir}/deploy/uri.gar"
-                                     basedir="${basedir}/target/classes"/>
+                                <gar destfile="${basedir}/deploy/uri.gar" basedir="${basedir}/target/classes"/>
                             </target>
                         </configuration>
                     </execution>
