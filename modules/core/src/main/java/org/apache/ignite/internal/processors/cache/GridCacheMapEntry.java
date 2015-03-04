@@ -78,8 +78,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * <li>Each nested object should be analyzed in the same way as above.</li>
      * </ul>
      */
-    // TODO IGNITE-51.
-    private static final int SIZE_OVERHEAD = 87 /*entry*/ + 32 /* version */;
+    // 7 * 8 /*references*/  + 2 * 8 /*long*/  + 1 * 4 /*int*/ + 1 * 1 /*byte*/ = 77
+    private static final int SIZE_OVERHEAD = 77 /*entry*/ + 32 /* version */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -291,43 +291,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
-// TODO IGNITE-51
-//        byte[] kb;
-//        GridCacheValueBytes vb;
-//
-//        CacheObject v;
-//
-//        int extrasSize;
-//
-//        synchronized (this) {
-//            kb = keyBytes;
-//            vb = valueBytesUnlocked();
-//
-//            v = val;
-//
-//            extrasSize = extrasSize();
-//        }
-//
-//        if (kb == null || (vb.isNull() && v != null)) {
-//            if (kb == null)
-//                kb = CU.marshal(cctx.shared(), key);
-//
-//            if (vb.isNull())
-//                vb = (v != null && v instanceof byte[]) ? GridCacheValueBytes.plain(v) :
-//                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), v));
-//
-//            synchronized (this) {
-//                if (keyBytes == null)
-//                    keyBytes = kb;
-//
-//                // If value didn't change.
-//                if (!isOffHeapValuesOnly() && valBytes == null && val == v && cctx.config().isStoreValueBytes())
-//                    valBytes = vb.isPlain() ? null : vb.get();
-//            }
-//        }
-//
-//        return SIZE_OVERHEAD + extrasSize + kb.length + (vb.isNull() ? 0 : vb.get().length);
-        return 0;
+        int extrasSize;
+
+        synchronized (this) {
+            extrasSize = extrasSize();
+        }
+
+        return SIZE_OVERHEAD + extrasSize;
     }
 
     /** {@inheritDoc} */
