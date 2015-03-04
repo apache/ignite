@@ -403,6 +403,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         readFromBackup = cc.isReadFromBackup();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeValBytes = cc.isStoreValueBytes();
