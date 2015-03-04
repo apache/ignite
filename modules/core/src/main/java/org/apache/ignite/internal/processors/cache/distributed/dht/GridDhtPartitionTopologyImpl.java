@@ -248,8 +248,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             if (cctx.preloadEnabled()) {
                 for (int p = 0; p < num; p++) {
                     // If this is the first node in grid.
-                    if (oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) {
-                        assert exchId.isJoined();
+                    if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) || exchId.isCacheAdded()) {
+                        assert exchId.isJoined() || exchId.isCacheAdded();
 
                         try {
                             GridDhtLocalPartition<K, V> locPart = localPartition(p, topVer, true, false);
