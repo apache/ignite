@@ -140,6 +140,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** */
     private MessageFormatter formatter;
 
+    /** Stopping flag. */
+    private boolean stopping;
+
     /**
      * @param ctx Grid kernal context.
      */
@@ -389,61 +392,46 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void onKernalStop0(boolean cancel) {
-//        // No more communication messages.
-//        getSpi().setListener(null);
-//
-//        busyLock.writeLock();
-//
-//        U.shutdownNow(getClass(), affPool, log);
-//
-//        boolean interrupted = false;
-//
-//        while (workersCnt.sum() != 0) {
-//            try {
-//                Thread.sleep(200);
-//            }
-//            catch (InterruptedException ignored) {
-//                interrupted = true;
-//            }
-//        }
-//
-//        if (interrupted)
-//            Thread.currentThread().interrupt();
-//
-//        GridEventStorageManager evtMgr = ctx.event();
-//
-//        if (evtMgr != null && discoLsnr != null)
-//            evtMgr.removeLocalEventListener(discoLsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // No more communication messages.
         getSpi().setListener(null);
 
-        busyLock.writeLock();
-
-        U.shutdownNow(getClass(), affPool, log);
-
         boolean interrupted = false;
 
-        while (workersCnt.sum() != 0) {
+        // Busy wait is intentional.
+        while (true) {
             try {
-                Thread.sleep(200);
+                if (busyLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
+                    break;
+                else
+                    Thread.sleep(200);
             }
-            catch (InterruptedException ignored) {
+            catch (InterruptedException ignore) {
+                // Preserve interrupt status & ignore.
+                // Note that interrupted flag is cleared.
                 interrupted = true;
             }
         }
 
-        if (interrupted)
-            Thread.currentThread().interrupt();
+        try {
+            if (interrupted)
+                Thread.currentThread().interrupt();
 
-        GridEventStorageManager evtMgr = ctx.event();
+            U.shutdownNow(getClass(), affPool, log);
 
-        if (evtMgr != null && discoLsnr != null)
-            evtMgr.removeLocalEventListener(discoLsnr);
+            GridEventStorageManager evtMgr = ctx.event();
 
+            if (evtMgr != null && discoLsnr != null)
+                evtMgr.removeLocalEventListener(discoLsnr);
+
+            stopping = true;
+        }
+        finally {
+            busyLock.writeUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         // Clear cache.
@@ -463,14 +451,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert nodeId != null;
         assert msg != null;
 
-        if (!busyLock.tryReadLock()) {
-            if (log.isDebugEnabled())
-                log.debug("Received communication message while stopping grid.");
-
-            return;
-        }
+        busyLock.readLock();
 
         try {
+            if (stopping) {
+                if (log.isDebugEnabled())
+                    log.debug("Received communication message while stopping (will ignore) [nodeId=" +
+                        nodeId + ", msg=" + cacheMsg + ']');
+
+                return;
+            }
+
             // Check discovery.
             ClusterNode node = ctx.discovery().node(nodeId);
 
