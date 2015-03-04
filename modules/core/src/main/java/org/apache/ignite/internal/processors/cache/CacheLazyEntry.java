@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -26,56 +27,41 @@ import javax.cache.*;
  */
 public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** Cache context. */
-    private GridCacheContext<K, V> cctx;
+    protected GridCacheContext cctx;
 
     /** Key cache object. */
-    private KeyCacheObject keyObj;
+    protected KeyCacheObject keyObj;
 
     /** Cache object value. */
-    private CacheObject valObj;
+    protected CacheObject valObj;
 
     /** Key. */
-    private K key;
+    @GridToStringInclude
+    protected K key;
 
     /** Value. */
-    private V val;
+    @GridToStringInclude
+    protected V val;
 
     /**
+     * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
-     * @param cctx Cache context.
      */
-    public CacheLazyEntry(KeyCacheObject keyObj, CacheObject valObj, GridCacheContext<K, V> cctx) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
         this.keyObj = keyObj;
         this.valObj = valObj;
         this.cctx = cctx;
     }
 
     /**
-     * @param key Key.
-     * @param val Value.
-     */
-    public CacheLazyEntry(K key, V val) {
-        this.key = key;
-        this.val = val;
-    }
-
-    /**
      * @param keyObj Key cache object.
-     * @param valObj Cache object value.
-     * @param key Key.
      * @param val Value.
      * @param cctx Cache context.
      */
-    public CacheLazyEntry(KeyCacheObject keyObj,
-        CacheObject valObj,
-        K key,
-        V val, 
-        GridCacheContext<K, V> cctx) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val) {
         this.keyObj = keyObj;
-        this.valObj = valObj;
         this.val = val;
-        this.key = key;
         this.cctx = cctx;
     }
 
@@ -106,6 +92,6 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheEntry [key=" + getKey() + ", val=" + getValue() + ']';
+        return S.toString(CacheLazyEntry.class, this);
     }
 }

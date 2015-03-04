@@ -538,7 +538,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (intercept) {
                                 Object interceptorVal = cacheCtx.config().getInterceptor()
                                     .onBeforePut(new CacheLazyEntry(
-                                        key, e.cached().rawGetOrUnmarshal(true), cacheCtx),
+                                        cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
                                         CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
@@ -577,12 +577,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
-
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(key,
-                                        e.cached().rawGetOrUnmarshal(true),
-                                        cacheCtx));
+                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx, 
+                                        key,
+                                        e.cached().rawGetOrUnmarshal(true)));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -2464,20 +2462,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         GridCacheContext ctx = txEntry.context();
 
         Object keyVal = txEntry.key().value(ctx, false);
-        Object val = CU.value(cacheVal, ctx, false);
 
         try {
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry<>(txEntry.context(), keyVal, val);
+                    new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), cacheVal);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
-
-                val = invokeEntry.getValue();
             }
 
             if (res != null)

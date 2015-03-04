@@ -1334,13 +1334,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         null);
 
-                    Object keyVal = entry.key().value(ctx, false);
-                    Object oldVal = CU.value(old, ctx, false);
                     Object updatedVal = null;
 
-                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx,
-                        keyVal,
-                        oldVal);
+                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, entry.key(), old);
 
                     CacheObject updated;
                     CacheInvokeDirectResult invokeRes = null;
@@ -1348,9 +1344,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
-                        updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
+                        if (invokeEntry.modified()) {
+                            updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                        updated = ctx.toCacheObject(updatedVal);
+                            updated = ctx.toCacheObject(updatedVal);
+                        }
+                        else {
+                            updated = old;
+
+                            updatedVal = CU.value(old, ctx, true);
+                        }
 
                         if (computed != null)
                             invokeRes = new CacheInvokeDirectResult(entry.key(),
@@ -1368,7 +1371,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (updated == null) {
                         if (intercept) {
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                new CacheEntryImpl(keyVal, oldVal));
+                                new CacheLazyEntry(ctx, entry.key(), old));
 
                             if (ctx.cancelRemove(interceptorRes))
                                 continue;
@@ -1410,8 +1413,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(keyVal, oldVal),
-                                updatedVal);
+                            Object val = ctx.config().getInterceptor()
+                                .onBeforePut(new CacheLazyEntry(ctx, entry.key(), old), updatedVal);
 
                             if (val == null)
                                 continue;
@@ -1476,10 +1479,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             taskName,
                             null);
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
-                            entry.key(),
-                            old,
-                            ctx),
+                        Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
+                            old),
                             updated.value(ctx, false));
 
                         if (val == null)
@@ -1514,7 +1515,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
-                            .onBeforeRemove(new CacheLazyEntry(entry.key(), old, ctx));
+                            .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old));
 
                         if (ctx.cancelRemove(interceptorRes))
                             continue;
@@ -1983,16 +1984,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         if (op == UPDATE) {
                             ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
+                                ctx, 
                                 entry.key(),
-                                updRes.newValue(),
-                                ctx));
+                                updRes.newValue()));
                         }
                         else {
                             assert op == DELETE : op;
 
                             // Old value should be already loaded for 'CacheInterceptor.onBeforeRemove'.
-                            ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(entry.key(), 
-                                updRes.oldValue(), ctx));
+                            ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(ctx, entry.key(),
+                                updRes.oldValue()));
                         }
                     }
 

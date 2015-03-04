@@ -18,27 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 
 /**
  * Implementation of {@link MutableEntry} passed to the {@link EntryProcessor#process(MutableEntry, Object...)}.
  */
-public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
-    /** */
-    private final GridCacheContext cctx;
-
-    /** */
-    @GridToStringInclude
-    private final K key;
-
-    /** */
-    @GridToStringInclude
-    private V val;
-
+public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements MutableEntry<K, V> {
     /** */
     private final boolean hadVal;
 
@@ -46,29 +33,25 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     private Operation op = Operation.NONE;
 
     /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param val Value.
+     * @param cctx   Cache context.
+     * @param keyObj Key cache object.
+     * @param valObj Cache object value.
      */
-    public CacheInvokeEntry(GridCacheContext cctx, K key, @Nullable V val) {
-        assert cctx != null;
-        assert key != null;
+    public CacheInvokeEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
+        super(cctx, keyObj, valObj);
 
-        this.cctx = cctx;
-        this.key = key;
-        this.val = val;
-
-        hadVal = val != null;
+        this.hadVal = getValue() != null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return val != null;
+        return getValue() != null;
     }
 
     /** {@inheritDoc} */
     @Override public void remove() {
         val = null;
+        valObj = null;
 
         if (op == Operation.CREATE)
             op = Operation.NONE;
@@ -84,16 +67,6 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
         this.val = val;
 
         op = hadVal ? Operation.UPDATE : Operation.CREATE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public K getKey() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getValue() {
-        return val;
     }
 
     /** {@inheritDoc} */
