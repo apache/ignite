@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastream;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;

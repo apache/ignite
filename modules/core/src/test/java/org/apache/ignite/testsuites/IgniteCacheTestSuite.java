@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.preloa
 import org.apache.ignite.internal.processors.cache.expiry.*;
 import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.internal.processors.cache.local.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastream.*;
 
 /**
  * Test suite.
