@@ -56,9 +56,6 @@ import static org.apache.ignite.transactions.TransactionState.*;
     "NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope", "FieldAccessedSynchronizedAndUnsynchronized"})
 public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     /** */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
     private static final byte IS_DELETED_MASK = 0x01;
 
     /** */
@@ -292,13 +289,43 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
-        int extrasSize;
-
-        synchronized (this) {
-            extrasSize = extrasSize();
-        }
-
-        return SIZE_OVERHEAD + extrasSize;
+// TODO IGNITE-51
+//        byte[] kb;
+//        GridCacheValueBytes vb;
+//
+//        CacheObject v;
+//
+//        int extrasSize;
+//
+//        synchronized (this) {
+//            kb = keyBytes;
+//            vb = valueBytesUnlocked();
+//
+//            v = val;
+//
+//            extrasSize = extrasSize();
+//        }
+//
+//        if (kb == null || (vb.isNull() && v != null)) {
+//            if (kb == null)
+//                kb = CU.marshal(cctx.shared(), key);
+//
+//            if (vb.isNull())
+//                vb = (v != null && v instanceof byte[]) ? GridCacheValueBytes.plain(v) :
+//                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), v));
+//
+//            synchronized (this) {
+//                if (keyBytes == null)
+//                    keyBytes = kb;
+//
+//                // If value didn't change.
+//                if (!isOffHeapValuesOnly() && valBytes == null && val == v && cctx.config().isStoreValueBytes())
+//                    valBytes = vb.isPlain() ? null : vb.get();
+//            }
+//        }
+//
+//        return SIZE_OVERHEAD + extrasSize + kb.length + (vb.isNull() ? 0 : vb.get().length);
+        return 0;
     }
 
     /** {@inheritDoc} */
