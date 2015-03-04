@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Job to put entries to cache on affinity node.
  */
-class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
+class IgniteDataStreamerUpdateJob<K, V> implements GridPlainCallable<Object> {
     /** */
     private final GridKernalContext ctx;
 
@@ -58,7 +58,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
      * @param ignoreDepOwnership {@code True} to ignore deployment ownership.
      * @param updater Updater.
      */
-    GridDataLoadUpdateJob(
+    IgniteDataStreamerUpdateJob(
         GridKernalContext ctx,
         IgniteLogger log,
         @Nullable String cacheName,

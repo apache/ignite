@@ -124,7 +124,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
     public void testPartitioned() throws Exception {
         mode = PARTITIONED;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -134,7 +134,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
         mode = PARTITIONED;
         nearEnabled = false;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -143,7 +143,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
     public void testReplicated() throws Exception {
         mode = REPLICATED;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -153,7 +153,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
         mode = LOCAL;
 
         try {
-            checkDataLoader();
+            checkDataStreamer();
 
             assert false;
         }
@@ -167,7 +167,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private void checkDataLoader() throws Exception {
+    private void checkDataStreamer() throws Exception {
         try {
             Ignite g1 = startGrid(1);
 
@@ -178,7 +178,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
 
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -220,7 +220,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
 
             final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
-            rmvLdr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -265,7 +265,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
     public void testPartitionedIsolated() throws Exception {
         mode = PARTITIONED;
 
-        checkIsolatedDataLoader();
+        checkIsolatedDataStreamer();
     }
 
     /**
@@ -274,13 +274,13 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
     public void testReplicatedIsolated() throws Exception {
         mode = REPLICATED;
 
-        checkIsolatedDataLoader();
+        checkIsolatedDataStreamer();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkIsolatedDataLoader() throws Exception {
+    private void checkIsolatedDataStreamer() throws Exception {
         try {
             useCache = true;
 
@@ -418,7 +418,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>individual());
+            ldr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.

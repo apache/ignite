@@ -279,7 +279,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 try (IgniteDataStreamer<K, V> dataLdr = ignite.dataStreamer(cacheName)) {
                     ((IgniteDataStreamerImpl)dataLdr).maxRemapCount(0);
 
-                    dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
+                    dataLdr.updater(IgniteDataStreamerCacheUpdaters.<K, V>batched());
 
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {

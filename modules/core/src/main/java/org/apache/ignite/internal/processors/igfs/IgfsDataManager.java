@@ -314,7 +314,7 @@ public class IgfsDataManager extends IgfsManager {
         if (cfg.getPerNodeParallelBatchCount() > 0)
             ldr.perNodeParallelLoadOperations(cfg.getPerNodeParallelBatchCount());
 
-        ldr.updater(GridDataLoadCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
+        ldr.updater(IgniteDataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
     }

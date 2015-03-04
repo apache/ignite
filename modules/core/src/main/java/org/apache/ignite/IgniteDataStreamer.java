@@ -33,7 +33,7 @@ import java.util.*;
  * data may get to remote nodes in different order from which it was added to
  * the loader.
  * <p>
- * Also note that {@code GridDataLoader} is not the only way to load data into cache.
+ * Also note that {@code IgniteDataStreamer} is not the only way to load data into cache.
  * Alternatively you can use {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)}
  * method to load data from underlying data store. You can also use standard
  * cache {@code put(...)} and {@code putAll(...)} operations as well, but they most

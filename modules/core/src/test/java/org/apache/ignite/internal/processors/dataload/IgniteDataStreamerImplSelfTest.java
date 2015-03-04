@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Tests for {@code GridDataLoaderImpl}.
+ * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -69,7 +69,7 @@ public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNullPointerExceptionUponDataLoaderClosing() throws Exception {
+    public void testNullPointerExceptionUponDataStreamerClosing() throws Exception {
         try {
             startGrids(5);
 

@@ -114,7 +114,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheDataLoaderExample() throws Exception {
+    public void testCacheDataStreamerExample() throws Exception {
         CacheDataStreamerExample.main(EMPTY_ARGS);
     }
 

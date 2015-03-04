@@ -248,7 +248,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            GridDataLoadUpdateJob<K, V> job = new GridDataLoadUpdateJob<>(ctx,
+            IgniteDataStreamerUpdateJob<K, V> job = new IgniteDataStreamerUpdateJob<>(ctx,
                 log,
                 req.cacheName(),
                 col,

@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Bundled factory for cache updaters.
  */
-public class GridDataLoadCacheUpdaters {
+public class IgniteDataStreamerCacheUpdaters {
     /** */
     private static final IgniteDataStreamer.Updater INDIVIDUAL = new Individual();
 

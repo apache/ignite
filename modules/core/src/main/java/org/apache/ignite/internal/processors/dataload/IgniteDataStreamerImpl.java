@@ -302,7 +302,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         if (node == null)
             throw new IgniteException("Failed to get node for cache: " + cacheName);
 
-        updater = allow ? GridDataLoadCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        updater = allow ? IgniteDataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -450,7 +450,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataLoaderPda(key, entry.getValue(), updater);
+                    jobPda = new DataStreamerPda(key, entry.getValue(), updater);
 
                     initPda = false;
                 }
@@ -981,7 +981,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, skipStore, updater), false);
+                    new IgniteDataStreamerUpdateJob<>(ctx, log, cacheName, entries, false, skipStore, updater), false);
 
                 locFuts.add(fut);
 
@@ -1193,7 +1193,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     /**
      * Data streamer peer-deploy aware.
      */
-    private class DataLoaderPda implements GridPeerDeployAware {
+    private class DataStreamerPda implements GridPeerDeployAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1211,7 +1211,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          *
          * @param objs Collection of objects to detect deploy class and class loader.
          */
-        private DataLoaderPda(Object... objs) {
+        private DataStreamerPda(Object... objs) {
             this.objs = Arrays.asList(objs);
         }
 
