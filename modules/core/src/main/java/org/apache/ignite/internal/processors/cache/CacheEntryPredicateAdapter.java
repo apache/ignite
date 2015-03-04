@@ -21,12 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
+import java.io.*;
 import java.nio.*;
 
 /**
  *
  */
-public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
+public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate, Serializable {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.

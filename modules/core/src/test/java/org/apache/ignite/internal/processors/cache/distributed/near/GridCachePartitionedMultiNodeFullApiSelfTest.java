@@ -325,9 +325,14 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         CacheEntryPredicateAdapter prjFilter = new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                Integer val = CU.value(e.rawGet(), e.context(), false);
+                try {
+                    Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);
 
-                return val != null && val >= 1 && val <= 3;
+                    return val != null && val >= 1 && val <= 3;
+                }
+                catch (IgniteCheckedException err) {
+                    throw new IgniteException(err);
+                }
             }
         };
 

@@ -431,7 +431,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                if (entry == null || !ctx.isAll(entry, filter))
+                if (!ctx.isAll(entry, filter))
                     break; // While.
 
                 GridCacheMvccCandidate lock =

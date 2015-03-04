@@ -3119,7 +3119,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private <K, V> CacheObject peekDb(boolean failFast, CacheEntryPredicate[] filter)
+    @Nullable private CacheObject peekDb(boolean failFast, CacheEntryPredicate[] filter)
         throws IgniteCheckedException, GridCacheFilterFailedException {
         if (!cctx.isAll(this, filter))
             return CU.failed(failFast);

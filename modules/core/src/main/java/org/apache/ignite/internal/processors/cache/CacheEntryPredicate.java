@@ -21,12 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
-
 /**
  *
  */
-public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message, Serializable {
+public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message {
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.

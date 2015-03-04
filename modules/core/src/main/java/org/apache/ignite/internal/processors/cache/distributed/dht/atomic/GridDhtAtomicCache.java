@@ -2454,7 +2454,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
-                            null,
+                            CU.empty0(),
                             replicate ? DR_BACKUP : DR_NONE,
                             ttl,
                             expireTime,

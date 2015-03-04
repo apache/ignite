@@ -2814,7 +2814,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 lock1_2.unlock();
             }
 
-
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
@@ -2833,7 +2832,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             finally {
                 lock1_2.unlock();
             }
-
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))

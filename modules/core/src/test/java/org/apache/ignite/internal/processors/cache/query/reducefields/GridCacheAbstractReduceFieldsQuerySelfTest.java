@@ -219,28 +219,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //        assertEquals("Average", 25, avg.intValue());
 //    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOnProjection() throws Exception {
-        CacheEntryPredicateAdapter p = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                Person val = CU.value(e.rawGet(), e.context(), false);
-
-                return val != null && val.orgId == 1;
-            }
-        };
-
-        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
-            ((IgniteKernal)grid(0)).<CacheAffinityKey<String>, Person>cache(null).projection(p);
-
-        CacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
-
-        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
-
-        assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
-    }
-
 //    /**
 //     * @throws Exception If failed.
 //     */

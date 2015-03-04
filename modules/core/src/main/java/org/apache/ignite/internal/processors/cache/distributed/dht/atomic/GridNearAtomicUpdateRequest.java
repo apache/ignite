@@ -508,8 +508,18 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             prepareMarshalCacheObjects(vals, cctx);
 
         if (filter != null) {
-            for (CacheEntryPredicate p : filter)
-                p.prepareMarshal(cctx);
+            boolean hasFilter = false;
+
+            for (CacheEntryPredicate p : filter) {
+                if (p != null) {
+                    hasFilter = true;
+
+                    p.prepareMarshal(cctx);
+                }
+            }
+
+            if (!hasFilter)
+                filter = null;
         }
 
         invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
@@ -532,8 +542,10 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             finishUnmarshalCacheObjects(vals, cctx, ldr);
 
         if (filter != null) {
-            for (CacheEntryPredicate p : filter)
-                p.finishUnmarshal(cctx, ldr);
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
+            }
         }
 
         invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
