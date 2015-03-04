@@ -17,7 +17,6 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
@@ -48,11 +47,11 @@ public class MarshallerContextTestImpl implements MarshallerContext {
                     continue;
 
                 try {
-                    Class cls = U.forName(line.trim(), ldr);
+                    Class cls = Class.forName(line.trim(), false, ldr);
 
                     map.put(cls.getName().hashCode(), cls);
                 }
-                catch (ClassNotFoundException ignored) {
+                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                     // No-op.
                 }
             }

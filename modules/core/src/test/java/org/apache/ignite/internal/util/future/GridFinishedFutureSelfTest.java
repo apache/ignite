@@ -34,6 +34,9 @@ import static java.util.concurrent.TimeUnit.*;
  * Tests finished future use cases.
  */
 public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final MarshallerContext CTX = new MarshallerContextTestImpl();
+
     /** Create test and start grid. */
     public GridFinishedFutureSelfTest() {
         super(true);
@@ -66,6 +69,9 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
         GridKernalContext ctx = ((IgniteKernal)grid()).context();
 
         Marshaller m = new OptimizedMarshaller();
+
+        m.setContext(CTX);
+
         ClassLoader clsLdr = getClass().getClassLoader();
 
         IgniteInternalFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :
