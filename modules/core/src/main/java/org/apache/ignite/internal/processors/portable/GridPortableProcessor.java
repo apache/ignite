@@ -152,7 +152,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param cacheName Cache name.
      * @return Cache object context.
      */
-    public CacheObjectContext dataLoadContext(@Nullable String cacheName);
+    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName);
 
     /**
      * @param obj Object.

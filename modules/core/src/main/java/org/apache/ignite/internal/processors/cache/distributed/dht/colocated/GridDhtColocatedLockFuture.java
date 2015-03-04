@@ -95,7 +95,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private CacheEntryPredicate[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -139,7 +139,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -609,7 +609,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         final ClusterNode node = map.node();
 
         if (filter != null && filter.length != 0)
-            req.filter((IgnitePredicate[])filter, cctx);
+            req.filter(filter, cctx);
 
         if (node.isLocal())
             lockLocally(mappedKeys, req.topologyVersion(), mappings);

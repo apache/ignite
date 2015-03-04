@@ -323,7 +323,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) throws GridCacheFilterFailedException {
         IgniteTxEntry e = txMap == null ? null : txMap.get(cacheCtx.txKey(key));
 
@@ -331,7 +331,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             // We should look at tx entry previous value. If this is a user peek then previous
             // value is the same as value. If this is a filter evaluation peek then previous value holds
             // value visible to filter while value contains value enlisted for write.
-            if (!F.isEmpty(filter) && !F.isAll(e.cached().<K, V>wrapLazyValue(), filter))
+            if (!F.isEmpty(filter) && !F.isAll(e.cached(), filter))
                 return e.hasPreviousValue() ? F.t(CU.<CacheObject>failed(failFast, e.previousValue())) : null;
 
             return e.hasPreviousValue() ? F.t(e.previousValue()) : null;
@@ -841,7 +841,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 false,
                                                 metrics,
                                                 topVer,
-                                                CU.empty(),
+                                                CU.empty0(),
                                                 DR_NONE,
                                                 txEntry.conflictExpireTime(),
                                                 null,
@@ -874,7 +874,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 false,
                                                 metrics,
                                                 topVer,
-                                                CU.empty(),
+                                                CU.empty0(),
                                                 DR_NONE,
                                                 null,
                                                 CU.subjectId(this, cctx),
@@ -1322,7 +1322,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 null,
                                 entry,
                                 expiryPlc,
-                                CU.empty(),
+                                CU.empty0(),
                                 false,
                                 -1L,
                                 -1L,
@@ -1638,7 +1638,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     isolation,
                     isInvalidate(),
                     accessTtl,
-                    CU.empty());
+                    CU.empty0());
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
@@ -1871,7 +1871,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean retval,
         @Nullable GridCacheEntryEx cached,
         long ttl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         return (IgniteInternalFuture<GridCacheReturn<CacheObject>>)putAllAsync0(cacheCtx,
             map,
@@ -1932,7 +1932,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @throws IgniteCheckedException If failed.
      */
     private <K, V> boolean filter(GridCacheEntryEx cached,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
+        CacheEntryPredicate[] filter) throws IgniteCheckedException {
         return pessimistic() || (optimistic() && implicit()) || cached.context().isAll(cached, filter);
     }
 
@@ -1967,7 +1967,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Object[] invokeArgs,
         boolean retval,
         boolean lockOnly,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        CacheEntryPredicate[] filter,
         final GridCacheReturn<CacheObject> ret,
         Collection<KeyCacheObject> enlisted,
         @Nullable Map<? extends K, GridCacheDrInfo<V>> drPutMap,
@@ -2117,7 +2117,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         null,
                                         entry,
                                         null,
-                                        CU.empty(),
+                                        CU.empty0(),
                                         false,
                                         -1L,
                                         -1L,
@@ -2329,7 +2329,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean retval,
         boolean read,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        CacheEntryPredicate[] filter,
         boolean computeInvoke
     ) throws IgniteCheckedException {
         for (KeyCacheObject k : keys) {
@@ -2398,7 +2398,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             ret.value(v);
                     }
 
-                    boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached.wrapLazyValue(), filter);;
+                    boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
 
                     // For remove operation we return true only if we are removing s/t,
                     // i.e. cached value is not null.
@@ -2420,10 +2420,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Revert operation to previous. (if no - NOOP, so entry will be unlocked).
                         txEntry.setAndMarkValid(txEntry.previousOperation(), (CacheObject)ret.value());
-                        txEntry.filters(CU.empty());
+                        txEntry.filters(CU.empty0());
                         txEntry.filtersSet(false);
 
-                        updateTtl = filter != cacheCtx.noPeekArray();
+                        updateTtl = !cacheCtx.putIfAbsentFilter(filter);
                     }
 
                     if (updateTtl) {
@@ -2511,13 +2511,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx cached,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
+        @Nullable final CacheEntryPredicate[] filter
     ) {
         assert filter == null || invokeMap == null;
 
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_PUT);
-
-        final IgnitePredicate<Cache.Entry<Object, Object>>[] filter0 = ((IgnitePredicate[])filter);
 
         if (retval)
             needReturnValue(true);
@@ -2627,7 +2625,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 invokeArgs,
                 retval,
                 false,
-                filter0,
+                filter,
                 ret,
                 enlisted,
                 drMap,
@@ -2664,7 +2662,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     isolation,
                     isInvalidate(),
                     -1L,
-                    CU.<K, V>empty());
+                    CU.empty0());
 
                 PLC1<GridCacheReturn<CacheObject>> plc1 = new PLC1<GridCacheReturn<CacheObject>>(ret) {
                     @Override public GridCacheReturn<CacheObject> postLock(GridCacheReturn<CacheObject> ret)
@@ -2681,7 +2679,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             retval,
                             /*read*/false,
                             -1L,
-                            filter0,
+                            filter,
                             /*computeInvoke*/true);
 
                         return ret;
@@ -2754,7 +2752,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx cached,
         boolean retval,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         return removeAllAsync0(cacheCtx, keys, null, cached, retval, filter);
     }
@@ -2775,10 +2773,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Map<? extends  K, GridCacheVersion> drMap,
         @Nullable GridCacheEntryEx cached,
         final boolean retval,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        @Nullable final CacheEntryPredicate[] filter) {
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
-
-        final IgnitePredicate<Cache.Entry<Object, Object>>[] filter0 = ((IgnitePredicate[])filter);
 
         if (retval)
             needReturnValue(true);
@@ -2866,7 +2862,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 /** invoke arguments */null,
                 retval,
                 /** lock only */false,
-                filter0,
+                filter,
                 ret,
                 enlisted,
                 null,
@@ -2894,7 +2890,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     isolation,
                     isInvalidate(),
                     -1L,
-                    CU.<K, V>empty());
+                    CU.empty0());
 
                 PLC1<GridCacheReturn<CacheObject>> plc1 = new PLC1<GridCacheReturn<CacheObject>>(ret) {
                     @Override protected GridCacheReturn<CacheObject> postLock(GridCacheReturn<CacheObject> ret)
@@ -2911,7 +2907,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             retval,
                             /*read*/false,
                             -1L,
-                            filter0,
+                            filter,
                             /*computeInvoke*/false);
 
                         return ret;
@@ -3059,7 +3055,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 /** invoke arguments */null,
                 /** retval */false,
                 /** lock only */true,
-                CU.empty(),
+                CU.empty0(),
                 ret,
                 enlisted,
                 null,
@@ -3079,7 +3075,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     isolation,
                     isInvalidate(),
                     -1L,
-                    CU.empty()) :
+                    CU.empty0()) :
                 new GridFinishedFuture<>(cctx.kernalContext());
         }
         catch (IgniteCheckedException e) {
@@ -3193,7 +3189,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         Object[] invokeArgs,
         GridCacheEntryEx entry,
         @Nullable ExpiryPolicy expiryPlc,
-        IgnitePredicate<Cache.Entry<Object, Object>>[] filter,
+        CacheEntryPredicate[] filter,
         boolean filtersSet,
         long drTtl,
         long drExpireTime,

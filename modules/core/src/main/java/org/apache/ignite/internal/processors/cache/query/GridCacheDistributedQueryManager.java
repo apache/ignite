@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -195,8 +196,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @return Query info.
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
-        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = req.projectionFilter() == null ?
-            F.<Cache.Entry<Object, Object>>alwaysTrue() : req.projectionFilter();
+        CacheEntryPredicate prjPred = req.projectionFilter();
 
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();

@@ -535,16 +535,31 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 97:
-                msg = new IgniteTxEntry();
+                msg = new CacheEvictionEntry();
 
                 break;
 
             case 98:
-                msg = new TxEntryValueHolder();
+                msg = new CacheEntryPredicateContainsValue();
 
                 break;
 
             case 99:
+                msg = new CacheEntrySerializablePredicate();
+
+                break;
+
+            case 100:
+                msg = new IgniteTxEntry();
+
+                break;
+
+            case 101:
+                msg = new TxEntryValueHolder();
+
+                break;
+
+            case 102:
                 msg = new NearTxPrepareResponseOwnedValue();
 
                 break;

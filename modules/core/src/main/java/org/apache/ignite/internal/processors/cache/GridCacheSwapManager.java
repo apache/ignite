@@ -119,7 +119,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     if (!firstEvictWarn)
                         warnFirstEvict();
 
-                    writeToSwap(part, cctx.toCacheKeyObject(null, kb), vb);
+                    writeToSwap(part, cctx.toCacheKeyObject(null, kb, false), vb);
                 }
                 catch (IgniteCheckedException e) {
                     log.error("Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
@@ -841,7 +841,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                             if (entry == null)
                                 return;
 
-                            KeyCacheObject key = cctx.toCacheKeyObject(swapKey.key(), swapKey.keyBytes());
+                            KeyCacheObject key = cctx.toCacheKeyObject(swapKey.key(), swapKey.keyBytes(), false);
 
                             GridCacheBatchSwapEntry unswapped = new GridCacheBatchSwapEntry(key,
                                 swapKey.partition(),
@@ -1291,7 +1291,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
             @Override protected void onRemove() throws IgniteCheckedException {
                 if (offheapFlag) {
-                    KeyCacheObject key = cctx.toCacheKeyObject(null, cur.getKey());
+                    KeyCacheObject key = cctx.toCacheKeyObject(null, cur.getKey(), false);
 
                     int part = cctx.affinity().partition(key);
 
@@ -1419,7 +1419,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                 cur = new Map.Entry<K, V>() {
                     @Override public K getKey() {
                         try {
-                            KeyCacheObject key = cctx.toCacheKeyObject(null, cur0.getKey());
+                            KeyCacheObject key = cctx.toCacheKeyObject(null, cur0.getKey(), false);
 
                             return key.value(cctx, false);
                         }
@@ -1513,7 +1513,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
             @Override protected KeyCacheObject onNext() {
                 try {
-                    cur = cctx.toCacheKeyObject(null, it.next().getKey());
+                    cur = cctx.toCacheKeyObject(null, it.next().getKey(), false);
 
                     return cur;
                 }
@@ -1611,7 +1611,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             }
 
             @Override protected void onRemove() throws IgniteCheckedException {
-                KeyCacheObject key = cctx.toCacheKeyObject(cur.getKey(), cur.getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(cur.getKey(), cur.getKey(), false);
 
                 int part = cctx.affinity().partition(key);
 

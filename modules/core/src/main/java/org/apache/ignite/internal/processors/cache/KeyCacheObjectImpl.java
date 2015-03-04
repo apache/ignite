@@ -28,6 +28,9 @@ import java.nio.*;
  *
  */
 public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject, Comparable<KeyCacheObjectImpl> {
+    /** */
+    static final int DIRECT_TYPE = 90;
+
     /**
      *
      */
@@ -150,7 +153,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 90;
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */

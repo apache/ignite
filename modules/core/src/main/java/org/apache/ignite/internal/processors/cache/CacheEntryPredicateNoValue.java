@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Tests exclude neighbors flag for consistent hash affinity function.
+ *
  */
-public class GridCacheConsistentHashAffinityFunctionExcludeNeighborsSelfTest extends
-    GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
+public class CacheEntryPredicateNoValue extends CacheEntryPredicateAdapter {
     /** {@inheritDoc} */
-    @Override protected CacheAffinityFunction affinityFunction() {
-        return new CacheConsistentHashAffinityFunction(true);
+    @Override public boolean apply(GridCacheEntryEx e) {
+        return !hasValue(e);
     }
 }

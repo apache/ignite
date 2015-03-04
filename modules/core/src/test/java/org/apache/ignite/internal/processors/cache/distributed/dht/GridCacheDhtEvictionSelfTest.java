@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -158,21 +157,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index.
-     * @return Affinity.
-     */
-    private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
-    }
-
-    /**
      * @param key Key.
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheConsistentHashAffinityFunction aff = affinity(0);
-
-        return aff.nodes(aff.partition(key), grid(0).cluster().nodes(), 1);
+        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
     }
 
     /**

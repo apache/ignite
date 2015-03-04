@@ -383,27 +383,25 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         // Partition -> {{Key, Version}, ...}.
         // Group DHT and replicated cache entries by their partitions.
-        Map<Integer, Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>> dhtEntries =
-            new HashMap<>();
+        Map<Integer, Collection<CacheEvictionEntry>> dhtEntries = new HashMap<>();
 
-        Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> nearEntries =
-            new LinkedList<>();
+        Collection<CacheEvictionEntry> nearEntries = new LinkedList<>();
 
-        for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : req.entries()) {
-            Boolean near = t.get3();
+        for (CacheEvictionEntry e : req.entries()) {
+            boolean near = e.near();
 
             if (!near) {
                 // Lock is required.
-                Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>> col =
-                    F.addIfAbsent(dhtEntries, cctx.affinity().partition(t.get1()),
-                        new LinkedList<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>());
+                Collection<CacheEvictionEntry> col =
+                    F.addIfAbsent(dhtEntries, cctx.affinity().partition(e.key()),
+                        new LinkedList<CacheEvictionEntry>());
 
                 assert col != null;
 
-                col.add(t);
+                col.add(e);
             }
             else
-                nearEntries.add(t);
+                nearEntries.add(e);
         }
 
         GridCacheEvictionResponse res = new GridCacheEvictionResponse(cctx.cacheId(), req.futureId());
@@ -411,17 +409,16 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         GridCacheVersion obsoleteVer = cctx.versions().next();
 
         // DHT and replicated cache entries.
-        for (Map.Entry<Integer, Collection<GridTuple3<KeyCacheObject, GridCacheVersion, Boolean>>> e :
-            dhtEntries.entrySet()) {
+        for (Map.Entry<Integer, Collection<CacheEvictionEntry>> e : dhtEntries.entrySet()) {
             int part = e.getKey();
 
             boolean locked = lockPartition(part); // Will return false if preloading is disabled.
 
             try {
-                for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : e.getValue()) {
-                    KeyCacheObject key = t.get1();
-                    GridCacheVersion ver = t.get2();
-                    Boolean near = t.get3();
+                for (CacheEvictionEntry t : e.getValue()) {
+                    KeyCacheObject key = t.key();
+                    GridCacheVersion ver = t.version();
+                    boolean near = t.near();
 
                     assert !near;
 
@@ -446,10 +443,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         }
 
         // Near entries.
-        for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : nearEntries) {
-            KeyCacheObject key = t.get1();
-            GridCacheVersion ver = t.get2();
-            Boolean near = t.get3();
+        for (CacheEvictionEntry t : nearEntries) {
+            KeyCacheObject key = t.key();
+            GridCacheVersion ver = t.version();
+            boolean near = t.near();
 
             assert near;
 
@@ -657,7 +654,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         GridCacheAdapter<K, V> cache,
         GridCacheEntryEx entry,
         GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        @Nullable CacheEntryPredicate[] filter,
         boolean explicit
     ) throws IgniteCheckedException {
         assert cache != null;
@@ -858,7 +855,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws IgniteCheckedException In case of error.
      */
     public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
-        boolean explicit, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
+        boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         if (entry == null)
             return true;
 
@@ -998,7 +995,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param filter Filter.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    private void enqueue(GridCacheEntryEx entry, IgnitePredicate<Cache.Entry<K, V>>[] filter)
+    private void enqueue(GridCacheEntryEx entry, CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException {
         Node<EvictionInfo> node = entry.meta(meta);
 
@@ -1243,16 +1240,21 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param info Eviction info.
      * @return Version aware filter.
      */
-    private IgnitePredicate<Cache.Entry<K, V>>[] versionFilter(final EvictionInfo info) {
+    private CacheEntryPredicate[] versionFilter(final EvictionInfo info) {
         // If version has changed since we started the whole process
         // then we should not evict entry.
-        return cctx.vararg(new P1<Cache.Entry<K, V>>() {
-            @Override public boolean apply(Cache.Entry<K, V> e) {
-                GridCacheVersion ver = (GridCacheVersion)((CacheVersionedEntryImpl)e).version();
+        return new CacheEntryPredicate[]{new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                try {
+                    GridCacheVersion ver = e.version();
 
-                return info.version().equals(ver) && F.isAll(info.filter());
+                    return info.version().equals(ver) && F.isAll(info.filter());
+                }
+                catch (GridCacheEntryRemovedException err) {
+                    return false;
+                }
             }
-        });
+        }};
     }
 
     /**
@@ -1468,7 +1470,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         private GridCacheVersion ver;
 
         /** Filter to pass before entry will be evicted. */
-        private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+        private CacheEntryPredicate[] filter;
 
         /**
          * @param entry Entry.
@@ -1476,7 +1478,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param filter Filter.
          */
         EvictionInfo(GridCacheEntryEx entry, GridCacheVersion ver,
-            IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+            CacheEntryPredicate[] filter) {
             assert entry != null;
             assert ver != null;
 
@@ -1502,7 +1504,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @return Filter.
          */
-        IgnitePredicate<Cache.Entry<K, V>>[] filter() {
+        CacheEntryPredicate[] filter() {
             return filter;
         }
 
@@ -1830,12 +1832,12 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                     GridCacheEvictionRequest req = reqMap.remove(nodeId);
 
-                    for (GridTuple3<KeyCacheObject, GridCacheVersion, Boolean> t : req.entries()) {
-                        EvictionInfo info = entries.get(t.get1());
+                    for (CacheEvictionEntry t : req.entries()) {
+                        EvictionInfo info = entries.get(t.key());
 
                         assert info != null;
 
-                        rejectedEntries.put(t.get1(), info);
+                        rejectedEntries.put(t.key(), info);
                     }
                 }
                 finally {

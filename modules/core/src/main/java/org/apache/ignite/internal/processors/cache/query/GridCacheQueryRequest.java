@@ -66,11 +66,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private byte[] keyValFilterBytes;
 
     /** */
-    @GridDirectTransient
-    private IgnitePredicate<Cache.Entry<Object, Object>> prjFilter;
-
-    /** */
-    private byte[] prjFilterBytes;
+    private CacheEntryPredicate prjFilter;
 
     /** */
     @GridDirectTransient
@@ -198,7 +194,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         String clause,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
-        IgnitePredicate<Cache.Entry<Object, Object>> prjFilter,
+        CacheEntryPredicate prjFilter,
         IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
@@ -249,7 +245,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
             if (ctx.deploymentEnabled())
                 prepareObject(prjFilter, ctx);
 
-            prjFilterBytes = CU.marshal(ctx, prjFilter);
+            prjFilter.prepareMarshal(ctx.cacheContext(cacheId));
         }
 
         if (rdc != null) {
@@ -285,8 +281,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         if (keyValFilterBytes != null)
             keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
 
-        if (prjFilterBytes != null)
-            prjFilter = mrsh.unmarshal(prjFilterBytes, ldr);
+        if (prjFilter != null)
+            prjFilter.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
 
         if (rdcBytes != null)
             rdc = mrsh.unmarshal(rdcBytes, ldr);
@@ -373,7 +369,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /** {@inheritDoc} */
-    public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
+    public CacheEntryPredicate projectionFilter() {
         return prjFilter;
     }
 
@@ -534,7 +530,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeByteArray("prjFilterBytes", prjFilterBytes))
+                if (!writer.writeMessage("prjFilter", prjFilter))
                     return false;
 
                 writer.incrementState();
@@ -690,7 +686,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 16:
-                prjFilterBytes = reader.readByteArray("prjFilterBytes");
+                prjFilter = reader.readMessage("prjFilter");
 
                 if (!reader.isLastRead())
                     return false;

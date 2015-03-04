@@ -435,6 +435,8 @@ public class SchemaLoadApp extends Application {
                 if (singleXml)
                     XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
+                SnippetGenerator.generate(all, pkg, includeKeys, new File(outFolder, "Ignite.snippet"), askOverwrite);
+
                 perceptualDelay(started);
 
                 return null;

@@ -112,7 +112,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                     return null;
 
                 try {
-                    CacheObject val = e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                    CacheObject val = e.peek(GridCachePeekMode.GLOBAL, CU.empty0());
 
                     return val != null ? val.<V>value(cached.context(), false) : null;
                 }

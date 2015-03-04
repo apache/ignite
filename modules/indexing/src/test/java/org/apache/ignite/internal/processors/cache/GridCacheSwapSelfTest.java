@@ -67,6 +67,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean swapEnabled = true;
 
+    /** PeerClassLoading excluded. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -88,8 +91,10 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
@@ -148,6 +153,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     public void testSwapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
             GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
