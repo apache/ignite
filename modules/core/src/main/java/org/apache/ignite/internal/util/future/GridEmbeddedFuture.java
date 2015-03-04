@@ -45,13 +45,14 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     }
 
     /**
-     * @param ctx Context.
      * @param embedded Embedded future.
      * @param c Closure to execute upon completion of embedded future.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception, A> c) {
-        super(ctx);
-
+    public GridEmbeddedFuture(
+        IgniteInternalFuture<B> embedded,
+        final IgniteBiClosure<B, Exception, A> c,
+        boolean fake
+    ) {
         assert embedded != null;
         assert c != null;
 
@@ -77,30 +78,11 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
     /**
      * Embeds futures. Specific change order of arguments to avoid conflicts.
-     *
-     * @param syncNotify Synchronous notify flag.
-     * @param embedded Closure.
-     * @param c Closure which runs upon completion of embedded closure and which returns another future.
-     * @param ctx Context.
-     */
-    public GridEmbeddedFuture(boolean syncNotify, IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c,
-        GridKernalContext ctx) {
-        this(embedded, c, ctx);
-
-        syncNotify(syncNotify);
-    }
-
-    /**
-     * Embeds futures. Specific change order of arguments to avoid conflicts.
-     *
-     * @param ctx Context.
-     * @param embedded Closure.
+     *  @param embedded Closure.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
-    public GridEmbeddedFuture(IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c,
-        GridKernalContext ctx) {
-        super(ctx);
-
+    public GridEmbeddedFuture(
+        IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c) {
         assert embedded != null;
         assert c != null;
 
@@ -158,15 +140,15 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     /**
      * Embeds futures.
      *
-     * @param ctx Context.
      * @param embedded Future.
      * @param c1 Closure which runs upon completion of embedded future and which returns another future.
      * @param c2 Closure will runs upon completion of future returned by {@code c1} closure.
      */
-    public GridEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception,
-        IgniteInternalFuture<A>> c1, final IgniteBiClosure<A, Exception, A> c2) {
-        super(ctx);
-
+    public GridEmbeddedFuture(
+        IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception,
+        IgniteInternalFuture<A>> c1,
+        final IgniteBiClosure<A, Exception, A> c2
+    ) {
         assert embedded != null;
         assert c1 != null;
         assert c2 != null;
@@ -268,7 +250,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                 applyx(f);
             }
             catch (IgniteIllegalStateException ignore) {
-                U.warn(log, "Will not execute future listener (grid is stopping): " + ctx.gridName());
+                U.warn(null, "Will not execute future listener (grid is stopping): " + this);
             }
             catch (Exception e) {
                 onDone(e);
@@ -300,7 +282,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                 applyx(f);
             }
             catch (IgniteIllegalStateException ignore) {
-                U.warn(log, "Will not execute future listener (grid is stopping): " + ctx.gridName());
+                U.warn(null, "Will not execute future listener (grid is stopping): " + this);
             }
             catch (Exception e) {
                 onDone(e);

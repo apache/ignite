@@ -66,7 +66,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     private GridHadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
-    private final ConcurrentMap<GridHadoopJobId, GridFutureAdapterEx<GridHadoopJob>> jobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<GridHadoopJobId, GridFutureAdapter<GridHadoopJob>> jobs = new ConcurrentHashMap8<>();
 
     /** Locally active jobs. */
     private final ConcurrentMap<GridHadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
@@ -236,7 +236,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
-            return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to execute map-reduce job " +
+            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
                 "(grid is stopping): " + info));
         }
 
@@ -283,7 +283,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to submit job: " + jobId, e);
 
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             busyLock.readUnlock();
@@ -358,7 +358,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 if (log.isTraceEnabled())
                     log.trace("Job is complete, returning finished future: " + jobId);
 
-                return new GridFinishedFutureEx<>(jobId, meta.failCause());
+                return new GridFinishedFuture<>(jobId);
             }
 
             GridFutureAdapter<GridHadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
@@ -967,9 +967,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridHadoopJob job(GridHadoopJobId jobId, @Nullable GridHadoopJobInfo jobInfo) throws IgniteCheckedException {
-        GridFutureAdapterEx<GridHadoopJob> fut = jobs.get(jobId);
+        GridFutureAdapter<GridHadoopJob> fut = jobs.get(jobId);
 
-        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapterEx<GridHadoopJob>())) != null)
+        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<GridHadoopJob>())) != null)
             return fut.get();
 
         fut = jobs.get(jobId);

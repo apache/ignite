@@ -120,7 +120,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         top = cctx.dht().topology();
 
-        startFut = new GridFutureAdapter<>(cctx.kernalContext(), false);
+        startFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -499,7 +499,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (topReadyFut == null)
                 startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
-                        fut.init();
+                        cctx.kernalContext().closure().runLocalSafe(
+                            new Runnable() {
+                                @Override public void run() {
+                                    fut.init();
+                                }
+                            });
                     }
                 });
             else {

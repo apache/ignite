@@ -48,7 +48,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
      * @param dataLdr Data loader.
      */
     GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
-        super(ctx);
+        super();
 
         assert dataLdr != null;
 
@@ -57,8 +57,6 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        checkValid();
-
         if (onCancelled()) {
             dataLdr.closeEx(true);
 

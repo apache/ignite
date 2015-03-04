@@ -1051,7 +1051,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param workers List of workers.
          */
         private SyncFuture(Collection<DemandWorker> workers) {
-            super(cctx.kernalContext());
+            super();
 
             assert workers.size() == poolSize();
 

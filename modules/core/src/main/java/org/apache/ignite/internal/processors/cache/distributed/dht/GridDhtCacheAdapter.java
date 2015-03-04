@@ -1095,7 +1095,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
          * @param topVer Topology version.
          */
         private MultiUpdateFuture(GridKernalContext ctx, long topVer) {
-            super(ctx);
+            super();
 
             this.topVer = topVer;
         }

@@ -37,7 +37,7 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
      * @param cfg Configuration.
      */
     public GridServiceDeploymentFuture(GridKernalContext ctx, ServiceConfiguration cfg) {
-        super(ctx);
+        super();
 
         this.cfg = cfg;
     }

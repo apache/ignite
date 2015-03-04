@@ -159,9 +159,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
-        log = U.logger(ctx, logRef, GridDhtGetFuture.class);
-
-        syncNotify(true);
+        log = U.logger(cctx.kernalContext(), logRef, GridDhtGetFuture.class);
     }
 
     /**
@@ -221,7 +219,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (!F.isEmpty(fut.invalidPartitions()))
             retries.addAll(fut.invalidPartitions());
 
-        add(new GridEmbeddedFuture<>(cctx.kernalContext(), fut,
+        add(new GridEmbeddedFuture<>(fut,
             new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
                 @Override public Collection<GridCacheEntryInfo<K, V>> apply(Object o, Exception e) {
                     if (e != null) { // Check error first.
@@ -251,7 +249,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     // Finish this one.
                     return Collections.emptyList();
                 }
-            })
+            },
+            false)
         );
     }
 
@@ -289,15 +288,15 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     @SuppressWarnings( {"unchecked", "IfMayBeConditional"})
     private IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> getAsync(final LinkedHashMap<? extends K, Boolean> keys) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<Collection<GridCacheEntryInfo<K, V>>>(cctx.kernalContext(),
+            return new GridFinishedFuture<Collection<GridCacheEntryInfo<K, V>>>(
                 Collections.<GridCacheEntryInfo<K, V>>emptyList());
 
         final Collection<GridCacheEntryInfo<K, V>> infos = new LinkedList<>();
 
-        String taskName0 = ctx.job().currentTaskName();
+        String taskName0 = cctx.kernalContext().job().currentTaskName();
 
         if (taskName0 == null)
-            taskName0 = ctx.task().resolveTaskName(taskNameHash);
+            taskName0 = cctx.kernalContext().task().resolveTaskName(taskNameHash);
 
         final String taskName = taskName0;
 
@@ -414,11 +413,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             }
                         }
                     }
-                },
-                cctx.kernalContext());
+                }
+            );
         }
 
-        return new GridEmbeddedFuture<>(cctx.kernalContext(), fut,
+        return new GridEmbeddedFuture<>(
+            fut,
             new C2<Map<K, V>, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
                 @Override public Collection<GridCacheEntryInfo<K, V>> apply(Map<K, V> map, Exception e) {
                     if (e != null) {
@@ -441,7 +441,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         return infos;
                     }
                 }
-            });
+            },
+            false);
     }
 
     /**

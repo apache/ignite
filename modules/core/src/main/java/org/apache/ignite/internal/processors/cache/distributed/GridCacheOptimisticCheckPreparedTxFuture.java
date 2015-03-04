@@ -86,7 +86,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         this.txNodes = txNodes;
         this.failedNodeId = failedNodeId;
 
-        log = U.logger(ctx, logRef, GridCacheOptimisticCheckPreparedTxFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridCacheOptimisticCheckPreparedTxFuture.class);
 
         nodes = new GridLeanMap<>();
 
@@ -338,7 +338,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
          * @param nodeId Node ID.
          */
         private MiniFuture(UUID nodeId) {
-            super(cctx.kernalContext());
+            super();
 
             this.nodeId = nodeId;
         }

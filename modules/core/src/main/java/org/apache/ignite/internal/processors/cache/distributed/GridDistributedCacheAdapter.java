@@ -160,7 +160,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 

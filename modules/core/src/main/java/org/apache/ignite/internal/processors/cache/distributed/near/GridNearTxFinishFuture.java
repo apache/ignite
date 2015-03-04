@@ -102,7 +102,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridNearTxFinishFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridNearTxFinishFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -434,7 +434,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param m Mapping.
          */
         MiniFuture(GridDistributedTxMapping<K, V> m) {
-            super(cctx.kernalContext());
+            super();
 
             this.m = m;
         }

@@ -171,7 +171,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
         entries = new ArrayList<>(keys.size());
 
-        log = U.logger(ctx, logRef, GridNearLockFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -965,7 +965,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
-                cctx.kernalContext(),
                 fut,
                 new C2<GridNearLockResponse<K, V>, Exception, Boolean>() {
                     @Override public Boolean apply(GridNearLockResponse<K, V> res, Exception e) {
@@ -1092,7 +1091,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                         return true;
                     }
-                }
+                },
+                false
             ));
         }
         else {
@@ -1259,7 +1259,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
          */
         MiniFuture(ClusterNode node, Collection<K> keys,
             ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings) {
-            super(cctx.kernalContext());
+            super();
 
             this.node = node;
             this.keys = keys;

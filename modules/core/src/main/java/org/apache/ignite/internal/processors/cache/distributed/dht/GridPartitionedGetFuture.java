@@ -158,7 +158,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         ver = cctx.versions().next();
 
-        log = U.logger(ctx, logRef, GridPartitionedGetFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
     }
 
     /**
@@ -306,7 +306,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             return;
 
         if (!locVals.isEmpty())
-            add(new GridFinishedFuture<>(cctx.kernalContext(), locVals));
+            add(new GridFinishedFuture<>(locVals));
 
         if (hasRmtNodes) {
             trackable = true;
@@ -347,7 +347,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                             remapKeys.add(key);
                     }
 
-                    long updTopVer = ctx.discovery().topologyVersion();
+                    long updTopVer = cctx.discovery().topologyVersion();
 
                     assert updTopVer > topVer : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -604,7 +604,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param topVer Topology version.
          */
         MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, long topVer) {
-            super(cctx.kernalContext());
+            super();
 
             this.node = node;
             this.keys = keys;
@@ -651,7 +651,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            long updTopVer = ctx.discovery().topologyVersion();
+            long updTopVer = cctx.discovery().topologyVersion();
 
             assert updTopVer > topVer : "Got topology exception but topology version did " +
                 "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -697,7 +697,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
                     @SuppressWarnings("unchecked")

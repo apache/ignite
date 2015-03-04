@@ -61,26 +61,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void syncNotify(boolean syncNotify) {
-        fut.syncNotify(syncNotify);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncNotify() {
-        return fut.syncNotify();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void concurrentNotify(boolean concurNotify) {
-        fut.concurrentNotify(concurNotify);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean concurrentNotify() {
-        return fut.concurrentNotify();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isCancelled() {
         return fut.isCancelled();
     }

@@ -52,6 +52,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Wait for 1 second for topology to change. */
     private static final long REMAP_PAUSE = 1000;
 
@@ -60,9 +63,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
     /** Topology. */
     private GridDhtPartitionTopology<K, V> top;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Keys to request. */
     private Collection<? extends K> keys;
@@ -91,8 +91,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param keys Keys.
      * @param preloader Preloader.
      */
-    public GridDhtForceKeysFuture(GridCacheContext<K, V> cctx, long topVer, Collection<? extends K> keys,
-        GridDhtPreloader<K, V> preloader) {
+    public GridDhtForceKeysFuture(
+        GridCacheContext<K, V> cctx,
+        long topVer, Collection<? extends K> keys,
+        GridDhtPreloader<K, V> preloader
+    ) {
         super(cctx.kernalContext());
 
         assert topVer != 0 : topVer;
@@ -105,9 +108,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         top = cctx.dht().topology();
 
-        log = U.logger(ctx, logRef, GridDhtForceKeysFuture.class);
-
-        syncNotify(true);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtForceKeysFuture.class);
     }
 
     /**
@@ -405,7 +407,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param exc Exclude node list.
          */
         MiniFuture(ClusterNode node, Collection<K> keys, int curTopVer, Collection<ClusterNode> exc) {
-            super(cctx.kernalContext());
+            super();
 
             assert node != null;
             assert curTopVer > 0;

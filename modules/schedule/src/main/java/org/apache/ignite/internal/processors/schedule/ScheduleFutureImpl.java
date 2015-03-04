@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of {@link org.apache.ignite.scheduler.SchedulerFuture} interface.
@@ -614,7 +613,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }

@@ -1511,7 +1511,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = futs.get(qryInfo.requestId());
 
             if (fut == null) {
-                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>(cctx.kernalContext()));
+                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
             }
@@ -1642,7 +1642,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (fut == null) {
                 resMap.put(qryInfo.requestId(), fut =
-                    new GridFutureAdapter<>(cctx.kernalContext()));
+                    new GridFutureAdapter<>());
 
                 exec = true;
             }

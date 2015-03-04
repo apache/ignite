@@ -150,9 +150,13 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
+    public GridDhtPartitionsExchangeFuture(
+        GridCacheSharedContext<K, V> cctx,
+        boolean reassign,
+        DiscoveryEvent discoEvt,
+        GridDhtPartitionExchangeId exchId
+    ) {
+        super();
         dummy = true;
         forcePreload = false;
 
@@ -160,8 +164,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         this.reassign = reassign;
         this.discoEvt = discoEvt;
         this.cctx = cctx;
-
-        syncNotify(true);
 
         onDone(exchId.topologyVersion());
     }
@@ -176,7 +178,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
+        super();
         dummy = false;
         forcePreload = true;
 
@@ -185,8 +187,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         this.cctx = cctx;
 
         reassign = true;
-
-        syncNotify(true);
 
         onDone(exchId.topologyVersion());
     }
@@ -198,9 +198,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
-
-        syncNotify(true);
+        super();
 
         assert busyLock != null;
         assert exchId != null;
@@ -220,7 +218,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert oldestNode.get() != null;
 
-        initFut = new GridFutureAdapter<>(ctx, true);
+        initFut = new GridFutureAdapter<>();
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() +
@@ -805,7 +803,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 log.debug("Received full partition map from unexpected node [oldest=" + curOldest.id() +
                     ", unexpectedNodeId=" + nodeId + ']');
 
-            ClusterNode sender = ctx.discovery().node(nodeId);
+            ClusterNode sender = cctx.discovery().node(nodeId);
 
             if (sender == null) {
                 if (log.isDebugEnabled())

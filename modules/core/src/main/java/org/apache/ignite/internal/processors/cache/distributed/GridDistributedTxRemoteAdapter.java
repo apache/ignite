@@ -723,10 +723,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         try {
             commit();
 
-            return new GridFinishedFutureEx<IgniteInternalTx>(this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -753,7 +753,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         rollback();
 
-        return new GridFinishedFutureEx<IgniteInternalTx>(this);
+        return new GridFinishedFuture<IgniteInternalTx>(this);
     }
 
     /** {@inheritDoc} */

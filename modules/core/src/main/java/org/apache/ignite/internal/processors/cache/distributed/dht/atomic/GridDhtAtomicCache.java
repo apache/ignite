@@ -598,7 +598,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         @Override public IgniteInternalFuture<T> apply(T t, Exception e) {
                             return op.apply();
                         }
-                    }, ctx.kernalContext());
+                    });
 
                 saveFuture(holder, f);
 
@@ -796,7 +796,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             conflictRmvMap != null ? conflictRmvMap.values() : null,
             retval,
             rawRetval,
-            cached,
             prj != null ? prj.expiry() : null,
             filter,
             subjId,
@@ -859,7 +858,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             keys != null ? null : conflictMap.values(),
             retval,
             rawRetval,
-            cached,
             (filter != null && prj != null) ? prj.expiry() : null,
             filter,
             subjId,
@@ -901,7 +899,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -980,7 +978,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         break; // While.
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                     finally {
                         if (entry != null)
@@ -997,7 +995,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (success) {
                 sendTtlUpdateRequest(expiry);
 
-                return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+                return ctx.wrapCloneMap(new GridFinishedFuture<>(locVals));
             }
         }
 
@@ -2320,7 +2318,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drRmvVals,
             req.returnValue(),
             false,
-            null,
             req.expiry(),
             req.filter(),
             req.subjectId(),
@@ -2787,7 +2784,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      *
      */
-    private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+    private static class FinishedLockFuture extends GridFinishedFuture<Boolean> implements GridDhtFuture<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 

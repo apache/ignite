@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
@@ -143,29 +142,9 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListeners() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
         IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
-
-        fut.syncNotify(true);
-
-        assertTrue(fut.syncNotify());
-
-        fut.syncNotify(false);
-
-        assertFalse(fut.syncNotify());
-
-        fut.concurrentNotify(true);
-
-        assertTrue(fut.concurrentNotify());
-
-        fut.concurrentNotify(false);
-
-        assertFalse(fut.concurrentNotify());
-
-        fut.syncNotify(true);
-
-        assertTrue(fut.syncNotify());
 
         final AtomicInteger lsnr1Cnt = new AtomicInteger();
 
@@ -208,11 +187,9 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     public void testListenersOnError() throws Exception {
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
             IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
-
-            fut.syncNotify(true);
 
             final IgniteException err0 = new IgniteException("test error");
 
@@ -241,11 +218,9 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         }
 
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
             IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
-
-            fut.syncNotify(true);
 
             final IgniteCheckedException err0 = new IgniteCheckedException("test error");
 
@@ -278,7 +253,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testChain() throws Exception {
-        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
         IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
 
@@ -332,7 +307,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      */
     public void testChainError() throws Exception {
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
             IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
 
@@ -358,8 +333,6 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
                     }
                 }
             });
-
-            assertTrue(chained.syncNotify());
 
             final AtomicBoolean lsnrPassed = new AtomicBoolean();
 
@@ -406,7 +379,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         }
 
         {
-            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+            GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
             IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
 
@@ -432,8 +405,6 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
                     }
                 }
             });
-
-            assertTrue(chained.syncNotify());
 
             final AtomicBoolean lsnrPassed = new AtomicBoolean();
 

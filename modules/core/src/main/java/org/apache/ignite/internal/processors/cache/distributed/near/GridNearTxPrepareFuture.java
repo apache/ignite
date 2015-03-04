@@ -116,7 +116,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridNearTxPrepareFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -362,11 +362,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
                 }
                 else {
-                    topFut.syncNotify(false);
-
                     topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
-                            prepare();
+                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    prepare();
+                                }
+                            });
                         }
                     });
                 }
@@ -859,7 +861,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
          */
         MiniFuture(GridDistributedTxMapping<K, V> m,
             ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings) {
-            super(cctx.kernalContext());
+            super();
 
             this.m = m;
             this.mappings = mappings;

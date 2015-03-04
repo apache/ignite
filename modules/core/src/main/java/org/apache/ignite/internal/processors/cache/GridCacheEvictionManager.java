@@ -1568,7 +1568,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param ctx Context.
          */
         EvictionFuture(GridKernalContext ctx) {
-            super(ctx);
+            super();
         }
 
         /**

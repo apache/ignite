@@ -49,7 +49,7 @@ public class IgniteHadoopNoopProcessor extends IgniteHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
-        return new GridFinishedFutureEx<>(new IgniteCheckedException("Hadoop is not available."));
+        return new GridFinishedFuture<>(new IgniteCheckedException("Hadoop is not available."));
     }
 
     /** {@inheritDoc} */

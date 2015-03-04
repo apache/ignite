@@ -129,7 +129,7 @@ public class GridReduceQueryExecutor {
             r.conn = h2.connectionForSpace(space);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
 
         Collection<ClusterNode> nodes = ctx.grid().cluster().nodes(); // TODO filter nodes somehow?
@@ -141,7 +141,7 @@ public class GridReduceQueryExecutor {
                 tbl = createTable(r.conn, mapQry);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFutureEx<>(e);
+                return new GridFinishedFuture<>(e);
             }
 
             tbl.getScanIndex(null).setNumberOfSources(nodes.size());
@@ -166,12 +166,12 @@ public class GridReduceQueryExecutor {
             for (GridMergeTable tbl : r.tbls)
                 dropTable(r.conn, tbl.getName());
 
-            return new GridFinishedFuture(ctx, new Iter(res));
+            return new GridFinishedFuture(new Iter(res));
         }
         catch (IgniteCheckedException | InterruptedException | SQLException e) {
             U.closeQuiet(r.conn);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

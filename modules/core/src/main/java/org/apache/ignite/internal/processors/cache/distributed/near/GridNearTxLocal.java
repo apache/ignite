@@ -884,12 +884,12 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     ) {
         if (state() != PREPARING) {
             if (timedOut())
-                return new GridFinishedFuture<>(cctx.kernalContext(),
+                return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(),
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
@@ -965,7 +965,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             if (prep != null)
                 return (IgniteInternalFuture<IgniteInternalTx>)(IgniteInternalFuture)prep;
 
-            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
@@ -1076,13 +1076,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
@@ -1108,8 +1108,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
@@ -1252,7 +1252,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
          * @param tx Transaction.
          */
         private PessimisticPrepareFuture(GridKernalContext ctx, IgniteInternalTx<K, V> tx) {
-            super(ctx);
+            super();
             this.tx = tx;
         }
 

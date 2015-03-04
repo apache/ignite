@@ -128,13 +128,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxPrepareFuture() {
-        // No-op.
-    }
-
-    /**
      * @param cctx Context.
      * @param tx Transaction.
      * @param nearMiniId Near mini future id.
@@ -173,7 +166,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         this.nearMiniId = nearMiniId;
 
-        log = U.logger(ctx, logRef, GridDhtTxPrepareFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -1133,7 +1126,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
          * Empty constructor required for {@link Externalizable}.
          */
         public MiniFuture() {
-            super(cctx.kernalContext());
+            super();
         }
 
         /**
@@ -1142,7 +1135,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
          * @param nearMapping nearMapping.
          */
         MiniFuture(UUID nodeId, GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
-            super(cctx.kernalContext());
+            super();
 
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 

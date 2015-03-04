@@ -173,10 +173,9 @@ public class IgniteTxHandler<K, V> {
         final IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
     ) {
 
-        IgniteInternalFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+        IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
-            ctx.kernalContext(),
             fut,
             new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> apply(Object o, Exception ex) {
@@ -240,7 +239,7 @@ public class IgniteTxHandler<K, V> {
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         GridDhtTxLocal<K, V> tx;
@@ -343,7 +342,7 @@ public class IgniteTxHandler<K, V> {
             return fut;
         }
         else
-            return new GridFinishedFuture<>(ctx.kernalContext(), (IgniteInternalTx<K, V>)null);
+            return new GridFinishedFuture<>((IgniteInternalTx<K, V>)null);
     }
 
     /**
@@ -443,7 +442,7 @@ public class IgniteTxHandler<K, V> {
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
-            return new GridFinishedFutureEx<IgniteInternalTx>(locTx);
+            return new GridFinishedFuture<IgniteInternalTx>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
@@ -607,7 +606,7 @@ public class IgniteTxHandler<K, V> {
                 return rollbackFut;
             }
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -637,7 +636,7 @@ public class IgniteTxHandler<K, V> {
             if (tx != null)
                 return tx.rollbackAsync();
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

@@ -115,7 +115,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListenSyncNotify() throws Exception {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
         int lsnrCnt = 10;
 
@@ -176,7 +176,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         ctx.start();
 
         try {
-            GridFutureAdapter<String> fut = new GridFutureAdapter<>(ctx, false);
+            GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
             int lsnrCnt = 10;
 
@@ -253,7 +253,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         try {
             // Test result returned.
 
-            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ctx);
+            GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
             IgniteInternalFuture<Object> chain = fut.chain(passThrough);
 
             assertFalse(fut.isDone());
@@ -274,7 +274,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             // Test exception re-thrown.
 
-            fut = new GridFutureAdapter<>(ctx);
+            fut = new GridFutureAdapter<>();
             chain = fut.chain(passThrough);
 
             fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
@@ -290,7 +290,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             // Test error re-thrown.
 
-            fut = new GridFutureAdapter<>(ctx);
+            fut = new GridFutureAdapter<>();
             chain = fut.chain(passThrough);
 
             try {

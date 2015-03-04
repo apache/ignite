@@ -356,14 +356,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     for (K key : keys)
                         c.apply(key, null);
 
-                    return new GridFinishedFuture<>(cctx.kernalContext(), false);
+                    return new GridFinishedFuture<>(false);
                 }
 
-                return new GridFinishedFuture<>(cctx.kernalContext(),
+                return new GridFinishedFuture<>(
                     cacheCtx.store().loadAllFromStore(this, keys, c));
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                return new GridFinishedFuture<>(e);
             }
         }
         else
@@ -1413,7 +1413,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         final Collection<K> loaded = new HashSet<>();
 
-        return new GridEmbeddedFuture<>(cctx.kernalContext(),
+        return new GridEmbeddedFuture<>(
             loadMissing(
                 cacheCtx,
                 true, false, missedMap.keySet(), deserializePortable, skipVals, new CI2<K, V>() {
@@ -1564,7 +1564,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                     return map;
                 }
-            });
+            },
+        false);
     }
 
     /** {@inheritDoc} */
@@ -1575,7 +1576,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         init();
 
@@ -1605,7 +1606,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 skipVals);
 
             if (single && missed.isEmpty())
-                return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
+                return new GridFinishedFuture<>(retMap);
 
             // Handle locks.
             if (pessimistic() && !readCommitted() && !groupLock() && !skipVals) {
@@ -1712,7 +1713,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         if (!missed.isEmpty() && (cacheCtx.isReplicated() || cacheCtx.isLocal()))
                             return checkMissed(cacheCtx, retMap, missed, null, deserializePortable, skipVals);
 
-                        return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
+                        return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
                     }
                 };
 
@@ -1729,24 +1730,23 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
 
                         return fut1.isDone() ?
-                            new GridFinishedFutureEx<>(finClos.apply(fut1.get(), null)) :
-                            new GridEmbeddedFuture<>(cctx.kernalContext(), fut1, finClos);
+                            new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
+                            new GridEmbeddedFuture<>(fut1, finClos, false);
                     }
                     catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
+                        return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
                             return plc2.apply(false, e);
                         }
                         catch (Exception e1) {
-                            return new GridFinishedFuture<>(cctx.kernalContext(), e1);
+                            return new GridFinishedFuture<>(e1);
                         }
                     }
                 }
                 else {
                     return new GridEmbeddedFuture<>(
-                        cctx.kernalContext(),
                         fut,
                         plc2,
                         finClos);
@@ -1764,17 +1764,16 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 it.remove();
 
                     if (missed.isEmpty())
-                        return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
+                        return new GridFinishedFuture<>(retMap);
 
                     return new GridEmbeddedFuture<>(
-                        cctx.kernalContext(),
                         // First future.
                         checkMissed(cacheCtx, retMap, missed, redos, deserializePortable, skipVals),
                         // Closure that returns another future, based on result from first.
                         new PMC<Map<K, V>>() {
                             @Override public IgniteInternalFuture<Map<K, V>> postMiss(Map<K, V> map) {
                                 if (redos.isEmpty())
-                                    return new GridFinishedFuture<>(cctx.kernalContext(),
+                                    return new GridFinishedFuture<>(
                                         Collections.<K, V>emptyMap());
 
                                 if (log.isDebugEnabled())
@@ -1807,13 +1806,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     );
                 }
 
-                return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
+                return new GridFinishedFuture<>(retMap);
             }
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -1934,7 +1933,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             addActiveCache(cacheCtx);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         Set<K> skipped = null;
@@ -2212,7 +2211,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         if (missedForLoad != null) {
@@ -2240,7 +2239,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 });
 
             return new GridEmbeddedFuture<>(
-                cctx.kernalContext(),
                 fut,
                 new C2<Boolean, Exception, Set<K>>() {
                     @Override public Set<K> apply(Boolean b, Exception e) {
@@ -2249,11 +2247,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         return Collections.emptySet();
                     }
-                }
+                },
+                false
             );
         }
 
-        return new GridFinishedFuture<>(cctx.kernalContext(), skipped);
+        return new GridFinishedFuture<>(skipped);
     }
 
     /**
@@ -2495,7 +2494,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     }
                 }
                 catch (IgniteException e) {
-                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
             }
             else
@@ -2512,7 +2511,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     }
                 }
                 catch (IgniteException e) {
-                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
             }
             else
@@ -2534,7 +2533,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         init();
@@ -2547,10 +2546,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     commit();
                 }
                 catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret.success(true));
+            return new GridFinishedFuture<>(ret.success(true));
         }
 
         try {
@@ -2632,22 +2631,22 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         return plc1.apply(fut.get(), null);
                     }
                     catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
+                        return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
                             return plc1.apply(false, e);
                         }
                         catch (Exception e1) {
-                            return new GridFinishedFuture<>(cctx.kernalContext(), e1);
+                            return new GridFinishedFuture<>(e1);
                         }
                     }
                 }
                 else
                     return new GridEmbeddedFuture<>(
                         fut,
-                        plc1,
-                        cctx.kernalContext());
+                        plc1
+                    );
             }
             else {
                 if (implicit()) {
@@ -2659,7 +2658,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         loadFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFutureEx<>(new GridCacheReturn<V>(), e);
+                        return new GridFinishedFuture<>(e);
                     }
 
                     return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<V>>() {
@@ -2683,7 +2682,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -2740,7 +2739,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     keys0 = null;
             }
             catch (IgniteException e) {
-                return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                return new GridFinishedFuture<>(e);
             }
         }
         else
@@ -2757,7 +2756,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
@@ -2768,11 +2767,11 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     commit();
                 }
                 catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
             }
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret.success(true));
+            return new GridFinishedFuture<>(ret.success(true));
         }
 
         init();
@@ -2856,22 +2855,22 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         return plc1.apply(fut.get(), null);
                     }
                     catch (GridClosureException e) {
-                        return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
+                        return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
                             return plc1.apply(false, e);
                         }
                         catch (Exception e1) {
-                            return new GridFinishedFuture<>(cctx.kernalContext(), e1);
+                            return new GridFinishedFuture<>(e1);
                         }
                     }
                 }
                 else
                     return new GridEmbeddedFuture<>(
                         fut,
-                        plc1,
-                        cctx.kernalContext());
+                        plc1
+                    );
             }
             else {
                 if (implicit()) {
@@ -2900,7 +2899,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -3005,12 +3004,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     isInvalidate(),
                     -1L,
                     CU.<K, V>empty()) :
-                new GridFinishedFuture<>(cctx.kernalContext());
+                new GridFinishedFuture<>();
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<Object>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
@@ -3467,7 +3466,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                 rollback = false;
 
-                return new GridFinishedFuture<>(cctx.kernalContext(), r);
+                return new GridFinishedFuture<>(r);
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())

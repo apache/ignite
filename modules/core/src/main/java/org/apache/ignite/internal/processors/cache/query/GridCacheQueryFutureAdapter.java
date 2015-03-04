@@ -101,13 +101,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param loc Local query or not.
      */
     protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx, GridCacheQueryBean qry, boolean loc) {
-        super(cctx.kernalContext());
+        super();
 
         this.cctx = cctx;
         this.qry = qry;
         this.loc = loc;
 
-        log = U.logger(ctx, logRef, GridCacheQueryFutureAdapter.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
 

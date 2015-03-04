@@ -888,7 +888,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
          * @param ctx Kernal context.
          */
         private GridHadoopProcessFuture(UUID childProcId, GridHadoopJobId jobId, GridKernalContext ctx) {
-            super(ctx);
+            super();
 
             this.childProcId = childProcId;
             this.jobId = jobId;

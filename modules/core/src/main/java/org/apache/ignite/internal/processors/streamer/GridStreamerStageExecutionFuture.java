@@ -114,8 +114,6 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
         String stageName,
         Collection<?> evts
     ) {
-        super(streamer.kernalContext());
-
         assert streamer != null;
         assert stageName != null;
         assert evts != null;
@@ -226,7 +224,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
             }
         }
         catch (IgniteCheckedException e) {
-            onFailed(ctx.localNodeId(), e);
+            onFailed(streamer.kernalContext().localNodeId(), e);
         }
     }
 

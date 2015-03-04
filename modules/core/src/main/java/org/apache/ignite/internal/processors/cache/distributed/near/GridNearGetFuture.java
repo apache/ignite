@@ -161,7 +161,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
-        log = U.logger(ctx, logRef, GridNearGetFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridNearGetFuture.class);
     }
 
     /**
@@ -347,7 +347,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             remapKeys.add(key);
                     }
 
-                    long updTopVer = ctx.discovery().topologyVersion();
+                    long updTopVer = cctx.discovery().topologyVersion();
 
                     assert updTopVer > topVer : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -511,7 +511,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
                     }
 
-                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key0, v)));
+                    add(new GridFinishedFuture<>(Collections.singletonMap(key0, v)));
                 }
                 else {
                     if (primary == null)
@@ -704,8 +704,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
          * @param topVer Topology version.
          */
         MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, Map<K, GridCacheVersion> savedVers, long topVer) {
-            super(cctx.kernalContext());
-
             this.node = node;
             this.keys = keys;
             this.savedVers = savedVers;
@@ -751,7 +749,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            long updTopVer = ctx.discovery().topologyVersion();
+            long updTopVer = cctx.discovery().topologyVersion();
 
             if (updTopVer > topVer) {
                 // Remap.
@@ -760,12 +758,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
+                final RemapTimeoutObject timeout = new RemapTimeoutObject(
+                    cctx.kernalContext().config().getNetworkTimeout(), topVer, e);
 
-                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                cctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> longIgniteFuture) {
                         if (timeout.finish()) {
-                            ctx.timeout().removeTimeoutObject(timeout);
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), cctx.affinity().affinityTopologyVersion());
@@ -775,7 +774,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     }
                 });
 
-                ctx.timeout().addTimeoutObject(timeout);
+                cctx.kernalContext().timeout().addTimeoutObject(timeout);
             }
         }
 
@@ -812,7 +811,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {

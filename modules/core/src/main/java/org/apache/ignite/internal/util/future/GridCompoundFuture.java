@@ -78,7 +78,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param ctx Context.
      */
     public GridCompoundFuture(GridKernalContext ctx) {
-        super(ctx);
+        super();
     }
 
     /**
@@ -86,7 +86,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param rdc Reducer.
      */
     public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc) {
-        super(ctx);
+        super();
 
         this.rdc = rdc;
     }
@@ -98,7 +98,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      */
     public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc,
         @Nullable Iterable<IgniteInternalFuture<T>> futs) {
-        super(ctx);
+        super();
 
         this.rdc = rdc;
 
@@ -248,14 +248,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     res.compareAndSet(null, rdc.reduce(), false, true);
             }
             catch (RuntimeException e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
                 return;
             }
             catch (AssertionError e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
@@ -320,13 +320,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                         res.compareAndSet(null, rdc.reduce(), false, true);
                 }
                 catch (RuntimeException e) {
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                     // Exception in reducer is a bug, so we bypass checkComplete here.
                     onDone(e);
                 }
                 catch (AssertionError e) {
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                     // Bypass checkComplete because need to rethrow.
                     onDone(e);
@@ -335,36 +335,36 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                 }
             }
             catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
+//                if (log.isDebugEnabled())
+//                    log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 
                 err.compareAndSet(null, e);
             }
             catch (ClusterTopologyCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Topology exception [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
+//                if (log.isDebugEnabled())
+//                    log.debug("Topology exception [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 
                 err.compareAndSet(null, e);
             }
             catch (IgniteFutureCancelledCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to execute compound future reducer [lsnr=" + this + ", e=" + e + ']');
+//                if (log.isDebugEnabled())
+//                    log.debug("Failed to execute compound future reducer [lsnr=" + this + ", e=" + e + ']');
 
                 err.compareAndSet(null, e);
             }
             catch (IgniteCheckedException e) {
-                if (!ignoreFailure(e))
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+//                if (!ignoreFailure(e))
+//                    U.error(log, "Failed to execute compound future reducer: " + this, e);
 
                 err.compareAndSet(null, e);
             }
             catch (RuntimeException e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 err.compareAndSet(null, e);
             }
             catch (AssertionError e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Bypass checkComplete because need to rethrow.
                 onDone(e);

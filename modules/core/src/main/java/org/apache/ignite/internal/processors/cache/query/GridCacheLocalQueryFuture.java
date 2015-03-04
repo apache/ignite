@@ -63,7 +63,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
      * Executes query runnable.
      */
     void execute() {
-        fut = ctx.closure().runLocalSafe(run, true);
+        fut = cctx.kernalContext().closure().runLocalSafe(run, true);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
                 rdc,
                 qry.query(),
                 GridCacheLocalQueryFuture.this,
-                ctx.localNodeId(),
+                cctx.localNodeId(),
                 cctx.io().nextIoId(),
                 qry.query().includeMetadata(),
                 true,

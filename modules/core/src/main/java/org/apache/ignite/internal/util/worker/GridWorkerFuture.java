@@ -37,7 +37,7 @@ public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
      * @param ctx Context.
      */
     public GridWorkerFuture(GridKernalContext ctx) {
-        super(ctx);
+        super();
     }
 
     /**

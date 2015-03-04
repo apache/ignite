@@ -377,7 +377,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         enterBusy();
 
         try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
 
             resFut.listenAsync(rmvActiveFut);
 
@@ -397,7 +397,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
-            return new IgniteFinishedFutureImpl<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(e);
         }
         finally {
             leaveBusy();
@@ -849,7 +849,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             isLocNode = node.equals(ctx.discovery().localNode());
 
             entries = newEntries();
-            curFut = new GridFutureAdapter<>(ctx);
+            curFut = new GridFutureAdapter<>();
             curFut.listenAsync(signalC);
 
             sem = new Semaphore(parallelOps);
@@ -878,7 +878,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     entries0 = entries;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
+                    curFut = new GridFutureAdapter<>();
                     curFut.listenAsync(signalC);
                 }
             }
@@ -915,7 +915,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     curFut0 = curFut;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
+                    curFut = new GridFutureAdapter<>();
                     curFut.listenAsync(signalC);
                 }
             }

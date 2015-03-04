@@ -112,7 +112,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         GridLocalCache<K, V> cache,
         long timeout,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        super(cctx.kernalContext());
+        super();
 
         assert keys != null;
         assert cache != null;
@@ -131,7 +131,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
         entries = new ArrayList<>(keys.size());
 
-        log = U.logger(ctx, logRef, GridLocalLockFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();

@@ -297,12 +297,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         catch (IgniteException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             if (log.isDebugEnabled())
@@ -1043,7 +1043,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             assert metrics != null;
 
-            return new GridFinishedFuture<Object>(ctx, new GridCacheRestMetrics(
+            return new GridFinishedFuture<Object>(new GridCacheRestMetrics(
                 (int)metrics.getCacheGets(),
                 (int)(metrics.getCacheRemovals() + metrics.getCachePuts()),
                 (int)metrics.getCacheHits(),

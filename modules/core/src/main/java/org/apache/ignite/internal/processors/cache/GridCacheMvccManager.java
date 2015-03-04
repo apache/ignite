@@ -994,7 +994,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         assert topVer != 0;
 
         if (topVer < 0)
-            return new GridFinishedFuture(context().kernalContext());
+            return new GridFinishedFuture();
 
         final FinishLockFuture finishFut = new FinishLockFuture(
             keyFilter == null ?
@@ -1066,7 +1066,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
          * @param entries Entries.
          */
         FinishLockFuture(Iterable<GridDistributedCacheEntry<K, V>> entries, long topVer) {
-            super(cctx.kernalContext(), true);
+            super();
 
             assert topVer > 0;
 

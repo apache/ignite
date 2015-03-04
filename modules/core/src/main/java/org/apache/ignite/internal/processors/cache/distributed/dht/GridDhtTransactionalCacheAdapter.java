@@ -684,9 +684,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         if (keyFut == null)
-            keyFut = new GridFinishedFutureEx<>();
+            keyFut = new GridFinishedFuture<>();
 
-        return new GridEmbeddedFuture<>(true, keyFut,
+        return new GridEmbeddedFuture<>(keyFut,
             new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse<K,V>>>() {
                 @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
                     if (exx != null)
@@ -877,11 +877,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         else {
                                             sendLockReply(nearNode, t, req, resp);
 
-                                            return new GridFinishedFutureEx<>(resp);
+                                            return new GridFinishedFuture<>(resp);
                                         }
                                     }
-                                },
-                                ctx.kernalContext());
+                                }
+                            );
                         }
                         else {
                             assert fut != null;
@@ -892,7 +892,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             final GridCacheVersion mappedVer = fut.version();
 
                             return new GridDhtEmbeddedFuture<>(
-                                ctx.kernalContext(),
                                 fut,
                                 new C2<Boolean, Exception, GridNearLockResponse<K, V>>() {
                                     @Override public GridNearLockResponse<K, V> apply(Boolean b, Exception e) {
@@ -912,7 +911,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                         return res;
                                     }
-                                });
+                                }, false);
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -933,8 +932,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             new IgniteCheckedException(err, e));
                     }
                 }
-            },
-            ctx.kernalContext());
+            }
+        );
     }
 
     /**

@@ -43,7 +43,7 @@ public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements G
      * @param t Result.
      */
     public GridDhtFinishedFuture(GridKernalContext ctx, T t) {
-        super(ctx, t);
+        super(t);
     }
 
     /**
@@ -51,7 +51,7 @@ public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements G
      * @param err Error.
      */
     public GridDhtFinishedFuture(GridKernalContext ctx, Throwable err) {
-        super(ctx, err);
+        super(err);
     }
 
     /** {@inheritDoc} */

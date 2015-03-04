@@ -8553,7 +8553,7 @@ public class GridFunc {
      * @return Completed future.
      */
     public static <T> IgniteInternalFuture<T> awaitOne(IgniteInternalFuture<T>... futs) {
-        return isEmpty(futs) ? new GridFinishedFutureEx<T>() : awaitOne(asList(futs));
+        return isEmpty(futs) ? new GridFinishedFuture<T>() : awaitOne(asList(futs));
     }
 
     /**
@@ -8565,7 +8565,7 @@ public class GridFunc {
      */
     public static <T> IgniteInternalFuture<T> awaitOne(Iterable<IgniteInternalFuture<T>> futs) {
         if (F.isEmpty(futs))
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -8594,7 +8594,7 @@ public class GridFunc {
 
         // Only NULLs have been passed in.
         if (c == null)
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         boolean interrupted = false;
 

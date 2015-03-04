@@ -198,7 +198,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         entries = new ArrayList<>(cnt);
 
-        log = U.logger(ctx, logRef, GridDhtLockFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -797,7 +797,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 int cnt = F.size(dhtMapping);
 
                 if (cnt > 0) {
-                    assert !n.id().equals(ctx.localNodeId());
+                    assert !n.id().equals(cctx.localNodeId());
 
                     MiniFuture fut = new MiniFuture(n, dhtMapping);
 
@@ -991,7 +991,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param dhtMapping Mapping.
          */
         MiniFuture(ClusterNode node, List<GridDhtCacheEntry<K, V>> dhtMapping) {
-            super(cctx.kernalContext());
+            super();
 
             assert node != null;
 

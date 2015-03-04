@@ -83,7 +83,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
     GridLocalTxFuture(
         GridCacheSharedContext<K, V> cctx,
         GridLocalTx<K, V> tx) {
-        super(cctx.kernalContext());
+        super();
 
         assert cctx != null;
         assert tx != null;
@@ -91,7 +91,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
         this.cctx = cctx;
         this.tx = tx;
 
-        log = U.logger(ctx, logRef,  GridLocalTxFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef,  GridLocalTxFuture.class);
     }
 
     /** {@inheritDoc} */

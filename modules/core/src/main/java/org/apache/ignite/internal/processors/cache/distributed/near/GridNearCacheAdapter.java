@@ -277,7 +277,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         boolean skipVal
     ) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);

@@ -135,8 +135,8 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                     @Override public IgniteInternalFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
-                },
-                ctx);
+                }
+            );
         }
 
         if (f != null)

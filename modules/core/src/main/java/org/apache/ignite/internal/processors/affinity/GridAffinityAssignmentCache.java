@@ -446,7 +446,7 @@ public class GridAffinityAssignmentCache {
          * @param ctx Kernal context.
          */
         private AffinityReadyFuture(GridKernalContext ctx, long reqTopVer) {
-            super(ctx);
+            super();
 
             this.reqTopVer = reqTopVer;
         }

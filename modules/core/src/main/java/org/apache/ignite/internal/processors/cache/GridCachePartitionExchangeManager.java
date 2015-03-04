@@ -160,7 +160,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        locExchFut = new GridFutureAdapter<>(cctx.kernalContext());
+        locExchFut = new GridFutureAdapter<>();
 
         exchWorker = new ExchangeWorker();
 

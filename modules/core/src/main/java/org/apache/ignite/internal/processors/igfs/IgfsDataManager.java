@@ -406,7 +406,7 @@ public class IgfsDataManager extends IgfsManager {
                     byte[] res = fut.get();
 
                     if (res == null) {
-                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>();
 
                         IgniteInternalFuture<byte[]> oldRmtReadFut = rmtReadFuts.putIfAbsent(key, rmtReadFut);
 
@@ -599,7 +599,7 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);
 
-            return new GridFinishedFuture<>(igfsCtx.kernalContext());
+            return new GridFinishedFuture<>();
         }
         else
             return delWorker.deleteAsync(fileInfo);
@@ -1256,14 +1256,14 @@ public class IgfsDataManager extends IgfsManager {
 
                 // Additional size check.
                 if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
-                    return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
+                    return new GridFinishedFuture<Object>(
                         new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
 
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(igfsCtx.kernalContext(), new IgniteCheckedException("Failed to store data " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to store data " +
                     "block due to unexpected exception.", e));
             }
         }
@@ -1674,7 +1674,7 @@ public class IgfsDataManager extends IgfsManager {
          * Gracefully stops worker by adding STOP_INFO to queue.
          */
         private void stop() {
-            delReqs.offer(F.t(new GridFutureAdapter<>(igfsCtx.kernalContext()), stopInfo));
+            delReqs.offer(F.t(new GridFutureAdapter<>(), stopInfo));
         }
 
         /**
@@ -1682,7 +1682,7 @@ public class IgfsDataManager extends IgfsManager {
          * @return Future which completes when entry is actually removed.
          */
         private IgniteInternalFuture<Object> deleteAsync(IgfsFileInfo info) {
-            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+            GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
             delReqs.offer(F.t(fut, info));
 
@@ -1795,7 +1795,7 @@ public class IgfsDataManager extends IgfsManager {
          * @param fileId File id.
          */
         private WriteCompletionFuture(GridKernalContext ctx, IgniteUuid fileId) {
-            super(ctx);
+            super();
 
             assert fileId != null;
 

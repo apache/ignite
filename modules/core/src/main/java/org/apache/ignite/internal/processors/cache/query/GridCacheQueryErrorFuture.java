@@ -36,7 +36,7 @@ public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<
      * @param err Error.
      */
     public GridCacheQueryErrorFuture(GridKernalContext ctx, Throwable err) {
-        super(ctx, err);
+        super(err);
     }
 
     /** {@inheritDoc} */

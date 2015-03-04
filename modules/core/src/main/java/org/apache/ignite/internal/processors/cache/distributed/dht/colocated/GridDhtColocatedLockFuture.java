@@ -159,7 +159,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridDhtColocatedLockFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -888,7 +888,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
-            cctx.kernalContext(),
             fut,
             new C2<Exception, Exception, Boolean>() {
                 @Override public Boolean apply(Exception resEx, Exception e) {
@@ -934,7 +933,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                     return true;
                 }
-            }
+            },
+            false
         ));
     }
 
@@ -1120,7 +1120,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
          */
         MiniFuture(ClusterNode node, Collection<K> keys,
             Deque<GridNearLockMapping<K, V>> mappings) {
-            super(cctx.kernalContext());
+            super();
 
             this.node = node;
             this.keys = keys;

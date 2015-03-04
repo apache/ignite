@@ -193,10 +193,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
-            return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
         if (desc == null || !desc.registered())
-            return new GridFinishedFuture<Void>(ctx);
+            return new GridFinishedFuture<Void>();
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 

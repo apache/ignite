@@ -66,7 +66,7 @@ public class GridHadoopChildProcessRunner {
     private long startTime;
 
     /** Init future. */
-    private final GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
+    private final GridFutureAdapter<?> initFut = new GridFutureAdapter<>();
 
     /** Job instance. */
     private GridHadoopJob job;

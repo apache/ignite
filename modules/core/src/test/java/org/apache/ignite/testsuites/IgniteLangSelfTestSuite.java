@@ -55,7 +55,6 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridStripedLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridFutureAdapterSelfTest.class));
-        suite.addTest(new TestSuite(GridFinishedFutureSelfTest.class));
         suite.addTest(new TestSuite(GridCompoundFutureSelfTest.class));
         suite.addTest(new TestSuite(GridEmbeddedFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioFutureSelfTest.class));

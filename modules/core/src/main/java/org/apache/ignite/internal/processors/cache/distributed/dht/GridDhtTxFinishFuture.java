@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -103,7 +103,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridDhtTxFinishFuture.class);
+        log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -441,7 +441,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @param nearMapping nearMapping.
          */
         MiniFuture(GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
-            super(cctx.kernalContext());
+            super();
 
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 

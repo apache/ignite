@@ -894,7 +894,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param partitioned Partitioned flag.
          */
         EventTypeFuture(GridKernalContext ctx, int evtType, int expCnt, boolean partitioned) {
-            super(ctx);
+            super();
 
             assert expCnt > 0;
 
