@@ -92,13 +92,13 @@ object ScalarCachePopularNumbersExample extends App {
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
-        val ldr = dataStreamer$[Int, Long](CACHE_NAME, 2048)
+        val smtr = dataStreamer$[Int, Long](CACHE_NAME, 2048)
 
         // TODO IGNITE-44: restore invoke.
 
-        (0 until CNT) foreach (_ => ldr.addData(Random.nextInt(RANGE), 1L))
+        (0 until CNT) foreach (_ => smtr.addData(Random.nextInt(RANGE), 1L))
 
-        ldr.close(false)
+        smtr.close(false)
     }
 
     /**

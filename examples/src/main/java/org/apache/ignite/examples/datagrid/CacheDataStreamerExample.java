@@ -63,13 +63,13 @@ public class CacheDataStreamerExample {
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(CACHE_NAME)) {
+            try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(CACHE_NAME)) {
                 // Configure loader.
-                ldr.perNodeBufferSize(1024);
-                ldr.perNodeParallelLoadOperations(8);
+                stmr.perNodeBufferSize(1024);
+                stmr.perNodeParallelLoadOperations(8);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
-                    ldr.addData(i, Integer.toString(i));
+                    stmr.addData(i, Integer.toString(i));
 
                     // Print out progress while loading cache.
                     if (i > 0 && i % 10000 == 0)
