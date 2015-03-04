@@ -17,16 +17,16 @@
 
 package org.apache.ignite.visor.commands
 
-import org.apache.ignite.internal.IgniteVersionUtils._
-import org.apache.ignite.internal.util.scala.impl
-import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.startup.cmdline.AboutDialog
-
-import javax.swing.ImageIcon
 import java.awt.Image
 import java.io._
 import java.text.SimpleDateFormat
 import java.util
+import javax.swing.ImageIcon
+
+import org.apache.ignite.internal.IgniteVersionUtils._
+import org.apache.ignite.internal.util.scala.impl
+import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.startup.cmdline.AboutDialog
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -238,11 +238,11 @@ object VisorConsole extends App {
 
             val osxApp = appCls.getDeclaredMethod("getApplication").invoke(null)
 
-            val dockIco = new ImageIcon(urlIcon("ggcube_node_128x128.png"))
+            val dockIco = new ImageIcon(urlIcon("logo_ignite_128x128.png"))
 
             appCls.getDeclaredMethod("setDockIconImage", classOf[Image]).invoke(osxApp, dockIco.getImage)
 
-            val bannerIconUrl = urlIcon("ggcube_node_48x48.png")
+            val bannerIconUrl = urlIcon("logo_ignite_48x48.png")
 
             val aboutHndProxy = java.lang.reflect.Proxy.newProxyInstance(
                 appCls.getClassLoader,
