@@ -105,12 +105,12 @@ exitIfBranchDoesNotExist () {
     fi
 }
 
-CURRENT_BRANCH=""
-
 determineCurrentBranch () {
     GIT_HOME=$1
     
     cd ${GIT_HOME}
     
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
+    
+    echo "$CURRENT_BRANCH"
 }

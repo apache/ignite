@@ -34,7 +34,7 @@ if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user 
     then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
 
-determineCurrentBranch ${IGNITE_HOME}
+CURRENT_BRANCH=$( determineCurrentBranch ${IGNITE_HOME} )
 
 echo 'Usage: scripts/git-format-patch.sh.'
 echo "It should be called from IGNITE_HOME directory."
@@ -50,14 +50,14 @@ echo
 # Main script logic.
 #
 
-exitIfThereAreUncommittedChanges
-
-checkBranchExists ${IGNITE_HOME} ${CURRENT_BRANCH}
-
-if [ -n ${BRANCH_EXISTS} ]
-then
-    exitIfBranchDoesNotExist ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
-
-    updateBranches ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH}
-    formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch
-fi
+#exitIfThereAreUncommittedChanges
+#
+#checkBranchExists ${IGNITE_HOME} ${CURRENT_BRANCH}
+#
+#if [ -n ${BRANCH_EXISTS} ]
+#then
+#    exitIfBranchDoesNotExist ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
+#
+#    updateBranches ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH}
+#    formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch
+#fi
