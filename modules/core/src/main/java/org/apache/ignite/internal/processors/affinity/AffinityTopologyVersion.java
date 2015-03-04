@@ -89,17 +89,34 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public int compareTo(AffinityTopologyVersion o) {
-        return Long.compare(topVer, o.topVer);
+        int cmp = Long.compare(topVer, o.topVer);
+
+        if (cmp == 0)
+            return Integer.compare(minorTopVer, o.minorTopVer);
+
+        return cmp;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o instanceof AffinityTopologyVersion && topVer == ((AffinityTopologyVersion)o).topVer;
+        if (this == o)
+            return true;
+
+        if (!(o instanceof AffinityTopologyVersion))
+            return false;
+
+        AffinityTopologyVersion that = (AffinityTopologyVersion)o;
+
+        return minorTopVer == that.minorTopVer && topVer == that.topVer;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (int)topVer;
+        int result = (int)(topVer ^ (topVer >>> 32));
+
+        result = 31 * result + minorTopVer;
+
+        return result;
     }
 
     /** {@inheritDoc} */

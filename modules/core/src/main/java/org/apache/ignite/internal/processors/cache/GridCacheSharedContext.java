@@ -115,6 +115,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Cache processor.
+     */
+    public GridCacheProcessor cache() {
+        return kernalCtx.cache();
+    }
+
+    /**
      * Adds cache context to shared cache context.
      *
      * @param cacheCtx Cache context to add.

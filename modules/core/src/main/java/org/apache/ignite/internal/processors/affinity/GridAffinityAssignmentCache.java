@@ -150,6 +150,8 @@ public class GridAffinityAssignmentCache {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
+        U.debug(log, "Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
+            ", discoEvt=" + discoEvt + ']');
 
         GridAffinityAssignment prev = affCache.get(topVer.previous());
 
@@ -161,6 +163,8 @@ public class GridAffinityAssignmentCache {
         else {
             // Resolve nodes snapshot for specified topology version.
             Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer.topologyVersion());
+
+            U.debug(log, "Affinity nodes: " + nodes);
 
             sorted = sort(nodes);
         }
@@ -186,6 +190,8 @@ public class GridAffinityAssignmentCache {
         assert assignment != null;
 
         GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
+
+        U.debug(log, "Updated assignment: " + updated);
 
         updated = F.addIfAbsent(affCache, topVer, updated);
 

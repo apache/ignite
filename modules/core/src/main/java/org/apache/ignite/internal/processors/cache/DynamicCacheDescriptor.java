@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -28,25 +29,32 @@ import java.io.*;
  * Cache start descriptor.
  */
 public class DynamicCacheDescriptor implements Serializable {
+    /** Cache start ID. */
+    private IgniteUuid startId;
+
     /** Cache configuration. */
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
     /** Deploy filter bytes. */
     @GridToStringExclude
-    private byte[] deployFltrBytes;
-
-    /** Cache start ID. */
-    private IgniteUuid startId;
+    private IgnitePredicate<ClusterNode> nodeFilter;
 
     /**
      * @param cacheCfg Cache configuration.
-     * @param deployFltrBytes Deployment filter bytes.
+     * @param nodeFilter Node filter.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, byte[] deployFltrBytes, IgniteUuid startId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgnitePredicate<ClusterNode> nodeFilter, IgniteUuid startId) {
         this.cacheCfg = cacheCfg;
-        this.deployFltrBytes = deployFltrBytes;
+        this.nodeFilter = nodeFilter;
         this.startId = startId;
+    }
+
+    /**
+     * @return Start ID.
+     */
+    public IgniteUuid startId() {
+        return startId;
     }
 
     /**
@@ -57,10 +65,10 @@ public class DynamicCacheDescriptor implements Serializable {
     }
 
     /**
-     * @return Start ID.
+     * @return Node filter.
      */
-    public IgniteUuid startId() {
-        return startId;
+    public IgnitePredicate<ClusterNode> nodeFilter() {
+        return nodeFilter;
     }
 
     /** {@inheritDoc} */

@@ -136,4 +136,17 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         assertEquals(1, succeeded);
         assertEquals(threadNum - 1, failed);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartCacheSimple() throws Exception {
+        final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName("TestCacheName3");
+
+        kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()).get();
+    }
 }

@@ -166,6 +166,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Custom event listener. */
     private GridPlainInClosure<Serializable> customEvtLsnr;
 
+    /** Map of dynamic cache filters. */
+    private Map<String, IgnitePredicate<ClusterNode>> dynamicCacheFilters = new HashMap<>();
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -212,6 +215,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
         getSpi().setNodeAttributes(attrs, ver);
+    }
+
+    /**
+     * Adds dynamic cache filters.
+     *
+     * @param cacheName Cache name.
+     * @param filter Cache filter.
+     */
+    public void addDynamicCacheFilter(String cacheName, IgnitePredicate<ClusterNode> filter) {
+        IgnitePredicate<ClusterNode> old = dynamicCacheFilters.put(cacheName, filter);
+
+        assert old == null;
     }
 
     /** {@inheritDoc} */
@@ -277,10 +292,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.updateAlives(node);
                 }
 
+                if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    try {
+                        customEvtLsnr.apply(data);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                    }
+                }
+
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                if (type != EVT_NODE_METRICS_UPDATED && type != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                if (type != EVT_NODE_METRICS_UPDATED) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 
                     discoCacheHist.put(topVer, cache);
@@ -305,15 +329,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     locJoinEvt.onDone(discoEvt);
 
                     return;
-                }
-
-                if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    try {
-                        customEvtLsnr.apply(data);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
-                    }
                 }
 
                 if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)) {
@@ -1834,6 +1849,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 
+                boolean hasCaches = false;
+
                 if (caches != null) {
                     nodesWithCaches.add(node);
 
@@ -1860,6 +1877,35 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
 
+                    hasCaches = true;
+                }
+
+                for (Map.Entry<String, IgnitePredicate<ClusterNode>> entry : dynamicCacheFilters.entrySet()) {
+                    String cacheName = entry.getKey();
+                    IgnitePredicate<ClusterNode> filter = entry.getValue();
+
+                    if (filter.apply(node)) {
+                        addToMap(cacheMap, cacheName, node);
+
+                        if (alive(node.id()))
+                            addToMap(aliveCacheNodes, maskNull(cacheName), node);
+
+                        addToMap(dhtNodesMap, cacheName, node);
+
+                        // TODO IGNITE-45 client and near caches.
+
+                        if (!loc.id().equals(node.id())) {
+                            addToMap(rmtCacheMap, cacheName, node);
+
+                            if (alive(node.id()))
+                                addToMap(aliveRmtCacheNodes, maskNull(cacheName), node);
+                        }
+
+                        hasCaches = true;
+                    }
+                }
+
+                if (hasCaches) {
                     if (alive(node.id())) {
                         aliveNodesWithCaches.add(node);
 

@@ -209,7 +209,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
             assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
 
-            if (!exchId.isJoined())
+            if (exchId.isLeft())
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.

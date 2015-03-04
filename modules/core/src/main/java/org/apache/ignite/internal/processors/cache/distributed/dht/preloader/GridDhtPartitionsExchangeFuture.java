@@ -142,6 +142,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     /** Logger. */
     private IgniteLogger log;
 
+    /** Dynamic cache start descriptor. */
+    private DynamicCacheDescriptor startDesc;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -197,8 +200,12 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
      * @param busyLock Busy lock.
      * @param exchId Exchange ID.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, ReadWriteLock busyLock,
-        GridDhtPartitionExchangeId exchId) {
+    public GridDhtPartitionsExchangeFuture(
+        GridCacheSharedContext<K, V> cctx,
+        ReadWriteLock busyLock,
+        GridDhtPartitionExchangeId exchId,
+        DynamicCacheDescriptor startDesc
+    ) {
         super(cctx.kernalContext());
 
         syncNotify(true);
@@ -213,6 +220,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         this.cctx = cctx;
         this.busyLock = busyLock;
         this.exchId = exchId;
+        this.startDesc = startDesc;
 
         log = cctx.logger(getClass());
 
@@ -379,6 +387,13 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     }
 
     /**
+     * @return Dynamic cache descriptor.
+     */
+    public DynamicCacheDescriptor dynamicCacheDescriptor() {
+        return startDesc;
+    }
+
+    /**
      * @return Init future.
      */
     IgniteInternalFuture<?> initFuture() {
@@ -422,6 +437,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
                 // will return corresponding nodes.
                 U.await(evtLatch);
 
+                if (startDesc != null)
+                    startCache();
+
                 assert discoEvt != null;
 
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
@@ -433,7 +451,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
                 }
 
                 // Grab all alive remote nodes with order of equal or less than last joined node.
-                rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx, exchId.topologyVersion().topologyVersion()));
+                rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx,
+                    exchId.topologyVersion().topologyVersion()));
 
                 rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
@@ -544,6 +563,15 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         }
         else
             assert false : "Skipped init future: " + this;
+    }
+
+    /**
+     * Starts dynamic cache.
+     */
+    private void startCache() throws IgniteCheckedException {
+        assert startDesc != null;
+
+        ctx.cache().onCacheStartExchange(startDesc);
     }
 
     /**

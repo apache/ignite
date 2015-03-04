@@ -4481,6 +4481,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
 
                 msg.verify(getLocalNodeId());
+                msg.topologyVersion(ring.topologyVersion());
             }
 
             if (msg.verified()) {
