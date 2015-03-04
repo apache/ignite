@@ -18,11 +18,11 @@
 package org.apache.ignite.streamer.router;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -58,7 +58,7 @@ public class StreamerCacheAffinityEventRouter extends StreamerEventRouterAdapter
         if (evt instanceof CacheAffinityEvent) {
             CacheAffinityEvent e = (CacheAffinityEvent)evt;
 
-            GridCache<Object, Object> c = ((GridEx) ignite).cachex(e.cacheName());
+            GridCache<Object, Object> c = ((IgniteEx) ignite).cachex(e.cacheName());
 
             assert c != null;
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.streamer.index;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Streamer index update synchronizer.

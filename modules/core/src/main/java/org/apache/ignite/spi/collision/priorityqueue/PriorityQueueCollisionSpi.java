@@ -19,11 +19,11 @@ package org.apache.ignite.spi.collision.priorityqueue;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -83,7 +83,7 @@ import java.util.*;
  * Here is Spring XML configuration example:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi"&gt;
  *         &lt;property name="priorityAttributeKey" value="myPriorityAttributeKey"/&gt;
  *         &lt;property name="parallelJobsNumber" value="10"/&gt;
  *     &lt;/bean&gt;
@@ -102,11 +102,11 @@ import java.util.*;
  * be activated first (one by one) and jobs from {@code MyGridUsualTask} with lowest priority
  * will wait. Once higher priority jobs complete, lower priority jobs will be scheduled.
  * <pre name="code" class="java">
- * public class MyGridUsualTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUsualTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 20;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;TaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -118,7 +118,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }
@@ -128,11 +128,11 @@ import java.util.*;
  * </pre>
  * and
  * <pre name="code" class="java">
- * public class MyGridUrgentTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUrgentTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 5;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;TaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -144,7 +144,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }
@@ -162,11 +162,9 @@ import java.util.*;
 public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     PriorityQueueCollisionSpiMBean {
     /**
-     * Default number of parallel jobs allowed (value is {@code 95} which is
-     * slightly less same as default value of threads in the execution thread pool
-     * to allow some extra threads for system processing).
+     * Default number of parallel jobs allowed (set to number of cores times 2).
      */
-    public static final int DFLT_PARALLEL_JOBS_NUM = 95;
+    public static final int DFLT_PARALLEL_JOBS_NUM = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * Default waiting jobs number. If number of waiting jobs exceed this number,
@@ -229,7 +227,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     private Comparator<GridCollisionJobContextWrapper> priComp;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

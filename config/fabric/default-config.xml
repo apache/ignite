@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -23,15 +23,15 @@
        http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
-        Configuration below demonstrates how to setup a GridGain node with three
+        Configuration below demonstrates how to setup a Ignite node with three
         preconfigured caches.
 
         If you need to add streaming functionality, add your streamers
         configuration in 'streamerConfiguration' property below.
 
-        If you need to enable GGFS, use separate configuration files located in 'config/hadoop'
-        folder. To start a GGFS data node use 'config/hadoop/default-config.xml' file. To start
-        a GGFS client node use 'config/hadoop/default-config-client.xml' file.
+        If you need to enable IGFS, use separate configuration files located in 'config/hadoop'
+        folder. To start a IGFS data node use 'config/hadoop/default-config.xml' file. To start
+        a IGFS client node use 'config/hadoop/default-config-client.xml' file.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Cache configurations. -->
@@ -40,7 +40,7 @@
                 <!--
                     Local cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                 </bean>
@@ -48,7 +48,7 @@
                 <!--
                     Replicated cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="replicated"/>
                     <property name="cacheMode" value="REPLICATED"/>
                 </bean>
@@ -56,7 +56,7 @@
                 <!--
                     Partitioned cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="local"/>
                     <property name="cacheMode" value="LOCAL"/>
                 </bean>

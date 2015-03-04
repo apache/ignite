@@ -17,15 +17,16 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**
  * Test URI deployment with multiple scanners.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.
@@ -47,7 +48,7 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
 
         // One real URI.
         uriList.add(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
 
         return uriList;
     }

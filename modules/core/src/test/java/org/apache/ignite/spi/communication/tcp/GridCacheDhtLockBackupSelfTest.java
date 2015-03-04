@@ -18,28 +18,29 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Special cases for GG-2329.
@@ -52,7 +53,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     private CommunicationSpi commSpi;
 
     /** Marshaller used in test. */
-    private IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    private Marshaller marsh = new JdkMarshaller();
 
     /**
      *
@@ -85,10 +86,10 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setPreloadMode(SYNC);
 
@@ -113,8 +114,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         // Now, grid1 is always primary node for key 1.
-        final GridCache<Integer, String> cache1 = ignite1.cache(null);
-        final GridCache<Integer, String> cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
         info(">>> Primary: " + ignite1.cluster().localNode().id());
         info(">>>  Backup: " + ignite2.cluster().localNode().id());
@@ -125,13 +126,15 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                assert cache1.lock(kv, 0L);
+                Lock lock = cache1.lock(kv);
+
+                lock.lock();
 
                 info("After lock for key: " + kv);
 
                 try {
-                    assert cache1.isLocked(kv);
-                    assert cache1.isLockedByThread(kv);
+                    assert cache1.isLocalLocked(kv, false);
+                    assert cache1.isLocalLocked(kv, true);
 
                     l1.countDown();
 
@@ -144,12 +147,12 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.unlockAll(Collections.singleton(kv));
+                    lock.unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
 
-                assert !cache1.isLockedByThread(kv);
+                assert !cache1.isLocalLocked(kv, true);
 
                 return null;
             }
@@ -161,7 +164,9 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                assert cache2.lock(kv, 0L);
+                Lock lock = cache2.lock(kv);
+
+                lock.lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -170,12 +175,12 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.unlockAll(Collections.singleton(kv));
+                    lock.unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }
 
-                assert !cache2.isLockedByThread(kv);
+                assert !cache2.isLocalLocked(kv, true);
 
                 return null;
             }
@@ -189,16 +194,16 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         info("Before remove all");
 
-        cache1.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
+        cache1.removeAll();
 
         info("Remove all completed");
 
-        if (!cache2.isEmpty()) {
-            String failMsg = cache2.entrySet().toString();
+        if (cache2.size() > 0) {
+            String failMsg = cache2.toString();
 
             long start = System.currentTimeMillis();
 
-            while (!cache2.isEmpty())
+            while (cache2.size() > 0)
                 U.sleep(100);
 
             long clearDuration = System.currentTimeMillis() - start;
@@ -254,7 +259,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
          * @param obj Message being  sent.
          * @param srcNodeId Sender node id.
          */
-        private void checkAwaitMessageType(GridTcpCommunicationMessageAdapter obj, UUID srcNodeId) {
+        private void checkAwaitMessageType(MessageAdapter obj, UUID srcNodeId) {
             try {
                 GridIoMessage plainMsg = (GridIoMessage)obj;
 
@@ -272,7 +277,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
             IgniteRunnable msgC) {
             checkAwaitMessageType(msg, sndId);
 

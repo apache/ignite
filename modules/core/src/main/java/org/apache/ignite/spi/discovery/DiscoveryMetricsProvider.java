@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 /**
  * Provides metrics to discovery SPI. It is responsibility of discovery SPI
  * to make sure that all nodes have updated metrics data about each other.
  * <p>
- * GridGain implementation will supply discovery SPI with metrics provider
+ * Ignite implementation will supply discovery SPI with metrics provider
  * via {@link DiscoverySpi#setMetricsProvider(DiscoveryMetricsProvider)}
  * method.
  */
@@ -35,5 +35,5 @@ public interface DiscoveryMetricsProvider {
      *
      * @return Up to date metrics data about local node.
      */
-    public ClusterNodeMetrics getMetrics();
+    public ClusterMetrics metrics();
 }

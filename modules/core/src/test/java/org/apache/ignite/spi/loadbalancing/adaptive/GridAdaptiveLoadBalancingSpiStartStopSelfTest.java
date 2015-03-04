@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Adaptive load balancing SPI start-stop test.

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;

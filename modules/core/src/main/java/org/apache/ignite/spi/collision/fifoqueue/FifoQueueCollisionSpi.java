@@ -18,10 +18,10 @@
 package org.apache.ignite.spi.collision.fifoqueue;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -59,10 +59,10 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@code GridFifoQueueCollisionSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *       ...
  *       &lt;property name="collisionSpi"&gt;
- *           &lt;bean class="org.gridgain.grid.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
+ *           &lt;bean class="org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
  *               &lt;property name="parallelJobsNumber" value="1"/&gt;
  *           &lt;/bean&gt;
  *       &lt;/property&gt;
@@ -74,11 +74,9 @@ import java.util.*;
 public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     FifoQueueCollisionSpiMBean {
     /**
-     * Default number of parallel jobs allowed (value is {@code 95} which is
-     * slightly less same as default value of threads in the execution thread pool
-     * to allow some extra threads for system processing).
+     * Default number of parallel jobs allowed (set to number of cores times 2).
      */
-    public static final int DFLT_PARALLEL_JOBS_NUM = 95;
+    public static final int DFLT_PARALLEL_JOBS_NUM = Runtime.getRuntime().availableProcessors() * 2;
 
     /**
      * Default waiting jobs number. If number of waiting jobs exceeds this number,
@@ -93,7 +91,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     private volatile int waitJobsNum = DFLT_WAIT_JOBS_NUM;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that were active last time. */

@@ -41,16 +41,16 @@ import org.jetbrains.annotations.*;
  * <li>{@link org.apache.ignite.compute.ComputeTaskSession#saveCheckpoint(String, Object, org.apache.ignite.compute.ComputeTaskSessionScope, long, boolean)}</li>
  * </ul>
  * <p>
- * GridGain provides the following {@code GridCheckpointSpi} implementations:
+ * Ignite provides the following {@code GridCheckpointSpi} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi} - default</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi}</li>
- * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
+ * <li>{@ignitelink org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpi}</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi}</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

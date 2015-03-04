@@ -131,7 +131,7 @@ public class AboutDialog extends JDialog {
         msgPanel.setLayout(new BoxLayout(msgPanel, BoxLayout.Y_AXIS));
         msgPanel.setBackground(Color.WHITE);
 
-        msgPanel.add(new JLabel("<html><b>About GridGain</b></html>"));
+        msgPanel.add(new JLabel("<html><b>About Ignite</b></html>"));
         msgPanel.add(Box.createVerticalStrut(5));
         msgPanel.add(new JLabel(appName));
 

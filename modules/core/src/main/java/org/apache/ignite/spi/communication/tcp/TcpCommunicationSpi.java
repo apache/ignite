@@ -21,25 +21,23 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.ipc.*;
-import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -53,7 +51,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * <tt>GridTcpCommunicationSpi</tt> is default communication SPI which uses
@@ -121,15 +119,15 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * cfg.setCommunicationSpi(commSpi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridTcpCommunicationSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="communicationSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpi"&gt;
  *                 &lt;!-- Override local port. --&gt;
  *                 &lt;property name="localPort" value="4321"/&gt;
  *             &lt;/bean&gt;
@@ -146,11 +144,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter
-    implements CommunicationSpi<GridTcpCommunicationMessageAdapter>, TcpCommunicationSpiMBean {
+    implements CommunicationSpi<MessageAdapter>, TcpCommunicationSpiMBean {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower). For troubleshooting see " +
-        GridIpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
+        "(switching to TCP, may be slower)."; // todo IGNITE-70 Add link to documentation
 
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -171,7 +168,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_PORT = 47100;
 
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = -1;
+    public static final int DFLT_SHMEM_PORT = 48100;
 
     /** Default idle connection timeout (value is <tt>30000</tt>ms). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
@@ -241,8 +238,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final byte HANDSHAKE_MSG_TYPE = -3;
 
     /** Server listener. */
-    private final GridNioServerListener<GridTcpCommunicationMessageAdapter> srvLsnr =
-        new GridNioServerListenerAdapter<GridTcpCommunicationMessageAdapter>() {
+    private final GridNioServerListener<MessageAdapter> srvLsnr =
+        new GridNioServerListenerAdapter<MessageAdapter>() {
             @Override public void onSessionWriteTimeout(GridNioSession ses) {
                 LT.warn(log, null, "Communication SPI Session write timed out (consider increasing " +
                     "'socketWriteTimeout' " + "configuration property) [remoteAddr=" + ses.remoteAddress() +
@@ -294,14 +291,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
+                    CommunicationListener<MessageAdapter> lsnr0 = lsnr;
 
                     if (lsnr0 != null)
                         lsnr0.onDisconnected(id);
                 }
             }
 
-            @Override public void onMessage(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+            @Override public void onMessage(GridNioSession ses, MessageAdapter msg) {
                 UUID sndId = ses.meta(NODE_ID_META);
 
                 if (sndId == null) {
@@ -331,13 +328,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     ClusterNode locNode = getSpiContext().localNode();
-
-                    IgniteProductVersion locVer = locNode.version();
-
-                    IgniteProductVersion rmtVer = rmtNode.version();
-
-                    if (!locVer.equals(rmtVer))
-                        ses.addMeta(GridNioServer.DIFF_VER_NODE_ID_META_KEY, sndId);
 
                     if (ses.remoteAddress() == null)
                         return;
@@ -625,16 +615,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         };
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
-
-    /** Node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
 
     /** Local IP address. */
     private String locAddr;
@@ -652,7 +634,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int shmemPort = DFLT_SHMEM_PORT;
 
     /** Grid name. */
-    @IgniteNameResource
     private String gridName;
 
     /** Allocate direct buffer or heap buffer. */
@@ -691,16 +672,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
 
     /** Min buffered message count. */
-    private int minBufferedMsgCnt = Integer.getInteger(GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
+    private int minBufferedMsgCnt = Integer.getInteger(IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
 
     /** Buffer size ratio. */
-    private double bufSizeRatio = IgniteSystemProperties.getDouble(GG_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
+    private double bufSizeRatio = IgniteSystemProperties.getDouble(IGNITE_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
 
     /** NIO server. */
-    private GridNioServer<GridTcpCommunicationMessageAdapter> nioSrvr;
+    private GridNioServer<MessageAdapter> nioSrvr;
 
     /** Shared memory server. */
-    private GridIpcSharedMemoryServerEndpoint shmemSrv;
+    private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
@@ -736,7 +717,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private final ConcurrentMap<UUID, GridCommunicationClient> clients = GridConcurrentFactory.newMap();
 
     /** SPI listener. */
-    private volatile CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr;
+    private volatile CommunicationListener<MessageAdapter> lsnr;
 
     /** Bound port. */
     private int boundTcpPort = -1;
@@ -748,7 +729,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Local node ID message. */
     private NodeIdMessage nodeIdMsg;
@@ -791,92 +772,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof IgniteDiscoveryEvent;
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent;
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            onNodeLeft(((IgniteDiscoveryEvent)evt).eventNode().id());
-        }
-    };
-
-    /** Message reader. */
-    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
-        /** */
-        private GridTcpMessageFactory msgFactory;
-
-        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageReader(this, nodeId);
-
-            boolean finished = msg.readFrom(buf);
-
-            if (finished && nodeId != null)
-                finished = getSpiContext().readDelta(nodeId, msg.getClass(), buf);
-
-            return finished;
-        }
-
-        @Nullable @Override public GridTcpMessageFactory messageFactory() {
-            if (msgFactory == null)
-                msgFactory = getSpiContext().messageFactory();
-
-            return msgFactory;
-        }
-    };
-
-    /** Message writer. */
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = msg.writeTo(buf);
-
-            if (finished && nodeId != null)
-                finished = getSpiContext().writeDelta(nodeId, msg, buf);
-
-            return finished;
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            if (nodeId != null) {
-                while (!finished) {
-                    finished = getSpiContext().writeDelta(nodeId, msg.getClass(), buf);
-
-                    out.write(buf.array(), 0, buf.position());
-
-                    cnt += buf.position();
-
-                    buf.clear();
-                }
-            }
-
-            return cnt;
+            onNodeLeft(((DiscoveryEvent)evt).eventNode().id());
         }
     };
 
@@ -886,11 +786,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteAddressResolverResource
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Injects resources.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite) {
+        if (ignite != null) {
+            setAddressResolver(ignite.configuration().getAddressResolver());
+            setLocalAddress(ignite.configuration().getLocalHost());
+            gridName = ignite.name();
+        }
     }
 
     /**
@@ -898,7 +811,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -911,7 +824,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *      IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -1279,7 +1191,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets the minimum number of messages for this SPI, that are buffered
      * prior to sending.
      * <p>
-     * Defaults to either {@code 512} or {@link IgniteSystemProperties#GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
+     * Defaults to either {@code 512} or {@link IgniteSystemProperties#IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
      * system property (if specified).
      *
      * @param minBufferedMsgCnt Minimum buffered message count.
@@ -1298,7 +1210,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets the buffer size ratio for this SPI. As messages are sent,
      * the buffer size is adjusted using this ratio.
      * <p>
-     * Defaults to either {@code 0.8} or {@link IgniteSystemProperties#GG_COMMUNICATION_BUF_RESIZE_RATIO}
+     * Defaults to either {@code 0.8} or {@link IgniteSystemProperties#IGNITE_COMMUNICATION_BUF_RESIZE_RATIO}
      * system property (if specified).
      *
      * @param bufSizeRatio Buffer size ratio.
@@ -1314,7 +1226,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr) {
+    @Override public void setListener(CommunicationListener<MessageAdapter> lsnr) {
         this.lsnr = lsnr;
     }
 
@@ -1362,7 +1274,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        nodeIdMsg = new NodeIdMessage(locNodeId);
+        nodeIdMsg = new NodeIdMessage(ignite.configuration().getNodeId());
 
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
@@ -1534,7 +1446,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1548,7 +1460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Server instance.
      * @throws IgniteCheckedException Thrown if it's not possible to create server.
      */
-    private GridNioServer<GridTcpCommunicationMessageAdapter> resetNioServer() throws IgniteCheckedException {
+    private GridNioServer<MessageAdapter> resetNioServer() throws IgniteCheckedException {
         if (boundTcpPort >= 0)
             throw new IgniteCheckedException("Tcp NIO server was already created on port " + boundTcpPort);
 
@@ -1557,8 +1469,43 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = locPort; port < locPort + locPortRange; port++) {
             try {
-                GridNioServer<GridTcpCommunicationMessageAdapter> srvr =
-                    GridNioServer.<GridTcpCommunicationMessageAdapter>builder()
+                MessageFactory messageFactory = new MessageFactory() {
+                    private MessageFactory impl;
+
+                    @Nullable @Override public MessageAdapter create(byte type) {
+                        if (impl == null)
+                            impl = getSpiContext().messageFactory();
+
+                        assert impl != null;
+
+                        return impl.create(type);
+                    }
+                };
+
+                MessageFormatter messageFormatter = new MessageFormatter() {
+                    private MessageFormatter impl;
+
+                    @Override public MessageWriter writer() {
+                        if (impl == null)
+                            impl = getSpiContext().messageFormatter();
+
+                        assert impl != null;
+
+                        return impl.writer();
+                    }
+
+                    @Override public MessageReader reader() {
+                        if (impl == null)
+                            impl = getSpiContext().messageFormatter();
+
+                        assert impl != null;
+
+                        return impl.reader();
+                    }
+                };
+
+                GridNioServer<MessageAdapter> srvr =
+                    GridNioServer.<MessageAdapter>builder()
                         .address(locHost)
                         .port(port)
                         .listener(srvLsnr)
@@ -1573,10 +1520,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .sendQueueLimit(msgQueueLimit)
                         .directMode(true)
                         .metricsListener(metricsLsnr)
-                        .messageWriter(msgWriter)
                         .writeTimeout(sockWriteTimeout)
-                        .filters(new GridNioCodecFilter(new GridDirectParser(msgReader, this), log, true),
+                        .filters(new GridNioCodecFilter(new GridDirectParser(messageFactory), log, true),
                             new GridConnectionBytesVerifyFilter(log))
+                        .messageFormatter(messageFormatter)
                         .build();
 
                 boundTcpPort = port;
@@ -1609,7 +1556,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -1621,7 +1568,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(log, locNodeId, gridName);
+                IpcSharedMemoryServerEndpoint srv =
+                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
 
                 srv.setPort(port);
 
@@ -1754,12 +1702,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws IgniteSpiException {
+    @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
         assert node != null;
         assert msg != null;
 
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
+
+        UUID locNodeId = ignite.configuration().getNodeId();
 
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
@@ -1904,8 +1854,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 return createShmemClient(node, shmemPort);
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
-                    // Has cause or is itself the GridIpcOutOfSystemResourcesException.
+                if (e.hasCause(IpcOutOfSystemResourcesException.class))
+                    // Has cause or is itself the IpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
                 else if (getSpiContext().node(node.id()) != null)
                     LT.warn(log, null, e.getMessage());
@@ -1935,7 +1885,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client;
 
             try {
-                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log, msgWriter);
+                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log,
+                    getSpiContext().messageFormatter());
             }
             catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
@@ -2076,19 +2027,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             recoveryDesc.release();
                     }
 
-                    UUID diffVerNodeId = null;
-
-                    IgniteProductVersion locVer = getSpiContext().localNode().version();
-                    IgniteProductVersion rmtVer = node.version();
-
-                    if (!locVer.equals(rmtVer))
-                        diffVerNodeId = node.id();
-
                     try {
                         Map<Integer, Object> meta = new HashMap<>();
 
                         meta.put(NODE_ID_META, node.id());
-                        meta.put(GridNioServer.DIFF_VER_NODE_ID_META_KEY, diffVerNodeId);
 
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2253,10 +2195,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
 
-                    ch.write(ByteBuffer.wrap(U.GG_HEADER));
+                    ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(locNodeId,
+                        HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2267,7 +2209,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.order(ByteOrder.nativeOrder());
 
-                        boolean written = msg.writeTo(buf);
+                        boolean written = msg.writeTo(buf, getSpiContext().messageFormatter().writer());
 
                         assert written;
 
@@ -2343,8 +2285,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
      */
-    protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
-        CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr = this.lsnr;
+    protected void notifyListener(UUID sndId, MessageAdapter msg, IgniteRunnable msgC) {
+        CommunicationListener<MessageAdapter> lsnr = this.lsnr;
 
         if (lsnr != null)
             // Notify listener of a new message.
@@ -2450,12 +2392,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemAcceptWorker extends GridWorker {
         /** */
-        private final GridIpcSharedMemoryServerEndpoint srv;
+        private final IpcSharedMemoryServerEndpoint srv;
 
         /**
          * @param srv Server.
          */
-        ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
+        ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
             super(gridName, "shmem-communication-acceptor", log);
 
             this.srv = srv;
@@ -2494,12 +2436,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemWorker extends GridWorker {
         /** */
-        private final GridIpcEndpoint endpoint;
+        private final IpcEndpoint endpoint;
 
         /**
          * @param endpoint Endpoint.
          */
-        private ShmemWorker(GridIpcEndpoint endpoint) {
+        private ShmemWorker(IpcEndpoint endpoint) {
             super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;
@@ -2508,13 +2450,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                GridIpcToNioAdapter<GridTcpCommunicationMessageAdapter> adapter = new GridIpcToNioAdapter<>(
+                GridDirectParser parser = new GridDirectParser(getSpiContext().messageFactory());
+
+                IpcToNioAdapter<MessageAdapter> adapter = new IpcToNioAdapter<>(
                     metricsLsnr,
                     log,
                     endpoint,
-                    msgWriter,
                     srvLsnr,
-                    new GridNioCodecFilter(new GridDirectParser(msgReader, TcpCommunicationSpi.this), log, true),
+                    getSpiContext().messageFormatter(),
+                    new GridNioCodecFilter(parser, log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 
@@ -3013,14 +2957,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                out.write(U.GG_HEADER);
+                out.write(U.IGNITE_HEADER);
                 out.write(NODE_ID_MSG_TYPE);
                 out.write(nodeIdMsg.nodeIdBytes);
 
                 out.flush();
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent local node ID [locNodeId=" + locNodeId + ", rmtNodeId=" + rmtNodeId + ']');
+                    log.debug("Sent local node ID [locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId="
+                        + rmtNodeId + ']');
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to perform handshake.", e);
@@ -3032,7 +2977,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Handshake message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class HandshakeMessage extends GridTcpCommunicationMessageAdapter {
+    public static class HandshakeMessage extends MessageAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3046,7 +2991,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private long connectCnt;
 
         /**
-         * Default constructor required by {@link GridTcpCommunicationMessageAdapter}.
+         * Default constructor required by {@link MessageAdapter}.
          */
         public HandshakeMessage() {
             // No-op.
@@ -3088,7 +3033,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 33)
                 return false;
 
@@ -3131,17 +3076,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public GridTcpCommunicationMessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(GridTcpCommunicationMessageAdapter msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(HandshakeMessage.class, this);
         }
@@ -3151,7 +3085,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Recovery acknowledgment message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class RecoveryLastReceivedMessage extends GridTcpCommunicationMessageAdapter {
+    public static class RecoveryLastReceivedMessage extends MessageAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3159,7 +3093,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private long rcvCnt;
 
         /**
-         * Default constructor required by {@link GridTcpCommunicationMessageAdapter}.
+         * Default constructor required by {@link MessageAdapter}.
          */
         public RecoveryLastReceivedMessage() {
             // No-op.
@@ -3180,7 +3114,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 9)
                 return false;
 
@@ -3207,17 +3141,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-        @Override public GridTcpCommunicationMessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(GridTcpCommunicationMessageAdapter msg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return true;
         }
@@ -3232,7 +3155,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Node ID message.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class NodeIdMessage extends GridTcpCommunicationMessageAdapter {
+    public static class NodeIdMessage extends MessageAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3261,7 +3184,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf) {
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             assert nodeIdBytes.length == 16;
 
             if (buf.remaining() < 17)
@@ -3288,17 +3211,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override public byte directType() {
             return NODE_ID_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public GridTcpCommunicationMessageAdapter clone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-            // No-op.
         }
 
         /** {@inheritDoc} */

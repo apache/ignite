@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**

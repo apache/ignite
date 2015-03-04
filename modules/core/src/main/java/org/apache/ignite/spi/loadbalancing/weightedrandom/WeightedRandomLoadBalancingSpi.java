@@ -21,20 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Load balancing SPI that picks a random node for job execution. Note that you can
@@ -71,8 +71,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
- *    &#64;GridLoadBalancerResource
- *    GridComputeLoadBalancer balancer;
+ *    &#64;LoadBalancerResource
+ *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
  *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
@@ -89,13 +89,13 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *    public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result
  *        StringBuilder buf = new StringBuilder();
  *
- *        for (GridComputeJobResult res : results) {
+ *        for (ComputeJobResult res : results) {
  *            // Append string representation of result
  *            // returned by every job.
  *            buf.append(res.getData().string());
@@ -146,7 +146,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
  *         &lt;property name="useWeights" value="true"/&gt;
  *         &lt;property name="nodeWeight" value="10"/&gt;
  *     &lt;/bean&gt;
@@ -166,17 +166,17 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
 
     /**
      * Name of node attribute used to indicate load weight of a node
-     * (value is {@code "gridgain.node.weight.attr.name"}).
+     * (value is {@code "ignite.node.weight.attr.name"}).
      *
      * @see org.apache.ignite.cluster.ClusterNode#attributes()
      */
-    public static final String NODE_WEIGHT_ATTR_NAME = "gridgain.node.weight.attr.name";
+    public static final String NODE_WEIGHT_ATTR_NAME = "ignite.node.weight.attr.name";
 
     /** Default weight assigned to every node if explicit one is not provided (value is {@code 10}). */
     public static final int DFLT_NODE_WEIGHT = 10;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -262,12 +262,12 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteTaskEvent || evt instanceof IgniteJobEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof TaskEvent || evt instanceof JobEvent;
 
                 if (evt.type() == EVT_TASK_FINISHED ||
                     evt.type() == EVT_TASK_FAILED) {
-                    IgniteUuid sesId = ((IgniteTaskEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((TaskEvent)evt).taskSessionId();
 
                     taskTops.remove(sesId);
 
@@ -278,7 +278,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
                 // avoid O(n*n/2) complexity, after that we can drop caches.
                 // Here we set mapped property and later cache will be ignored
                 else if (evt.type() == EVT_JOB_MAPPED) {
-                    IgniteUuid sesId = ((IgniteJobEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((JobEvent)evt).taskSessionId();
 
                     IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(sesId);
 

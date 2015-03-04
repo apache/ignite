@@ -20,28 +20,24 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  *
@@ -63,7 +59,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setPreloadMode(NONE);
@@ -99,8 +95,8 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        GridCacheQueryFuture<Map.Entry<Object, Object>> fut =
-            grid(0).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
+        CacheQueryFuture<Map.Entry<Object, Object>> fut =
+            ((IgniteKernal)grid(0)).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
 
         testMessageSet(fut);
     }
@@ -136,7 +132,27 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
 
-        Map map = U.field(((GridKernal)grid(0)).context().io(), "msgSetMap");
+        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+
+        info("Map: " + map);
+
+        assertTrue(map.isEmpty());
+    }
+
+    /**
+     * @param fut Future to cancel.
+     * @throws Exception If failed.
+     */
+    private void testMessageSet(IgniteInternalFuture<?> fut) throws Exception {
+        cancelLatch.await();
+
+        assertTrue(fut.cancel());
+
+        resLatch.countDown();
+
+        assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
+
+        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 
         info("Map: " + map);
 
@@ -147,12 +163,8 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * Communication SPI.
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
-
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
             IgniteRunnable msgC) {
             try {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
@@ -183,7 +195,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class Task extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -192,7 +204,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -203,16 +215,16 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class FailTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() throws IgniteCheckedException {
-                    throw new IgniteCheckedException("Task failed.");
+                @Nullable @Override public Object execute() {
+                    throw new IgniteException("Task failed.");
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

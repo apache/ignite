@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
  * parallel, etc...
  * <p>
  * Collision SPI provides developer with ability to use the custom logic in determining how
- * grid jobs should be executed on a destination grid node. GridGain comes with the following
+ * grid jobs should be executed on a destination grid node. Ignite comes with the following
  * ready implementations for collision resolution that cover most popular strategies:
  * <ul>
  *      <li>{@link org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi}</li>
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.*;
  *      <li>{@link org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
@@ -67,7 +67,7 @@ public interface CollisionSpi extends IgniteSpi {
      * Listener to be set for notification of external collision events (e.g. job stealing).
      * Once grid receives such notification, it will immediately invoke collision SPI.
      * <p>
-     * GridGain uses this listener to enable job stealing from overloaded to underloaded nodes.
+     * Ignite uses this listener to enable job stealing from overloaded to underloaded nodes.
      * However, you can also utilize it, for instance, to provide time based collision
      * resolution. To achieve this, you most likely would mark some job by setting a certain
      * attribute in job context (see {@link org.apache.ignite.compute.ComputeJobContext}) for a job that requires

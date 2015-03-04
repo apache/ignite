@@ -17,8 +17,8 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
@@ -31,7 +31,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      */
     public void testTransformIfNoArguments() throws Exception {
         assertEquals(
-            "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
+            "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" " +
             "\"JVM_XOPTS=\" \"CONFIG=\"",
             CommandLineTransformer.transform());
     }
@@ -71,7 +71,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
                 return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnError=\"dir c:\\\"");
             }
         }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
-            " JVM parameters for GridGain batch scripts " +
+            " JVM parameters for Ignite batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
 
@@ -80,7 +80,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
                 return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnOutOfMemoryError=\"dir c:\\\"");
             }
         }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
-            " JVM parameters for GridGain batch scripts " +
+            " JVM parameters for Ignite batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
     }
@@ -101,7 +101,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      */
     public void testTransformIfOnlyPathToConfigSpecified() throws Exception {
         assertEquals(
-            "\"INTERACTIVE=0\" \"QUIET=-DGRIDGAIN_QUIET=true\" \"NO_PAUSE=0\" " +
+            "\"INTERACTIVE=0\" \"QUIET=-DIGNITE_QUIET=true\" \"NO_PAUSE=0\" " +
             "\"JVM_XOPTS=\" \"CONFIG=c:\\qw.xml\"",
             CommandLineTransformer.transform("c:\\qw.xml"));
     }
@@ -111,7 +111,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
      */
     public void testTransformIfAllSupportedArguments() throws Exception {
         assertEquals(
-            "\"INTERACTIVE=1\" \"QUIET=-DGRIDGAIN_QUIET=false\" \"NO_PAUSE=1\" " +
+            "\"INTERACTIVE=1\" \"QUIET=-DIGNITE_QUIET=false\" \"NO_PAUSE=1\" " +
             "\"JVM_XOPTS=-Xmx1g -Xms1m\" " +
             "\"CONFIG=\"c:\\path to\\русский каталог\"\"",
             CommandLineTransformer.transform("-i", "-np", "-v", "-J-Xmx1g", "-J-Xms1m",

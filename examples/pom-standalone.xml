@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     POM file.
@@ -28,55 +28,54 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.5.6</gridgain.version>
-        <src.dir>src/main/java</src.dir>
+        <ignite.version>1.0.0-RC1</ignite.version>
     </properties>
 
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-examples</artifactId>
-    <version>${gridgain.version}</version>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-examples</artifactId>
+    <version>${ignite.version}</version>
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hibernate</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-scalar</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-hibernate</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-log4j</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-indexing</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-schedule</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schedule</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
@@ -93,8 +92,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>${src.dir}</sourceDirectory>
-
         <resources>
             <resource>
                 <directory>src/main/java</directory>
@@ -107,16 +104,6 @@
             </resource>
         </resources>
 
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -126,28 +113,6 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>scala-compile-first</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-test-compile</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -155,9 +120,9 @@
         <profile>
             <id>java8</id>
 
-            <properties>
-                <src.dir>src/main/java8</src.dir>
-            </properties>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
 
             <build>
                 <plugins>
@@ -168,6 +133,68 @@
                             <source>1.8</source>
                             <target>1.8</target>
                         </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.9.1</version>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals><goal>add-source</goal></goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/java8</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>scala</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-scalar</artifactId>
+                    <version>${ignite.version}</version>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.alchim31.maven</groupId>
+                        <artifactId>scala-maven-plugin</artifactId>
+                        <version>3.2.0</version>
+                        <configuration>
+                            <jvmArgs>
+                                <jvmArg>-Xms512m</jvmArg>
+                                <jvmArg>-Xmx1024m</jvmArg>
+                            </jvmArgs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>scala-compile-first</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                    <goal>compile</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>scala-test-compile</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>testCompile</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

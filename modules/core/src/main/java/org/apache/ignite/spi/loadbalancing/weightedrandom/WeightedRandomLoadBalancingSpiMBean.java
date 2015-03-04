@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.loadbalancing.weightedrandom;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management MBean for {@link WeightedRandomLoadBalancingSpi} SPI.
  */
-@IgniteMBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
+@MXBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
 public interface WeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Checks whether node weights are considered when doing
@@ -32,7 +32,7 @@ public interface WeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagement
      * @return If {@code true} then random load is distributed according
      *      to node weights.
      */
-    @IgniteMBeanDescription("Whether node weights are considered when doing random load balancing.")
+    @MXBeanDescription("Whether node weights are considered when doing random load balancing.")
     public boolean isUseWeights();
 
     /**
@@ -40,6 +40,6 @@ public interface WeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagement
      *
      * @return Weight of this node.
      */
-    @IgniteMBeanDescription("Weight of this node.")
+    @MXBeanDescription("Weight of this node.")
     public int getNodeWeight();
 }

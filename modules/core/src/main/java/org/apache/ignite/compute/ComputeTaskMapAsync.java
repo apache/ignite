@@ -27,7 +27,7 @@ import java.util.*;
  * to be performed asynchronously when attached to {@link ComputeTask} class being executed.
  * <p>
  * Use this annotation when tasks spawns large amount of jobs or map step takes a long time
- * and it is better to perform it in GridGain system thread.
+ * and it is better to perform it in Ignite system thread.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -20,7 +20,6 @@ package org.apache.ignite.spi.loadbalancing.roundrobin;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 

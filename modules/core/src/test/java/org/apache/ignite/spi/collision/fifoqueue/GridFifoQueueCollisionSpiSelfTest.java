@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.collision.fifoqueue;
 
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.util.typedef.CI1;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,7 +33,11 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
      * @throws Exception If failed.
      */
     public void testCollision0() throws Exception {
-        GridCollisionTestContext cntx = createContext(15, 20);
+        int activeCnt = 2;
+
+        assert getSpi().getParallelJobsNumber() > activeCnt;
+
+        GridCollisionTestContext cntx = createContext(activeCnt, getSpi().getParallelJobsNumber() - activeCnt);
 
         Collection<CollisionJobContext> activeJobs = cntx.activeJobs();
         Collection<CollisionJobContext> passiveJobs = cntx.waitingJobs();
@@ -48,10 +52,10 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
         int i = 0;
 
         for (CollisionJobContext ctx : activeJobs) {
-            if (i++ < 15)
-                assert !((GridTestCollisionJobContext)ctx).isActivated();
+            if (i++ < activeCnt)
+                assert !((GridTestCollisionJobContext)ctx).isActivated() : i;
             else
-                assert ((GridTestCollisionJobContext)ctx).isActivated();
+                assert ((GridTestCollisionJobContext)ctx).isActivated() : i;
 
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }

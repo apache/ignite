@@ -17,18 +17,19 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.file;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.deployment.uri.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
+
 import java.io.*;
 import java.util.*;
 
 /**
  * Tests correct task undeployment after source file removing.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /** */
     private static String tmpDirPath = System.getProperty("java.io.tmpdir") + '/' + UUID.randomUUID();
 
@@ -55,7 +56,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<Grid
      */
     public void testUndeployGarFile() throws Exception {
         String garFilePath =
-            U.resolveGridGainPath(GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
+            U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
 
         File garFile = new File(garFilePath);
 
@@ -69,7 +70,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<Grid
 
         assert newGarFile.exists();
 
-        Thread.sleep(GridUriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
+        Thread.sleep(UriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
 
         assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3") != null :
             "Failed to find resource for added GAR file.";
@@ -81,7 +82,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<Grid
 
         assert !newGarFile.exists();
 
-        Thread.sleep(GridUriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
+        Thread.sleep(UriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
 
         assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3") == null;
         assert getSpi().findResource("GridUriDeploymentTestWithNameTask3") == null;

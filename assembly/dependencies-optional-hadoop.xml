@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -33,7 +33,6 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
-                <exclude>org.apache.ignite:jdk8-backport</exclude>
                 <exclude>org.apache.ignite:ignite-core</exclude>
                 <exclude>org.apache.ignite:ignite-clients</exclude>
                 <exclude>org.apache.ignite:ignite-spring</exclude>
@@ -47,7 +46,7 @@
                 <exclude>org.apache.ignite:ignite-hadoop</exclude>
                 <exclude>org.apache.ignite:ignite-visor-console</exclude>
                 <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
-                <exclude>org.apache.ignite:ignite-visor-trial</exclude>
+                <exclude>org.apache.ignite:ignite-schema-load</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

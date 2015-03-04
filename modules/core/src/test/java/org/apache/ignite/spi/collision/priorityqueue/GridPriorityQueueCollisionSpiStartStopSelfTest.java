@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Priority queue collision SPI start-stop test.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -109,6 +109,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
     public void testCollision0() throws Exception {
         List<CollisionJobContext> activeJobs = makeContextList(null);
         List<CollisionJobContext> passiveJobs = makeContextList(null);
+
+        getSpi().setParallelJobsNumber(30);
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 

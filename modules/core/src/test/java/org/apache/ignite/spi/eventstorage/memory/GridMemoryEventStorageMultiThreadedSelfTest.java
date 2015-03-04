@@ -18,9 +18,10 @@
 package org.apache.ignite.spi.eventstorage.memory;
 
 import org.apache.ignite.events.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -36,13 +37,13 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < 100000; i++)
-                    getSpi().record(new IgniteDiscoveryEvent(null, "Test event", 1, null));
+                    getSpi().record(new DiscoveryEvent(null, "Test event", 1, null));
 
                 return null;
             }
         }, 10, "event-thread");
 
-        Collection<IgniteEvent> evts = getSpi().localEvents(F.<IgniteEvent>alwaysTrue());
+        Collection<Event> evts = getSpi().localEvents(F.<Event>alwaysTrue());
 
         info("Events count in memory: " + evts.size());
 

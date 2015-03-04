@@ -21,7 +21,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotation to indicate that method can be executed asynchronously if async mode is enabled.
- * To enable async mode, invoke {@link IgniteAsyncSupport#enableAsync()} method on the API.
+ * To enable async mode, invoke {@link IgniteAsyncSupport#withAsync()} method on the API.
  * The future for the async method can be retrieved via {@link IgniteAsyncSupport#future()} method
  * right after the execution of an asynchronous method.
  *

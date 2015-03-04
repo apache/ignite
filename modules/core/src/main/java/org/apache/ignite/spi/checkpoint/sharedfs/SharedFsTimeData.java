@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Helper class that keeps checkpoint expiration date and last file

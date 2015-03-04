@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Provides a mechanism in grid for storing data on disk. GridGain cache uses swap space to overflow
+ * Provides a mechanism in grid for storing data on disk. Ignite cache uses swap space to overflow
  * data to disk if it cannot fit in memory. It's also possible to use swap space directly
  * by calling {@link org.apache.ignite.Ignite} API swap-related methods. Logically storage is organized into
  * independent 'spaces' in which data is stored.
@@ -34,7 +34,7 @@ import java.util.*;
  * The default swap space SPI is {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} which stores values on disk in files and keeps keys in
  * memory.
  * <p>
- * Gridgain provides the following {@code GridSwapSpaceSpi} implementations:
+ * Ignite provides the following {@code GridSwapSpaceSpi} implementations:
  * <ul>
  * <li>
  *     {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} - pure Java implementation with in-memory keys. This SPI is used by default.
@@ -46,7 +46,7 @@ import java.util.*;
  * <p>
  * <p>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
@@ -80,6 +80,17 @@ public interface SwapSpaceSpi extends IgniteSpi {
      * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public long count(@Nullable String spaceName) throws IgniteSpiException;
+
+    /**
+     * Gets number of stored entries (keys) in data space with given name. If specified
+     * space does not exist this method returns {@code 0}.
+     *
+     * @param spaceName Space name to get number of entries for.
+     * @param parts Partitions.
+     * @return Number of stored entries in specified space.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
+     */
+    public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException;
 
     /**
      * Reads stored value as array of bytes by key from data space with given name.

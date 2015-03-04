@@ -1,23 +1,25 @@
 #!/bin/sh
-#  Licensed to the Apache Software Foundation (ASF) under one or more
-#  contributor license agreements.  See the NOTICE file distributed with
-#  this work for additional information regarding copyright ownership.
-#  The ASF licenses this file to You under the Apache License, Version 2.0
-#  (the "License"); you may not use this file except in compliance with
-#  the License.  You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 # Target class path resolver.
 #
 # Can be used like:
-#       . "${GRIDGAIN_HOME}"/os/bin/include/target-classpath.sh
+#       . "${IGNITE_HOME}"/os/bin/include/target-classpath.sh
 # in other scripts to set classpath using libs from target folder.
 #
 # Will be excluded in release.
@@ -31,11 +33,11 @@ SEP=":";
 case "`uname`" in
     MINGW*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
     CYGWIN*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
 esac
 
@@ -44,11 +46,11 @@ includeToClassPath() {
     do
         if [ -d ${file} ] && [ -d "${file}/target" ]; then
             if [ -d "${file}/target/classes" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/classes
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
             if [ -d "${file}/target/libs" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/libs/*
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
             fi
         fi
     done
@@ -57,9 +59,9 @@ includeToClassPath() {
 #
 # Include target libraries for opensourse modules to classpath.
 #
-includeToClassPath ${GRIDGAIN_HOME}/os/modules
+includeToClassPath ${IGNITE_HOME}/os/modules
 
 #
 # Include target libraries for enterprise modules to classpath.
 #
-includeToClassPath ${GRIDGAIN_HOME}/modules
+includeToClassPath ${IGNITE_HOME}/modules

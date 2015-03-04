@@ -17,13 +17,15 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'GridCacheProjection.peek(..)'} and {@code GridCacheEntry.peek(..)} methods,
- * such as {@link org.gridgain.grid.cache.GridCacheProjection#peek(Object, java.util.Collection)},
- * {@link org.gridgain.grid.cache.GridCacheEntry#peek()}, and others.
+ * Enumeration of all supported cache peek modes. Peek modes can be passed
+ * into {@link IgniteCache#localPeek(Object, CachePeekMode...)},
+ * {@link IgniteCache#localEntries(CachePeekMode...)},
+ * {@link IgniteCache#localSize(CachePeekMode...)} and
+ * {@link IgniteCache#size(CachePeekMode...)} methods.
  * <p>
  * The following modes are supported:
  * <ul>
@@ -42,17 +44,19 @@ public enum CachePeekMode {
 
     /**
      * Peek into near cache only (don't peek into partitioned cache).
-     * In case of {@link org.gridgain.grid.cache.GridCacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     NEAR,
 
     /**
      * Peek value from primary copy of partitioned cache only (skip near cache).
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     PRIMARY,
 
     /**
      * Peek value from backup copies of partitioned cache only (skip near cache).
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     BACKUP,
 

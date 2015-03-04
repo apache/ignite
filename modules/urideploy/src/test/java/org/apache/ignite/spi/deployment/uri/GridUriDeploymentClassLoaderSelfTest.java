@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.net.*;
 import java.util.*;
@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Grid URI deployment class loader test.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.
@@ -47,7 +47,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
         ClassLoader ldr = getGarClassLoader();
 
         // Get resource from GAR file
-        URL rsrcUrl = ldr.getResource("org/gridgain/test/test.properties");
+        URL rsrcUrl = ldr.getResource("org/apache/ignite/test/test.properties");
 
         assert rsrcUrl != null;
     }
@@ -70,6 +70,6 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
     @GridSpiTestConfig
     public List<String> getUriList() {
         return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
     }
 }

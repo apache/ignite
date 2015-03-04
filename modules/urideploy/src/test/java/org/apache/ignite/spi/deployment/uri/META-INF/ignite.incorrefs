@@ -1,0 +1,18 @@
+<!--@ANT_XML_COPYRIGHT_LICENSE@-->
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<!--
+    Spring configuration file for test classes in gar-file.
+-->
+<beans>
+    <description>Ignite Spring configuration file in gar-file for ant GAR task.</description>
+
+    <!--
+        Test task specification.
+    -->
+    <bean id="task" class="org.apache.ignite.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask0">
+        <property name="taskTypeId" value="incorrectref-task"/>
+        <property name="version" value="ver1"/>
+    </bean>
+</beans>

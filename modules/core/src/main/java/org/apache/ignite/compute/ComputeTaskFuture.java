@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -35,21 +34,14 @@ public interface ComputeTaskFuture<R> extends IgniteFuture<R> {
      *
      * @throws ComputeTaskTimeoutException If task execution timed out.
      */
-    @Override public R get() throws IgniteCheckedException;
+    @Override public R get();
 
     /**
      * {@inheritDoc}
      *
      * @throws ComputeTaskTimeoutException If task execution timed out.
      */
-    @Override public R get(long timeout) throws IgniteCheckedException;
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws ComputeTaskTimeoutException If task execution timed out.
-     */
-    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
+    @Override public R get(long timeout, TimeUnit unit);
 
     /**
      * Gets task session of execution grid task.

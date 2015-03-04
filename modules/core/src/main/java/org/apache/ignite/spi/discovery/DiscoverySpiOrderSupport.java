@@ -29,7 +29,7 @@ import java.lang.annotation.*;
  * at later point of time have order values greater than previous nodes.
  * </li>
  * <li>
- * All {@link org.apache.ignite.events.IgniteEventType#EVT_NODE_JOINED} events come in proper order. This means that all
+ * All {@link org.apache.ignite.events.EventType#EVT_NODE_JOINED} events come in proper order. This means that all
  * listeners to discovery events will receive discovery notifications in proper order.
  * </li>
  * </ul>

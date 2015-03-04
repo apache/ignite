@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -55,7 +55,7 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
 
     /**
      * Creates job with one arguments. This constructor exists for better
-     * backward compatibility with internal GridGain 2.x code.
+     * backward compatibility with internal Ignite 2.x code.
      *
      * @param arg Job argument.
      */
@@ -129,7 +129,7 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Object call() throws Exception {
+    @Nullable @Override public final Object call() {
         return execute();
     }
 }

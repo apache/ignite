@@ -18,9 +18,9 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -47,7 +47,7 @@ final class SharedFsUtils {
      *    to {@link SharedFsCheckpointData} object.
      * @throws IOException Thrown if file read error occurred.
      */
-    static SharedFsCheckpointData read(File file, IgniteMarshaller m, IgniteLogger log)
+    static SharedFsCheckpointData read(File file, Marshaller m, IgniteLogger log)
         throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;
@@ -74,7 +74,7 @@ final class SharedFsUtils {
      * @throws IgniteCheckedException Thrown if data could not be marshalled.
      * @throws IOException Thrown if file write operation failed.
      */
-    static void write(File file, SharedFsCheckpointData data, IgniteMarshaller m, IgniteLogger log)
+    static void write(File file, SharedFsCheckpointData data, Marshaller m, IgniteLogger log)
         throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;

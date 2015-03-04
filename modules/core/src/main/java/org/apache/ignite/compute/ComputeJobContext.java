@@ -50,33 +50,13 @@ import java.util.concurrent.*;
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.
  * <p>
- * Job context can be injected into {@link ComputeJob} via {@link org.apache.ignite.resources.IgniteJobContextResource}
- * annotation. Refer to the {@link org.apache.ignite.resources.IgniteJobContextResource}
+ * Job context can be injected into {@link ComputeJob} via {@link org.apache.ignite.resources.JobContextResource}
+ * annotation. Refer to the {@link org.apache.ignite.resources.JobContextResource}
  * documentation for coding examples on how to inject job context.
  * <p>
- * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.
+ * Attribute names that start with {@code "apache.ignite:"} are reserved for internal system use.
  */
 public interface ComputeJobContext extends ComputeJobContinuation {
-    /**
-     * Gets cache name for which job was co-located.
-     *
-     * @return Cache name if job was co-located or {@code null} otherwise.
-     * @see #affinityKey()
-     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
-     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
-     */
-    @Nullable public String cacheName();
-
-    /**
-     * Gets affinity key with which job was co-located.
-     *
-     * @return Affinity key if job was co-located or {@code null} otherwise.
-     * @see #cacheName()
-     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
-     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
-     */
-    @Nullable public <T> T affinityKey();
-
     /**
      * Gets ID of the job this context belongs to.
      *

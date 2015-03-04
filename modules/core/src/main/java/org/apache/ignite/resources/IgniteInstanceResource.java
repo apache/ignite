@@ -30,27 +30,26 @@ import java.lang.annotation.*;
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>All closures and predicates that can run on grid.</li>
- * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
+ * public class MyIgniteJob implements ComputeJob {
  *      ...
- *      &#64;GridInstanceResource
- *      private Grid grid;
+ *      &#64;IgniteInstanceResource
+ *      private Ignite ignite;
  *      ...
  *  }
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
+ * public class MyIgniteJob implements ComputeJob {
  *     ...
- *     private Grid grid;
+ *     private Ignite ignite;
  *     ...
- *     &#64;GridInstanceResource
- *     public void setGrid(Grid grid) {
- *          this.grid = grid;
+ *     &#64;IgniteInstanceResource
+ *     public void setIgnite(Ignite ignite) {
+ *          this.ignite = ignite;
  *     }
  *     ...
  * }

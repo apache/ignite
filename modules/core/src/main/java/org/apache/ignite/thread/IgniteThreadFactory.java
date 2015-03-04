@@ -39,7 +39,7 @@ public class IgniteThreadFactory implements ThreadFactory {
      * @param gridName Grid name.
      */
     public IgniteThreadFactory(String gridName) {
-        this(gridName, "gridgain");
+        this(gridName, "ignite");
     }
 
     /**

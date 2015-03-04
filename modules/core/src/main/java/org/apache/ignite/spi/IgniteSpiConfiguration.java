@@ -23,7 +23,7 @@ import java.lang.annotation.*;
  * Annotates SPI configuration setters on whether or not it is optional.
  * <p>
  * Note that this annotation is used only for documentation purposes now and is not checked by
- * GridGain implementation.
+ * Ignite implementation.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

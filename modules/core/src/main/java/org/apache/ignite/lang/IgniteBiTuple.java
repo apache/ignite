@@ -17,9 +17,9 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -73,7 +73,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      *
      * @return First value.
      */
-    @Nullable public V1 get1() {
+    public V1 get1() {
         return val1;
     }
 
@@ -82,7 +82,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      *
      * @return Second value.
      */
-    @Nullable public V2 get2() {
+    public V2 get2() {
         return val2;
     }
 

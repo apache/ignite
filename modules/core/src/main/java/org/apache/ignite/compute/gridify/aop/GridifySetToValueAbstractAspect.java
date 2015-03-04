@@ -18,15 +18,15 @@
 package org.apache.ignite.compute.gridify.aop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.gridify.*;
+import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.util.gridify.GridifyUtils.*;
+import static org.apache.ignite.internal.util.gridify.GridifyUtils.*;
 
 /**
  * Convenience adapter with common methods for different aspect implementations
@@ -135,7 +135,7 @@ public class GridifySetToValueAbstractAspect {
 
         while (true) {
             if (now > end)
-                throw new ComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
+                throw new ComputeTaskTimeoutCheckedException("Timeout occurred while waiting for completion.");
 
             GridifyRangeArgument taskArg = createGridifyArgument(arg, res);
 

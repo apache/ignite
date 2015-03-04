@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.swapspace.file;
 
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.File;
-import java.nio.ByteBuffer;
+import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**

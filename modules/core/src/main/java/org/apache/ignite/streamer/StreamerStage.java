@@ -54,8 +54,8 @@ public interface StreamerStage<IN> {
      * @param ctx Streamer context.
      * @param evts Input events.
      * @return Map of stage name to collection of events.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     @Nullable public Map<String, Collection<?>> run(StreamerContext ctx, Collection<IN> evts)
-        throws IgniteCheckedException;
+        throws IgniteException;
 }

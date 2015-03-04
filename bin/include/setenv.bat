@@ -1,24 +1,26 @@
-::  Licensed to the Apache Software Foundation (ASF) under one or more
-::  contributor license agreements.  See the NOTICE file distributed with
-::  this work for additional information regarding copyright ownership.
-::  The ASF licenses this file to You under the Apache License, Version 2.0
-::  (the "License"); you may not use this file except in compliance with
-::  the License.  You may obtain a copy of the License at
 ::
-::       http://www.apache.org/licenses/LICENSE-2.0
+:: Licensed to the Apache Software Foundation (ASF) under one or more
+:: contributor license agreements.  See the NOTICE file distributed with
+:: this work for additional information regarding copyright ownership.
+:: The ASF licenses this file to You under the Apache License, Version 2.0
+:: (the "License"); you may not use this file except in compliance with
+:: the License.  You may obtain a copy of the License at
 ::
-::  Unless required by applicable law or agreed to in writing, software
-::  distributed under the License is distributed on an "AS IS" BASIS,
-::  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-::  See the License for the specific language governing permissions and
-::  limitations under the License.
+::      http://www.apache.org/licenses/LICENSE-2.0
+::
+:: Unless required by applicable law or agreed to in writing, software
+:: distributed under the License is distributed on an "AS IS" BASIS,
+:: WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+:: See the License for the specific language governing permissions and
+:: limitations under the License.
+::
 
 ::
-:: Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
-:: Expects GRIDGAIN_HOME to be set.
+:: Exports IGNITE_LIBS variable containing classpath for Ignite.
+:: Expects IGNITE_HOME to be set.
 :: Can be used like:
-::      call %GRIDGAIN_HOME%\bin\include\setenv.bat
-:: in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
+::      call %IGNITE_HOME%\bin\include\setenv.bat
+:: in other scripts to set classpath using exported IGNITE_LIBS variable.
 ::
 
 @echo off
@@ -27,34 +29,34 @@
 :: set USER_LIBS=
 
 ::
-:: Check GRIDGAIN_HOME.
+:: Check IGNITE_HOME.
 ::
-if defined GRIDGAIN_HOME goto run
-    echo %0, ERROR: GridGain installation folder is not found.
-    echo Please create GRIDGAIN_HOME environment variable pointing to location of
-    echo GridGain installation folder.
+if defined IGNITE_HOME goto run
+    echo %0, ERROR: Ignite installation folder is not found.
+    echo Please create IGNITE_HOME environment variable pointing to location of
+    echo Ignite installation folder.
 goto :eof
 
 :run
-:: The following libraries are required for GridGain.
-set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
+:: The following libraries are required for Ignite.
+set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
-for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not "%%F" == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
+for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
+if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
 
-if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
+if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
 if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
 
 set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
-if "%GRIDGAIN_HADOOP_CLASSPATH%" == "" goto :eof
+if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
 
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
+set IGNITE_LIBS=%IGNITE_LIBS%;%IGNITE_HADOOP_CLASSPATH%
 
 goto :eof
 
 :concat
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%1
+set IGNITE_LIBS=%IGNITE_LIBS%;%1
 goto :eof

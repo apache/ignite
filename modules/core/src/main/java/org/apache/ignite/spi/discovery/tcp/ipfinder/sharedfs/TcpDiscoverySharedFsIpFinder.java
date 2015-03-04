@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.net.*;
@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.*;
 public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Default path for discovering of local nodes (testing only). Note that this path is relative to
-     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
      * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
@@ -65,7 +65,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     public static final String DELIM = "#";
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** File-system path. */
@@ -161,7 +161,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
             try {
                 U.await(initLatch);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 

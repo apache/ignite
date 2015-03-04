@@ -1,5 +1,5 @@
 This folder is created for test GridTaskUriDeploymentDeadlockSelfTest. It contains helloworld.gar and helloworld1.gar
-which are the same and were copied from GridGain GAR example.
+which are the same and were copied from Apache Ignite GAR example.
 
 We put two files here to have a collision and make deployment SPI to unregister class loaders.
 

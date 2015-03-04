@@ -29,7 +29,7 @@ import org.apache.ignite.*;
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
- *   therefore if you injected a grid instance via {@link org.apache.ignite.resources.IgniteInstanceResource}
+ *   therefore if you injected a ignite instance via {@link org.apache.ignite.resources.IgniteInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
@@ -42,7 +42,7 @@ import org.apache.ignite.*;
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
- *   if you injected a grid instance via  {@link org.apache.ignite.resources.IgniteInstanceResource} annotation,
+ *   if you injected a ignite instance via  {@link org.apache.ignite.resources.IgniteInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
@@ -52,26 +52,21 @@ import org.apache.ignite.*;
  * </ul>
  * <h1 class="header">Resource Injection</h1>
  * Lifecycle beans can be injected using IoC (dependency injection) with
- * grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
  * <h1 class="header">Usage</h1>
- * If you need to tie your application logic into GridGain lifecycle,
+ * If you need to tie your application logic into Ignition lifecycle,
  * you can configure lifecycle beans via standard grid configuration, add your
- * application library dependencies into {@code GRIDGAIN_HOME/libs} folder, and
- * simply start {@code GRIDGAIN_HOME/ggstart.{sh|bat}} scripts.
+ * application library dependencies into {@code IGNITE_HOME/libs} folder, and
+ * simply start {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
  * <p>
  * <h1 class="header">Configuration</h1>
  * Grid lifecycle beans can be configured programmatically as follows:
@@ -89,7 +84,7 @@ import org.apache.ignite.*;
  * </pre>
  * or from Spring XML configuration file as follows:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;
  *       &lt;list&gt;
@@ -106,7 +101,7 @@ public interface LifecycleBean {
      * This method is called when lifecycle event occurs.
      *
      * @param evt Lifecycle event.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException;
+    public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException;
 }

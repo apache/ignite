@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  *
  */
-public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         getSpi().setListener(null);

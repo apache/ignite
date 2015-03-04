@@ -1,23 +1,25 @@
 #!/bin/bash
-#  Licensed to the Apache Software Foundation (ASF) under one or more
-#  contributor license agreements.  See the NOTICE file distributed with
-#  this work for additional information regarding copyright ownership.
-#  The ASF licenses this file to You under the Apache License, Version 2.0
-#  (the "License"); you may not use this file except in compliance with
-#  the License.  You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 ####################################################################
-#            GridGain Hadoop service start/stop script.
+#            Ignite Hadoop service start/stop script.
 # Supposed to be called from unix `init.d` script. Environment must
-# be set via the call of /etc/default/{hadoop,gridgain-hadoop}
+# be set via the call of /etc/default/{hadoop,ignite-hadoop}
 ####################################################################
 
 # Stop script on error.
@@ -30,7 +32,7 @@ set -e
 SERVICE=$2
 
 # Name of PID file.
-PIDFILE=${GRIDGAIN_PID_DIR}/${SERVICE}.pid
+PIDFILE=${IGNITE_PID_DIR}/${SERVICE}.pid
 
 case "$1" in
     start)
@@ -41,12 +43,12 @@ case "$1" in
         DEFAULT_CONFIG="default-config.xml"
 
         # Is needed for setenv
-        SCRIPTS_HOME=${GRIDGAIN_HOME}/bin
+        SCRIPTS_HOME=${IGNITE_HOME}/bin
 
-        # Load GridGain functions.
+        # Load Ignite functions.
         source "${SCRIPTS_HOME}/include/functions.sh"
 
-        # Configure GridGain environment.
+        # Configure Ignite environment.
         source "${SCRIPTS_HOME}/include/setenv.sh"
 
         # Set default JVM options if they was not passed.
@@ -56,17 +58,17 @@ case "$1" in
         fi
 
         # Resolve config directory.
-        GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${GRIDGAIN_HOME}/config"}
+        IGNITE_CONF_DIR=${IGNITE_CONF_DIR-"${IGNITE_HOME}/config"}
 
         # Resolve full config path.
-        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$GRIDGAIN_CONF_DIR/$DEFAULT_CONFIG"
+        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$IGNITE_CONF_DIR/$DEFAULT_CONFIG"
 
         # Discover path to Java executable and check it's version.
         checkJava
 
         # And run.
-        $JAVA $JVM_OPTS -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-        -DGRIDGAIN_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
+        $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+        -DIGNITE_PROG_NAME="$0" -cp "$IGNITE_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
 
         # Write process id.
         echo $! >$PIDFILE

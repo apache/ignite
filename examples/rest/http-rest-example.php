@@ -19,10 +19,10 @@
  */
 
 /**
- * To execute this script simply start up an instance of GridGain with cache enabled.
+ * To execute this script simply start up an instance of Ignite with cache enabled.
  * You can use any cache configuration from examples/config folder as follows:
  * ----
- * ${GRIDGAIN_HOME}/bin/ggstart.sh examples/config/example-cache.xml
+ * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
  * ----
  *
  * Make sure you have correctly specified $CACHE_NAME script global variable
@@ -39,7 +39,7 @@ if (!function_exists('curl_init'))
 if (!function_exists('json_decode'))
     die('JSON not supported. (introduced in PHP 5.2.0)');
 
-$URL = 'http://localhost:8080/gridgain?';
+$URL = 'http://localhost:8080/ignite?';
 
 // Cache name to use.
 // Null or empty string for default cache.
@@ -95,9 +95,9 @@ function execute($query, $post) {
     curl_close($request);
 
     if (!$response)
-        die('Nothing was returned. Do you have a connection to GridGain Jetty server?');
+        die('Nothing was returned. Do you have a connection to Ignite Jetty server?');
 
-    echo "Response received from GridGain: $response\n\n";
+    echo "Response received from Ignite: $response\n\n";
 
     // JSON decoder.
     $result = json_decode($response, true);

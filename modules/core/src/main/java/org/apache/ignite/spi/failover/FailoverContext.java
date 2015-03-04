@@ -49,7 +49,7 @@ public interface FailoverContext {
      *
      * @param top Topology to pick balanced node from.
      * @return The next balanced node.
-     * @throws IgniteCheckedException If anything failed.
+     * @throws IgniteException If anything failed.
      */
-    public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteCheckedException;
+    public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteException;
 }

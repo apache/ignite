@@ -18,21 +18,20 @@
 package org.apache.ignite.streamer.index;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Tests for Streamer window index.
@@ -94,7 +93,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             fail("Exception should have been thrown.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -262,7 +261,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                     try {
                         win.enqueue(evt);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         if (e.getMessage().contains("Index unique key violation"))
                             nIdxErrors.incrementAndGet();
                         else
@@ -297,7 +296,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         win.start();
 
-        IgniteFuture<Long> pollFut = null;
+        IgniteInternalFuture<Long> pollFut = null;
 
         if (pollEvicted) {
             // These threads poll evicted events from the window if it doesn't break
@@ -320,7 +319,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                                 U.sleep(50);
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }
@@ -332,7 +331,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // if it is still present in the window. In the tested index events are
             // sorted by value and the value is a number of repeated events, so, this
             // should be invariant.
-            IgniteFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
+            IgniteInternalFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     final String evt = Thread.currentThread().getName();
                     int cntr = 1;
@@ -359,7 +358,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             }, threadCnt / 2, "test-multi");
 
             // This thread generates a set of single non-repeating events from 0 to iters.
-            IgniteFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
+            IgniteInternalFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++)
                         win.enqueue(String.valueOf(i));
@@ -533,7 +532,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
                 fail("Exception should have been thrown.");
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -676,9 +675,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt)
-            throws IgniteCheckedException {
-            throw new IgniteCheckedException("Unique key violation: " + evt);
+        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt) {
+            throw new IgniteException("Unique key violation: " + evt);
         }
 
         /** {@inheritDoc} */

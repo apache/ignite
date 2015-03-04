@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     POM file.
@@ -116,7 +116,7 @@
                                       todir="${basedir}/target/classes/lib"/>
 
                                 <taskdef name="gar"
-                                    classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"/>
+                                    classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
 
                                 <gar destfile="${basedir}/deploy/uri.gar"
                                      basedir="${basedir}/target/classes"/>

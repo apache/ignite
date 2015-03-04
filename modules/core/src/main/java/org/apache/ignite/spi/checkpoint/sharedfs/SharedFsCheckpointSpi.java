@@ -18,13 +18,12 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -77,10 +76,10 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="checkpointSpi"&gt;
- *         &lt;bean class="org.gridgain.grid.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpi"&gt;
+ *         &lt;bean class="org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpi"&gt;
  *             &lt;!-- Change to shared directory path in your environment. --&gt;
  *             &lt;property name="directoryPaths"&gt;
  *                 &lt;list&gt;
@@ -104,8 +103,8 @@ import java.util.*;
 public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi,
     SharedFsCheckpointSpiMBean {
     /**
-     * Default checkpoint directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
-     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
+     * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
@@ -119,12 +118,12 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     private static final int CODES_LEN = CODES.length();
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
-    /** Grid marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** List of checkpoint directories where all files are stored. */
     private Queue<String> dirPaths = new LinkedList<>();
@@ -169,12 +168,12 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
     /**
      * Sets path to a shared directory where checkpoints will be stored. The
-     * path can either be absolute or relative to {@code GRIDGAIN_HOME} system
+     * path can either be absolute or relative to {@code IGNITE_HOME} system
      * or environment variable.
      * <p>
      * If not provided, default value is {@link #DFLT_DIR_PATH}.
      *
-     * @param dirPaths Absolute or GridGain installation home folder relative path where checkpoints
+     * @param dirPaths Absolute or Ignite installation home folder relative path where checkpoints
      * will be stored.
      */
     @IgniteSpiConfiguration(optional = true)
@@ -292,6 +291,8 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (folder != null) {
             Map<File, SharedFsTimeData> files = new HashMap<>();
 
+            Marshaller marsh = ignite.configuration().getMarshaller();
+
             // Track expiration for only those files that are made by this node
             // to avoid file access conflicts.
             for (File file : getFiles()) {
@@ -363,7 +364,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         if (file.exists())
             try {
-                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
+                SharedFsCheckpointData data = SharedFsUtils.read(file, ignite.configuration().getMarshaller(), log);
 
                 return data != null ?
                     data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -411,7 +412,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
             try {
                 SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
-                    marsh, log);
+                    ignite.configuration().getMarshaller(), log);
             }
             catch (IOException e) {
                 // Select next shared directory if exists, otherwise throw exception

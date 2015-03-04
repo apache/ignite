@@ -18,12 +18,12 @@
 package org.apache.ignite.spi.swapspace.noop;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -35,12 +35,12 @@ import java.util.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
-        U.warn(log, "Swap space is disabled. To enable use GridFileSwapSpaceSpi.");
+        U.warn(log, "Swap space is disabled. To enable use FileSwapSpaceSpi.");
     }
 
     /** {@inheritDoc} */
@@ -60,6 +60,11 @@ public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
 
     /** {@inheritDoc} */
     @Override public long count(@Nullable String space) throws IgniteSpiException {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException {
         return 0;
     }
 

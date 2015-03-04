@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * This exception is thrown when user's code throws undeclared runtime exception. By user core it is
+ * This exception is thrown when user's code throws undeclared runtime exception. By user code it is
  * assumed the code in grid task, grid job or SPI. In most cases it should be an indication of unrecoverable
  * error condition such as assertion, {@link NullPointerException}, {@link OutOfMemoryError}, etc.
  */
-public class ComputeUserUndeclaredException extends IgniteCheckedException {
+public class ComputeUserUndeclaredException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

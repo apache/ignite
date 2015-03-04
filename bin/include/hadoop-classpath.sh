@@ -1,18 +1,20 @@
 #!/bin/bash
-#  Licensed to the Apache Software Foundation (ASF) under one or more
-#  contributor license agreements.  See the NOTICE file distributed with
-#  this work for additional information regarding copyright ownership.
-#  The ASF licenses this file to You under the Apache License, Version 2.0
-#  (the "License"); you may not use this file except in compliance with
-#  the License.  You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 ####################################################################
 #                 Hadoop class path resolver.
@@ -48,7 +50,7 @@ HADOOP_MAPRED_HOME=${HADOOP_MAPRED_HOME-"${HADOOP_PREFIX}/share/hadoop/mapreduce
 #
 
 # Add all Hadoop libs.
-GRIDGAIN_HADOOP_CLASSPATH="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*"
+IGNITE_HADOOP_CLASSPATH="${HADOOP_COMMON_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*${SEP}${HADOOP_MAPRED_HOME}/lib/*"
 
 # Skip globbing pattern if it cannot be resolved.
 shopt -s nullglob
@@ -59,5 +61,5 @@ for file in ${HADOOP_HDFS_HOME}/hadoop-hdfs-* \
             ${HADOOP_COMMON_HOME}/hadoop-{common,auth}-* \
             ${HADOOP_COMMON_HOME}/lib/hadoop-auth-* \
             ${HADOOP_MAPRED_HOME}/hadoop-mapreduce-client-{common,core}-*; do
-    [[ "$file" != *-tests.jar ]] && GRIDGAIN_HADOOP_CLASSPATH=${GRIDGAIN_HADOOP_CLASSPATH}${SEP}${file}
+    [[ "$file" != *-tests.jar ]] && IGNITE_HADOOP_CLASSPATH=${IGNITE_HADOOP_CLASSPATH}${SEP}${file}
 done

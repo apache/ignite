@@ -18,9 +18,9 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -73,9 +73,9 @@ abstract class StreamerBoundedSizeWindowAdapter<E, T> extends StreamerWindowAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (maxSize < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumSize cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (maximumSize cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maxSize=" + maxSize +
                 ", unique=" + unique + ']');

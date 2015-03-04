@@ -18,7 +18,8 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.util.concurrent.atomic.*;
 
 /**
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class IgniteSpiThread extends Thread {
     /** Default thread's group. */
-    public static final ThreadGroup DFLT_GRP = new ThreadGroup("gridgain-spi");
+    public static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite-spi");
 
     /** Number of all system threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();

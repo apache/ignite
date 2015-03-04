@@ -18,24 +18,23 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
+ * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
  * often started and stopped by grid loaders. Grid loaders can be found in
- * {@link org.gridgain.grid.startup} package, for example:
+ * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@gglink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.IgniteServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -50,13 +49,13 @@ import java.util.*;
  *
  * cfg.setDeploymentSpi(deploySpi);
  *
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
  * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a grid name:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
  *     &lt;property name="gridName" value="grid"/&gt;
  *     &lt;property name="userAttributes"&gt;
@@ -69,39 +68,33 @@ import java.util.*;
  * </pre>
  * A grid instance with Spring configuration above can be started as following. Note that
  * you do not need to pass path to Spring XML file if you are using
- * {@code GRIDGAIN_HOME/config/default-config.xml}. Also note, that the path can be
- * absolute or relative to GRIDGAIN_HOME.
+ * {@code IGNITE_HOME/config/default-config.xml}. Also note, that the path can be
+ * absolute or relative to IGNITE_HOME.
  * <pre name="code" class="java">
  * ...
- * GridGain.start("/path/to/spring/xml/file.xml");
+ * Ignition.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@gglink org.gridgain.grid.GridSpringBean} documentation.
+ * You can also instantiate grid directly from Spring without using {@code Ignition}.
+ * For more information refer to {@ignitelink org.apache.ignite.IgniteSpringBean} documentation.
  */
 public class Ignition {
     /**
      * This is restart code that can be used by external tools, like Shell scripts,
-     * to auto-restart the GridGain JVM process. Note that there is no standard way
+     * to auto-restart the Ignite JVM process. Note that there is no standard way
      * for a JVM to restart itself from Java application and therefore we rely on
      * external tools to provide that capability.
      * <p>
-     * Note that standard <tt>ggstart.{sh|bat}</tt> scripts support restarting when
+     * Note that standard <tt>ignite.{sh|bat}</tt> scripts support restarting when
      * JVM process exits with this code.
      */
     public static final int RESTART_EXIT_CODE = 250;
 
     /**
      * This is kill code that can be used by external tools, like Shell scripts,
-     * to auto-stop the GridGain JVM process without restarting.
+     * to auto-stop the Ignite JVM process without restarting.
      */
     public static final int KILL_EXIT_CODE = 130;
-
-    /**
-     * Default License file name. This file will be tried if no
-     * license provided in configuration.
-     */
-    public static final String DFLT_LIC_FILE_NAME = "gridgain-license.xml";
 
     /**
      * Enforces singleton.
@@ -121,7 +114,7 @@ public class Ignition {
      * @param daemon Daemon flag to set.
      */
     public static void setDaemon(boolean daemon) {
-        GridGainEx.setDaemon(daemon);
+        IgnitionEx.setDaemon(daemon);
     }
 
     /**
@@ -135,7 +128,7 @@ public class Ignition {
      * @return Daemon flag.
      */
     public static boolean isDaemon() {
-        return GridGainEx.isDaemon();
+        return IgnitionEx.isDaemon();
     }
 
     /**
@@ -144,7 +137,7 @@ public class Ignition {
      * @return Default grid state.
      */
     public static IgniteState state() {
-        return GridGainEx.state();
+        return IgnitionEx.state();
     }
 
     /**
@@ -156,7 +149,7 @@ public class Ignition {
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
-        return GridGainEx.state(name);
+        return IgnitionEx.state(name);
     }
 
     /**
@@ -171,7 +164,7 @@ public class Ignition {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return GridGainEx.stop(cancel);
+        return IgnitionEx.stop(cancel);
     }
 
     /**
@@ -194,7 +187,7 @@ public class Ignition {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        return GridGainEx.stop(name, cancel);
+        return IgnitionEx.stop(name, cancel);
     }
 
     /**
@@ -213,7 +206,7 @@ public class Ignition {
      *      up to the actual job to exit from execution
      */
     public static void stopAll(boolean cancel) {
-        GridGainEx.stopAll(cancel);
+        IgnitionEx.stopAll(cancel);
     }
 
     /**
@@ -227,8 +220,8 @@ public class Ignition {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
-     * scripts support restarting of JVM GridGain's process.
+     * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
+     * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
@@ -237,7 +230,7 @@ public class Ignition {
      * @see #RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        GridGainEx.restart(cancel);
+        IgnitionEx.restart(cancel);
     }
 
     /**
@@ -260,20 +253,25 @@ public class Ignition {
      * @see #KILL_EXIT_CODE
      */
     public static void kill(boolean cancel) {
-        GridGainEx.kill(cancel);
+        IgnitionEx.kill(cancel);
     }
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
-     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
+     * @throws IgniteException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Ignite start() throws IgniteCheckedException {
-        return GridGainEx.start();
+    public static Ignite start() throws IgniteException {
+        try {
+            return IgnitionEx.start();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -282,11 +280,16 @@ public class Ignition {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * @return Started grid.
-     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
+     * @throws IgniteException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return GridGainEx.start(cfg);
+    public static Ignite start(IgniteConfiguration cfg) throws IgniteException {
+        try {
+            return IgnitionEx.start(cfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -301,12 +304,17 @@ public class Ignition {
      * @param springCfgPath Spring XML configuration file path or URL.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
+     * @throws IgniteException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgPath);
+    public static Ignite start(@Nullable String springCfgPath) throws IgniteException {
+        try {
+            return IgnitionEx.start(springCfgPath);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -321,12 +329,17 @@ public class Ignition {
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws IgniteCheckedException If grid could not be started or configuration
+     * @throws IgniteException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(URL springCfgUrl) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgUrl);
+    public static Ignite start(URL springCfgUrl) throws IgniteException {
+        try {
+            return IgnitionEx.start(springCfgUrl);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -338,11 +351,11 @@ public class Ignition {
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite() throws GridIllegalStateException {
-        return GridGainEx.grid();
+    public static Ignite ignite() throws IgniteIllegalStateException {
+        return IgnitionEx.grid();
     }
 
     /**
@@ -351,7 +364,7 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return GridGainEx.allGrids();
+        return IgnitionEx.allGrids();
     }
 
     /**
@@ -363,11 +376,11 @@ public class Ignition {
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if grid was not properly
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(UUID locNodeId) throws GridIllegalStateException {
-        return GridGainEx.grid(locNodeId);
+    public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
+        return IgnitionEx.grid(locNodeId);
     }
 
     /**
@@ -383,17 +396,17 @@ public class Ignition {
      *      then grid instance belonging to a default no-name grid will be returned.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(@Nullable String name) throws GridIllegalStateException {
-        return GridGainEx.grid(name);
+    public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
+        return IgnitionEx.grid(name);
     }
 
     /**
      * Adds a lsnr for grid life cycle events.
      * <p>
-     * Note that unlike other listeners in GridGain this listener will be
+     * Note that unlike other listeners in Ignite this listener will be
      * notified from the same thread that triggers the state change. Because of
      * that it is the responsibility of the user to make sure that listener logic
      * is light-weight and properly handles (catches) any runtime exceptions, if any
@@ -402,17 +415,17 @@ public class Ignition {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(IgniteListener lsnr) {
-        GridGainEx.addListener(lsnr);
+    public static void addListener(IgnitionListener lsnr) {
+        IgnitionEx.addListener(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.apache.ignite.lifecycle.IgniteListener)} method.
+     * Removes lsnr added by {@link #addListener(IgnitionListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(IgniteListener lsnr) {
-        return GridGainEx.removeListener(lsnr);
+    public static boolean removeListener(IgnitionListener lsnr) {
+        return IgnitionEx.removeListener(lsnr);
     }
 }

@@ -34,7 +34,7 @@ public interface ComputeJobMasterLeaveAware {
      * A method which is executed in case master node has left topology during job execution.
      *
      * @param ses Task session, can be used for checkpoint saving.
-     * @throws IgniteCheckedException In case of any exception.
+     * @throws IgniteException In case of any exception.
      */
-    public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException;
+    public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteException;
 }

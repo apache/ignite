@@ -17,7 +17,7 @@
 
 package org.apache.ignite.streamer.index;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -29,7 +29,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index name.
      */
-    @IgniteMBeanDescription("Index name.")
+    @MXBeanDescription("Index name.")
     @Nullable public String name();
 
     /**
@@ -37,7 +37,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index updater class.
      */
-    @IgniteMBeanDescription("Index updater class name.")
+    @MXBeanDescription("Index updater class name.")
     public String updaterClass();
 
     /**
@@ -45,7 +45,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index unique flag.
      */
-    @IgniteMBeanDescription("Index unique flag.")
+    @MXBeanDescription("Index unique flag.")
     public boolean unique();
 
     /**
@@ -53,7 +53,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index sorted flag.
      */
-    @IgniteMBeanDescription("Index sorted flag.")
+    @MXBeanDescription("Index sorted flag.")
     public boolean sorted();
 
     /**
@@ -61,7 +61,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index policy.
      */
-    @IgniteMBeanDescription("Index policy.")
+    @MXBeanDescription("Index policy.")
     public StreamerIndexPolicy policy();
 
     /**
@@ -69,6 +69,6 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Current index size.
      */
-    @IgniteMBeanDescription("Current index size.")
+    @MXBeanDescription("Current index size.")
     public int size();
 }

@@ -21,19 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This SPI iterates through nodes in round-robin fashion and pick the next
@@ -80,10 +79,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
- *    &#64;GridLoadBalancerResource
- *    GridComputeLoadBalancer balancer;
+ *    &#64;LoadBalancerResource
+ *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
  *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
@@ -100,13 +99,13 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *    public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result
  *        StringBuilder buf = new StringBuilder();
  *
- *        for (GridComputeJobResult res : results) {
+ *        for (ComputeJobResult res : results) {
  *            // Append string representation of result
  *            // returned by every job.
  *            buf.append(res.getData().string());
@@ -149,7 +148,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.roundrobin.GridRoundRobinLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.roundrobin.GridRoundRobinLoadBalancingSpi"&gt;
  *         &lt;!-- Set to global round-robin mode. --&gt;
  *         &lt;property name="perTask" value="false"/&gt;
  *     &lt;/bean&gt;
@@ -164,7 +163,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
     RoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -179,13 +178,13 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
 
     /** Event listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (evt.type() == EVT_TASK_FAILED ||
                 evt.type() == EVT_TASK_FINISHED)
-                perTaskBalancers.remove(((IgniteTaskEvent)evt).taskSessionId());
+                perTaskBalancers.remove(((TaskEvent)evt).taskSessionId());
             else if (evt.type() == EVT_JOB_MAPPED) {
                 RoundRobinPerTaskLoadBalancer balancer =
-                    perTaskBalancers.get(((IgniteJobEvent)evt).taskSessionId());
+                    perTaskBalancers.get(((JobEvent)evt).taskSessionId());
 
                 if (balancer != null)
                     balancer.onMapped();
@@ -277,8 +276,7 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
-        throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
         A.notNull(ses, "ses", top, "top");
 
         if (isPerTask) {

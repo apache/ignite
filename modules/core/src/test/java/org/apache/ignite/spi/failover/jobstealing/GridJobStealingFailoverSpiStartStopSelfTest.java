@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**
@@ -49,6 +50,6 @@ public class GridJobStealingFailoverSpiStartStopSelfTest extends GridSpiStartSto
      * @param node Node to add attribute to.
      */
     private void addSpiDependency(GridTestNode node) {
-        node.addAttribute(GridNodeAttributes.ATTR_SPI_CLASS, JobStealingCollisionSpi.class.getName());
+        node.addAttribute(IgniteNodeAttributes.ATTR_SPI_CLASS, JobStealingCollisionSpi.class.getName());
     }
 }

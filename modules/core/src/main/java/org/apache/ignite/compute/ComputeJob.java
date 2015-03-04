@@ -53,7 +53,7 @@ import java.util.*;
  *          Job will be rejected. In this case the {@link ComputeJobResult} passed into
  *          {@link ComputeTask#result(ComputeJobResult, List)} method will contain
  *          {@link ComputeExecutionRejectedException} exception. If you are using any
- *          of the task adapters shipped with GridGain, then job will be failed
+ *          of the task adapters shipped with Ignite, then job will be failed
  *          over automatically for execution on another node.
  *      </li>
  *      </ul>
@@ -91,25 +91,20 @@ import java.util.*;
  * <p>
  * <h1 class="header">Resource Injection</h1>
  * Grid job implementation can be injected using IoC (dependency injection) with
- * grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteJobContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.JobContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
  * <h1 class="header">GridComputeJobAdapter</h1>
- * GridGain comes with convenience {@link ComputeJobAdapter} adapter that provides
+ * Ignite comes with convenience {@link ComputeJobAdapter} adapter that provides
  * default empty implementation for {@link ComputeJob#cancel()} method and also
  * allows user to set and get job argument, if there is one.
  * <p>
@@ -122,7 +117,7 @@ import java.util.*;
  * of certain event or state change that occurred during job execution.
  * <p>
  * Distributed task session can be injected into {@link ComputeJob} implementation
- * using {@link org.apache.ignite.resources.IgniteTaskSessionResource @GridTaskSessionResource} annotation.
+ * using {@link org.apache.ignite.resources.TaskSessionResource @TaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>
@@ -159,11 +154,11 @@ public interface ComputeJob extends Serializable {
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link ComputeJobResult#getData()} method passed into
      *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
-     * @throws IgniteCheckedException If job execution caused an exception. This exception will be
+     * @throws IgniteException If job execution caused an exception. This exception will be
      *      returned in {@link ComputeJobResult#getException()} method passed into
      *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link IgniteCheckedException}.
      */
-    @Nullable public Object execute() throws IgniteCheckedException;
+    @Nullable public Object execute() throws IgniteException;
 }

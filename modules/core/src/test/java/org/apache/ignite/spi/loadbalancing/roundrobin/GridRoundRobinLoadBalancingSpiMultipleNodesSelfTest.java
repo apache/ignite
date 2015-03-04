@@ -17,17 +17,17 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests round robin load balancing SPI.
@@ -126,9 +126,9 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
             assert orderedNodes1.get(i) == orderedNodes2.get(i);
         }
 
-        getSpiContext().triggerEvent(new IgniteTaskEvent(
+        getSpiContext().triggerEvent(new TaskEvent(
             null, null, EVT_TASK_FINISHED, ses1.getId(), null, null, false, null));
-        getSpiContext().triggerEvent(new IgniteTaskEvent(
+        getSpiContext().triggerEvent(new TaskEvent(
             null, null, EVT_TASK_FAILED, ses2.getId(), null, null, false, null));
     }
 }

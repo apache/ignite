@@ -10,7 +10,6 @@ xcuserdata/
 /bamboo/junit*.properties
 *.suo
 *.csproj.user
-gridgain*.jar
 *.o
 *.lo
 *.obj
@@ -20,3 +19,4 @@ atlassian-ide-plugin.xml
 target
 target/*
 /libs/
+pom-installed.xml

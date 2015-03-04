@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.deployment;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Simple adapter for {@link DeploymentResource} interface.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.thread;
 
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 
 import java.util.concurrent.atomic.*;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteThread extends Thread {
     /** Default thread's group. */
-    private static final ThreadGroup DFLT_GRP = new ThreadGroup("gridgain");
+    private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
     /** Number of all grid threads in the system. */
     private static final AtomicLong threadCntr = new AtomicLong(0);

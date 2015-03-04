@@ -17,10 +17,8 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -42,7 +40,7 @@ import java.util.*;
  * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration">
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
  *     ...
  *     &lt;property name="userAttributes">
  *         &lt;map>
@@ -57,17 +55,17 @@ import java.util.*;
  * <ul>
  * <li>{@code {@link System#getProperties()}} - All system properties.</li>
  * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
- * <li>{@code org.gridgain.build.ver} - GridGain build version.</li>
- * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
- * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
- * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
- * <li>{@code org.gridgain.grid.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
+ * <li>{@code org.ignite.build.ver} - Ignite build version.</li>
+ * <li>{@code org.apache.ignite.jit.name} - Name of JIT compiler used.</li>
+ * <li>{@code org.apache.ignite.net.itf.name} - Name of network interface.</li>
+ * <li>{@code org.apache.ignite.user.name} - Operating system user name.</li>
+ * <li>{@code org.apache.ignite.ignite.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
  * <li>
- *      {@code spiName.org.gridgain.spi.class} - SPI implementation class for every SPI,
+ *      {@code spiName.org.apache.ignite.spi.class} - SPI implementation class for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * <li>
- *      {@code spiName.org.gridgain.spi.ver} - SPI version for every SPI,
+ *      {@code spiName.org.apache.ignite.spi.ver} - SPI version for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * </ul>
@@ -107,7 +105,7 @@ import java.util.*;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode extends GridMetadataAware {
+public interface ClusterNode {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *
@@ -131,14 +129,14 @@ public interface ClusterNode extends GridMetadataAware {
      * <ul>
      * <li>{@code {@link System#getProperties()}} - All system properties.</li>
      * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
-     * <li>All attributes defined in {@link GridNodeAttributes}</li>
+     * <li>All attributes defined in {@link org.apache.ignite.internal.IgniteNodeAttributes}</li>
      * </ul>
      * <p>
      * Note that attributes cannot be changed at runtime.
      *
      * @param <T> Attribute Type.
      * @param name Attribute name. <b>Note</b> that attribute names starting with
-     *      {@code org.gridgain} are reserved for internal use.
+     *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
     @Nullable public <T> T attribute(String name);
@@ -146,7 +144,7 @@ public interface ClusterNode extends GridMetadataAware {
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
-     * an idea about CPU load on remote node via {@link ClusterNodeMetrics#getCurrentCpuLoad()}
+     * an idea about CPU load on remote node via {@link ClusterMetrics#getCurrentCpuLoad()}
      * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
@@ -156,7 +154,7 @@ public interface ClusterNode extends GridMetadataAware {
      *
      * @return Runtime metrics snapshot for this node.
      */
-    public ClusterNodeMetrics metrics();
+    public ClusterMetrics metrics();
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup
@@ -166,7 +164,7 @@ public interface ClusterNode extends GridMetadataAware {
      * <ul>
      * <li>{@code {@link System#getProperties()}} - All system properties.</li>
      * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
-     * <li>All attributes defined in {@link GridNodeAttributes}</li>
+     * <li>All attributes defined in {@link org.apache.ignite.internal.IgniteNodeAttributes}</li>
      * </ul>
      * <p>
      * Note that attributes cannot be changed at runtime.
@@ -180,7 +178,7 @@ public interface ClusterNode extends GridMetadataAware {
      * <p>
      * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
      * address for all communications and returned collection will contain only that address.
-     * If it is {@code null} then local wildcard address will be used, and GridGain
+     * If it is {@code null} then local wildcard address will be used, and Ignite
      * will make the best effort to supply all addresses of that node in returned collection.
      *
      * @return Collection of addresses.
@@ -208,7 +206,7 @@ public interface ClusterNode extends GridMetadataAware {
      * for new nodes will come in proper order. All other SPIs not supporting ordering
      * may choose to return node startup time here.
      * <p>
-     * <b>NOTE</b>: in cases when discovery SPI doesn't support ordering GridGain cannot
+     * <b>NOTE</b>: in cases when discovery SPI doesn't support ordering Ignite cannot
      * guarantee that orders on all nodes will be unique or chronologically correct.
      * If such guarantee is required - make sure use discovery SPI that provides ordering.
      *
@@ -238,7 +236,7 @@ public interface ClusterNode extends GridMetadataAware {
      * way to see daemon nodes is to use {@link IgniteCluster#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but should be
+     * is build on Ignite and needs to participate in the topology but should be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory database.
      * <p>

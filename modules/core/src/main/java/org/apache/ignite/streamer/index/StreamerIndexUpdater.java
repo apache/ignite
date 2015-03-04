@@ -64,9 +64,9 @@ public interface StreamerIndexUpdater<E, K, V> {
      * @param evt New event.
      * @return New index value for given key, if {@code null}, then current
      *      index entry will be removed the index.
-     * @throws IgniteCheckedException If entry should not be added to index (e.g. if uniqueness is violated).
+     * @throws IgniteException If entry should not be added to index (e.g. if uniqueness is violated).
      */
-    @Nullable public V onAdded(StreamerIndexEntry<E, K, V> entry, E evt) throws IgniteCheckedException;
+    @Nullable public V onAdded(StreamerIndexEntry<E, K, V> entry, E evt) throws IgniteException;
 
     /**
      * Callback invoked whenever an event is being removed from the window and has

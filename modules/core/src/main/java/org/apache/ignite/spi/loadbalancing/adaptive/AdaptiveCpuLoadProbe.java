@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Implementation of node load probing based on CPU load.
@@ -41,13 +41,13 @@ import org.gridgain.grid.util.typedef.internal.*;
  * for that, you should set {@link #setProcessorCoefficient(double)} parameter to
  * {@code 0.75} .
  * <p>
- * Below is an example of how CPU load probe would be configured in GridGain
+ * Below is an example of how CPU load probe would be configured in Ignite
  * Spring configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveCpuLoadProbe"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveCpuLoadProbe"&gt;
  *                 &lt;property name="useAverage" value="true"/&gt;
  *                 &lt;property name="useProcessors" value="true"/&gt;
  *                 &lt;property name="processorCoefficient" value="0.9"/&gt;
@@ -214,7 +214,7 @@ public class AdaptiveCpuLoadProbe implements AdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
-        ClusterNodeMetrics metrics = node.metrics();
+        ClusterMetrics metrics = node.metrics();
 
         double k = 1.0d;
 

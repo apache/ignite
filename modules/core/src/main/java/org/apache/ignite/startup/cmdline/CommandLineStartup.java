@@ -18,11 +18,10 @@
 package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.swing.*;
@@ -38,16 +37,16 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
- * This class defines command-line GridGain startup. This startup can be used to start GridGain
+ * This class defines command-line Ignite startup. This startup can be used to start Ignite
  * outside of any hosting environment from command line. This startup is a Java application with
  * {@link #main(String[])} method that accepts command line arguments. It accepts just one
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${GRIDGAIN_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
@@ -62,7 +61,7 @@ public final class CommandLineStartup {
      * Static initializer.
      */
     static {
-        String quiteStr = System.getProperty(IgniteSystemProperties.GG_QUIET);
+        String quiteStr = System.getProperty(IgniteSystemProperties.IGNITE_QUIET);
 
         boolean quite = true;
 
@@ -73,7 +72,7 @@ public final class CommandLineStartup {
                 if ("false".equalsIgnoreCase(quiteStr))
                     quite = false;
                 else if (!"true".equalsIgnoreCase(quiteStr)) {
-                    System.err.println("Invalid value for '" + IgniteSystemProperties.GG_QUIET +
+                    System.err.println("Invalid value for '" + IgniteSystemProperties.IGNITE_QUIET +
                         "' VM parameter (must be {true|false}): " + quiteStr);
 
                     quite = false;
@@ -85,7 +84,7 @@ public final class CommandLineStartup {
 
         // Mac OS specific customizations: app icon and about dialog.
         try {
-            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE);
+            releaseDate = new SimpleDateFormat("ddMMyyyy", Locale.US).parse(RELEASE_DATE_STR);
 
             Class<?> appCls = Class.forName("com.apple.eawt.Application");
 
@@ -111,7 +110,7 @@ public final class CommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        AboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
+                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER_STR,
                             releaseDate, COPYRIGHT);
 
                         return null;
@@ -144,30 +143,30 @@ public final class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(GG_PROG_NAME, "ggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
         runner = runner.substring(0, space == -1 ? runner.length() : space);
 
         if (showUsage) {
-            boolean ggstart = runner.contains("ggstart.");
+            boolean ignite = runner.contains("ignite.");
 
             X.error(
                 "Usage:",
-                "    " + runner + (ggstart ? " [?]|[path {-v}]|[-i]" : " [?]|[-v]"),
+                "    " + runner + (ignite ? " [?]|[path {-v}]|[-i]" : " [?]|[-v]"),
                 "    Where:",
                 "    ?, /help, -help - show this message.",
                 "    -v              - verbose mode (quiet by default).");
 
-            if (ggstart) {
+            if (ignite) {
                 X.error(
                     "    -i              - interactive mode (choose configuration file from list).",
                     "    path            - path to Spring XML configuration file.",
-                    "                      Path can be absolute or relative to GRIDGAIN_HOME.",
+                    "                      Path can be absolute or relative to IGNITE_HOME.",
                     " ",
                     "Spring file should contain one bean definition of Java type",
-                    "'org.gridgain.grid.GridConfiguration'. Note that bean will be",
+                    "'org.apache.ignite.configuration.IgniteConfiguration'. Note that bean will be",
                     "fetched by the type and its ID is not used.");
             }
         }
@@ -248,7 +247,7 @@ public final class CommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + ACK_VER);
+            X.println("Ignite Command Line Startup, ver. " + ACK_VER_STR);
             X.println(COPYRIGHT);
             X.println();
         }
@@ -303,7 +302,7 @@ public final class CommandLineStartup {
         // Exit latch for the grid loaded from the command line.
         final CountDownLatch latch = new CountDownLatch(1);
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
                 if (!F.eq(gridName, name))
@@ -321,7 +320,7 @@ public final class CommandLineStartup {
             X.error("Start was interrupted (exiting): " + e.getMessage());
         }
 
-        String code = System.getProperty(GG_RESTART_CODE);
+        String code = System.getProperty(IGNITE_RESTART_CODE);
 
         if (code != null)
             try {

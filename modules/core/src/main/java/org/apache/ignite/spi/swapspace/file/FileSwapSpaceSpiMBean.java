@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi.swapspace.file;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link FileSwapSpaceSpi}.
  */
-@IgniteMBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
+@MXBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
 public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets base directory.
      *
      * @return Base directory.
      */
-    @IgniteMBeanDescription("Base directory.")
+    @MXBeanDescription("Base directory.")
     public String getBaseDirectory();
 
     /**
@@ -38,7 +38,7 @@ public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum sparsity.
      */
-    @IgniteMBeanDescription("Maximum sparsity.")
+    @MXBeanDescription("Maximum sparsity.")
     public float getMaximumSparsity();
 
     /**
@@ -46,7 +46,7 @@ public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Write buffer size in bytes.
      */
-    @IgniteMBeanDescription("Write buffer size in bytes.")
+    @MXBeanDescription("Write buffer size in bytes.")
     public int getWriteBufferSize();
 
     /**
@@ -54,7 +54,7 @@ public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Max write queue size in bytes.
      */
-    @IgniteMBeanDescription("Max write queue size in bytes.")
+    @MXBeanDescription("Max write queue size in bytes.")
     public int getMaxWriteQueueSize();
 
     /**
@@ -62,6 +62,6 @@ public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Read pool size.
      */
-    @IgniteMBeanDescription("Read pool size.")
+    @MXBeanDescription("Read pool size.")
     public int getReadStripesNumber();
 }
