@@ -1701,10 +1701,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Heap-based object.
      */
     @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
-        if (!offheapTiered() || !portableEnabled())
+        if (!offheapTiered())
             return (T)obj;
 
-        return (T)portable().unwrapTemporary(obj);
+        return (T)portable().unwrapTemporary(this, obj);
     }
 
     /**

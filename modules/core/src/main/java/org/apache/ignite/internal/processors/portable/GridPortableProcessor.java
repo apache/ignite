@@ -59,11 +59,12 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * Converts temporary offheap object to heap-based.
      *
+     * @param ctx Context.
      * @param obj Object.
      * @return Heap-based object.
      * @throws IgniteException In case of error.
      */
-    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws IgniteException;
+    @Nullable public Object unwrapTemporary(GridCacheContext ctx, @Nullable Object obj) throws IgniteException;
 
     /**
      * @param obj Object to marshal.
@@ -141,6 +142,7 @@ public interface GridPortableProcessor extends GridProcessor {
     public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException;
 
     /**
+     * @param ctx Context.
      * @param bytes Bytes.
      * @param clsLdr Class loader.
      * @return Unmarshalled object.
@@ -175,6 +177,7 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @param ctx Cache context.
      * @param obj Key value.
+     * @param bytes Optional key bytes.
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, byte[] bytes);

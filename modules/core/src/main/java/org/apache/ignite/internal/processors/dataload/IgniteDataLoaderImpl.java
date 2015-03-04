@@ -426,9 +426,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     public IgniteFuture<?> addDataInternal(Collection<? extends IgniteDataLoaderEntry> entries) {
         enterBusy();
 
-        try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+        GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
 
+        try {
             resFut.listenAsync(rmvActiveFut);
 
             activeFuts.add(resFut);
@@ -447,6 +447,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
+            resFut.onDone(e);
+
             return new IgniteFinishedFutureImpl<>(ctx, e);
         }
         finally {
