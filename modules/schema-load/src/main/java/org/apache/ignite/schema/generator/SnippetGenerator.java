@@ -113,7 +113,7 @@ public class SnippetGenerator {
 
             src.add("// Key fields for " + tbl + ".");
             src.add((first ? "Collection<CacheTypeFieldMetadata> " : "") + "keys = new ArrayList<>();");
-            addFields(src, "keys", pojo.valueFields(includeKeys));
+            addFields(src, "keys", pojo.keyFields());
             src.add("type.setKeyFields(keys);");
             src.add("");
 
