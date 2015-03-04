@@ -296,8 +296,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         hasPeekArr = new IgnitePredicate[]{F.cacheHasPeekValue()};
         trueArr = new IgnitePredicate[]{F.alwaysTrue()};
 
-        cacheObjCtx = new CacheObjectContext(ctx);
-
         // Create unsafe memory only if writing values
         unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
@@ -305,6 +303,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         gate = new GridCacheGateway<>(this);
 
         cacheName = cacheCfg.getName();
+
+        cacheObjCtx = ctx.portable().contextForCache(null, cacheName);
 
         if (cacheName != null) {
             int hash = cacheName.hashCode();

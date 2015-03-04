@@ -3399,20 +3399,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Collection<K> pKeys = null;
-
-        if (ctx.portableEnabled()) {
-            pKeys = new ArrayList<>(keys.size());
-
-            for (K key : keys)
-                pKeys.add((K)ctx.marshalToPortable(key));
-        }
-
-        final Collection<K> pKeys0 = pKeys;
-
         syncOp(new SyncInOp(keys.size() == 1) {
             @Override public void inOp(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                tx.removeAllAsync(ctx, pKeys0 != null ? pKeys0 : keys, null, false, filter).get();
+                tx.removeAllAsync(ctx, keys, null, false, filter).get();
             }
 
             @Override public String toString() {
@@ -4139,14 +4128,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         long topVer,
         boolean replicate,
         long ttl) {
-        if (p != null && !p.apply(key, val))
+        if (p != null && !p.apply(key.value(ctx, false), val))
             return;
-
-// TODO IGNITE-51.
-//        if (ctx.portableEnabled()) {
-//            key = (K)ctx.marshalToPortable(key);
-//            val = (V)ctx.marshalToPortable(val);
-//        }
 
         CacheObject cacheVal = ctx.toCacheObject(val);
 
