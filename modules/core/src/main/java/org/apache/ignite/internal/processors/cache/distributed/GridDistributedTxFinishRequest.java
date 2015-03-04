@@ -311,30 +311,36 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeBoolean("syncRollback", syncRollback))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeByte("sys", plc != null ? (byte)plc.ordinal() : -1))
+                if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 18:
+                if (!writer.writeLong("threadId", threadId))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -405,22 +411,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 reader.incrementState();
 
             case 14:
-                syncCommit = reader.readBoolean("syncCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                syncRollback = reader.readBoolean("syncRollback");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
                 byte plcOrd;
 
                 plcOrd = reader.readByte("plc");
@@ -432,8 +422,24 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 reader.incrementState();
 
+            case 15:
+                syncCommit = reader.readBoolean("syncCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
+                syncRollback = reader.readBoolean("syncRollback");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 17:
-                threadId = reader.readLong("threadId");
+                sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;
@@ -441,6 +447,14 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 reader.incrementState();
 
             case 18:
+                threadId = reader.readLong("threadId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -460,7 +474,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 20;
     }
 
     /** {@inheritDoc} */
