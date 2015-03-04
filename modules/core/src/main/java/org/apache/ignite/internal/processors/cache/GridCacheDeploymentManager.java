@@ -240,61 +240,16 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void onUndeploy0(final ClassLoader ldr, final GridCacheContext<K, V> cacheCtx) {
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
-        Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<Cache.Entry<K, V>>() {
-                @Override public boolean apply(Cache.Entry<K, V> e) {
-                    return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
-                        undeploy(e, cacheCtx.cache());
-                }
+        Collection<KeyCacheObject> keys = new ArrayList<>();
 
-                /**
-                 * @param e Entry.
-                 * @param cache Cache.
-                 * @return {@code True} if entry should be undeployed.
-                 */
-                private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
-                    // TODO IGNITE-51.
-                    K k = e.getKey();
+        for (GridCacheEntryEx e : cache.entries()) {
+            boolean undeploy = cacheCtx.isNear() ?
+                undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
+                undeploy(ldr, e, cacheCtx.cache());
 
-                    GridCacheEntryEx entry = cache.peekEx(cacheCtx.toCacheKeyObject(e.getKey()));
-
-                    if (entry == null)
-                        return false;
-
-                    CacheObject v;
-
-                    try {
-                        v = entry.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        return false;
-                    }
-                    catch (IgniteException ignore) {
-                        // Peek can throw runtime exception if unmarshalling failed.
-                        return true;
-                    }
-
-                    assert k != null : "Key cannot be null for cache entry: " + e;
-
-                    ClassLoader keyLdr = U.detectObjectClassLoader(k);
-                    ClassLoader valLdr = U.detectObjectClassLoader(v);
-
-                    boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Finished examining entry [entryCls=" + e.getClass() +
-                            ", key=" + k + ", keyCls=" + k.getClass() +
-                            ", valCls=" + (v != null ? v.getClass() : "null") +
-                            ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
-
-                    return res;
-                }
-            }));
-
-        Collection<K> keys = new ArrayList<>();
-
-        for (K k : keySet)
-            keys.add(k);
+            if (undeploy)
+                keys.add(e.key());
+        }
 
         if (log.isDebugEnabled())
             log.debug("Finished searching keys for undeploy [keysCnt=" + keys.size() + ']');
@@ -330,6 +285,52 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         // Avoid class caching issues inside classloader.
         globalLdr = new CacheClassLoader();
+    }
+
+    /**
+     * @param ldr Class loader.
+     * @param e Entry.
+     * @param cache Cache.
+     * @return {@code True} if need to undeploy.
+     */
+    private boolean undeploy(ClassLoader ldr, GridCacheEntryEx e, GridCacheAdapter cache) {
+        KeyCacheObject key = e.key();
+
+        GridCacheEntryEx entry = cache.peekEx(key);
+
+        if (entry == null)
+            return false;
+
+        CacheObject v;
+
+        try {
+            v = entry.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+        }
+        catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
+        catch (IgniteException ignore) {
+            // Peek can throw runtime exception if unmarshalling failed.
+            return true;
+        }
+
+        assert key != null : "Key cannot be null for cache entry: " + e;
+
+        Object key0 = key.value(cache.context(), false);
+        Object val0 = CU.value(v, cache.context(), false);
+
+        ClassLoader keyLdr = U.detectObjectClassLoader(key0);
+        ClassLoader valLdr = U.detectObjectClassLoader(val0);
+
+        boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
+
+        if (log.isDebugEnabled())
+            log.debug("Finished examining entry [entryCls=" + e.getClass() +
+                ", key=" + key0 + ", keyCls=" + key0.getClass() +
+                ", valCls=" + (val0 != null ? val0.getClass() : "null") +
+                ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
+
+        return res;
     }
 
     /**

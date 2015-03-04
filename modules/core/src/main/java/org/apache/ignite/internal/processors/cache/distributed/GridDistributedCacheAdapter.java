@@ -82,7 +82,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         TransactionIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         assert tx != null;
 
@@ -91,7 +91,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<Cache.Entry<K, V>>... filter) {
+        CacheEntryPredicate... filter) {
         IgniteTxLocalEx tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
@@ -126,7 +126,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         @Nullable TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param key Key to remove.

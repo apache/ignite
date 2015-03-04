@@ -96,7 +96,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean retval,
         @Nullable GridCacheEntryEx cached,
         long ttl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -122,7 +122,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx cached,
         boolean retval,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param cacheCtx Cache context.

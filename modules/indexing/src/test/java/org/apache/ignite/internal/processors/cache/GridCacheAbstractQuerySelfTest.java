@@ -470,11 +470,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         cache.putx(1, new ObjectValue("test", 1));
         cache.putx(2, new ObjectValue("test", 2));
 
-        P2<Integer, ObjectValue> p = new P2<Integer, ObjectValue>() {
-            @Override public boolean apply(Integer key, ObjectValue val) {
-                return val.intVal == 1;
+        CacheEntryPredicate p = new  CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                ObjectValue val = CU.value(e.rawGet(), e.context(), false);
+
+                return val != null && val.intVal == 1;
             }
-        };
+        });
 
         CacheProjection<Integer, ObjectValue> cachePrj = ((IgniteKernal)grid(0))
             .<Integer, ObjectValue>cache(null).projection(p);
@@ -858,11 +860,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assert c.putx("key5", 5);
 
         // Filter values less than 3.
-        P2<String, Integer> p = new P2<String, Integer>() {
-            @Override public boolean apply(String key, Integer val) {
-                return val > 3;
+        CacheEntryPredicate p = new  CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                Integer val = CU.value(e.rawGet(), e.context(), false);
+
+                return val != null && val > 3;
             }
-        };
+        });
 
         CacheProjection<String, Integer> cachePrj = ((IgniteKernal)ignite).<String, Integer>cache(null).projection(p);
 

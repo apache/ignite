@@ -553,7 +553,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         null,
                         cached,
                         null,
-                        CU.empty(),
+                        CU.empty0(),
                         false,
                         -1L,
                         -1L,
@@ -613,7 +613,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean read,
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
-        @Nullable final IgnitePredicate<Cache.Entry<Object, Object>>[] filter) {
+        @Nullable final CacheEntryPredicate[] filter) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
@@ -631,7 +631,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             /*retval*/false,
             isolation,
             accessTtl,
-            (IgnitePredicate[])CU.empty());
+            CU.empty0());
 
         return new GridEmbeddedFuture<>(
             fut,
@@ -648,7 +648,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         /*retval*/false,
                         /*read*/read,
                         accessTtl,
-                        filter == null ? CU.empty() : filter,
+                        filter == null ? CU.empty0() : filter,
                         /**computeInvoke*/false);
 
                     return ret;

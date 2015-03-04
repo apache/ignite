@@ -2814,7 +2814,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 lock1_2.unlock();
             }
 
-
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
@@ -2833,7 +2832,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             finally {
                 lock1_2.unlock();
             }
-
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
@@ -3439,9 +3437,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             info("Local keys (primary): " + locKeys);
 
-            locKeys.addAll(cache.keySet(new IgnitePredicate<Cache.Entry<String, Integer>>() {
-                @Override public boolean apply(Cache.Entry<String, Integer> e) {
-                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.getKey());
+            locKeys.addAll(cache.keySet(new CacheEntryPredicateAdapter() {
+                @Override public boolean apply(GridCacheEntryEx e) {
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.key().value(e.context(), false));
                 }
             }));
 
