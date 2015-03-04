@@ -36,7 +36,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
@@ -55,7 +54,6 @@ import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.reflect.ClassTag
 import scala.util.control.Breaks._
 
 /**
@@ -997,7 +995,7 @@ object visor extends VisorTag {
      * @param a Parameter.
      * @param dflt Value to return if `a` is `null`.
      */
-    def safe(@Nullable a: Any, dflt: Any = NA): String = {
+    def safe(@Nullable a: Any, dflt: Any = NA) = {
         assert(dflt != null)
 
         if (a != null) a.toString else dflt.toString
@@ -1010,9 +1008,8 @@ object visor extends VisorTag {
      * @param dflt Value to return if `arr` is `null` or empty.
      * @return String.
      */
-    def arr2Str[T: ClassTag](arr: Array[T], dflt: Any = NA): String = {
+    def arr2Str[T](arr: Array[T], dflt: Any = NA) =
         if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
-    }
 
     /**
      * Converts `Boolean` to 'on'/'off' string.
@@ -1020,9 +1017,7 @@ object visor extends VisorTag {
      * @param bool Boolean value.
      * @return String.
      */
-    def bool2Str(bool: Boolean): String = {
-        if (bool) "on" else "off"
-    }
+    def bool2Str(bool: Boolean) = if (bool) "on" else "off"
 
     /**
      * Reconstructs string presentation for given argument.
