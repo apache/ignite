@@ -166,7 +166,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
+            valBytes = ctx.kernalContext().portable().marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +174,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         if (val == null) {
             assert valBytes != null;
 
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+            val = ctx.kernalContext().portable().unmarshal(ctx.cacheObjectContext(), valBytes, ldr);
         }
     }
 

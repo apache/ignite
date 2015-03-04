@@ -159,7 +159,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         ttlAndExpireTimeExtras(ttl, CU.toExpireTime(ttl));
 
-        val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+        val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
         synchronized (this) {
             value(val);
@@ -469,7 +469,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (delta >= 0) {
                         CacheObject val = e.value();
 
-                        val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+                        val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                         // Set unswapped value.
                         update(val, e.expireTime(), e.ttl(), e.version());
@@ -816,7 +816,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             if (startVer.equals(ver)) {
                 if (ret != null) {
                     // Detach value before index update.
-                    ret = (CacheObject)cctx.kernalContext().portable().prepareForCache(ret, cctx);
+                    ret = cctx.kernalContext().portable().prepareForCache(ret, cctx);
 
                     GridCacheVersion nextVer = nextVersion();
 
@@ -899,7 +899,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     long expTime = CU.toExpireTime(ttl);
 
                     // Detach value before index update.
-                    ret = (CacheObject)cctx.kernalContext().portable().prepareForCache(ret, cctx);
+                    ret = cctx.kernalContext().portable().prepareForCache(ret, cctx);
 
                     // Update indexes.
                     if (ret != null) {
@@ -1036,7 +1036,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             assert expireTime >= 0 : expireTime;
 
             // Detach value before index update.
-            val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+            val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             // Update index inside synchronization since it can be updated
             // in load methods without actually holding entry lock.
@@ -1348,7 +1348,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 // Detach value before index update.
-                old = (CacheObject)cctx.kernalContext().portable().prepareForCache(old, cctx);
+                old = cctx.kernalContext().portable().prepareForCache(old, cctx);
 
                 if (old != null)
                     updateIndex(old, expireTime, ver, null);
@@ -1484,7 +1484,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
                 // Detach value before index update.
-                updated = (CacheObject)cctx.kernalContext().portable().prepareForCache(updated, cctx);
+                updated = cctx.kernalContext().portable().prepareForCache(updated, cctx);
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
@@ -1524,11 +1524,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().removeFromStore(null, key);
 
+                boolean hasValPtr = valPtr != 0;
+
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
                 clearIndex(old);
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver);
+
+                if (cctx.offheapTiered() && hasValPtr) {
+                    boolean rmv = cctx.swap().removeOffheap(key);
+
+                    assert rmv;
+                }
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -1773,7 +1781,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 readThrough = true;
 
                 // Detach value before index update.
-                oldVal = (CacheObject)cctx.kernalContext().portable().prepareForCache(oldVal, cctx);
+                oldVal = cctx.kernalContext().portable().prepareForCache(oldVal, cctx);
 
                 // Calculate initial TTL and expire time.
                 long initTtl;
@@ -2006,7 +2014,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     // Do not change size.
                 }
 
-                updated = (CacheObject)cctx.kernalContext().portable().prepareForCache(updated, cctx);
+                updated = cctx.kernalContext().portable().prepareForCache(updated, cctx);
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -2927,7 +2935,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // in load methods without actually holding entry lock.
             long expireTime = expireTimeExtras();
 
-            val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+            val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             updateIndex(val, expireTime, nextVer, old);
 
@@ -3197,17 +3205,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long topVer,
         GridDrType drType)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-// TODO IGNITE-51.
-//        if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
-//            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
-
         synchronized (this) {
             checkObsolete();
 
             if (isNew() || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
-                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+                val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (val != null)
                     updateIndex(val, expTime, ver, null);

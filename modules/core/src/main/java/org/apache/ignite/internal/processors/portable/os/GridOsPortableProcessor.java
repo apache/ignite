@@ -55,8 +55,8 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrapTemporary(Object obj) throws IgniteException {
-        return null;
+    @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws IgniteException {
+        return obj;
     }
 
     /** {@inheritDoc} */
