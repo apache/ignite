@@ -135,7 +135,9 @@ object VisorConsole extends App {
     })
 
     batchCommand.foreach(commands => {
-        val input = (if (commands.endsWith(";")) commands else commands + ";").replace(";", "\n")
+        val ended = if (commands.endsWith(";")) commands else commands + ";"
+
+        val input = (if (ended.endsWith("exit;")) ended else ended + "exit;").replace(";", "\n")
 
         inputStream = new ByteArrayInputStream(input.getBytes("UTF-8"))
     })
