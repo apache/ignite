@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,12 +32,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * Data transfer object for IGFS configuration properties.
  */
 public class VisorIgfsConfiguration implements Serializable {
-    /** Property name for path to Hadoop configuration. */
-    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
-
-    /** Property name for URI of file system. */
-    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
-
     /** */
     private static final long serialVersionUID = 0L;
 
