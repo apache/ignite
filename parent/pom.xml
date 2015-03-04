@@ -45,7 +45,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-parent</artifactId>
-    <version>1.0.1-RC1-SNAPSHOT</version>
+    <version>1</version>
     <packaging>pom</packaging>
 
     <url>http://ignite.incubator.apache.org</url>

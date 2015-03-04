@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1.0.1-RC1-SNAPSHOT</version>
+        <version>1</version>
         <relativePath>parent</relativePath>
     </parent>
 
@@ -259,7 +259,7 @@
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
-                                                <version>1.0.1-RC1-SNAPSHOT</version>
+                                                <version>1</version>
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
