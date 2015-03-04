@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.eviction;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -64,7 +64,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
 
         ccfg.setBackups(2);
 
-        ccfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 500));
+        ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, 500));
 
         return ccfg;
     }
