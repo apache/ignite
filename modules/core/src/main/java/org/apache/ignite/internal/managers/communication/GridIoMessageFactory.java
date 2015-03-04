@@ -545,7 +545,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 99:
-                msg = new GridNearTxPrepareResponseOwnedValue();
+                msg = new NearTxPrepareResponseOwnedValue();
 
                 break;
 

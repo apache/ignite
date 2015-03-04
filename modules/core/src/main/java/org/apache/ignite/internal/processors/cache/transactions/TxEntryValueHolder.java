@@ -128,16 +128,6 @@ public class TxEntryValueHolder implements Message {
         throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
-
-// TODO IGNITE-51.
-//            boolean valIsByteArr = val != null && val instanceof byte[];
-//
-//            // Do not send write values to remote nodes.
-//            if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
-//                (depEnabled || !ctx.isUnmarshalValues()))
-//                valBytes = CU.marshal(sharedCtx, val);
-//
-//            valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
     }
 
     /**
@@ -148,10 +138,6 @@ public class TxEntryValueHolder implements Message {
     public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (hasWriteVal && val != null)
             val.finishUnmarshal(ctx, ldr);
-
-// TODO IGNITE-51.
-//            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
-//                val = ctx.marshaller().unmarshal(valBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -184,7 +170,7 @@ public class TxEntryValueHolder implements Message {
                 writer.incrementState();
 
             case 2:
-                if (hasWriteVal && !writer.writeMessage("val", val))
+                if (!writer.writeMessage("val", hasWriteVal ? val : null))
                     return false;
 
                 writer.incrementState();
@@ -223,12 +209,10 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 2:
-                if (hasWriteVal) {
-                    val = reader.readMessage("val");
+                val = reader.readMessage("val");
 
-                    if (!reader.isLastRead())
-                        return false;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
                 reader.incrementState();
 

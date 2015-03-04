@@ -100,7 +100,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private GridCacheVersion explicitVer;
 
     /** DHT version. */
-    private transient volatile GridCacheVersion dhtVer;
+    @GridDirectTransient
+    private volatile GridCacheVersion dhtVer;
 
     /** Put filters. */
     @GridToStringInclude
@@ -112,23 +113,29 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private boolean filtersPassed;
 
     /** Flag indicating that filter is set and can not be replaced. */
-    private transient boolean filtersSet;
+    @GridDirectTransient
+    private boolean filtersSet;
 
     /** Underlying cache entry. */
-    private transient volatile GridCacheEntryEx entry;
+    @GridDirectTransient
+    private volatile GridCacheEntryEx entry;
 
     /** Cache registry. */
-    private transient GridCacheContext<?, ?> ctx;
+    @GridDirectTransient
+    private GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
-    private transient AtomicBoolean prepared = new AtomicBoolean();
+    @GridDirectTransient
+    private AtomicBoolean prepared = new AtomicBoolean();
 
     /** Lock flag for colocated cache. */
+    @GridDirectTransient
     private transient boolean locked;
 
     /** Assigned node ID (required only for partitioned cache). */
-    private transient UUID nodeId;
+    @GridDirectTransient
+    private UUID nodeId;
 
     /** Flag if this node is a back up node. */
     @GridDirectTransient
@@ -142,6 +149,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private ExpiryPolicy expiryPlc;
 
     /** Expiry policy transfer flag. */
+    @GridDirectTransient
     private boolean transferExpiryPlc;
 
     /** Expiry policy bytes. */
@@ -738,7 +746,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         val.unmarshal(this.ctx, clsLdr);
 
-        if (transferExpiryPlc && expiryPlcBytes != null)
+        if (expiryPlcBytes != null)
             expiryPlc =  ctx.marshaller().unmarshal(expiryPlcBytes, clsLdr);
     }
 

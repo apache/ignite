@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Message for owned values to set on near node.
  */
-public class GridNearTxPrepareResponseOwnedValue implements Message {
+public class NearTxPrepareResponseOwnedValue implements Message {
     /** Cache version. */
     private GridCacheVersion vers;
 
@@ -35,7 +35,7 @@ public class GridNearTxPrepareResponseOwnedValue implements Message {
     private CacheObject obj;
 
     /** */
-    public GridNearTxPrepareResponseOwnedValue() {
+    public NearTxPrepareResponseOwnedValue() {
         // No-op.
     }
 
@@ -43,7 +43,7 @@ public class GridNearTxPrepareResponseOwnedValue implements Message {
      * @param vers Cache version.
      * @param obj Cache object.
      */
-    GridNearTxPrepareResponseOwnedValue(GridCacheVersion vers, CacheObject obj) {
+    NearTxPrepareResponseOwnedValue(GridCacheVersion vers, CacheObject obj) {
         this.vers = vers;
         this.obj = obj;
     }
