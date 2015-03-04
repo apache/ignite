@@ -61,11 +61,13 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert bytes != null;
+        assert p != null || bytes != null;
 
-        p = ctx.marshaller().unmarshal(bytes, ldr);
+        if (p == null) {
+            p = ctx.marshaller().unmarshal(bytes, ldr);
 
-        p.finishUnmarshal(ctx, ldr);
+            p.finishUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
