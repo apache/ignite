@@ -49,10 +49,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
-
     /** Owning transaction. */
     @GridToStringExclude
     @GridDirectTransient

@@ -320,9 +320,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        unmarshalTx(writes, false, ctx, ldr);
+        if (writes != null)
+            unmarshalTx(writes, false, ctx, ldr);
 
-        unmarshalTx(reads, false, ctx, ldr);
+        if (reads != null)
+            unmarshalTx(reads, false, ctx, ldr);
 
         if (grpLockKeyBytes != null && grpLockKey == null)
             grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
