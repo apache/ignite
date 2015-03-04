@@ -31,19 +31,19 @@
     </parent>
 
     <artifactId>ignite-hadoop</artifactId>
-    <version>1.0.1-RC1-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>1.0.1-RC1-SNAPSHOT</version>
+            <version>1.1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>1.0.1-RC1-SNAPSHOT</version>
+            <version>1.1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -103,14 +103,14 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>1.0.1-RC1-SNAPSHOT</version>
+            <version>1.1.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>1.0.1-RC1-SNAPSHOT</version>
+            <version>1.1.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -218,8 +218,4 @@
             </plugin>
         </plugins>
     </build>
-
-  <scm>
-    <tag>ignite-release-test-branch-4</tag>
-  </scm>
 </project>
