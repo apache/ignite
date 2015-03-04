@@ -104,7 +104,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final String COMPATIBLE_VERS = IgniteProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
-    static final String SITE = "www.gridgain.com";
+    static final String SITE = "ignite.incubator.apache.org";
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -271,7 +271,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final IgniteEvents events(ClusterGroup grp) {
-        return ((ClusterGroupAdapter)grp).events();
+        return ((ClusterGroupAdapter) grp).events();
     }
 
     /** {@inheritDoc} */
@@ -452,8 +452,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override public String apply(Map.Entry<String,?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -629,7 +630,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (notifyEnabled) {
             try {
-                verChecker = new GridUpdateNotifier(gridName, VER_STR, SITE, gw, false);
+                verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, false);
 
                 verChecker.checkForNewVersion(execSvc, log);
             }
@@ -702,7 +703,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             // Lifecycle notification.
-            notifyLifecycleBeans(BEFORE_GRID_START);
+            notifyLifecycleBeans(BEFORE_NODE_START);
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
@@ -817,7 +818,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
 
             // Lifecycle bean notifications.
-            notifyLifecycleBeans(AFTER_GRID_START);
+            notifyLifecycleBeans(AFTER_NODE_START);
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -1000,8 +1001,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         ctx.performance().logSuggestions(log, gridName);
-
-        ackBenchmarks();
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
@@ -1515,14 +1514,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Acks benchmarking instructions.
-     */
-    private void ackBenchmarks() {
-        if (!isDaemon())
-            U.quietAndInfo(log, "If running benchmarks, see http://bit.ly/GridGain-Benchmarking");
-    }
-
-    /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
     private void ackAsciiLogo() {
@@ -1612,7 +1603,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ">>> Local node addresses: " + U.addressesAsString(locNode) + NL +
                     ">>> Local ports: " + sb + NL;
 
-            str += ">>> Ignite documentation: http://" + SITE + "/documentation" + NL;
+            str += ">>> Ignite documentation: http://" + SITE + NL;
 
             log.info(str);
         }
@@ -1733,7 +1724,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (log.isDebugEnabled())
                     log.debug("Notifying lifecycle beans.");
 
-                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
+                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
             GridCacheProcessor cacheProcessor = ctx.cache();
@@ -1836,7 +1827,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             OptimizedMarshaller.clearCache();
