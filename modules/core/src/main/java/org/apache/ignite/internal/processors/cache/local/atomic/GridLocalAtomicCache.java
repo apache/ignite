@@ -500,10 +500,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
-        if (ctx.portableEnabled())
-            return m.isEmpty() ? null : m.values().iterator().next();
-        else
-            return m.get(key);
+        return m.isEmpty() ? null : m.values().iterator().next();
     }
 
     /** {@inheritDoc} */
