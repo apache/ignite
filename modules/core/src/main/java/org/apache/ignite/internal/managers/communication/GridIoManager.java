@@ -389,6 +389,35 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void onKernalStop0(boolean cancel) {
+//        // No more communication messages.
+//        getSpi().setListener(null);
+//
+//        busyLock.writeLock();
+//
+//        U.shutdownNow(getClass(), affPool, log);
+//
+//        boolean interrupted = false;
+//
+//        while (workersCnt.sum() != 0) {
+//            try {
+//                Thread.sleep(200);
+//            }
+//            catch (InterruptedException ignored) {
+//                interrupted = true;
+//            }
+//        }
+//
+//        if (interrupted)
+//            Thread.currentThread().interrupt();
+//
+//        GridEventStorageManager evtMgr = ctx.event();
+//
+//        if (evtMgr != null && discoLsnr != null)
+//            evtMgr.removeLocalEventListener(discoLsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // No more communication messages.
         getSpi().setListener(null);
 
@@ -414,10 +443,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (evtMgr != null && discoLsnr != null)
             evtMgr.removeLocalEventListener(discoLsnr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         // Clear cache.
