@@ -20,10 +20,7 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -34,6 +31,7 @@
     </parent>
 
     <artifactId>ignite-visor-console</artifactId>
+  <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -147,9 +145,7 @@
                          <phase>prepare-package</phase>
                          <configuration>
                              <target>
-                                 <zip destfile="target/ignite-visor-console-${ignite.version}-javadoc.jar"
-                                      basedir="target/site/scaladocs"
-                                      encoding="UTF-8"/>
+                                 <zip destfile="target/ignite-visor-console-${ignite.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
                              </target>
                          </configuration>
                      </execution>
@@ -157,4 +153,8 @@
              </plugin>
         </plugins>
     </build>
+
+  <scm>
+    <tag>ignite-release-test-branch-4</tag>
+  </scm>
 </project>

@@ -20,8 +20,7 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -111,13 +110,11 @@
                         <phase>compile</phase>
                         <configuration>
                             <target>
-                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar"
-                                      todir="${basedir}/target/classes/lib"/>
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
 
-                                <taskdef name="gar"
-                                         classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
+                                <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
 
-                                <gar destfile="${basedir}/deploy/uri.gar" basedir="${basedir}/target/classes"/>
+                                <gar destfile="${basedir}/deploy/uri.gar" basedir="${basedir}/target/classes" />
                             </target>
                         </configuration>
                     </execution>
@@ -125,4 +122,8 @@
             </plugin>
         </plugins>
     </build>
+
+  <scm>
+    <tag>ignite-release-test-branch-4</tag>
+  </scm>
 </project>

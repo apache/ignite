@@ -39,7 +39,8 @@
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
         <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
-    </scm>
+      <tag>ignite-release-test-branch-4</tag>
+  </scm>
 
     <modules>
         <module>modules/core</module>
