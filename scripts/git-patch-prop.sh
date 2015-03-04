@@ -21,10 +21,5 @@
 #
 
 IGNITE_DEFAULT_BRANCH='sprint-2'
-GG_DEFAULT_BRANCH='ignite-sprint-2'
 
-if [ "${IGNITE_HOME}" = "" ];
-    then IGNITE_HOME=${GG_HOME}/../incubator-ignite
-fi
-
-PATCHES_HOME=${GG_HOME}
+PATCHES_HOME=${IGNITE_HOME}

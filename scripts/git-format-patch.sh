@@ -34,13 +34,17 @@ if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user 
     then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
 
+determineCurrentBranch ${IGNITE_HOME}
+
 echo 'Usage: scripts/git-format-patch.sh.'
 echo "It should be called from IGNITE_HOME directory."
 echo "Patch will be created at PATCHES_HOME between Master branch (IGNITE_DEFAULT_BRANCH) and Current branch. "
 echo
+echo "IGNITE_HOME: ${IGNITE_HOME}"
 echo "PATCHES_HOME: ${PATCHES_HOME}"
 echo "Master branch: ${IGNITE_DEFAULT_BRANCH}"
-echo "Current branch: ${PATCHED_BRANCH}"
+echo "Current branch: ${CURRENT_BRANCH}"
+echo
 
 #
 # Main script logic.

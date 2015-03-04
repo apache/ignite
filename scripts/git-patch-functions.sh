@@ -104,3 +104,13 @@ exitIfBranchDoesNotExist () {
         exit
     fi
 }
+
+CURRENT_BRANCH=""
+
+determineCurrentBranch () {
+    GIT_HOME=$1
+    
+    cd ${GIT_HOME}
+    
+    CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
+}
