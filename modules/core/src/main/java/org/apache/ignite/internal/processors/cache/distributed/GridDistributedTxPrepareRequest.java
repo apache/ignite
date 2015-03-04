@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -119,6 +120,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** System flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -154,6 +158,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
+        plc = tx.ioPolicy();
 
         this.reads = reads;
         this.writes = writes;
@@ -175,6 +180,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
     }
 
     /**

@@ -287,9 +287,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * Gets utility cache pool.
      *
-     * @return DR pool.
+     * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
+
+    /**
+     * Gets marshaller cache pool.
+     *
+     * @return Marshaller cache pool.
+     */
+    public ExecutorService marshallerCachePool();
 
     /**
      * Gets portable processor.

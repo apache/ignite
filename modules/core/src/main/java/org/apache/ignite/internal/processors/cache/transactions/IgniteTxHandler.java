@@ -269,6 +269,7 @@ public class IgniteTxHandler<K, V> {
                 req.implicitSingle(),
                 req.implicitSingle(),
                 req.system(),
+                req.policy(),
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
@@ -506,7 +507,7 @@ public class IgniteTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, req.policy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -538,6 +539,7 @@ public class IgniteTxHandler<K, V> {
                             true,
                             false, /* we don't know, so assume false. */
                             req.system(),
+                            req.policy(),
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
@@ -919,6 +921,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
@@ -1038,6 +1041,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),

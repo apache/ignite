@@ -288,6 +288,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private ExecutorService utilityCachePool;
 
     /** */
+    private ExecutorService marshCachePool;
+
+    /** */
     private IgniteConfiguration cfg;
 
     /** */
@@ -338,6 +341,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         GridKernalGateway gw,
         IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -353,6 +357,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.gw = gw;
         this.registry = registry;
         this.utilityCachePool = utilityCachePool;
+        this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
         this.p2pExecSvc = p2pExecSvc;
@@ -692,6 +697,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return utilityCachePool;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService marshallerCachePool() {
+        return marshCachePool;
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -73,8 +74,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
 
-    /** System flag. */
+    /** System transaction flag. */
     private boolean sys;
+
+    /** IO policy. */
+    private GridIoPolicy plc;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -90,7 +94,8 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
+     * @param sys System transaction flag.
+     * @param plc IO policy.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
@@ -105,6 +110,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         boolean commit,
         boolean invalidate,
         boolean sys,
+        GridIoPolicy plc,
         boolean syncCommit,
         boolean syncRollback,
         GridCacheVersion baseVer,
@@ -122,6 +128,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.commit = commit;
         this.invalidate = invalidate;
         this.sys = sys;
+        this.plc = plc;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
@@ -132,10 +139,17 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
-     * @return System flag.
+     * @return System transaction flag.
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
     }
 
     /**
@@ -309,7 +323,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeByte("sys", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -407,10 +421,14 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 reader.incrementState();
 
             case 16:
-                sys = reader.readBoolean("sys");
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
+
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
 
                 reader.incrementState();
 

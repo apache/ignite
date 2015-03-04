@@ -547,6 +547,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -668,6 +669,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 new IgniteExceptionRegistry(log),
                 utilityCachePool,
+                marshCachePool,
                 execSvc,
                 sysExecSvc,
                 p2pExecSvc,

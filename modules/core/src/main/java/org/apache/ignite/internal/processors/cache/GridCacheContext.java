@@ -314,7 +314,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         sys = ctx.cache().systemCache(cacheName);
 
-        plc = sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        plc = CU.isMarshallerCache(cacheName) ? MARSH_CACHE_POOL : sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 

@@ -292,6 +292,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.version(),
                                         null,
                                         ctx.system(),
+                                        ctx.ioPolicy(),
                                         PESSIMISTIC,
                                         req.isolation(),
                                         req.isInvalidate(),

@@ -83,6 +83,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Utility cache pool. */
     private ExecutorService utilityCachePool;
 
+    /** Marshaller cache pool. */
+    private ExecutorService marshCachePool;
+
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
 
@@ -188,6 +191,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         sysPool = ctx.getSystemExecutorService();
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
+        marshCachePool = ctx.marshallerCachePool();
         affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
@@ -498,7 +502,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case SYSTEM_POOL:
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
-                case UTILITY_CACHE_POOL: {
+                case UTILITY_CACHE_POOL:
+                case MARSH_CACHE_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
@@ -534,10 +539,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return mgmtPool;
             case AFFINITY_POOL:
                 return affPool;
+
             case UTILITY_CACHE_POOL:
                 assert utilityCachePool != null : "Utility cache pool is not configured.";
 
                 return utilityCachePool;
+
+            case MARSH_CACHE_POOL:
+                assert marshCachePool != null : "Marshaller cache pool is not configured.";
+
+                return marshCachePool;
 
             default: {
                 assert false : "Invalid communication policy: " + plc;

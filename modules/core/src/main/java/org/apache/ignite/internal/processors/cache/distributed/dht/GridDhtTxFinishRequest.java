@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -111,6 +112,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         boolean commit,
         boolean invalidate,
         boolean sys,
+        GridIoPolicy plc,
         boolean sysInvalidate,
         boolean syncCommit,
         boolean syncRollback,
@@ -123,7 +125,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer,
+        super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, plc, syncCommit, syncRollback, baseVer,
             committedVers, rolledbackVers, txSize, grpLockKey);
 
         assert miniId != null;

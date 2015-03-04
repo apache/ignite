@@ -350,6 +350,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             commit,
             tx.isInvalidate(),
             tx.system(),
+            tx.ioPolicy(),
             tx.syncCommit(),
             tx.syncRollback(),
             m.explicitLock(),

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -82,6 +83,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         boolean commit,
         boolean invalidate,
         boolean sys,
+        GridIoPolicy plc,
         boolean syncCommit,
         boolean syncRollback,
         boolean explicitLock,
@@ -93,8 +95,8 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
-            rolledbackVers, txSize, null);
+        super(xidVer, futId, null, threadId, commit, invalidate, sys, plc, syncCommit, syncRollback, baseVer,
+            committedVers, rolledbackVers, txSize, null);
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;
