@@ -50,8 +50,11 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon()) {
+            injectSpi();
+
             return;
+        }
 
         getSpi().setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {

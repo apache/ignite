@@ -161,6 +161,21 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /**
+     * Inject resources into wrapped SPI.
+     *
+     * @throws IgniteCheckedException If injection failed.
+     */
+    protected final void injectSpi() throws IgniteCheckedException {
+        for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+        }
+    }
+
+    /**
      * Starts wrapped SPI.
      *
      * @throws IgniteCheckedException If wrapped SPI could not be started.
@@ -168,13 +183,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     protected final void startSpi() throws IgniteCheckedException {
         Collection<String> names = U.newHashSet(spis.length);
 
+        injectSpi();
+
         for (T spi : spis) {
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
-
-            // Inject SPI internal objects.
-            inject(spi);
-
             try {
                 Map<String, Object> retval = spi.getNodeAttributes();
 

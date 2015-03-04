@@ -44,8 +44,11 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon()) {
+            injectSpi();
+
             return;
+        }
 
         startSpi();
 

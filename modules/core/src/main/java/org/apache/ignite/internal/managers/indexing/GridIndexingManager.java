@@ -45,8 +45,11 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon()) {
+            injectSpi();
+
             return;
+        }
 
         if (!enabled())
             U.warn(log, "Indexing is disabled (to enable please configure GridIndexingSpi).");

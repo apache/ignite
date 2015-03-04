@@ -53,7 +53,6 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**

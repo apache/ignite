@@ -75,8 +75,11 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon()) {
+            injectSpi();
+
             return;
+        }
 
         for (CheckpointSpi spi : getSpis()) {
             spi.setCheckpointListener(new CheckpointListener() {
