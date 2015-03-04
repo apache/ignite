@@ -42,8 +42,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** IPC error message. */
-    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment"; // todo IGNITE-70 Add
-                                                                                                // link to documentation
+    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment";
 
     /** Default endpoint port number. */
     public static final int DFLT_IPC_PORT = 10500;

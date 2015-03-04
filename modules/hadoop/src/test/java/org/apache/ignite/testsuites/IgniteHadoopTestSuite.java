@@ -120,6 +120,8 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopCommandLineTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
+
         return suite;
     }
 

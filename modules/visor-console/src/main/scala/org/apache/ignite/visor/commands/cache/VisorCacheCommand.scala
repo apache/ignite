@@ -582,7 +582,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@),", "Nodes", "Size")
+        sumT #= ("#", "Name(@)", "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
@@ -842,8 +842,8 @@ object VisorCacheCommand {
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
-        cacheT += ("Store Сlass", safe(storeCfg.store()))
-        cacheT += ("Store Factory Сlass", storeCfg.storeFactory())
+        cacheT += ("Store Class", safe(storeCfg.store()))
+        cacheT += ("Store Factory Class", storeCfg.storeFactory())
         cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
         cacheT += ("Store Write Through", bool2Str(storeCfg.writeThrough()))
 
@@ -856,7 +856,11 @@ object VisorCacheCommand {
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
         cacheT += ("Keep Values Bytes", cfg.valueBytes())
-        cacheT += ("Off-Heap Size", if (cfg.offsetHeapMaxMemory() >= 0) cfg.offsetHeapMaxMemory() else NA)
+        cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory() match {
+            case 0 => "UNLIMITED"
+            case size if size < 0 => NA
+            case size => size
+        })
 
         cacheT += ("Loader Factory Class Name", safe(cfg.loaderFactory()))
         cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))
