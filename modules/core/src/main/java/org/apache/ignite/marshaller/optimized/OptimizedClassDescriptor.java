@@ -28,6 +28,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static java.lang.reflect.Modifier.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
 /**
  * Class descriptor.
@@ -577,7 +578,7 @@ class OptimizedClassDescriptor {
             }
         }
 
-        checksum = OptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null);
+        checksum = computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null);
     }
 
     /**
@@ -793,7 +794,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor((Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor desc = classDescriptor((Class<?>)obj, ctx, mapper);
 
                 out.writeInt(desc.typeId());
 
@@ -916,8 +917,7 @@ class OptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return OptimizedMarshallerUtils.classDescriptor(in.readInt(), in.classLoader(), ctx, mapper).
-                    describedClass();
+                return classDescriptor(in.readInt(), in.classLoader(), ctx, mapper).describedClass();
 
             case TYPE_EXTERNALIZABLE:
                 verifyChecksum(in.readShort());

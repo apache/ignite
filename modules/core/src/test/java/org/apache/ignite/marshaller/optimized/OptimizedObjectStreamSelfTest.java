@@ -251,6 +251,8 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         final OptimizedMarshaller marsh = new OptimizedMarshaller();
 
+        marsh.setContext(CTX);
+
         marsh.setPoolSize(5);
 
         try {
@@ -298,9 +300,13 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         obj2.longArr = new Long[] {500L, 600L};
         obj2.doubleArr = new Double[] {500.0d, 600.0d};
 
-        TestObject[] arr = new TestObject[] {obj1, obj2};
+        TestObject[] arr = {obj1, obj2};
 
         assertArrayEquals(arr, (Object[])marshalUnmarshal(arr));
+
+        String[] strArr = {"str1", "str2"};
+
+        assertArrayEquals(strArr, (String[])marshalUnmarshal(strArr));
     }
 
     /**

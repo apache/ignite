@@ -82,6 +82,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     @Override public void registerClass(int id, Class cls) {
         if (!clsNameById.containsKey(id)) {
             try {
+                U.debug("REG: " + cls.getName());
+
                 if (cache == null)
                     U.awaitQuiet(latch);
 

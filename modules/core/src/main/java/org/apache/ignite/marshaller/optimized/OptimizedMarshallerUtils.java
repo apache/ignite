@@ -50,7 +50,7 @@ class OptimizedMarshallerUtils {
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** Class descriptors by class. */
-    private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>(256);
+    private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>();
 
     /**
      */

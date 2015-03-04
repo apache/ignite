@@ -150,9 +150,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            Class<?> cls = obj.getClass();
-
-            OptimizedClassDescriptor desc = classDescriptor(cls, ctx, mapper);
+            OptimizedClassDescriptor desc = classDescriptor(obj.getClass(), ctx, mapper);
 
             if (desc.excluded()) {
                 writeByte(NULL);
