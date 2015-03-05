@@ -5319,15 +5319,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         boolean deserializePortable) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-// TODO IGNITE-51.
-//        if (ctx.portableEnabled() && !F.isEmpty(keys)) {
-//            keys = F.viewReadOnly(keys, new C1<K, K>() {
-//                @Override public K apply(K k) {
-//                    return (K)ctx.marshalToPortable(k);
-//                }
-//            });
-//        }
-
         return getAllAsync(keys,
             !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
