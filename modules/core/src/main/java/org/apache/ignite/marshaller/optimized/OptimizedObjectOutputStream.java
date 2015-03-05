@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -150,42 +151,59 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            OptimizedClassDescriptor desc = classDescriptor(obj.getClass(), ctx, mapper);
+            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+                writeByte(JDK);
 
-            if (desc.excluded()) {
-                writeByte(NULL);
+                try {
+                    JDK_MARSH.marshal(obj, this);
+                }
+                catch (IgniteCheckedException e) {
+                    IOException ioEx = e.getCause(IOException.class);
 
-                return;
-            }
-
-            Object obj0 = desc.replace(obj);
-
-            if (obj0 == null) {
-                writeByte(NULL);
-
-                return;
-            }
-
-            int handle = -1;
-
-            if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
-                handle = handles.lookup(obj);
-
-            if (obj0 != obj) {
-                obj = obj0;
-
-                desc = classDescriptor(obj.getClass(), ctx, mapper);
-            }
-
-            if (handle >= 0) {
-                writeByte(HANDLE);
-                writeInt(handle);
+                    if (ioEx != null)
+                        throw ioEx;
+                    else
+                        throw new IOException("Failed to serialize object with JDK marshaller: " + obj, e);
+                }
             }
             else {
-                writeByte(OBJECT);
-                writeInt(desc.typeId());
+                OptimizedClassDescriptor desc = classDescriptor(
+                    obj instanceof Object[] ? Object[].class : obj.getClass(), ctx, mapper);
 
-                desc.write(this, obj);
+                if (desc.excluded()) {
+                    writeByte(NULL);
+
+                    return;
+                }
+
+                Object obj0 = desc.replace(obj);
+
+                if (obj0 == null) {
+                    writeByte(NULL);
+
+                    return;
+                }
+
+                int handle = -1;
+
+                if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass()) handle = handles.lookup(obj);
+
+                if (obj0 != obj) {
+                    obj = obj0;
+
+                    desc = classDescriptor(obj instanceof Object[] ? Object[].class : obj.getClass(), ctx, mapper);
+                }
+
+                if (handle >= 0) {
+                    writeByte(HANDLE);
+                    writeInt(handle);
+                }
+                else {
+                    writeByte(OBJECT);
+                    writeInt(desc.typeId());
+
+                    desc.write(this, obj);
+                }
             }
         }
     }

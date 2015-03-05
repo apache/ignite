@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -991,6 +992,20 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         catch (IOException e) {
             assert e.getCause() instanceof NotActiveException;
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    public void testThrowable() throws Exception {
+        Throwable t = new Throwable("Throwable");
+
+        assertEquals(t.getMessage(), ((Throwable)marshalUnmarshal(t)).getMessage());
+
+        CacheFlagException flagEx = new CacheFlagException(CacheFlag.CLONE, CacheFlag.READ);
+
+        assertEquals(flagEx.flags(), ((CacheFlagException)marshalUnmarshal(flagEx)).flags());
     }
 
     /**

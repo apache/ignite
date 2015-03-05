@@ -20,6 +20,7 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.jdk8.backport.*;
 import sun.misc.*;
 
@@ -46,8 +47,14 @@ class OptimizedMarshallerUtils {
     /** Object reference. */
     static final byte OBJECT = (byte)0x72;
 
+    /** Object marshalled with JDK marshaller. */
+    static final byte JDK = (byte)0x73;
+
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
+
+    /** JDK marshaller. */
+    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
 
     /** Class descriptors by class. */
     private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>();

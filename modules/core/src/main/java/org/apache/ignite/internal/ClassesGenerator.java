@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -96,6 +96,16 @@ public class ClassesGenerator {
 
             processFile(file, ldr, prefixLen, col);
         }
+
+        col.add(byte[].class);
+        col.add(short[].class);
+        col.add(int[].class);
+        col.add(long[].class);
+        col.add(float[].class);
+        col.add(double[].class);
+        col.add(char[].class);
+        col.add(boolean[].class);
+        col.add(Object[].class);
 
         return col;
     }

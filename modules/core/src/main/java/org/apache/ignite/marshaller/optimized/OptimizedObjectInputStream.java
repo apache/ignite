@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -154,6 +155,19 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 curCls = desc.describedClass();
 
                 return desc.read(this);
+
+            case JDK:
+                try {
+                    return JDK_MARSH.unmarshal(this, clsLdr);
+                }
+                catch (IgniteCheckedException e) {
+                    IOException ioEx = e.getCause(IOException.class);
+
+                    if (ioEx != null)
+                        throw ioEx;
+                    else
+                        throw new IOException("Failed to deserialize object with JDK marshaller.", e);
+                }
 
             default:
                 SB msg = new SB("Unexpected error occurred during unmarshalling");

@@ -19,6 +19,7 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import sun.misc.*;
@@ -166,9 +167,6 @@ class OptimizedClassDescriptor {
     /** {@code True} if descriptor is for {@link Class}. */
     private boolean isCls;
 
-    /** Array component type. */
-    private Class<?> arrCompType;
-
     /** Enumeration values. */
     private Object[] enumVals;
 
@@ -293,11 +291,8 @@ class OptimizedClassDescriptor {
                 type = TYPE_CHAR_ARR;
             else if (cls == boolean[].class)
                 type = TYPE_BOOLEAN_ARR;
-            else if (cls.isArray()) {
+            else if (cls.isArray())
                 type = TYPE_OBJ_ARR;
-
-                arrCompType = cls.getComponentType();
-            }
             else if (cls == String.class)
                 type = TYPE_STR;
             else if (cls.isEnum()) {
@@ -734,6 +729,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case TYPE_OBJ_ARR:
+                out.writeUTF(obj.getClass().getComponentType().getName());
                 out.writeArray((Object[])obj);
 
                 break;
@@ -881,7 +877,7 @@ class OptimizedClassDescriptor {
                 return in.readBooleanArray();
 
             case TYPE_OBJ_ARR:
-                return in.readArray(arrCompType);
+                return in.readArray(U.forName(in.readUTF(), in.classLoader()));
 
             case TYPE_STR:
                 return in.readString();
