@@ -2334,7 +2334,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (key != null)
                     return key;
 
-                key = cctx.toCacheKeyObject(null, keyBytes(), false).value(cctx.cacheObjectContext(), false);
+                key = cctx.toCacheKeyObject(keyBytes()).value(cctx.cacheObjectContext(), false);
 
                 return key;
             }
@@ -2398,22 +2398,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @SuppressWarnings("IfMayBeConditional")
         @Override protected V unmarshalValue() throws IgniteCheckedException {
-            byte[] bytes = e.getValue();
+            IgniteBiTuple<byte[], Byte> t = GridCacheSwapEntryImpl.getValue(e.getValue());
 
-            byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
+            CacheObject obj = cctx.portable().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
-            if (val != null)
-                return (V)val;
-
-            if (cctx.offheapTiered() && cctx.portableEnabled())
-                return (V)cctx.portable().unmarshal(bytes, GridCacheSwapEntryImpl.valueOffset(bytes));
-            else {
-                GridByteArrayInputStream in = new GridByteArrayInputStream(bytes,
-                    GridCacheSwapEntryImpl.valueOffset(bytes),
-                    bytes.length);
-
-                return cctx.marshaller().unmarshal(in, cctx.deploy().globalLoader());
-            }
+            return obj.value(cctx.cacheObjectContext(), false);
         }
 
         /** {@inheritDoc} */

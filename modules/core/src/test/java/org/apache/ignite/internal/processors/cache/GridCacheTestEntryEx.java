@@ -357,9 +357,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public Cache.Entry wrapFilterLocked() {
-        assert false; return null;
+    /** @inheritDoc */
+    @Nullable @Override public CacheObject peekVisibleValue() {
+        assert false;
+
+        return null;
     }
 
     /** @inheritDoc */
@@ -617,7 +619,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
+    @Override public GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
         CacheEntryPredicate[] filter, IgniteInternalTx tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         return F.t(val);

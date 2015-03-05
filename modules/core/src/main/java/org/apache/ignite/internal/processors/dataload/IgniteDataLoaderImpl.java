@@ -378,8 +378,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         // TODO IGNITE-51.
         Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
             @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
-                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), null);
-                CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), null);
+                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey());
+                CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue());
 
                 return new IgniteDataLoaderEntry(key, val);
             }
@@ -486,8 +486,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, null);
-        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, null);
+        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key);
+        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val);
 
         return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key0, val0)));
     }

@@ -38,6 +38,9 @@ public class GridCacheEntryInfo implements Externalizable, Message {
     @GridToStringInclude
     private KeyCacheObject key;
 
+    /** */
+    private byte[] keyBytes;
+
     /** Cache ID. */
     private int cacheId;
 
@@ -80,6 +83,13 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      */
     public void key(KeyCacheObject key) {
         this.key = key;
+    }
+
+    /**
+     * @param bytes Key bytes.
+     */
+    public void keyBytes(byte[] bytes) {
+        this.keyBytes = bytes;
     }
 
     /**
@@ -175,7 +185,6 @@ public class GridCacheEntryInfo implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO IGNITE-51: field 'remaining'.
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
@@ -205,18 +214,24 @@ public class GridCacheEntryInfo implements Externalizable, Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeByteArray("keyBytes", keyBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
 
             case 5:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -229,7 +244,6 @@ public class GridCacheEntryInfo implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO IGNITE-51: field 'remaining'.
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
@@ -261,7 +275,7 @@ public class GridCacheEntryInfo implements Externalizable, Message {
                 reader.incrementState();
 
             case 3:
-                ttl = reader.readLong("ttl");
+                keyBytes = reader.readByteArray("keyBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -269,7 +283,7 @@ public class GridCacheEntryInfo implements Externalizable, Message {
                 reader.incrementState();
 
             case 4:
-                val = reader.readMessage("val");
+                ttl = reader.readLong("ttl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -277,6 +291,14 @@ public class GridCacheEntryInfo implements Externalizable, Message {
                 reader.incrementState();
 
             case 5:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -296,7 +318,7 @@ public class GridCacheEntryInfo implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /**
@@ -313,9 +335,24 @@ public class GridCacheEntryInfo implements Externalizable, Message {
     /**
      * @return Marshalled size.
      */
-    public int marshalledSize() {
+    public int marshalledSize(GridCacheContext ctx) throws IgniteCheckedException {
         // TODO IGNITE-51.
-        return 0;
+        int size = 0;
+
+        CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
+
+        if (val != null)
+            size += val.valueBytes(cacheObjCtx).length;
+
+        if (key == null) {
+            assert keyBytes != null;
+
+            size += keyBytes.length;
+        }
+        else
+            size += key.valueBytes(cacheObjCtx).length;
+
+        return size;
     }
 
     /**
@@ -323,24 +360,14 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
+        // TODO IGNITE-51: field 'remaining'.
+        assert key != null ^ keyBytes != null;
+
+        if (key != null)
+            key.prepareMarshal(ctx.cacheObjectContext());
 
         if (val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
-// TODO IGNITE-51
-//        boolean depEnabled = ctx.gridDeploy().enabled();
-//
-//        boolean valIsByteArr = val != null && val instanceof byte[];
-//
-//        if (keyBytes == null && depEnabled)
-//            keyBytes = CU.marshal(ctx, key);
-//
-//        keyBytesSent = depEnabled || key == null;
-//
-//        if (valBytes == null && val != null && !valIsByteArr)
-//            valBytes = CU.marshal(ctx, val);
-//
-//        valBytesSent = (valBytes != null && !valIsByteArr) || val == null;
     }
 
     /**
@@ -351,18 +378,20 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+        if (key == null) {
+            assert keyBytes != null;
+
+            CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
+
+            Object key0 = ctx.portable().unmarshal(cacheObjCtx, keyBytes, clsLdr);
+
+            key = ctx.portable().toCacheKeyObject(cacheObjCtx, key0);
+        }
+        else
+            key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
 
         if (val != null)
             val.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
-// TODO IGNITE-51
-//        Marshaller mrsh = ctx.marshaller();
-//
-//        if (key == null)
-//            key = mrsh.unmarshal(keyBytes, clsLdr);
-//
-//        if (ctx.isUnmarshalValues() && val == null && valBytes != null)
-//            val = mrsh.unmarshal(valBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

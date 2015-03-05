@@ -314,7 +314,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                             if (info != null && !(info.key() instanceof GridPartitionLockKey) && !info.isNew()) {
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx.shared());
+                                    s.addEntry(part, info, cctx);
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);
@@ -326,7 +326,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                         if (cctx.isSwapOrOffheapEnabled()) {
                             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
-                                cctx.swap().iterator(part, false);
+                                cctx.swap().iterator(part);
 
                             // Iterator may be null if space does not exist.
                             if (iter != null) {
@@ -366,14 +366,14 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                                         GridCacheEntryInfo info = new GridCacheEntryInfo();
 
-                                        info.key(cctx.toCacheKeyObject(null, e.getKey(), true));
+                                        info.keyBytes(e.getKey());
                                         info.ttl(swapEntry.ttl());
                                         info.expireTime(swapEntry.expireTime());
                                         info.version(swapEntry.version());
                                         info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))
-                                            s.addEntry0(part, info, cctx.shared());
+                                            s.addEntry0(part, info, cctx);
                                         else {
                                             if (log.isDebugEnabled())
                                                 log.debug("Preload predicate evaluated to false (will not send " +
@@ -447,7 +447,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 }
 
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx.shared());
+                                    s.addEntry(part, info, cctx);
                                 else if (log.isDebugEnabled())
                                     log.debug("Preload predicate evaluated to false (will not sender cache entry): " +
                                         info);

@@ -1482,7 +1482,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    KeyCacheObject key = cctx.toCacheKeyObject(null, keyBytes, false);
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
                     qryMgr.remove(key.value(cctx.cacheObjectContext(), false));
                 }

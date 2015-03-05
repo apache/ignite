@@ -51,16 +51,11 @@ public class CacheEntryPredicateContainsValue implements CacheEntryPredicate {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(GridCacheEntryEx entry) {
-        try {
-            CacheObject val = entry.rawGetOrUnmarshal(true);
+    @Override public boolean apply(GridCacheEntryEx e) {
+        CacheObject val = e.peekVisibleValue();
 
-            return F.eq(this.val.value(entry.context().cacheObjectContext(), false),
-                CU.value(val, entry.context(), false));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return F.eq(this.val.value(e.context().cacheObjectContext(), false),
+            CU.value(val, e.context(), false));
     }
 
     /** {@inheritDoc} */

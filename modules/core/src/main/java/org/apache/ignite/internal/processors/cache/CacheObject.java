@@ -33,16 +33,16 @@ public interface CacheObject extends Message {
     @Nullable public <T> T value(CacheObjectContext ctx, boolean cpy);
 
     /**
-     * @return {@code True} if value is byte array.
-     */
-    public boolean byteArray();
-
-    /**
      * @param ctx Context.
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @return Object type.
+     */
+    public byte type();
 
     /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).

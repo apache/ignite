@@ -1753,66 +1753,47 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
-        return portable().toCacheObject(cacheObjCtx, obj, null);
+        return portable().toCacheObject(cacheObjCtx, obj);
     }
 
     /**
      * @param obj Object.
-     * @param bytes Optional value bytes.
-     * @return Cache object.
-     */
-    @Nullable public CacheObject toCacheObject(@Nullable Object obj, byte[] bytes) {
-        return portable().toCacheObject(cacheObjCtx, obj, bytes);
-    }
-
-    /**
-     * @param obj Object.
-     * @return Cache object.
+     * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return portable().toCacheKeyObject(cacheObjCtx, obj, null);
-    }
-
-    /**
-     * @param obj Object.
-     * @param bytes Key bytes.
-     * @param transferOnly If {@code true} creates temporary object which is valid only for marshalling.
-     * @return Cache object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public KeyCacheObject toCacheKeyObject(Object obj, byte[] bytes, boolean transferOnly)
-        throws IgniteCheckedException {
-        assert obj != null || bytes != null;
-
-        if (obj == null) {
-            if (transferOnly)
-                return new KeyCacheObjectTransferImpl(bytes);
-
-            obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().globalLoader());
-        }
-
-        return ctx.portable().toCacheKeyObject(cacheObjCtx, obj, bytes);
+        return portable().toCacheKeyObject(cacheObjCtx, obj);
     }
 
     /**
      * @param bytes Bytes.
-     * @param valIsByteArr {@code True} if value is byte array.
+     * @return Cache key object.
+     */
+    public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
+        Object obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
+
+        return portable().toCacheKeyObject(cacheObjCtx, obj);
+    }
+
+    /**
+     * @param type Type.
+     * @param bytes Bytes.
      * @param clsLdrId Class loader ID.
      * @return Cache object.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject unswapCacheObject(byte[] bytes, boolean valIsByteArr, @Nullable IgniteUuid clsLdrId)
+    @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
         throws IgniteCheckedException
     {
-        if (valIsByteArr)
-            return new CacheObjectImpl(bytes, null);
+        if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObjectAdapter.TYPE_BYTE_ARR) {
+            ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
 
-        ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
+            if (ldr == null)
+                return null;
 
-        if (ldr == null)
-            return null;
+            return ctx.portable().toCacheObject(cacheObjCtx, ctx.portable().unmarshal(cacheObjCtx, bytes, ldr));
+        }
 
-        return new CacheObjectImpl(portable().unmarshal(cacheObjCtx, bytes, ldr), bytes);
+        return ctx.portable().toCacheObject(cacheObjCtx, type, bytes);
     }
 
     /**

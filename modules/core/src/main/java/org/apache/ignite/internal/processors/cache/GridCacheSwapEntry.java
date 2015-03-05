@@ -31,6 +31,11 @@ public interface GridCacheSwapEntry {
     public byte[] valueBytes();
 
     /**
+     * @return Object type.
+     */
+    public byte type();
+
+    /**
      * @param valBytes Value bytes.
      */
     public void valueBytes(@Nullable byte[] valBytes);
@@ -43,12 +48,7 @@ public interface GridCacheSwapEntry {
     /**
      * @param val Value.
      */
-    void value(CacheObject val);
-
-    /**
-     * @return Whether value is byte array.
-     */
-    public boolean valueIsByteArray();
+    public void value(CacheObject val);
 
     /**
      * @return Version.

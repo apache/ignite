@@ -57,8 +57,8 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     /** Value. */
     private CacheObject val;
 
-    /** Flag indicating that value is byte array, so valBytes should not be unmarshalled. */
-    private boolean valIsByteArr;
+    /** Type. */
+    private byte type;
 
     /** Class loader ID. */
     private IgniteUuid keyClsLdrId;
@@ -77,7 +77,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
     /**
      * @param valBytes Value.
-     * @param valIsByteArr Whether value of this entry is byte array.
+     * @param type Type.
      * @param ver Version.
      * @param ttl Entry time to live.
      * @param expireTime Expire time.
@@ -86,7 +86,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
      */
     public GridCacheSwapEntryImpl(
         ByteBuffer valBytes,
-        boolean valIsByteArr,
+        byte type,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
@@ -95,7 +95,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
         assert ver != null;
 
         this.valBytes = valBytes;
-        this.valIsByteArr = valIsByteArr;
+        this.type = type;
         this.ver = ver;
         this.ttl = ttl;
         this.expireTime = expireTime;
@@ -135,27 +135,24 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
      * @param bytes Entry bytes.
      * @return Value if value is byte array, otherwise {@code null}.
      */
-    @Nullable public static byte[] getValueIfByteArray(byte[] bytes) {
-        int off = VERSION_OFFSET; // Skip ttl, expire time.
+    @Nullable public static IgniteBiTuple<byte[], Byte> getValue(byte[] bytes) {
+        long off = BYTE_ARR_OFF + VERSION_OFFSET; // Skip ttl, expire time.
 
-        boolean verEx = bytes[off++] != 0;
+        boolean verEx = UNSAFE.getByte(bytes, off++) != 0;
 
         off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 
-        if (bytes[off++] > 0) {
-            int size = UNSAFE.getInt(bytes, BYTE_ARR_OFF + off);
+        int arrLen = UNSAFE.getInt(bytes, off);
 
-            assert size >= 0;
-            assert bytes.length > size + off + 4;
+        off += 4;
 
-            byte[] res = new byte[size];
+        byte type = UNSAFE.getByte(bytes, off++);
 
-            UNSAFE.copyMemory(bytes, BYTE_ARR_OFF + off + 4, res, BYTE_ARR_OFF, size);
+        byte[] valBytes = new byte[arrLen];
 
-            return res;
-        }
+        UNSAFE.copyMemory(bytes, off, valBytes, BYTE_ARR_OFF, arrLen);
 
-        return null;
+        return new IgniteBiTuple<>(valBytes, type);
     }
 
     /**
@@ -202,15 +199,11 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     /** {@inheritDoc} */
     @Override public void value(CacheObject val) {
         this.val = val;
-
-// TODO IGNITE-51.
-//        if (val instanceof byte[])
-//            valBytes = null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valueIsByteArray() {
-        return valIsByteArr;
+    @Override public byte type() {
+        return type;
     }
 
     /** {@inheritDoc} */
@@ -278,7 +271,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         off += 4;
 
-        UNSAFE.putBoolean(arr, off++, valIsByteArr);
+        UNSAFE.putByte(arr, off++, type);
 
         UNSAFE.copyMemory(valBytes.array(), BYTE_ARR_OFF, arr, off, len);
 
@@ -316,7 +309,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         off += 4;
 
-        boolean valIsByteArr = UNSAFE.getBoolean(arr, off++);
+        byte type = UNSAFE.getByte(arr, off++);
 
         byte[] valBytes = new byte[arrLen];
 
@@ -331,7 +324,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
         IgniteUuid keyClsLdrId = U.readGridUuid(arr, off);
 
         return new GridCacheSwapEntryImpl(ByteBuffer.wrap(valBytes),
-            valIsByteArr,
+            type,
             ver,
             ttl,
             expireTime,

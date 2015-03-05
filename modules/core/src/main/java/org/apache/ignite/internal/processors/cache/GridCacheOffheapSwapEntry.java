@@ -55,7 +55,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     private CacheObject val;
 
     /** */
-    private final boolean valIsByteArr;
+    private final byte type;
 
     /**
      * @param ptr Value pointer.
@@ -75,7 +75,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        valIsByteArr = UNSAFE.getByte(readPtr + 4) == 1;
+        type = UNSAFE.getByte(readPtr + 4);
 
         valPtr = readPtr;
 
@@ -153,8 +153,8 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valueIsByteArray() {
-        return valIsByteArr;
+    @Override public byte type() {
+        return type;
     }
 
     /** {@inheritDoc} */
