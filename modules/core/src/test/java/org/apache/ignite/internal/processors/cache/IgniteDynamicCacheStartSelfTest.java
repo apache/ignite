@@ -177,11 +177,26 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartStopCacheSimple() throws Exception {
+    public void testStartStopCacheSimpleTransactional() throws Exception {
+        checkStartStopCacheSimple(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopCacheSimpleAtomic() throws Exception {
+        checkStartStopCacheSimple(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkStartStopCacheSimple(CacheAtomicityMode mode) throws Exception {
         final IgniteKernal kernal = (IgniteKernal)grid(0);
 
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAtomicityMode(mode);
 
         ccfg.setName(CACHE_NAME);
 
@@ -228,6 +243,55 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     return caches[idx].get("1");
                 }
             }, IllegalStateException.class, null);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testStartStopCacheAddNode() throws Exception {
+        final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        ccfg.setName(CACHE_NAME);
+
+        kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()).get();
+
+        startGrid(nodeCount());
+
+        try {
+            // Check that cache got deployed on new node.
+            IgniteCache<Object, Object> cache = ignite(nodeCount()).jcache(CACHE_NAME);
+
+            cache.put("1", "1");
+
+            for (int g = 0; g < nodeCount(); g++)
+                assertEquals("1", grid(g).jcache(CACHE_NAME).get("1"));
+
+            // Undeploy cache.
+            kernal.context().cache().dynamicStopCache(CACHE_NAME);
+
+            startGrid(nodeCount() + 1);
+
+            // Check that cache is not deployed on new node after undeploy.
+            for (int g = 0; g < nodeCount(); g++) {
+                final IgniteKernal kernal0 = (IgniteKernal)grid(g);
+
+                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
+                    f.get();
+
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return kernal0.jcache(CACHE_NAME);
+                    }
+                }, IllegalArgumentException.class, null);
+            }
+        }
+        finally {
+            stopGrid(nodeCount() + 1);
+            stopGrid(nodeCount());
         }
     }
 }

@@ -339,7 +339,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
 
-                        tx.topologyVersion(new AffinityTopologyVersion(snapshot.topologyVersion()));
+                        tx.topologyVersion(topFut.topologyVersion());
                         tx.topologySnapshot(snapshot);
 
                         // Make sure to add future before calling prepare.
@@ -464,7 +464,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert snapshot != null;
 
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
+        AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
 
