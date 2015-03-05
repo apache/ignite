@@ -689,16 +689,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
+        final Collection<? extends K> keys0;
+
         if (ctx.portableEnabled() && !F.isEmpty(keys)) {
-            keys = F.viewReadOnly(keys, new C1<K, K>() {
+            keys0 = F.viewReadOnly(keys, new C1<K, K>() {
                 @Override public K apply(K k) {
                     return (K)ctx.marshalToPortable(k);
                 }
             });
         }
+        else
+            keys0 = keys;
 
         return getAllAsync(
-            keys,
+            keys0,
             /*force primary*/false,
             /*skip tx*/false,
             /*entry*/null,
@@ -709,6 +713,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                 Map<K, V> kvMap = fut.get();
+
+                if (keys0.size() != kvMap.size())
+                    return false;
 
                 for (Map.Entry<K, V> entry : kvMap.entrySet()) {
                     if (entry.getValue() == null)
