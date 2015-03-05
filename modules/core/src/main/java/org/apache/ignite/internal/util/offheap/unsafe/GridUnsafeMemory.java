@@ -457,26 +457,6 @@ public class GridUnsafeMemory {
      * @param ptr Pointer to read.
      * @return Stored byte array and "raw bytes" flag.
      */
-    public GridCacheValueBytes getOffHeap(long ptr) {
-        if (ptr != 0) {
-            int size = readInt(ptr);
-
-            boolean plain = readByte(ptr + 4) == 1;
-            byte[] bytes = readBytes(ptr + 5, size);
-
-            return plain ? GridCacheValueBytes.plain(bytes) : GridCacheValueBytes.marshaled(bytes);
-        }
-
-        return GridCacheValueBytes.nil();
-    }
-
-    /**
-     * Get value stored in offheap along with a flag indicating whether this is "raw bytes", i.e. this is actual value
-     * or not.
-     *
-     * @param ptr Pointer to read.
-     * @return Stored byte array and "raw bytes" flag.
-     */
     public IgniteBiTuple<byte[], Boolean> get(long ptr) {
         assert ptr != 0;
 

@@ -370,15 +370,6 @@ class GridDhtPartitionSupplyPool<K, V> {
                                         info.ttl(swapEntry.ttl());
                                         info.expireTime(swapEntry.expireTime());
                                         info.version(swapEntry.version());
-// TODO IGNITE-51.
-//                                        if (!swapEntry.valueIsByteArray()) {
-//                                            if (convertPortable)
-//                                                info.valueBytes(cctx.convertPortableBytes(swapEntry.valueBytes()));
-//                                            else
-//                                                info.valueBytes(swapEntry.valueBytes());
-//                                        }
-//                                        else
-//                                            info.value(swapEntry.value());
                                         info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))

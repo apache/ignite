@@ -247,19 +247,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param valBytes Value bytes.
      * @return Length of value.
      */
-    private int valueLength(@Nullable byte[] val, GridCacheValueBytes valBytes) {
-        assert valBytes != null;
-
-        return val != null ? val.length : valBytes.isNull() ? 0 : valBytes.get().length - (valBytes.isPlain() ? 0 : 6);
-    }
-
-    /**
-     * Isolated method to get length of IGFS block.
-     *
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @return Length of value.
-     */
     private int valueLength0(@Nullable CacheObject val, @Nullable IgniteBiTuple<byte[], Boolean> valBytes) {
         byte[] bytes = val != null ? (byte[])val.value(cctx.cacheObjectContext(), false) : null;
 
@@ -473,13 +460,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                                 e.value(val);
                             }
                         }
-                        else { // Read from swap.
+                        else // Read from swap.
                             valPtr = 0;
-
-                            // TODO IGNITE-51.
-                            if (cctx.portableEnabled() && !e.valueIsByteArray())
-                                e.valueBytes(null); // Clear bytes marshalled with portable marshaller.
-                        }
                     }
                 }
                 else
@@ -830,7 +812,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
             }
 
-            // TODO IGNITE-51.
             Object storeVal = readThrough(tx0, key, false, subjId, taskName);
 
             if (storeVal != null)
@@ -3137,7 +3118,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 return null;
         }
 
-        // TODO IGNITE-51.
         return cctx.toCacheObject(cctx.store().loadFromStore(cctx.tm().localTxx(), key));
     }
 
@@ -3293,12 +3273,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (isNew()) {
             CacheObject val = unswapped.value();
 
-            if (cctx.portableEnabled()) {
-                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
-
-                if (cctx.offheapTiered() && !unswapped.valueIsByteArray())
-                    unswapped.valueBytes(cctx.convertPortableBytes(unswapped.valueBytes()));
-            }
+            val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             // Version does not change for load ops.
             update(val,
@@ -3341,7 +3316,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 long expTime = CU.toExpireTime(ttl);
 
                 // Detach value before index update.
-                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+                val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (val != null) {
                     updateIndex(val, expTime, newVer, old);

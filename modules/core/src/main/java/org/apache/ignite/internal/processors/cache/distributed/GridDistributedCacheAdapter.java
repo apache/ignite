@@ -284,7 +284,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                try (IgniteDataLoader<KeyCacheObject, Object> dataLdr = ignite.dataLoader(cacheName)) {
+                try (IgniteDataLoaderImpl<KeyCacheObject, Object> dataLdr =
+                         (IgniteDataLoaderImpl)ignite.dataLoader(cacheName)) {
                     ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
 
                     dataLdr.updater(GridDataLoadCacheUpdaters.<KeyCacheObject, Object>batched());
@@ -293,7 +294,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
                             for (GridDhtCacheEntry o : locPart.entries()) {
                                 if (!o.obsoleteOrDeleted())
-                                    dataLdr.removeData(o.key());
+                                    dataLdr.removeDataInternal(o.key());
                             }
                         }
                     }
@@ -301,12 +302,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     Iterator<KeyCacheObject> it = dht.context().swap().offHeapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next());
+                        dataLdr.removeDataInternal(it.next());
 
                     it = dht.context().swap().swapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next());
+                        dataLdr.removeDataInternal(it.next());
                 }
             }
             finally {
