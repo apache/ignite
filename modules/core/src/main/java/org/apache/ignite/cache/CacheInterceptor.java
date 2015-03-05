@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -38,7 +39,7 @@ import javax.cache.*;
  */
 public interface CacheInterceptor<K, V> {
     /**
-     * This method is called within {@link CacheProjection#get(Object)}
+     * This method is called within {@link IgniteCache#get(Object)}
      * and similar operations to provide control over returned value.
      * <p>
      * If this method returns {@code null}, then {@code get()} operation
@@ -54,7 +55,7 @@ public interface CacheInterceptor<K, V> {
     @Nullable public V onGet(K key, @Nullable V val);
 
     /**
-     * This method is called within {@link CacheProjection#put(Object, Object, IgnitePredicate[])}
+     * This method is called within {@link IgniteCache#put(Object, Object)}
      * and similar operations before new value is stored in cache.
      * <p>
      * Implementations should not execute any complex logic,
@@ -64,10 +65,10 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Old entry.
+     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true}, then is copy.
      * @param newVal New value.
      * @return Value to be put to cache. Returning {@code null} cancels the update.
-     * @see CacheProjection#put(Object, Object, IgnitePredicate[])
+     * @see IgniteCache#put(Object, Object)
      */
     @Nullable public V onBeforePut(Cache.Entry<K, V> entry, V newVal);
 
@@ -81,12 +82,12 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Current entry.
+     * @param entry Current entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
      */
     public void onAfterPut(Cache.Entry<K, V> entry);
 
     /**
-     * This method is called within {@link CacheProjection#remove(Object, IgnitePredicate[])}
+     * This method is called within {@link IgniteCache#remove(Object)}
      * and similar operations to provide control over returned value.
      * <p>
      * Implementations should not execute any complex logic,
@@ -96,11 +97,11 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Old entry.
+     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.
-     * @see CacheProjection#remove(Object, IgnitePredicate[])
+     * @see IgniteCache#remove(Object)
      */
     @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry);
 
@@ -114,7 +115,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Removed entry.
+     * @param entry Removed entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
      */
     public void onAfterRemove(Cache.Entry<K, V> entry);
 }
