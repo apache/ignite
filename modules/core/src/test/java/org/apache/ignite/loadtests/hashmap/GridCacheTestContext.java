@@ -48,7 +48,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheSharedContext<>(
                 ctx,
                 new IgniteTxManager(),
-                new GridCacheVersionManager<K, V>(),
+                new GridCacheVersionManager(),
                 new GridCacheMvccManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
@@ -67,8 +67,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new CacheContinuousQueryManager<K, V>(),
             new GridCacheAffinityManager<K, V>(),
             new CacheDataStructuresManager<K, V>(),
-            new GridCacheTtlManager<K, V>(),
-            new GridOsCacheDrManager<K, V>(),
-            new CacheNoopJtaManager<K, V>());
+            new GridCacheTtlManager(),
+            new GridOsCacheDrManager(),
+            new CacheNoopJtaManager());
     }
 }

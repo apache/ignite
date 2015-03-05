@@ -32,9 +32,9 @@ import java.util.*;
  * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
-public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
-    private final GridConcurrentSkipListSet<EntryWrapper<K, V>> pendingEntries = new GridConcurrentSkipListSet<>();
+    private final GridConcurrentSkipListSet<EntryWrapper> pendingEntries = new GridConcurrentSkipListSet<>();
 
     /** Cleanup worker thread. */
     private CleanupWorker cleanupWorker;
@@ -68,7 +68,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param entry Entry to add.
      */
     public void addTrackedEntry(GridCacheMapEntry entry) {
-        EntryWrapper<K, V> wrapper = new EntryWrapper<>(entry);
+        EntryWrapper wrapper = new EntryWrapper(entry);
 
         pendingEntries.add(wrapper);
 
@@ -86,7 +86,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void removeTrackedEntry(GridCacheMapEntry entry) {
         // Remove must be called while holding lock on entry before updating expire time.
         // No need to wake up waiting thread in this case.
-        pendingEntries.remove(new EntryWrapper<>(entry));
+        pendingEntries.remove(new EntryWrapper(entry));
     }
 
     /** {@inheritDoc} */
@@ -114,8 +114,8 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 GridCacheVersion obsoleteVer = null;
 
-                for (Iterator<EntryWrapper<K, V>> it = pendingEntries.iterator(); it.hasNext(); ) {
-                    EntryWrapper<K, V> wrapper = it.next();
+                for (Iterator<EntryWrapper> it = pendingEntries.iterator(); it.hasNext(); ) {
+                    EntryWrapper wrapper = it.next();
 
                     if (wrapper.expireTime <= now) {
                         if (log.isDebugEnabled())
@@ -142,7 +142,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from
                         // 'addTrackedEntry(..)' method.
-                        EntryWrapper<K, V> first = pendingEntries.firstx();
+                        EntryWrapper first = pendingEntries.firstx();
 
                         if (first != null) {
                             long waitTime = first.expireTime - U.currentTimeMillis();
@@ -163,7 +163,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Entry wrapper.
      */
-    private static class EntryWrapper<K, V> implements Comparable<EntryWrapper<K, V>> {
+    private static class EntryWrapper implements Comparable<EntryWrapper> {
         /** Entry expire time. */
         private final long expireTime;
 
@@ -182,7 +182,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(EntryWrapper<K, V> o) {
+        @Override public int compareTo(EntryWrapper o) {
             if (expireTime == o.expireTime) {
                 if (entry.startVersion() == o.entry.startVersion())
                     return 0;

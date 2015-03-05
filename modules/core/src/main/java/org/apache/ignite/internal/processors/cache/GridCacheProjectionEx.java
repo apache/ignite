@@ -112,7 +112,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void putAllConflict(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException;
 
     /**
      * Store DR data asynchronously.
@@ -122,7 +122,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> putAllConflictAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
+        throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -154,7 +155,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Removes DR data asynchronously.
@@ -164,7 +165,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.

@@ -33,18 +33,6 @@ public interface CacheObject extends Message {
     @Nullable public <T> T value(CacheObjectContext ctx, boolean cpy);
 
     /**
-     * @param name Field name.
-     * @return Field value.
-     */
-    @Nullable public <T> T getField(String name);
-
-    /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
-
-    /**
      * @return {@code True} if value is byte array.
      */
     public boolean byteArray();
@@ -57,6 +45,14 @@ public interface CacheObject extends Message {
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
+     * Prepares cache object for cache (e.g. copies user-provided object if needed).
+     *
+     * @param ctx Cache context.
+     * @return Instance to store in cache.
+     */
+    public CacheObject prepareForCache(CacheObjectContext ctx);
+
+    /**
      * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
@@ -64,9 +60,8 @@ public interface CacheObject extends Message {
     public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
-     * @param ctx Cache context.
-     *
-     * @return Instance to store in cache.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
      */
-    public CacheObject prepareForCache(CacheObjectContext ctx);
+    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
 }

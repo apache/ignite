@@ -36,12 +36,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** */
     protected byte[] valBytes;
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T getField(String name) {
-        // TODO IGNITE-51.
-        return null;
-    }
-
     /**
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.

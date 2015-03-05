@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.jta;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * No-op implementation of {@link CacheJtaManagerAdapter}.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-public class CacheNoopJtaManager extends CacheJtaManagerAdapter {
+public class GridCacheOnCopyFlagAtomicSelfTest extends
+    GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override public void checkJta() throws IgniteCheckedException {
-        // No-op.
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object tmLookup() {
-        return null;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

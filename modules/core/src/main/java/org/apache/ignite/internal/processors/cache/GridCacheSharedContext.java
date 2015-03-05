@@ -56,7 +56,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCachePartitionExchangeManager<K, V> exchMgr;
 
     /** Version manager. */
-    private GridCacheVersionManager<K, V> verMgr;
+    private GridCacheVersionManager verMgr;
 
     /** Lock manager. */
     private GridCacheMvccManager mvccMgr;
@@ -84,7 +84,7 @@ public class GridCacheSharedContext<K, V> {
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
         IgniteTxManager txMgr,
-        GridCacheVersionManager<K, V> verMgr,
+        GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
@@ -254,7 +254,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Lock order manager.
      */
-    public GridCacheVersionManager<K, V> versions() {
+    public GridCacheVersionManager versions() {
         return verMgr;
     }
 

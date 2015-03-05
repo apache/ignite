@@ -1225,12 +1225,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 boolean modified = false;
 
-                Object key = txEntry.key().value(txEntry.context().cacheObjectContext(), false);
+                Object val = null;
 
-                Object val = CU.value(cacheVal, txEntry.context(), false);
+                Object key = null;
 
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), key, val);
+                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
+                        txEntry.key(), key, cacheVal, val);
 
                     try {
                         EntryProcessor<Object, Object, Object> processor = t.get1();
@@ -1238,6 +1239,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                         processor.process(invokeEntry, t.get2());
 
                         val = invokeEntry.getValue();
+
+                        key = invokeEntry.key();
                     }
                     catch (Exception ignore) {
                         // No-op.
@@ -1298,8 +1301,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    protected <K, V> IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
-        GridCacheOperation op, IgniteTxEntry txEntry, V newVal, byte[] newValBytes, GridCacheVersion newVer,
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictResolve(
+        GridCacheOperation op,
+        IgniteTxEntry txEntry,
+        CacheObject newVal,
+        GridCacheVersion newVer,
         GridCacheEntryEx old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert newVer != null;
@@ -1351,19 +1357,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         GridCacheVersionedEntryEx oldEntry = old.versionedEntry();
 
         // Construct new entry info.
-        if (newVal == null && newValBytes != null)
-            newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
+        Object newVal0 = CU.value(newVal, txEntry.context(), false);
 
-        GridCacheVersionedEntryEx newEntry =
-            new GridCachePlainVersionedEntry<>((K)txEntry.key(), newVal, newTtl, newExpireTime, newVer);
+        GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry(
+            oldEntry.key(),
+            newVal0,
+            newTtl,
+            newExpireTime,
+            newVer);
 
-        GridCacheVersionConflictContext<K, V> ctx = null;
-
-        // TODO IGNITE-51.
-        //GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 
         if (ctx.isMerge()) {
-            V resVal = ctx.mergeValue();
+            Object resVal = ctx.mergeValue();
 
             if ((op == CREATE || op == UPDATE) && resVal == null)
                 op = DELETE;

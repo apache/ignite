@@ -17,58 +17,57 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 
 /**
  * Implementation of {@link MutableEntry} passed to the {@link EntryProcessor#process(MutableEntry, Object...)}.
  */
-public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
-    /** */
-    private final GridCacheContext cctx;
-
-    /** */
-    @GridToStringInclude
-    private final K key;
-
-    /** */
-    @GridToStringInclude
-    private V val;
-
+public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements MutableEntry<K, V> {
     /** */
     private final boolean hadVal;
 
     /** */
     private Operation op = Operation.NONE;
 
+    /** */
+    private V oldVal;
+
     /**
      * @param cctx Cache context.
-     * @param key Key.
+     * @param keyObj Key cache object.
+     * @param valObj Cache object value.
+     */
+    public CacheInvokeEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
+        super(cctx, keyObj, valObj);
+
+        this.hadVal = valObj != null;
+    }
+
+    /** 
+     * @param ctx Cache context.
+     * @param keyObject Key cache object.
+     * @param key Key value.
+     * @param valObj Value cache object.
      * @param val Value.
      */
-    public CacheInvokeEntry(GridCacheContext cctx, K key, @Nullable V val) {
-        assert cctx != null;
-        assert key != null;
+    public CacheInvokeEntry(GridCacheContext<K, V> ctx, KeyCacheObject keyObject, K key, CacheObject valObj,
+        V val) {
+        super(ctx, keyObject, key, valObj, val);
 
-        this.cctx = cctx;
-        this.key = key;
-        this.val = val;
-
-        hadVal = val != null;
+        this.hadVal = valObj != null || val != null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return val != null;
+        return val != null || valObj != null;
     }
 
     /** {@inheritDoc} */
     @Override public void remove() {
         val = null;
+        valObj = null;
 
         if (op == Operation.CREATE)
             op = Operation.NONE;
@@ -81,30 +80,18 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
         if (val == null)
             throw new NullPointerException();
 
+        this.oldVal = this.val;
+
         this.val = val;
 
         op = hadVal ? Operation.UPDATE : Operation.CREATE;
     }
 
-    /** {@inheritDoc} */
-    @Override public K getKey() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getValue() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.isAssignableFrom(Ignite.class))
-            return (T)cctx.kernalContext().grid();
-        else if (cls.isAssignableFrom(getClass()))
-            return cls.cast(this);
-
-        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+    /**
+     * @return Return origin value, before modification.
+     */
+    public V oldVal() {
+        return oldVal == null ? val : oldVal;
     }
 
     /**

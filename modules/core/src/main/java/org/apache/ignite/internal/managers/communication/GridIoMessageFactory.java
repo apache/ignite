@@ -559,6 +559,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 103:
+                msg = new GridCacheRawVersionedEntry<>();
+
+                break;
+
+            case 104:
+                msg = new GridCacheVersionEx();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

@@ -88,9 +88,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /** Default value for 'storeValueBytes' flag indicating if value bytes should be stored. */
-    public static final boolean DFLT_STORE_VALUE_BYTES = true;
-
     /** Default preload mode for distributed cache. */
     public static final CachePreloadMode DFLT_PRELOAD_MODE = CachePreloadMode.ASYNC;
 
@@ -247,9 +244,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Flag indicating whether this is invalidation-based cache. */
     private boolean invalidate = DFLT_INVALIDATE;
 
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes = DFLT_STORE_VALUE_BYTES;
-
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
@@ -355,6 +349,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
+        cpOnGet = cc.isCopyOnGet();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
@@ -394,7 +389,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         readFromBackup = cc.isReadFromBackup();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
-        storeValBytes = cc.isStoreValueBytes();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
@@ -996,27 +990,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setInvalidate(boolean invalidate) {
         this.invalidate = invalidate;
-    }
-
-    /**
-     * Flag indicating if cached values should be additionally stored in serialized form. It's set to true by default.
-     *
-     * @param storeValBytes {@code true} if cached values should be additionally stored in serialized form, {@code
-     * false} otherwise.
-     */
-    public void setStoreValueBytes(boolean storeValBytes) {
-        this.storeValBytes = storeValBytes;
-    }
-
-    /**
-     * Flag indicating if cached values should be additionally stored in serialized form.
-     * It's set to {@code true} by default.
-     *
-     * @return {@code true} if cached values should be additionally stored in
-     *      serialized form, {@code false} otherwise.
-     */
-    public boolean isStoreValueBytes() {
-        return storeValBytes;
     }
 
     /**

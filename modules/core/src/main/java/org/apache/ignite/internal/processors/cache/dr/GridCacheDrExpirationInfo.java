@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -25,7 +26,7 @@ import java.io.*;
 /**
  * Cache DR info used as argument in PUT cache internal interfaces with expiration info added.
  */
-public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
+public class GridCacheDrExpirationInfo extends GridCacheDrInfo {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,7 +51,7 @@ public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheDrExpirationInfo(V val, GridCacheVersion ver, long ttl, long expireTime) {
+    public GridCacheDrExpirationInfo(CacheObject val, GridCacheVersion ver, long ttl, long expireTime) {
         super(val, ver);
 
         this.ttl = ttl;
@@ -70,21 +71,5 @@ public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheDrExpirationInfo.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeLong(ttl);
-        out.writeLong(expireTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        ttl = in.readLong();
-        expireTime = in.readLong();
     }
 }

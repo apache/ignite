@@ -31,11 +31,11 @@ import java.util.*;
 public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
     @GridToStringInclude
-    private KeyCacheObject key;
+    protected KeyCacheObject key;
 
     /** */
     @GridToStringInclude
-    private CacheObject val;
+    protected CacheObject val;
 
     /**
      *

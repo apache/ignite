@@ -57,6 +57,7 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
      * @param cacheName Cache name.
      * @param col Entries to put.
      * @param ignoreDepOwnership {@code True} to ignore deployment ownership.
+     * @param skipStore Skip store flag.
      * @param updater Updater.
      */
     GridDataLoadUpdateJob(

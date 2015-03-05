@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
@@ -142,8 +143,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    protected GridCacheMapEntry(GridCacheContext<?, ?> cctx, KeyCacheObject key, int hash, CacheObject val,
-        GridCacheMapEntry next, long ttl, int hdrId) {
+    protected GridCacheMapEntry(GridCacheContext<?, ?> cctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         key = (KeyCacheObject)cctx.kernalContext().portable().prepareForCache(key, cctx);
@@ -994,12 +1001,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : this.val;
 
             if (intercept) {
-                key0 = key.value(cctx.cacheObjectContext(), false);
                 val0 = CU.value(val, cctx, false);
 
-                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(key0,
-                    CU.value(old, cctx, false),
+                CacheLazyEntry e = new CacheLazyEntry(cctx, key, old);
+
+                Object interceptorVal = cctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(cctx, key, old),
                     val0);
+
+                key0 = e.key();
 
                 if (interceptorVal == null)
                     return new GridCacheUpdateTxResult(false, (CacheObject)cctx.unwrapTemporary(old));
@@ -1081,7 +1090,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             cctx.store().putToStore(tx, key, val, newVer);
 
         if (intercept)
-            cctx.config().getInterceptor().onAfterPut(key0, val0);
+            cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0));
 
         return valid ? new GridCacheUpdateTxResult(true, retval ? old : null) :
             new GridCacheUpdateTxResult(false, null);
@@ -1121,8 +1130,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         IgniteBiTuple<Boolean, Object> interceptRes = null;
 
-        Object key0 = null;
-        Object old0 = null;
+        Cache.Entry entry0 = null;
 
         synchronized (this) {
             checkObsolete();
@@ -1145,10 +1153,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
             if (intercept) {
-                key0 = key.value(cctx.cacheObjectContext(), false);
-                old0 = CU.value(old, cctx, false);
+                entry0 = new CacheLazyEntry(cctx, key, old);
 
-                interceptRes = cctx.config().getInterceptor().onBeforeRemove(key0, old0);
+                interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
                 if (cctx.cancelRemove(interceptRes)) {
                     CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -1260,7 +1267,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         }
 
         if (intercept)
-            cctx.config().getInterceptor().onAfterRemove(key0, old0);
+            cctx.config().getInterceptor().onAfterRemove(entry0);
 
         if (valid) {
             CacheObject ret;
@@ -1386,10 +1393,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 assert entryProcessor != null;
 
-                key0 = key.value(cctx.cacheObjectContext(), false);
-                old0 = value(old0, old, false);
-
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key0, old0);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key, old);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1401,6 +1405,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                     else
                         updated = old;
+
+                    key0 = entry.key();
 
                     invokeRes = computed != null ? new CacheInvokeResult<>(cctx.unwrapTemporary(computed)) : null;
                 }
@@ -1423,16 +1429,17 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             op = updated == null ? GridCacheOperation.DELETE : GridCacheOperation.UPDATE;
 
             if (intercept) {
-                if (op == GridCacheOperation.UPDATE) {
-                    key0 = value(key0, key, false);
-                    updated0 = value(updated0, updated, false);
-                    old0 = value(old0, old, false);
+                CacheLazyEntry e;
 
-                    Object interceptorVal
-                        = cctx.config().getInterceptor().onBeforePut(key0, old0, updated0);
+                if (op == GridCacheOperation.UPDATE) {
+                    updated0 = value(updated0, updated, false);
+
+                    e = new CacheLazyEntry(cctx, key, key0, old, old0);
+
+                    Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
 
                     if (interceptorVal == null)
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(old0), invokeRes);
+                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, false)), invokeRes);
                     else {
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
@@ -1440,14 +1447,16 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                 }
                 else {
-                    key0 = value(key0, key, false);
-                    old0 = value(old0, old, false);
+                    e = new CacheLazyEntry(cctx, key, key0, old, old0);
 
-                    interceptorRes = cctx.config().getInterceptor().onBeforeRemove(key0, old0);
+                    interceptorRes = cctx.config().getInterceptor().onBeforeRemove(e);
 
                     if (cctx.cancelRemove(interceptorRes))
                         return new GridTuple3<>(false, cctx.unwrapTemporary(interceptorRes.get2()), invokeRes);
                 }
+
+                key0 = e.key();
+                old0 = e.value();
             }
 
             boolean hadVal = hasValueUnlocked();
@@ -1562,9 +1571,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(key0, updated0);
+                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0));
                 else
-                    cctx.config().getInterceptor().onAfterRemove(key0, old0);
+                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, old, old0));
             }
         }
 
@@ -1637,79 +1646,83 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 // Cache is conflict-enabled.
                 if (cctx.conflictNeedResolve()) {
-// TODO IGNITE-51.
-//                    // Get new value, optionally unmarshalling and/or transforming it.
-//                    if (writeObj == null && valBytes != null)
-//                        writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-//
-//                    if (op == GridCacheOperation.TRANSFORM) {
-//                        transformClo = writeObj;
-//
-//                        writeObj = ((IgniteClosure<V, V>)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
-//                        valBytes = null;
-//                    }
-//
-//                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc, explicitTtl,
-//                        explicitExpireTime);
-//
-//                    // Prepare old and new entries for conflict resolution.
-//                    GridCacheVersionedEntryEx oldEntry = versionedEntry();
-//                    GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(key, (V)writeObj,
-//                        expiration.get1(), expiration.get2(), conflictVer != null ? conflictVer : newVer);
-//
-//                    // Resolve conflict.
-//                    conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
-//
-//                    assert conflictCtx != null;
-//
-//                    // Use old value?
-//                    if (conflictCtx.isUseOld()) {
-//                        GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
-//
-//                        // Handle special case with atomic comparator.
-//                        if (!isNew() &&                                                           // Not initial value,
-//                            verCheck &&                                                           // and atomic version check,
-//                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
-//                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
-//                            cctx.writeThrough() &&                                                // and store is enabled,
-//                            primary)                                                              // and we are primary.
-//                        {
-//                            V val = rawGetOrUnmarshalUnlocked(false);
-//
-//                            if (val == null) {
-//                                assert deletedUnlocked();
-//
-//                                cctx.store().removeFromStore(null, key());
-//                            }
-//                            else
-//                                cctx.store().putToStore(null, key(), val, ver);
-//                        }
-//
-//                        return new GridCacheUpdateAtomicResult<>(false,
-//                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
-//                            null,
-//                            invokeRes,
-//                            CU.TTL_ETERNAL,
-//                            CU.EXPIRE_TIME_ETERNAL,
-//                            null,
-//                            null,
-//                            false);
-//                    }
-//                    // Will update something.
-//                    else {
-//                        // Merge is a local update which override passed value bytes.
-//                        if (conflictCtx.isMerge()) {
-//                            writeObj = conflictCtx.mergeValue();
-//                            valBytes = null;
-//
-//                            conflictVer = null;
-//                        }
-//                        else
-//                            assert conflictCtx.isUseNew();
-//
-//                        // Update value is known at this point, so update operation type.
-//                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
-//                    }
+                    // Get new value, optionally unmarshalling and/or transforming it.
+                    Object writeObj0;
+
+                    if (op == GridCacheOperation.TRANSFORM) {
+                        transformClo = writeObj;
+
+                        // TODO IGNITE-51
+                        writeObj0 = ((IgniteClosure)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
+                    }
+                    else
+                        writeObj0 = CU.value((CacheObject)writeObj, cctx, false);
+
+                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
+                        explicitTtl,
+                        explicitExpireTime);
+
+                    // Prepare old and new entries for conflict resolution.
+                    GridCacheVersionedEntryEx oldEntry = versionedEntry();
+                    GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
+                        oldEntry.key(),
+                        writeObj0,
+                        expiration.get1(),
+                        expiration.get2(),
+                        conflictVer != null ? conflictVer : newVer);
+
+                    // Resolve conflict.
+                    conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
+
+                    assert conflictCtx != null;
+
+                    // Use old value?
+                    if (conflictCtx.isUseOld()) {
+                        GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
+
+                        // Handle special case with atomic comparator.
+                        if (!isNew() &&                                                           // Not initial value,
+                            verCheck &&                                                           // and atomic version check,
+                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
+                            cctx.writeThrough() &&                                                // and store is enabled,
+                            primary)                                                              // and we are primary.
+                        {
+                            CacheObject val = rawGetOrUnmarshalUnlocked(false);
+
+                            if (val == null) {
+                                assert deletedUnlocked();
+
+                                cctx.store().removeFromStore(null, key());
+                            }
+                            else
+                                cctx.store().putToStore(null, key(), val, ver);
+                        }
+
+                        return new GridCacheUpdateAtomicResult(false,
+                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
+                            null,
+                            invokeRes,
+                            CU.TTL_ETERNAL,
+                            CU.EXPIRE_TIME_ETERNAL,
+                            null,
+                            null,
+                            false);
+                    }
+                    // Will update something.
+                    else {
+                        // Merge is a local update which override passed value bytes.
+                        if (conflictCtx.isMerge()) {
+                            writeObj = cctx.toCacheObject(conflictCtx.mergeValue());
+
+                            conflictVer = null;
+                        }
+                        else
+                            assert conflictCtx.isUseNew();
+
+                        // Update value is known at this point, so update operation type.
+                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+                    }
                 }
                 else
                     // Nullify conflict version on this update, so that we will use regular version during next updates.
@@ -1840,20 +1853,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                key0 = key.value(cctx.cacheObjectContext(), false);
-                old0 = value(old0, oldVal, false);
-
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key0, old0);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
 
-                    updated0 = cctx.unwrapTemporary(entry.getValue());
-
-                    if (entry.modified())
+                    if (entry.modified()) {
+                        updated0 = cctx.unwrapTemporary(entry.getValue());
                         updated = cctx.toCacheObject(updated0);
+                    }
                     else
                         updated = oldVal;
+
+                    key0 = entry.key();
 
                     if (computed != null)
                         invokeRes = new CacheInvokeDirectResult(key,
@@ -1897,7 +1909,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     newVer.nodeOrder(),
                     newVer.dataCenterId(),
                     conflictVer);
-
 
             if (op == GridCacheOperation.UPDATE) {
                 // Conflict context is null if there were no explicit conflict resolution.
@@ -1964,11 +1975,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Actual update.
             if (op == GridCacheOperation.UPDATE) {
                 if (intercept) {
-                    key0 = value(key0, key, false);
-                    old0 = value(old0, oldVal, false);
                     updated0 = value(updated0, updated, false);
 
-                    Object interceptorVal = cctx.config().getInterceptor().onBeforePut(key0, old0, updated0);
+                    Object interceptorVal = cctx.config().getInterceptor()
+                        .onBeforePut(new CacheLazyEntry(cctx, key, key0, oldVal, old0), updated0);
 
                     if (interceptorVal == null)
                         return new GridCacheUpdateAtomicResult(false,
@@ -2043,10 +2053,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
             else {
                 if (intercept) {
-                    key0 = value(key0, key, false);
-                    old0 = value(old0, oldVal, false);
-
-                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(key0, old0);
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(new CacheLazyEntry(cctx, key, key0,
+                        oldVal, old0));
 
                     if (cctx.cancelRemove(interceptRes))
                         return new GridCacheUpdateAtomicResult(false,
@@ -2142,12 +2150,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(key0, updated0);
-                else {
-                    old0 = value(old0, oldVal, false);
-
-                    cctx.config().getInterceptor().onAfterRemove(key0, old0);
-                }
+                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0));
+                else
+                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, oldVal, old0));
 
                 if (interceptRes != null)
                     oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -2257,9 +2262,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
-//            cctx.dr().replicate(key, null, val, valBytes, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
+            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
     }
 
     /**
@@ -2694,13 +2698,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
-    }
-
-    /**
-     * @return {@code true} If value bytes should be stored.
-     */
-    protected boolean isStoreValueBytes() {
-        return cctx.config().isStoreValueBytes();
     }
 
     /**
@@ -3275,8 +3272,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Override public synchronized GridCacheVersionedEntryEx versionedEntry() throws IgniteCheckedException {
         boolean isNew = isStartVersion();
 
-        return new GridCachePlainVersionedEntry<>(key, isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
-            ttlExtras(), expireTimeExtras(), ver.conflictVersion(), isNew);
+        CacheObject val = isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false);
+
+        return new GridCachePlainVersionedEntry<>(key.value(cctx.cacheObjectContext(), true),
+            CU.value(val, cctx, true),
+            ttlExtras(),
+            expireTimeExtras(),
+            ver.conflictVersion(),
+            isNew);
     }
 
     /** {@inheritDoc} */

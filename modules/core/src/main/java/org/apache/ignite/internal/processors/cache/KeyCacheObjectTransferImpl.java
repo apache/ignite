@@ -50,11 +50,6 @@ public class KeyCacheObjectTransferImpl implements KeyCacheObject {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T getField(String name) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         // No-op.
     }
