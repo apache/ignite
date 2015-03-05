@@ -32,11 +32,11 @@ formatPatch () {
     cd ${GIT_HOME}
 
     echo ">>>>>> Checkout origin/${DEFAULT_BRANCH} as master_copy"
-    git checkout -b master_copy origin/${DEFAULT_BRANCH}
-
-#    echo '>>>>>> Merge '${PATCHED_BRANCH}' at tmpsquash'
-    git merge --squash ${PATCHED_BRANCH}
-    git commit -a -m "My squashed commits"
+    git checkout ${DEFAULT_BRANCH}
+    git checkout -b tmppatch
+#    git merge --squash ${PATCHED_BRANCH} # In one commit
+    git merge ${PATCHED_BRANCH}
+#    git commit -a -m ""
 
     git checkout ${PATCHED_BRANCH}
 
