@@ -74,7 +74,7 @@ echo
 #
 # Main script logic.
 #
-#
-#requireCleanWorkTree ${IGNITE_HOME}
-#
-#formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_CURRENT_BRANCH} _ignite.patch
+
+requireCleanWorkTree ${IGNITE_HOME}
+
+formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_CURRENT_BRANCH} _ignite.patch
