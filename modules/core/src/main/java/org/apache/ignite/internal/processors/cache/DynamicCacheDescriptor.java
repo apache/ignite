@@ -23,14 +23,12 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
-
 /**
  * Cache start descriptor.
  */
-public class DynamicCacheDescriptor implements Serializable {
+public class DynamicCacheDescriptor {
     /** Cache start ID. */
-    private IgniteUuid startId;
+    private IgniteUuid deploymentId;
 
     /** Cache configuration. */
     @GridToStringExclude
@@ -40,21 +38,24 @@ public class DynamicCacheDescriptor implements Serializable {
     @GridToStringExclude
     private IgnitePredicate<ClusterNode> nodeFilter;
 
+    /** Cancelled flag. */
+    private boolean cancelled;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param nodeFilter Node filter.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgnitePredicate<ClusterNode> nodeFilter, IgniteUuid startId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgnitePredicate<ClusterNode> nodeFilter, IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
         this.nodeFilter = nodeFilter;
-        this.startId = startId;
+        this.deploymentId = deploymentId;
     }
 
     /**
      * @return Start ID.
      */
-    public IgniteUuid startId() {
-        return startId;
+    public IgniteUuid deploymentId() {
+        return deploymentId;
     }
 
     /**
@@ -69,6 +70,20 @@ public class DynamicCacheDescriptor implements Serializable {
      */
     public IgnitePredicate<ClusterNode> nodeFilter() {
         return nodeFilter;
+    }
+
+    /**
+     * Sets cancelled flag.
+     */
+    public void onCancelled() {
+        cancelled = true;
+    }
+
+    /**
+     * @return Cancelled flag.
+     */
+    public boolean cancelled() {
+        return cancelled;
     }
 
     /** {@inheritDoc} */

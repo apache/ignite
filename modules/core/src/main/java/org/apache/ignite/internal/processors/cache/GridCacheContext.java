@@ -205,6 +205,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Conflict resolver. */
     private GridCacheVersionAbstractConflictResolver conflictRslvr;
 
+    /** Dynamic cache deployment ID. */
+    private IgniteUuid dynamicDeploymentId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -325,6 +328,20 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+    }
+
+    /**
+     * @param dynamicDeploymentId Dynamic deployment ID.
+     */
+    void dynamicDeploymentId(IgniteUuid dynamicDeploymentId) {
+        this.dynamicDeploymentId = dynamicDeploymentId;
+    }
+
+    /**
+     * @return Dynamic deployment ID.
+     */
+    public IgniteUuid dynamicDeploymentId() {
+        return dynamicDeploymentId;
     }
 
     /**
@@ -1033,7 +1050,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Sets default affinity key mapper.
      */
     public void defaultAffMapper(CacheAffinityKeyMapper dfltAffMapper) {
-        this.affMapper = dfltAffMapper;
+        affMapper = dfltAffMapper;
     }
 
     /**

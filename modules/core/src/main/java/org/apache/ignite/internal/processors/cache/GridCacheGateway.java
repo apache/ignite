@@ -30,6 +30,9 @@ public class GridCacheGateway<K, V> {
     /** Context. */
     private final GridCacheContext<K, V> ctx;
 
+    /** Stopped flag for dynamic caches. */
+    private volatile boolean stopped;
+
     /**
      * @param ctx Cache context.
      */
@@ -49,6 +52,9 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
+            if (stopped)
+                throw new IllegalStateException("Dynamic cache has been concurrently stopped: " + ctx.name());
+
             ctx.kernalContext().gateway().readLock();
         }
         catch (IllegalStateException e) {
@@ -110,6 +116,9 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
+            if (stopped)
+                throw new IllegalStateException("Dynamic cache has been concurrently stopped: " + ctx.name());
+
             ctx.kernalContext().gateway().readLock();
 
             // Set thread local projection per call.
@@ -151,5 +160,12 @@ public class GridCacheGateway<K, V> {
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /**
+     *
+     */
+    public void onStopped() {
+        stopped = true;
     }
 }

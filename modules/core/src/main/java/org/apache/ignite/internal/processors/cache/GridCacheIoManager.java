@@ -599,6 +599,22 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     }
 
     /**
+     * @param cacheId Cache ID to remove handlers for.
+     */
+    public void removeHandlers(int cacheId) {
+        assert cacheId != 0;
+
+        idxClsHandlers.remove(cacheId);
+
+        for (Iterator<ListenerKey> iterator = clsHandlers.keySet().iterator(); iterator.hasNext(); ) {
+            ListenerKey key = iterator.next();
+
+            if (key.cacheId == cacheId)
+                iterator.remove();
+        }
+    }
+
+    /**
      * @param lsnr Listener to add.
      */
     public void addDisconnectListener(GridDisconnectListener lsnr) {

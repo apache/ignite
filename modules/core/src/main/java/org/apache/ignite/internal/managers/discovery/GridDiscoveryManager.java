@@ -218,7 +218,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Adds dynamic cache filters.
+     * Adds dynamic cache filter.
      *
      * @param cacheName Cache name.
      * @param filter Cache filter.
@@ -227,6 +227,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         IgnitePredicate<ClusterNode> old = dynamicCacheFilters.put(cacheName, filter);
 
         assert old == null;
+    }
+
+    /**
+     * Removes dynamic cache filter.
+     *
+     * @param cacheName Cache name.
+     */
+    public void removeDynamicCacheFilter(String cacheName) {
+        dynamicCacheFilters.remove(cacheName);
     }
 
     /** {@inheritDoc} */

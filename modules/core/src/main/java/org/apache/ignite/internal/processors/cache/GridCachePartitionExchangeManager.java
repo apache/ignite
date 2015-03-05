@@ -142,16 +142,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else {
                     DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)e;
 
-                    if (customEvt.data() instanceof DynamicCacheDescriptor) {
-                        DynamicCacheDescriptor desc = (DynamicCacheDescriptor)customEvt.data();
+                    if (customEvt.data() instanceof DynamicCacheChangeBatch) {
+                        DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)customEvt.data();
 
-                        // Check if this event should trigger partition exchange.
-                        if (cctx.cache().dynamicCacheRegistered(desc)) {
+                        Collection<DynamicCacheChangeRequest> valid = new ArrayList<>(batch.requests().size());
+
+                        // Validate requests to check if event should trigger partition exchange.
+                        for (DynamicCacheChangeRequest req : batch.requests()) {
+                            if (cctx.cache().dynamicCacheRegistered(req))
+                                valid.add(req);
+                        }
+
+                        if (!F.isEmpty(valid)) {
                             exchId = exchangeId(n.id(),
                                 new AffinityTopologyVersion(e.topologyVersion(), ++minorTopVer),
                                 e.type());
 
-                            exchFut = exchangeFuture(exchId, e, desc);
+                            exchFut = exchangeFuture(exchId, e, valid);
                         }
                     }
                 }
@@ -588,11 +595,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     GridDhtPartitionsExchangeFuture<K, V> exchangeFuture(GridDhtPartitionExchangeId exchId,
-        @Nullable DiscoveryEvent discoEvt, @Nullable DynamicCacheDescriptor startDesc) {
+        @Nullable DiscoveryEvent discoEvt, @Nullable Collection<DynamicCacheChangeRequest> reqs) {
         GridDhtPartitionsExchangeFuture<K, V> fut;
 
         GridDhtPartitionsExchangeFuture<K, V> old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture<>(cctx, busyLock, exchId, startDesc));
+            fut = new GridDhtPartitionsExchangeFuture<>(cctx, busyLock, exchId, reqs));
 
         if (old != null)
             fut = old;
@@ -615,11 +622,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     fut.cleanUp();
             }
         }
-
-        DynamicCacheDescriptor desc = exchFut.dynamicCacheDescriptor();
-
-        if (desc != null)
-            cctx.cache().onCacheStartFinished(desc);
     }
 
     /**

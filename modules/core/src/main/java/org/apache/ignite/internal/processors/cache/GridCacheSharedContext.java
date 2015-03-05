@@ -143,7 +143,12 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context to remove.
      */
     public void removeCacheContext(GridCacheContext cacheCtx) {
-        ctxMap.remove(cacheCtx.cacheId(), cacheCtx);
+        int cacheId = cacheCtx.cacheId();
+
+        ctxMap.remove(cacheId, cacheCtx);
+
+        // Safely clean up the message listeners.
+        ioMgr.removeHandlers(cacheId);
     }
 
     /**

@@ -142,8 +142,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     /** Logger. */
     private IgniteLogger log;
 
-    /** Dynamic cache start descriptor. */
-    private DynamicCacheDescriptor startDesc;
+    /** Dynamic cache change requests. */
+    private Collection<DynamicCacheChangeRequest> reqs;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -204,7 +204,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         GridCacheSharedContext<K, V> cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
-        DynamicCacheDescriptor startDesc
+        Collection<DynamicCacheChangeRequest> reqs
     ) {
         super(cctx.kernalContext());
 
@@ -220,7 +220,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         this.cctx = cctx;
         this.busyLock = busyLock;
         this.exchId = exchId;
-        this.startDesc = startDesc;
+        this.reqs = reqs;
 
         log = cctx.logger(getClass());
 
@@ -392,13 +392,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     }
 
     /**
-     * @return Dynamic cache descriptor.
-     */
-    public DynamicCacheDescriptor dynamicCacheDescriptor() {
-        return startDesc;
-    }
-
-    /**
      * @return Init future.
      */
     IgniteInternalFuture<?> initFuture() {
@@ -442,8 +435,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
                 // will return corresponding nodes.
                 U.await(evtLatch);
 
-                if (startDesc != null)
-                    startCache();
+                if (!F.isEmpty(reqs))
+                    startCaches();
 
                 assert discoEvt != null;
 
@@ -493,6 +486,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
 
                 if (log.isDebugEnabled())
                     log.debug("After waiting for partition release future: " + this);
+
+                if (!F.isEmpty(reqs))
+                    stopCaches();
 
                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
@@ -571,12 +567,23 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     }
 
     /**
-     * Starts dynamic cache.
+     * Starts dynamic caches.
      */
-    private void startCache() throws IgniteCheckedException {
-        assert startDesc != null;
+    private void startCaches() throws IgniteCheckedException {
+        for (DynamicCacheChangeRequest req : reqs) {
+            if (req.isStart())
+                ctx.cache().prepareCacheStart(req);
+        }
+    }
 
-        ctx.cache().onCacheStartExchange(startDesc);
+    /**
+     * Stop dynamic caches.
+     */
+    private void stopCaches() {
+        for (DynamicCacheChangeRequest req : reqs) {
+            if (!req.isStart())
+                ctx.cache().prepareCacheStop(req);
+        }
     }
 
     /**
@@ -673,8 +680,17 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
                     cacheCtx.affinity().cleanUpCache(res.topologyVersion() - 10);
             }
 
-            if (startDesc != null && F.eq(startDesc.cacheConfiguration().getName(), cacheCtx.name()))
-                cacheCtx.preloader().onInitialExchangeComplete(err);
+            if (!F.isEmpty(reqs)) {
+                for (DynamicCacheChangeRequest req : reqs) {
+                    if (req.isStart() && F.eq(cacheCtx.name(), req.cacheName()))
+                        cacheCtx.preloader().onInitialExchangeComplete(err);
+                }
+            }
+        }
+
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs)
+                cctx.cache().onExchangeDone(req);
         }
 
         cctx.exchange().onExchangeDone(this);

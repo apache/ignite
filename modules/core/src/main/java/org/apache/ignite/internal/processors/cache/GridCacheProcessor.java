@@ -25,10 +25,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.events.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -109,7 +106,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private IgniteTransactionsImpl transactions;
 
     /** Pending cache starts. */
-    private ConcurrentMap<String, IgniteInternalFuture> pendingStarts = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
 
     /** Dynamic caches. */
     private ConcurrentMap<String, DynamicCacheDescriptor> dynamicCaches = new ConcurrentHashMap<>();
@@ -567,8 +564,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(new GridPlainInClosure<Serializable>() {
             @Override public void apply(Serializable evt) {
-                if (evt instanceof DynamicCacheDescriptor)
-                    onCacheStartRequested((DynamicCacheDescriptor)evt);
+                if (evt instanceof DynamicCacheChangeBatch)
+                    onCacheChangeRequested((DynamicCacheChangeBatch)evt);
             }
         });
 
@@ -1170,22 +1167,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param desc Descriptor to check.
-     * @return {@code True} if cache was registered for start and exchange future should be created.
+     * @param req Request to check.
+     * @return {@code True} if change request was registered to apply.
      */
-    public boolean dynamicCacheRegistered(DynamicCacheDescriptor desc) {
-        return dynamicCaches.get(desc.cacheConfiguration().getName()) == desc;
+    public boolean dynamicCacheRegistered(DynamicCacheChangeRequest req) {
+        DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
+
+        return desc != null && desc.deploymentId().equals(req.deploymentId()) && desc.cancelled() != req.isStart();
     }
 
     /**
-     * @param startDesc Start descriptor.
+     * @param req Start request.
      */
-    public void onCacheStartExchange(DynamicCacheDescriptor startDesc) throws IgniteCheckedException {
-        CacheConfiguration cfg = new CacheConfiguration(startDesc.cacheConfiguration());
+    public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
+        assert req.isStart();
+
+        CacheConfiguration cfg = new CacheConfiguration(req.startCacheConfiguration());
 
         initialize(cfg);
 
         GridCacheContext cacheCtx = createCache(cfg);
+
+        cacheCtx.dynamicDeploymentId(req.deploymentId());
 
         sharedCtx.addCacheContext(cacheCtx);
 
@@ -1196,26 +1199,58 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param req Stop request.
+     */
+    public void prepareCacheStop(DynamicCacheChangeRequest req) {
+        assert !req.isStart();
+
+        // Break the proxy before exchange future is done.
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(req.cacheName());
+
+        if (proxy != null)
+            proxy.gate().onStopped();
+
+        GridCacheAdapter<?, ?> cache = caches.remove(req.cacheName());
+
+        if (cache != null) {
+            GridCacheContext<?, ?> ctx = cache.context();
+
+            sharedCtx.removeCacheContext(ctx);
+
+            assert req.deploymentId().equals(ctx.dynamicDeploymentId());
+
+            onKernalStop(cache, true);
+            stopCache(cache, true);
+        }
+    }
+
+    /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
-     * @param startDesc Cache start descriptor.
+     * @param req Change request.
      */
     @SuppressWarnings("unchecked")
-    public void onCacheStartFinished(DynamicCacheDescriptor startDesc) {
-        GridCacheAdapter<?, ?> cache = caches.get(startDesc.cacheConfiguration().getName());
+    public void onExchangeDone(DynamicCacheChangeRequest req) {
+        if (req.isStart()) {
+            GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
 
-        if (cache != null)
-            jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
-
-        CacheConfiguration ccfg = startDesc.cacheConfiguration();
-
-        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingStarts.get(ccfg.getName());
-
-        if (fut != null && fut.startId().equals(startDesc.startId())) {
-            fut.onDone();
-
-            pendingStarts.remove(ccfg.getName(), fut);
+            if (cache != null)
+                jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
+        else {
+            DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
+
+            if (desc != null && desc.cancelled() && desc.deploymentId().equals(req.deploymentId()))
+                dynamicCaches.remove(req.cacheName(), desc);
+        }
+
+        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.cacheName());
+
+        assert req.deploymentId() != null;
+        assert fut == null || fut.deploymentId != null;
+
+        if (fut != null && fut.deploymentId().equals(req.deploymentId()))
+            fut.onDone();
     }
 
     /**
@@ -1285,69 +1320,162 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (nodeFilter == null)
             nodeFilter = F.alwaysTrue();
 
-        DynamicCacheStartFuture fut = new DynamicCacheStartFuture(ctx, IgniteUuid.fromUuid(ctx.localNodeId()));
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ccfg, nodeFilter);
 
-        try {
-            for (CacheConfiguration ccfg0 : ctx.config().getCacheConfiguration()) {
-                if (ccfg0.getName().equals(ccfg.getName()))
-                    return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
-                        "(a cache with the same name is already configured): " + ccfg.getName()));
+        return F.first(initiateCacheChanges(F.asList(req)));
+    }
+
+    /**
+     * @param cacheName Cache name to stop.
+     * @return Future that will be completed when cache is stopped.
+     */
+    public IgniteInternalFuture<?> dynamicStopCache(String cacheName) {
+        return F.first(initiateCacheChanges(F.asList(new DynamicCacheChangeRequest(cacheName))));
+    }
+
+    /**
+     * @param reqs Requests.
+     * @return Collection of futures.
+     */
+    public Collection<DynamicCacheStartFuture> initiateCacheChanges(Collection<DynamicCacheChangeRequest> reqs) {
+        Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
+
+        Collection<DynamicCacheChangeRequest> sendReqs = new ArrayList<>(reqs.size());
+
+        for (DynamicCacheChangeRequest req : reqs) {
+            DynamicCacheStartFuture fut = new DynamicCacheStartFuture(ctx, req.cacheName(), req.deploymentId());
+
+            try {
+                for (CacheConfiguration ccfg0 : ctx.config().getCacheConfiguration()) {
+                    if (ccfg0.getName().equals(req.cacheName())) {
+                        Exception ex = new IgniteCheckedException("Failed to " +
+                            (req.isStart() ? "start" : "stop") + " cache " +
+                            "(a cache with the same name is manually configured): " + ccfg0.getName());
+
+                        fut.onDone(ex);
+
+                        break;
+                    }
+                }
+
+                if (fut.isDone())
+                    continue;
+
+                if (req.isStart()) {
+                    if (caches.containsKey(req.cacheName())) {
+                        fut.onDone(new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + req.cacheName())));
+                    }
+                }
+                else {
+                    GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
+
+                    if (cache == null)
+                        // No-op.
+                        fut.onDone();
+                    else {
+                        IgniteUuid dynamicDeploymentId = cache.context().dynamicDeploymentId();
+
+                        assert dynamicDeploymentId != null;
+
+                        // Save deployment ID to avoid concurrent stops.
+                        req.deploymentId(dynamicDeploymentId);
+                        fut.deploymentId = dynamicDeploymentId;
+                    }
+                }
+
+                if (fut.isDone())
+                    continue;
+
+                DynamicCacheStartFuture old = (DynamicCacheStartFuture)pendingFuts.putIfAbsent(req.cacheName(), fut);
+
+                if (old != null) {
+                    if (req.isStart()) {
+                        fut.onDone(new IgniteCheckedException("Failed to start cache " +
+                            "(a cache with the same name is already being started or stopped): " + req.cacheName()));
+                    }
+                    else {
+                        fut = old;
+
+                        continue;
+                    }
+                }
+
+                if (fut.isDone())
+                    continue;
+
+                sendReqs.add(req);
             }
-
-            if (caches.containsKey(ccfg.getName()))
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
-                    "(a cache with the same name is already started): " + ccfg.getName()));
-
-            IgniteInternalFuture<?> old = pendingStarts.putIfAbsent(ccfg.getName(), fut);
-
-            if (old != null)
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
-                    "(a cache with the same name is already started): " + ccfg.getName()));
-
-            ctx.discovery().sendCustomEvent(new DynamicCacheDescriptor(ccfg, nodeFilter, fut.startId()));
-
-            return fut;
+            catch (Exception e) {
+                fut.onDone(e);
+            }
+            finally {
+                res.add(fut);
+            }
         }
-        catch (Exception e) {
-            fut.onDone(e);
 
-            // Safety.
-            pendingStarts.remove(ccfg.getName(), fut);
+        ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sendReqs));
 
-            return fut;
-        }
+        return res;
     }
 
     /**
      * Callback invoked from discovery thread when cache deployment request is received.
      *
-     * @param startDesc Cache start descriptor.
+     * @param batch Change request batch.
      */
-    private void onCacheStartRequested(DynamicCacheDescriptor startDesc) {
-        CacheConfiguration ccfg = startDesc.cacheConfiguration();
+    private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
+        for (DynamicCacheChangeRequest req : batch.requests()) {
+            if (req.isStart()) {
+                CacheConfiguration ccfg = req.startCacheConfiguration();
 
-        // Check if cache with the same name was concurrently started form different node.
-        if (dynamicCaches.containsKey(ccfg.getName())) {
-            // If local node initiated start, fail the start future.
-            DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingStarts.get(ccfg.getName());
+                // Check if cache with the same name was concurrently started form different node.
+                if (dynamicCaches.containsKey(ccfg.getName())) {
+                    // If local node initiated start, fail the start future.
+                    DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingFuts.get(ccfg.getName());
 
-            if (startFut != null && startFut.startId().equals(startDesc.startId())) {
-                assert !startFut.syncNotify();
+                    if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
+                        assert !startFut.syncNotify();
 
-                startFut.onDone(new IgniteCheckedException("Failed to start cache " +
-                        "(a cache with the same name is already started): " + ccfg.getName()));
+                        startFut.onDone(new IgniteCheckedException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + ccfg.getName()));
+                    }
 
-                pendingStarts.remove(ccfg.getName(), startFut);
+                    return;
+                }
+
+                DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.startNodeFilter(),
+                    req.deploymentId());
+
+                DynamicCacheDescriptor old = dynamicCaches.put(ccfg.getName(), startDesc);
+
+                ctx.discovery().addDynamicCacheFilter(ccfg.getName(), startDesc.nodeFilter());
+
+                assert old == null :
+                    "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
             }
+            else {
+                DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
 
-            return;
+                if (desc == null) {
+                    // If local node initiated start, fail the start future.
+                    DynamicCacheStartFuture changeFut = (DynamicCacheStartFuture)pendingFuts.get(req.cacheName());
+
+                    if (changeFut != null && changeFut.deploymentId().equals(req.deploymentId())) {
+                        assert !changeFut.syncNotify();
+
+                        // No-op.
+                        changeFut.onDone();
+                    }
+
+                    return;
+                }
+
+                desc.onCancelled();
+
+                ctx.discovery().removeDynamicCacheFilter(req.cacheName());
+            }
         }
-
-        DynamicCacheDescriptor old = dynamicCaches.put(ccfg.getName(), startDesc);
-
-        ctx.discovery().addDynamicCacheFilter(ccfg.getName(), startDesc.nodeFilter());
-
-        assert old == null : "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
     }
 
     /**
@@ -2028,25 +2156,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
+    public class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
         /** Start ID. */
-        private IgniteUuid startId;
+        private IgniteUuid deploymentId;
+
+        /** Cache name. */
+        private String cacheName;
 
         /**
          * @param ctx Kernal context.
          */
-        private DynamicCacheStartFuture(GridKernalContext ctx, IgniteUuid startId) {
+        private DynamicCacheStartFuture(GridKernalContext ctx, String cacheName, IgniteUuid deploymentId) {
             // Start future can be completed from discovery thread, notification must NOT be sync.
             super(ctx, false);
 
-            this.startId = startId;
+            this.deploymentId = deploymentId;
+            this.cacheName = cacheName;
         }
 
         /**
          * @return Start ID.
          */
-        private IgniteUuid startId() {
-            return startId;
+        public IgniteUuid deploymentId() {
+            return deploymentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                pendingFuts.remove(cacheName, this);
+
+                return true;
+            }
+
+            return false;
         }
     }
 
