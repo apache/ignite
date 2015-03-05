@@ -68,7 +68,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private static final int REPEAT_CNT = 10;
 
     /** IGFS. */
-    private static IgniteFs igfs;
+    private static IgniteFileSystem igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -97,7 +97,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @return Grid configuration
      */
     private IgniteConfiguration config(int idx) {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
         igfsCfg.setMetaCacheName("metaCache");
@@ -133,7 +133,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setGridName("node-" + idx);
 
@@ -172,7 +172,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         assertFalse(igfs.isAsync());
 
-        IgniteFs igfsAsync = igfs.withAsync();
+        IgniteFileSystem igfsAsync = igfs.withAsync();
 
         assertTrue(igfsAsync.isAsync());
 
@@ -269,7 +269,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in)
+        @Override public Object execute(IgniteFileSystem igfs, IgfsFileRange range, IgfsInputStream in)
             throws IOException {
             assert ignite != null;
             assert ses != null;

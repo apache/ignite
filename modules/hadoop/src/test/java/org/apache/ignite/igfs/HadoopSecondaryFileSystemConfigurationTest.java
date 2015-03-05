@@ -2,14 +2,15 @@ package org.apache.ignite.igfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.hadoop.*;
-import org.apache.ignite.igfs.hadoop.v1.*;
-import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.hadoop.fs.*;
+import org.apache.ignite.hadoop.fs.v1.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -221,7 +222,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * Starts secondary IGFS
      */
     private void startSecondary() {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("partitioned");
         igfsCfg.setMetaCacheName("replicated");
@@ -259,7 +260,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         cfg.setCommunicationSpi(communicationSpi());
@@ -295,7 +296,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setIgfsConfiguration(igfsConfiguration(gridName));
+        cfg.setFileSystemConfiguration(fsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setCommunicationSpi(communicationSpi());
 
@@ -336,8 +337,8 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * @param gridName Grid name.
      * @return IGFS configuration.
      */
-    protected IgfsConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
-        IgfsConfiguration cfg = new IgfsConfiguration();
+    protected FileSystemConfiguration fsConfiguration(String gridName) throws IgniteCheckedException {
+        FileSystemConfiguration cfg = new FileSystemConfiguration();
 
         cfg.setDataCacheName("partitioned");
         cfg.setMetaCacheName("replicated");
@@ -347,7 +348,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         if (mode != PRIMARY)
             cfg.setSecondaryFileSystem(
-                new IgfsHadoopFileSystemWrapper(secondaryFsUriStr, secondaryConfFullPath));
+                new IgniteHadoopIgfsSecondaryFileSystem(secondaryFsUriStr, secondaryConfFullPath));
 
         cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
 
@@ -462,10 +463,10 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         if (authority != null) {
             if (skipEmbed)
-                cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, authority), true);
+                cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, authority), true);
 
             if (skipLocShmem)
-                cfg.setBoolean(String.format(IgfsHadoopUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+                cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
         }
 
         return cfg;
@@ -477,10 +478,10 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * @param cfg the configuration to set parameters into.
      */
     private static void setImplClasses(Configuration cfg) {
-        cfg.set("fs.igfs.impl", IgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
 
         cfg.set("fs.AbstractFileSystem.igfs.impl",
-            org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem.class.getName());
+            org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem.class.getName());
     }
 
     /**

@@ -1594,10 +1594,10 @@ public class GridCacheUtils {
      * @return {@code True} in this is IGFS data or meta cache.
      */
     public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
-            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 // IGFS config probably has not been validated yet => possible NPE, so we check for null.
                 if (igfsCfg != null &&
                     (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))

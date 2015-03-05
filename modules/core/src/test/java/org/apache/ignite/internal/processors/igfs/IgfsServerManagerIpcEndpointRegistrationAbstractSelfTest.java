@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.IgfsConfiguration.*;
+import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 
 /**
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
@@ -58,7 +58,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setIgfsConfiguration(
+        cfg.setFileSystemConfiguration(
             igfsConfiguration("tcp", DFLT_IPC_PORT, null)
         );
 
@@ -77,7 +77,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setIgfsConfiguration(
+        cfg.setFileSystemConfiguration(
             igfsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
             igfsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
 
@@ -154,7 +154,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @param endPntHost End point host.
      * @return test-purposed IgfsConfiguration.
      */
-    protected IgfsConfiguration igfsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
+    protected FileSystemConfiguration igfsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
         @Nullable String endPntHost) throws IgniteCheckedException {
         HashMap<String, String> endPntCfg = null;
 
@@ -170,7 +170,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
                 endPntCfg.put("host", endPntHost);
         }
 
-        IgfsConfiguration igfsConfiguration = new IgfsConfiguration();
+        FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
         igfsConfiguration.setDataCacheName("partitioned");
         igfsConfiguration.setMetaCacheName("replicated");
