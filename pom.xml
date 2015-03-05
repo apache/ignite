@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.0-RC2-SNAPSHOT</version>
+    <version>1.0.0-RELEASE-TEST-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>

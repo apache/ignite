@@ -31,14 +31,14 @@
     </parent>
 
     <artifactId>ignite-visor-plugins</artifactId>
-    <version>1.0.0-RC2-SNAPSHOT</version>
+    <version>1.0.0-RELEASE-TEST-SNAPSHOT</version>
 
     <dependencies>
         <!-- Ignite dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>1.0.0-RC2-SNAPSHOT</version>
+            <version>1.0.0-RELEASE-TEST-SNAPSHOT</version>
         </dependency>
         <!-- Ignite dependencies -->
 
