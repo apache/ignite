@@ -53,6 +53,12 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
                     if (valBytes == null)
                         valBytes = ctx.processor().marshal(ctx, val);
 
+                    if (ctx.unmarshalValues()) {
+                        Object val = ctx.processor().unmarshal(ctx, valBytes, this.val.getClass().getClassLoader());
+
+                        return new CacheObjectImpl(val, valBytes);
+                    }
+
                     return new CacheObjectImpl(null, valBytes);
                 }
                 catch (IgniteCheckedException e) {
