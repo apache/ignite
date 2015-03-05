@@ -137,6 +137,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
     @GridInternal
     private static class VisorCacheSizeCallable implements IgniteCallable<Integer> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteCache cache;
 
         /**
@@ -157,6 +160,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
      */
     @GridInternal
     private static class VisorCacheClearCallable implements IgniteCallable<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteCache cache;
 

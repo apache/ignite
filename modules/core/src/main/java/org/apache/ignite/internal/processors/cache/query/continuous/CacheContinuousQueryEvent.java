@@ -27,6 +27,9 @@ import javax.cache.event.*;
  * Continuous query event.
  */
 class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Entry. */
     @GridToStringExclude
     private final CacheContinuousQueryEntry<K, V> e;
