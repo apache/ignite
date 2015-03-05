@@ -279,7 +279,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages*:org.apache.ignite.spi.discovery.tcp.internal*:org.apache.ignite.spi.deployment.uri.scanners*:org.apache.ignite.spi.deployment.uri.tasks*</subpackages>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>

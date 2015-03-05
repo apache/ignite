@@ -225,7 +225,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * MetricsSet
      */
     @SuppressWarnings("PublicInnerClass")
     public static class MetricsSet implements Externalizable {
