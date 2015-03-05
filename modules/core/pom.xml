@@ -170,26 +170,25 @@
                 </configuration>
             </plugin>
 
-            <!--<plugin>-->
-                <!--<groupId>org.codehaus.mojo</groupId>-->
-                <!--<artifactId>exec-maven-plugin</artifactId>-->
-                <!--<version>1.3.2</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<phase>process-classes</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>java</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<mainClass>org.apache.ignite.internal.ClassesGenerator</mainClass>-->
-                            <!--<arguments>-->
-                                <!--<argument>${project.basedir}/target/classes</argument>-->
-                            <!--</arguments>-->
-                            <!--<classpathScope>compile</classpathScope>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.3.2</version>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.apache.ignite.internal.ClassesGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/target/classes</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

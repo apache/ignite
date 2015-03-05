@@ -59,10 +59,7 @@ public class ClassesGenerator {
         "org.apache.ignite",
         "org.jdk8.backport",
         "org.pcollections",
-        "com.romix.scala",
-        "java.lang",
-        "java.util",
-        "java.net"
+        "com.romix.scala"
     };
 
     /**
@@ -114,14 +111,8 @@ public class ClassesGenerator {
     private Collection<Class> generate() throws Exception {
         System.out.println("Generating classnames.properties...");
 
-        URLClassLoader ldr0 = ldr;
-
-        while (ldr0 != null) {
-            for (URL url : ldr0.getURLs())
-                processUrl(url);
-
-            ldr0 = (URLClassLoader)ldr0.getParent();
-        }
+        for (URL url : ldr.getURLs())
+            processUrl(url);
 
         if (!errs.isEmpty()) {
             StringBuilder sb = new StringBuilder("Failed to generate classnames.properties due to errors:\n");
@@ -131,16 +122,6 @@ public class ClassesGenerator {
 
             throw new Exception(sb.toString().trim());
         }
-
-        classes.add(byte[].class);
-        classes.add(short[].class);
-        classes.add(int[].class);
-        classes.add(long[].class);
-        classes.add(float[].class);
-        classes.add(double[].class);
-        classes.add(char[].class);
-        classes.add(boolean[].class);
-        classes.add(Object[].class);
 
         return classes;
     }

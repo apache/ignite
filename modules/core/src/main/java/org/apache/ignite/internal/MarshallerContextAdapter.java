@@ -28,7 +28,10 @@ import java.util.concurrent.*;
  */
 public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** */
-    private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
+    private static final String[] CLS_NAMES_FILES = {
+        "org/apache/ignite/internal/classnames.properties",
+        "org/apache/ignite/internal/classnames-jdk.properties"
+    };
 
     /** */
     protected final ConcurrentMap<Integer, String> clsNameById = new ConcurrentHashMap8<>();
@@ -40,17 +43,19 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
+            for (String file : CLS_NAMES_FILES) {
+                BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(file)));
 
-            String line;
+                String line;
 
-            while ((line = rdr.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#"))
-                    continue;
+                while ((line = rdr.readLine()) != null) {
+                    if (line.isEmpty() || line.startsWith("#"))
+                        continue;
 
-                String clsName = line.trim();
+                    String clsName = line.trim();
 
-                clsNameById.put(clsName.hashCode(), clsName);
+                    clsNameById.put(clsName.hashCode(), clsName);
+                }
             }
         }
         catch (IOException e) {
