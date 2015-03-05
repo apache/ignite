@@ -124,8 +124,7 @@ currentAndDefaultBranchesShouldBeEqual () {
     if [ "$IGNITE_CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
     then 
         echo $0", ERROR:"
-        echo "You are not on a expected branch. Your current branch is $IGNITE_CURRENT_BRANCH, 
-        should be $DEFAULT_BRANCH."
+        echo "You are not on a expected branch. Your current branch is $IGNITE_CURRENT_BRANCH, should be $DEFAULT_BRANCH."
         
         exit 1
     fi
