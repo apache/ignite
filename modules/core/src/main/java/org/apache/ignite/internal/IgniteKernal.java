@@ -699,12 +699,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             // Lifecycle notification.
-            notifyLifecycleBeans(BEFORE_GRID_START);
+            notifyLifecycleBeans(BEFORE_NODE_START);
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
+            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
 
@@ -756,7 +756,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())), attrs);
+            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -814,7 +814,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
 
             // Lifecycle bean notifications.
-            notifyLifecycleBeans(AFTER_GRID_START);
+            notifyLifecycleBeans(AFTER_NODE_START);
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -1720,7 +1720,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (log.isDebugEnabled())
                     log.debug("Notifying lifecycle beans.");
 
-                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
+                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
             GridCacheProcessor cacheProcessor = ctx.cache();
@@ -1823,7 +1823,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             OptimizedMarshaller.clearCache();
@@ -2349,11 +2349,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs fileSystem(String name) {
+    @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
         try{
-            IgniteFs fs = ctx.igfs().igfs(name);
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
                 throw new IllegalArgumentException("IGFS is not configured: " + name);
@@ -2366,7 +2366,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
         guard();
 
         try {
@@ -2378,7 +2378,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> fileSystems() {
+    @Override public Collection<IgniteFileSystem> fileSystems() {
         guard();
 
         try {
@@ -2390,7 +2390,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
+    @Override public Hadoop hadoop() {
         guard();
 
         try {

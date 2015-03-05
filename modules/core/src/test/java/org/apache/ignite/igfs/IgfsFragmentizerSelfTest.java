@@ -36,7 +36,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testReadFragmentizing() throws Exception {
-        IgniteFs igfs = grid(0).fileSystem("igfs");
+        IgniteFileSystem igfs = grid(0).fileSystem("igfs");
 
         IgfsPath path = new IgfsPath("/someFile");
 
@@ -108,7 +108,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
         int fileSize = 30 * IGFS_GROUP_SIZE * IGFS_BLOCK_SIZE;
 
         while (written < fileSize) {
-            IgniteFs igfs = grid(igfsIdx).fileSystem("igfs");
+            IgniteFileSystem igfs = grid(igfsIdx).fileSystem("igfs");
 
             try (IgfsOutputStream out = igfs.append(path, true)) {
                 byte[] data = new byte[chunkSize];
@@ -131,7 +131,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             }
         }
 
-        IgniteFs igfs = grid(0).fileSystem("igfs");
+        IgniteFileSystem igfs = grid(0).fileSystem("igfs");
 
         try (IgfsInputStream in = igfs.open(path)) {
             i = 0;
@@ -180,7 +180,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
 
         int fileSize = 50 * IGFS_GROUP_SIZE * IGFS_BLOCK_SIZE;
 
-        IgniteFs igfs = grid(0).fileSystem("igfs");
+        IgniteFileSystem igfs = grid(0).fileSystem("igfs");
 
         byte[] chunk = new byte[chunkSize];
 

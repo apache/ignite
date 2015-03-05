@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code IgniteFs}
+ * Example that shows usage of {@link org.apache.ignite.IgniteFileSystem} API. It starts a node with {@code IgniteFs}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>
@@ -50,7 +50,7 @@ public final class IgfsExample {
 
         try {
             // Get an instance of Ignite File System.
-            IgniteFs fs = ignite.fileSystem("igfs");
+            IgniteFileSystem fs = ignite.fileSystem("igfs");
 
             // Working directory path.
             IgfsPath workDir = new IgfsPath("/examples/fs");
@@ -107,7 +107,7 @@ public final class IgfsExample {
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
-    private static void delete(IgniteFs fs, IgfsPath path) throws IgniteException {
+    private static void delete(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -139,7 +139,7 @@ public final class IgfsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static void mkdirs(IgniteFs fs, IgfsPath path) throws IgniteException {
+    private static void mkdirs(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -166,7 +166,7 @@ public final class IgfsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void create(IgniteFs fs, IgfsPath path, @Nullable byte[] data)
+    private static void create(IgniteFileSystem fs, IgfsPath path, @Nullable byte[] data)
         throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
@@ -195,7 +195,7 @@ public final class IgfsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(IgniteFs fs, IgfsPath path, byte[] data) throws IgniteException, IOException {
+    private static void append(IgniteFileSystem fs, IgfsPath path, byte[] data) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
@@ -220,7 +220,7 @@ public final class IgfsExample {
      * @throws IgniteException If file can't be opened.
      * @throws IOException If data can't be read.
      */
-    private static void read(IgniteFs fs, IgfsPath path) throws IgniteException, IOException {
+    private static void read(IgniteFileSystem fs, IgfsPath path) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isFile();
@@ -242,7 +242,7 @@ public final class IgfsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static void list(IgniteFs fs, IgfsPath path) throws IgniteException {
+    private static void list(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
@@ -271,7 +271,7 @@ public final class IgfsExample {
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
-    private static void printInfo(IgniteFs fs, IgfsPath path) throws IgniteException {
+    private static void printInfo(IgniteFileSystem fs, IgfsPath path) throws IgniteException {
         System.out.println();
         System.out.println("Information for " + path + ": " + fs.info(path));
     }
