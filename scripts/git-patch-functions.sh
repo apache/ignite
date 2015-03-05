@@ -42,6 +42,7 @@ formatPatch () {
     PATCH_FILE=${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
 
     git format-patch ${DEFAULT_BRANCH}  --stdout > ${PATCH_FILE}
+    echo "Patch file created."
 
     git checkout ${PATCHED_BRANCH}
     
@@ -49,54 +50,6 @@ formatPatch () {
     
     echo 
     echo "Patch created: ${PATCH_FILE}"
-}
-
-updateBranches () {
-    GIT_HOME=$1
-    DEFAULT_BRANCH=$2
-    PATCHED_BRANCH=$3
-
-    echo
-    echo '>>> UPDATING BRANCHES '${DEFAULT_BRANCH}' AND '${PATCHED_BRANCH}' AT '${GIT_HOME}
-    echo
-
-    cd ${GIT_HOME}
-
-    git checkout ${DEFAULT_BRANCH}
-    git pull
-
-    git checkout ${PATCHED_BRANCH}
-    echo
-    echo '>>>>>> START MERGING'
-    echo
-    git merge --no-edit ${DEFAULT_BRANCH} # Merge with default message.
-}
-
-#
-# Return value of checkBranchExists function.
-#
-BRANCH_EXISTS=''
-
-checkBranchExists () {
-    GIT_HOME=$1
-    BRANCH=$2
-
-    cd ${GIT_HOME}
-
-    BRANCH_EXISTS=`git show-ref refs/heads/"${BRANCH}"`
-}
-
-
-exitIfBranchDoesNotExist () {
-    checkBranchExists $1 $2
-
-    if [ -z "$BRANCH_EXISTS" ] # If not.
-    then
-        echo $0", ERROR:"
-        echo "Expected branch ${BRANCH} does not exist at ${GIT_HOME}"
-
-        exit
-    fi
 }
 
 determineCurrentBranch () {
