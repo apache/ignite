@@ -116,6 +116,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @Override public void close() throws IOException {
         reset();
 
+        ctx = null;
         clsLdr = null;
     }
 

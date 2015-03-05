@@ -104,6 +104,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         reset();
+
+        ctx = null;
     }
 
     /** {@inheritDoc} */
