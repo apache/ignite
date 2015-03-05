@@ -1010,7 +1010,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         finishFuts.add(finishFut);
 
-        finishFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 

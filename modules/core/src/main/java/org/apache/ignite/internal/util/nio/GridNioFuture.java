@@ -99,7 +99,7 @@ public interface GridNioFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super GridNioFuture<R>> lsnr);
+    public void listen(@Nullable IgniteInClosure<? super GridNioFuture<R>> lsnr);
 
     /**
      * Sets flag indicating that message send future was created in thread that was processing a message.

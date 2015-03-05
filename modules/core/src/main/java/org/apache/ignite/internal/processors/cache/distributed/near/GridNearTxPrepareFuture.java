@@ -352,7 +352,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
                 }
                 else {
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
                             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {

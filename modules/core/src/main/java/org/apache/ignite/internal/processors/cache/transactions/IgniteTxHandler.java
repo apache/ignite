@@ -325,7 +325,7 @@ public class IgniteTxHandler<K, V> {
 
             final GridDhtTxLocal<K, V> tx0 = tx;
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            fut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> txFut) {
                     try {
                         txFut.get();
@@ -573,7 +573,7 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
-                commitFut.listenAsync(CU.errorLogger(log));
+                commitFut.listen(CU.errorLogger(log));
 
                 return commitFut;
             }
@@ -589,7 +589,7 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
@@ -601,7 +601,7 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
@@ -756,7 +756,7 @@ public class IgniteTxHandler<K, V> {
             finish(nodeId, nearTx, req);
 
         if (dhtTx != null && !dhtTx.done()) {
-            dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            dhtTx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
                     sendReply(nodeId, req);
                 }

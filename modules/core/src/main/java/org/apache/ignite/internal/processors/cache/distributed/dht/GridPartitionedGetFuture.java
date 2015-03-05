@@ -677,13 +677,13 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 // Need to wait for next topology version to remap.
                 IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
+                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
                     @SuppressWarnings("unchecked")
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
                         long topVer = fut.get();
 
                         // This will append new futures to compound list.
-                        map(F.view(keys.keySet(),  new P1<K>() {
+                        map(F.view(keys.keySet(), new P1<K>() {
                             @Override public boolean apply(K key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }

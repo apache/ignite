@@ -156,8 +156,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                         "[jobId=" + meta.jobId() + ", meta=" + meta + ']');
             }
             else {
-                proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
+                proc.initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+                    @Override
+                    public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                         try {
                             f.get();
 
@@ -223,7 +224,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
             final HadoopProcess proc0 = proc;
 
-            proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+            proc.initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
                 @Override public void apply(
                     IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                     if (!busyLock.tryReadLock())
@@ -404,7 +405,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             }
         }, true);
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
             @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                 try {
                     // Make sure there were no exceptions.
@@ -789,7 +790,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 terminated = true;
 
                 if (!initFut.isDone())
-                    initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+                    initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
                         @Override public void apply(
                             IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                             proc.destroy();

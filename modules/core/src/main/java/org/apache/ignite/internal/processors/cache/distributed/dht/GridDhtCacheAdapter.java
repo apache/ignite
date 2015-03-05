@@ -632,7 +632,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues());
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
                 GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
                     req.futureId(),

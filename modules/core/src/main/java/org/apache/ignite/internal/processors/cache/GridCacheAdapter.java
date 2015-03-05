@@ -1971,7 +1971,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2013,7 +2013,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         return fut;
     }
@@ -2429,7 +2429,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<V> fut = putAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2758,7 +2758,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<Boolean> fut = putxAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2837,7 +2837,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if(statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2900,7 +2900,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2954,7 +2954,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3082,7 +3082,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3192,7 +3192,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<V> fut = removeAsync(key, null, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3224,7 +3224,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3297,7 +3297,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }
@@ -3380,7 +3380,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3630,7 +3630,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -4736,7 +4736,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             asyncOpRelease();
         }
         else {
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     asyncOpRelease();
 

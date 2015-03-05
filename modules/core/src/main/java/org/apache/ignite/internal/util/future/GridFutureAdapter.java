@@ -163,7 +163,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
+    @Override public void listen(@Nullable final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
         if (lsnr0 != null) {
             boolean done = isDone();
 
@@ -443,7 +443,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             this.fut = fut;
             this.doneCb = doneCb;
 
-            fut.listenAsync(new GridFutureChainListener<>(this, doneCb));
+            fut.listen(new GridFutureChainListener<>(this, doneCb));
         }
 
         /** {@inheritDoc} */

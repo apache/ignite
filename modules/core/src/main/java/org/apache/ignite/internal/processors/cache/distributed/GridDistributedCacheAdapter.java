@@ -180,7 +180,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
                     new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
 
-            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
                         fut.get();

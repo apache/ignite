@@ -741,7 +741,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 final RemapTimeoutObject timeout = new RemapTimeoutObject(
                     cctx.kernalContext().config().getNetworkTimeout(), topVer, e);
 
-                cctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                cctx.discovery().topologyFuture(topVer + 1).listen(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> longIgniteFuture) {
                         if (timeout.finish()) {
                             cctx.kernalContext().timeout().removeTimeoutObject(timeout);
@@ -793,7 +793,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 // Need to wait for next topology version to remap.
                 IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
+                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
                         long readyTopVer = fut.get();
 

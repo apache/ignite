@@ -8503,7 +8503,7 @@ public class GridFunc {
                         };
                     }
 
-                    fut.listenAsync(c);
+                    fut.listen(c);
                 }
                 else
                     return fut;

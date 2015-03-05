@@ -103,7 +103,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
+                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
                             @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());

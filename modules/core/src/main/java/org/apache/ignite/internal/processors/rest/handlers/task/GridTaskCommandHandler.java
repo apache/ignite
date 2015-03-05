@@ -224,7 +224,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                taskFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> taskFut) {
                         try {
                             TaskDescriptor desc;

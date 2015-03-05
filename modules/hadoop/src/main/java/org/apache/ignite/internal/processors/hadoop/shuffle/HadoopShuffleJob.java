@@ -383,7 +383,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             fut.onDone(U.unwrap(e));
         }
 
-        fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     f.get();

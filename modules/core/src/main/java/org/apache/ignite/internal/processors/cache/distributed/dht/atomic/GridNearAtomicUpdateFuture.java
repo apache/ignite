@@ -415,7 +415,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }

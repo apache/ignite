@@ -7108,7 +7108,7 @@ public abstract class IgniteUtils {
      */
     public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            f.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();

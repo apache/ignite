@@ -1243,7 +1243,7 @@ public class HadoopExternalCommunication {
                     log.debug("Accepted connection, initiating handshake: " + ses);
 
                 // Server initiates handshake.
-                ses.send(locIdMsg).listenAsync(new CI1<GridNioFuture<?>>() {
+                ses.send(locIdMsg).listen(new CI1<GridNioFuture<?>>() {
                     @Override public void apply(GridNioFuture<?> fut) {
                         try {
                             // Make sure there were no errors.

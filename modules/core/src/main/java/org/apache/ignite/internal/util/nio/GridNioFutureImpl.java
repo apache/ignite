@@ -161,7 +161,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super GridNioFuture<R>> lsnr) {
+    @Override public void listen(@Nullable final IgniteInClosure<? super GridNioFuture<R>> lsnr) {
         if (lsnr != null) {
             boolean done = isDone();
 

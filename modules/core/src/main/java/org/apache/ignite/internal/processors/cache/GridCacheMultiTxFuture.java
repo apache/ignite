@@ -73,7 +73,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
 
             for (final IgniteInternalTx<K, V> tx : remainingTxs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> t) {
                             remainingTxs.remove(tx);
 

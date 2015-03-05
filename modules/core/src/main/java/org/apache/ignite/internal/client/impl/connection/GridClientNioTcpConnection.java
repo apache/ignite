@@ -420,7 +420,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             lastMsgSndTime = U.currentTimeMillis();
 
             if (routeMode) {
-                sndFut.listenAsync(new CI1<GridNioFuture<?>>() {
+                sndFut.listen(new CI1<GridNioFuture<?>>() {
                     @Override public void apply(GridNioFuture<?> sndFut) {
                         try {
                             sndFut.get();

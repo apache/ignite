@@ -488,7 +488,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         if (cnt.decrementAndGet() == 0)
             comp.markInitialized();
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
             @Override public void apply(IgniteInternalFuture<GridTuple3<String, Boolean, String>> f) {
                 runNextNodeCallable(queue, comp, cnt);
             }

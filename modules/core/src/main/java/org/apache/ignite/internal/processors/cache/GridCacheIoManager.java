@@ -24,6 +24,7 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -118,7 +119,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 if (!topFut.isDone()) {
                     final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
 
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
                             onMessage0(nodeId, cacheMsg, c0);
                         }
@@ -215,36 +216,43 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                             ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
-                    startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> f) {
-                            rw.readLock();
+                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(final IgniteInternalFuture<?> f) {
+                            cctx.kernalContext().closure().runLocalSafe(
+                                new GridPlainRunnable() {
+                                    @Override public void run() {
+                                        rw.readLock();
 
-                            try {
-                                if (stopping) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Received cache communication message while stopping " +
-                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+                                        try {
+                                            if (stopping) {
+                                                if (log.isDebugEnabled())
+                                                    log.debug("Received cache communication message while stopping " +
+                                                        "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
 
-                                    return;
+                                                return;
+                                            }
+
+                                            f.get();
+
+                                            if (log.isDebugEnabled())
+                                                log.debug("Start future completed for message [nodeId=" + nodeId +
+                                                    ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
+
+                                            processMessage(nodeId, cacheMsg, c);
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            // Log once.
+                                            if (startErr.compareAndSet(false, true))
+                                                U.error(log, "Failed to complete preload start future " +
+                                                    "(will ignore message) " +
+                                                    "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
+                                        }
+                                        finally {
+                                            rw.readUnlock();
+                                        }
+                                    }
                                 }
-
-                                f.get();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Start future completed for message [nodeId=" + nodeId +
-                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                processMessage(nodeId, cacheMsg, c);
-                            }
-                            catch (IgniteCheckedException e) {
-                                // Log once.
-                                if (startErr.compareAndSet(false, true))
-                                    U.error(log, "Failed to complete preload start future (will ignore message) " +
-                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                            }
-                            finally {
-                                rw.readUnlock();
-                            }
+                            );
                         }
                     });
                 }

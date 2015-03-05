@@ -562,7 +562,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     markInitialized();
                 }
                 else {
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    fut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
                             mapOnTopology();
                         }
@@ -830,7 +830,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 }
             }
             else {
-                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                txSync.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         try {
                             if (log.isDebugEnabled())

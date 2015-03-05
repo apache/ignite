@@ -1867,7 +1867,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         }
 
         if (commit)
-            tx.commitAsync().listenAsync(new CommitListener(tx));
+            tx.commitAsync().listen(new CommitListener(tx));
         else
             tx.rollbackAsync();
     }
@@ -1922,7 +1922,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                         tx.writeMap().put(entry.txKey(), entry);
                 }
 
-                tx.commitAsync().listenAsync(new CommitListener(tx));
+                tx.commitAsync().listen(new CommitListener(tx));
             }
             else
                 tx.rollbackAsync();

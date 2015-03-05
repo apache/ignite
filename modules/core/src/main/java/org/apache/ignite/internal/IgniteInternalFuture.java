@@ -111,7 +111,7 @@ public interface IgniteInternalFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
+    public void listen(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.

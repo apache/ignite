@@ -927,7 +927,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }

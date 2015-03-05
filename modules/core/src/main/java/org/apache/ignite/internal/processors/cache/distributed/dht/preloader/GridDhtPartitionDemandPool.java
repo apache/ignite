@@ -208,7 +208,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+            exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                 @Override public void apply(IgniteInternalFuture<Long> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
@@ -357,7 +357,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }

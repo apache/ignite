@@ -118,7 +118,7 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(final IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
+    @Override public void listen(final IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
         if (lsnr != null)
             lsnr.apply(this);
     }
@@ -131,7 +131,7 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
             }
         };
 
-        listenAsync(new GridFutureChainListener<>(fut, doneCb));
+        listen(new GridFutureChainListener<>(fut, doneCb));
 
         return fut;
     }

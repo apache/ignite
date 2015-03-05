@@ -158,7 +158,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         pending.add(fut);
         futs.add(fut);
 
-        fut.listenAsync(new Listener());
+        fut.listen(new Listener());
 
         if (isCancelled())
             try {

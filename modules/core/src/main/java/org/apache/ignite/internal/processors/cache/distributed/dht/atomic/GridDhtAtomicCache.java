@@ -864,7 +864,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash);
 
         if (statsEnabled)
-            updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            updateFut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
@@ -1037,7 +1037,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (forceFut.isDone())
             updateAllAsyncInternal0(nodeId, req, completionCb);
         else {
-            forceFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     updateAllAsyncInternal0(nodeId, req, completionCb);
                 }

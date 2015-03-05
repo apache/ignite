@@ -474,7 +474,7 @@ public class HadoopJobTracker extends HadoopComponent {
                     GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
 
                     cache.invokeAsync(info.jobId(), new UpdatePhaseProcessor(incrCntrs, PHASE_COMPLETE)).
-                        listenAsync(failsLog);
+                        listen(failsLog);
 
                     break;
                 }
@@ -490,7 +490,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param c Closure of operation.
      */
     private void transform(HadoopJobId jobId, EntryProcessor<HadoopJobId, HadoopJobMetadata, Void> c) {
-        jobMetaCache().invokeAsync(jobId, c).listenAsync(failsLog);
+        jobMetaCache().invokeAsync(jobId, c).listen(failsLog);
     }
 
     /**
@@ -1204,7 +1204,7 @@ public class HadoopJobTracker extends HadoopComponent {
             };
 
             if (lastMapperFinished)
-                ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
+                ctx.shuffle().flush(jobId).listen(cacheUpdater);
             else
                 cacheUpdater.apply(null);
         }
@@ -1236,7 +1236,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 // Fail the whole job.
                 transform(jobId, new RemoveMappersProcessor(prev, currMappers, status.failCause()));
             else {
-                ctx.shuffle().flush(jobId).listenAsync(new CIX1<IgniteInternalFuture<?>>() {
+                ctx.shuffle().flush(jobId).listen(new CIX1<IgniteInternalFuture<?>>() {
                     @Override public void applyx(IgniteInternalFuture<?> f) {
                         Throwable err = null;
 

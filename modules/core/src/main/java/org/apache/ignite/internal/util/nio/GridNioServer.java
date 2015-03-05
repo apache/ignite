@@ -417,7 +417,7 @@ public class GridNioServer<T> {
             skipRecoveryPred.apply(msg));
 
         if (lsnr != null) {
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             assert !fut.isDone();
         }

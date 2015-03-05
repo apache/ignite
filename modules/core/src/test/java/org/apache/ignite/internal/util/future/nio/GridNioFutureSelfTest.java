@@ -123,7 +123,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         for (int i = 0; i < lsnrCnt; i++) {
-            fut.listenAsync(new CI1<GridNioFuture<String>>() {
+            fut.listen(new CI1<GridNioFuture<String>>() {
                 @Override public void apply(GridNioFuture<String> t) {
                     if (Thread.currentThread() != runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
@@ -144,7 +144,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
         err.set(null);
 
-        fut.listenAsync(new CI1<GridNioFuture<String>>() {
+        fut.listen(new CI1<GridNioFuture<String>>() {
             @Override public void apply(GridNioFuture<String> t) {
                 if (Thread.currentThread() != runThread)
                     err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));

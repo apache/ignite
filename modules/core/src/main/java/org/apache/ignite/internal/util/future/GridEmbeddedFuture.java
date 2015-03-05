@@ -45,13 +45,13 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
         this.embedded = embedded;
 
-        embedded.listenAsync(new AL1() {
+        embedded.listen(new AL1() {
             @SuppressWarnings({"ErrorNotRethrown", "CatchGenericClass"})
             @Override public void applyx(IgniteInternalFuture<B> embedded) {
                 try {
                     onDone(c.apply(embedded.get(), null));
                 }
-                catch (IgniteCheckedException| RuntimeException e) {
+                catch (IgniteCheckedException | RuntimeException e) {
                     onDone(c.apply(null, e));
                 }
                 catch (Error e) {
@@ -77,7 +77,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
         this.embedded = embedded;
 
-        embedded.listenAsync(new AL1() {
+        embedded.listen(new AL1() {
             @Override public void applyx(IgniteInternalFuture<B> embedded) {
                 try {
                     IgniteInternalFuture<A> next = c.apply(embedded.get(), null);
@@ -88,7 +88,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                         return;
                     }
 
-                    next.listenAsync(new AL2() {
+                    next.listen(new AL2() {
                         @Override public void applyx(IgniteInternalFuture<A> next) {
                             try {
                                 onDone(next.get());
@@ -144,7 +144,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
         this.embedded = embedded;
 
-        embedded.listenAsync(new AL1() {
+        embedded.listen(new AL1() {
             @Override public void applyx(IgniteInternalFuture<B> embedded) {
                 try {
                     IgniteInternalFuture<A> next = c1.apply(embedded.get(), null);
@@ -155,7 +155,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                         return;
                     }
 
-                    next.listenAsync(new AL2() {
+                    next.listen(new AL2() {
                         @Override public void applyx(IgniteInternalFuture<A> next) {
                             try {
                                 onDone(c2.apply(next.get(), null));

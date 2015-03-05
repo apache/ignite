@@ -488,7 +488,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
                     IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
 
-                    fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> gridCacheTxGridFuture) {
                             try {
                                 if (replied.compareAndSet(false, true))

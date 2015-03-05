@@ -1046,14 +1046,15 @@ public class IgfsDataManager extends IgfsManager {
                 @Override
                 @Nullable
                 public Object call() throws Exception {
-                    storeBlocksAsync(blocks).listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override
                         public void apply(IgniteInternalFuture<?> fut) {
                             try {
                                 fut.get();
 
                                 completionFut.onWriteAck(nodeId, batchId);
-                            } catch (IgniteCheckedException e) {
+                            }
+                            catch (IgniteCheckedException e) {
                                 completionFut.onError(nodeId, e);
                             }
                         }
@@ -1277,7 +1278,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param blocksMsg Write request message.
      */
     private void processBlocksMessage(final UUID nodeId, final IgfsBlocksMessage blocksMsg) {
-        storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        storeBlocksAsync(blocksMsg.blocks()).listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 IgniteCheckedException err = null;
 

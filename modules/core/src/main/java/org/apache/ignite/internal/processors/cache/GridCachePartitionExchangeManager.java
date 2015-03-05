@@ -133,7 +133,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Discovery event (will start exchange): " + exchId);
 
-                locExchFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                locExchFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         if (!enterBusy())
                             return;
@@ -141,7 +141,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         try {
                             // Unwind in the order of discovery events.
                             for (GridDhtPartitionsExchangeFuture<K, V> f = pendingExchangeFuts.poll(); f != null;
-                                f = pendingExchangeFuts.poll())
+                                 f = pendingExchangeFuts.poll())
                                 addFuture(f);
                         }
                         finally {

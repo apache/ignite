@@ -380,7 +380,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         try {
             GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
 
-            resFut.listenAsync(rmvActiveFut);
+            resFut.listen(rmvActiveFut);
 
             activeFuts.add(resFut);
 
@@ -851,7 +851,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             entries = newEntries();
             curFut = new GridFutureAdapter<>();
-            curFut.listenAsync(signalC);
+            curFut.listen(signalC);
 
             sem = new Semaphore(parallelOps);
         }
@@ -870,7 +870,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             synchronized (this) {
                 curFut0 = curFut;
 
-                curFut0.listenAsync(lsnr);
+                curFut0.listen(lsnr);
 
                 for (Map.Entry<K, V> entry : newEntries)
                     entries.add(entry);
@@ -880,7 +880,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                     entries = newEntries();
                     curFut = new GridFutureAdapter<>();
-                    curFut.listenAsync(signalC);
+                    curFut.listen(signalC);
                 }
             }
 
@@ -917,7 +917,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                     entries = newEntries();
                     curFut = new GridFutureAdapter<>();
-                    curFut.listenAsync(signalC);
+                    curFut.listen(signalC);
                 }
             }
 
@@ -986,7 +986,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);

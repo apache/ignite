@@ -344,7 +344,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            keyFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            keyFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     processDhtLockRequest0(nodeId, req);
                 }
@@ -520,7 +520,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
-        f.listenAsync(CU.errorLogger(log, GridCacheLockTimeoutException.class,
+        f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class));
     }
 

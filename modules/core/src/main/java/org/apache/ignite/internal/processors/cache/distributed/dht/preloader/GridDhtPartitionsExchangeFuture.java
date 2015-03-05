@@ -707,7 +707,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             }
         }
         else {
-            initFut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
+            initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> t) {
                     try {
                         if (!t.get()) // Just to check if there was an error.
@@ -805,7 +805,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert exchId.topologyVersion() == msg.topologyVersion();
 
-        initFut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
+        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> t) {
                 assert msg.lastVersion() != null;
 
@@ -865,7 +865,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         try {
             // Wait for initialization part of this future to complete.
-            initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     if (isDone())
                         return;
@@ -945,7 +945,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             assert rmtNodes != null;
 
-                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext();)
+                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext(); )
                                 if (it.next().id().equals(nodeId))
                                     it.remove();
 
