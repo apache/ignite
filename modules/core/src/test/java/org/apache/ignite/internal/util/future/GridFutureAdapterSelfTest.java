@@ -182,14 +182,10 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             final Thread runThread = Thread.currentThread();
 
-            final AtomicReference<Exception> err = new AtomicReference<>();
-
             for (int i = 0; i < lsnrCnt; i++) {
                 fut.listen(new CI1<IgniteInternalFuture<String>>() {
                     @Override public void apply(IgniteInternalFuture<String> t) {
-                        if (Thread.currentThread() == runThread)
-                            err.compareAndSet(null, new Exception("Wrong notification thread: " +
-                                Thread.currentThread()));
+                        assert Thread.currentThread() == runThread;
 
                         latch.countDown();
                     }
@@ -200,26 +196,19 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            if (err.get() != null)
-                throw err.get();
-
             final CountDownLatch doneLatch = new CountDownLatch(1);
-
-            err.set(null);
 
             fut.listen(new CI1<IgniteInternalFuture<String>>() {
                 @Override public void apply(IgniteInternalFuture<String> t) {
-                    if (Thread.currentThread() == runThread)
-                        err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
+                    assert Thread.currentThread() == runThread;
 
                     doneLatch.countDown();
                 }
             });
 
-            doneLatch.await();
+            assert doneLatch.getCount() == 0;
 
-            if (err.get() != null)
-                throw err.get();
+            doneLatch.await();
         }
         finally {
             ctx.stop(false);
