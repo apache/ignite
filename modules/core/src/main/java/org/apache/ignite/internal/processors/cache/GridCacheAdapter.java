@@ -3241,7 +3241,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 V retVal = CU.value(ret, ctx, true);
 
                 if (ctx.config().getInterceptor() != null)
-                    return (V)ctx.config().getInterceptor().onBeforeRemove(key, retVal).get2();
+                    return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, retVal)).get2();
 
                 return retVal;
             }
@@ -5318,15 +5318,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         boolean deserializePortable) {
         String taskName = ctx.kernalContext().job().currentTaskName();
-
-// TODO IGNITE-51.
-//        if (ctx.portableEnabled() && !F.isEmpty(keys)) {
-//            keys = F.viewReadOnly(keys, new C1<K, K>() {
-//                @Override public K apply(K k) {
-//                    return (K)ctx.marshalToPortable(k);
-//                }
-//            });
-//        }
 
         return getAllAsync(keys,
             !ctx.config().isReadFromBackup(),

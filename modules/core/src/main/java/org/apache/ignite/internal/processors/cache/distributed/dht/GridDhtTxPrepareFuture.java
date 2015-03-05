@@ -318,13 +318,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             Object procRes = null;
                             Exception err = null;
 
-                            Object keyVal = key.value(cacheCtx.cacheObjectContext(), false);
-                            Object val0 = CU.value(val, cacheCtx, false);
-
-                            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
                                     CacheInvokeEntry<Object, Object> invokeEntry =
-                                        new CacheInvokeEntry<>(txEntry.context(), keyVal, val0);
+                                        new CacheInvokeEntry<>(txEntry.context(), key, val);
 
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 

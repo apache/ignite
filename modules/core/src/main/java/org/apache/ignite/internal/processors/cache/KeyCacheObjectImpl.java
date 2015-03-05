@@ -87,7 +87,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
             try {
                 return (T)ctx.processor().unmarshal(ctx,
                     valBytes,
-                    ctx.kernalContext().config().getClassLoader());
+                    val.getClass().getClassLoader());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal object.", e);

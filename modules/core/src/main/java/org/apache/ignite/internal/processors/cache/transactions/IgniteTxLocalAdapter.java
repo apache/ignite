@@ -536,12 +536,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
-
-                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
-                                    key.value(cacheCtx.cacheObjectContext(), false),
-                                    oldVal,
-                                    CU.value(val, cacheCtx, false));
+                                Object interceptorVal = cacheCtx.config().getInterceptor()
+                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
+                                        CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -579,10 +576,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
-
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(key.value(cacheCtx.cacheObjectContext(), false), oldVal);
+                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx,
+                                        key,
+                                        e.cached().rawGetOrUnmarshal(true)));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -2462,27 +2459,36 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), false);
-        Object val = CU.value(cacheVal, ctx, false);
+        Object keyVal = null;
+        Object val = null;
 
         try {
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry<>(txEntry.context(), keyVal, val);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), keyVal, cacheVal, val);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val = invokeEntry.getValue();
+                val = invokeEntry.value();
+
+                keyVal = invokeEntry.key();
             }
 
-            if (res != null)
+            if (res != null) {
+                if (keyVal == null)
+                    keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+                
                 ret.addEntryProcessResult(keyVal, new CacheInvokeResult<>(res));
+            }
         }
         catch (Exception e) {
+            if (keyVal == null)
+                keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+
             ret.addEntryProcessResult(keyVal, new CacheInvokeResult(e));
         }
     }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -28,6 +28,7 @@ import java.util.*;
 /**
  *
  */
+@IgniteCodeGeneratingFail // Need to handle 'byteArray' state during write/read.
 public class CacheObjectImpl extends CacheObjectAdapter {
     /**
      *
@@ -59,7 +60,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                 if (byteArray())
                     return (T)Arrays.copyOf(bytes, bytes.length);
                 else
-                    return (T)ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
+                    return (T)ctx.processor().unmarshal(ctx, valBytes,
+                        val == null ? ctx.kernalContext().config().getClassLoader() : val.getClass().getClassLoader());
             }
 
             if (val != null)

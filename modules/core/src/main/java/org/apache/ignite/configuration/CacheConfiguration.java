@@ -355,6 +355,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
+        cpOnGet = cc.isCopyOnGet();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
