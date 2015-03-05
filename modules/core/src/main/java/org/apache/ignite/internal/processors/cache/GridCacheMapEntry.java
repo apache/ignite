@@ -994,7 +994,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             old = (retval || intercept) ? rawGetOrUnmarshalUnlocked(!retval) : this.val;
 
             if (intercept) {
-                val0 = CU.value(val, cctx, true);
+                val0 = CU.value(val, cctx, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old);
 
@@ -2053,7 +2053,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
             else {
                 if (intercept) {
-                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(new CacheLazyEntry(cctx, key, key0, 
+                    interceptRes = cctx.config().getInterceptor().onBeforeRemove(new CacheLazyEntry(cctx, key, key0,
                         oldVal, old0));
 
                     if (cctx.cancelRemove(interceptRes))

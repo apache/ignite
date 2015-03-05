@@ -577,7 +577,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx, 
+                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx,
                                         key,
                                         e.cached().rawGetOrUnmarshal(true)));
 
@@ -2462,7 +2462,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+        Object keyVal = null;
         Object val = null;
 
         try {
@@ -2483,6 +2483,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 ret.addEntryProcessResult(keyVal, new CacheInvokeResult<>(res));
         }
         catch (Exception e) {
+            if (keyVal == null)
+                keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+
             ret.addEntryProcessResult(keyVal, new CacheInvokeResult(e));
         }
     }
