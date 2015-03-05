@@ -420,7 +420,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         finishUnmarshalCacheObjects(nearVals, cctx, ldr);
 
         if (retVal != null)
-            retVal.finishUnmarshal(cctx, ldr);
+            retVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         if (invokeRes != null) {
             for (CacheInvokeDirectResult res : invokeRes)

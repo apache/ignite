@@ -79,7 +79,7 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
     public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
         return new Map.Entry<K, V>() {
             @Override public K getKey() {
-                return key.value(ctx, false);
+                return key.value(ctx.cacheObjectContext(), false);
             }
 
             @Override public V setValue(V val) {
@@ -87,7 +87,7 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
             }
 
             @Override public V getValue() {
-                return val != null ? val.<V>value(ctx, false) : null;
+                return val != null ? val.<V>value(ctx.cacheObjectContext(), false) : null;
             }
         };
     }

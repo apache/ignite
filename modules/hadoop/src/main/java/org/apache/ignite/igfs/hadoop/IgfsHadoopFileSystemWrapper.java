@@ -17,7 +17,6 @@
 
 package org.apache.ignite.igfs.hadoop;
 
-import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
@@ -25,10 +24,11 @@ import org.apache.hadoop.ipc.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.igfs.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 import java.io.*;
 import java.net.*;
@@ -38,17 +38,22 @@ import java.util.*;
  * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.igfs.Igfs}.
  */
 public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
-    /** Property name for path to Hadoop configuration. */
-    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
-
-    /** Property name for URI of file system. */
-    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
 
     /** Hadoop file system. */
     private final FileSystem fileSys;
 
     /** Properties of file system */
     private final Map<String, String> props = new HashMap<>();
+
+    /**
+     * Simple constructor that is to be used by default.
+     *
+     * @param uri URI of file system.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public IgfsHadoopFileSystemWrapper(String uri) throws IgniteCheckedException {
+        this(uri, null);
+    }
 
     /**
      * Constructor.
@@ -58,25 +63,22 @@ public class IgfsHadoopFileSystemWrapper implements Igfs, AutoCloseable {
      * @throws IgniteCheckedException In case of error.
      */
     public IgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws IgniteCheckedException {
-        Configuration cfg = new Configuration();
-
-        if (cfgPath != null)
-            cfg.addResource(U.resolveIgniteUrl(cfgPath));
-
         try {
-            fileSys = uri == null ? FileSystem.get(cfg) : FileSystem.get(new URI(uri), cfg);
+            SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
+
+            fileSys = secProvider.createFileSystem();
+
+            uri = secProvider.uri().toString();
+
+            if (!uri.endsWith("/"))
+                uri += "/";
+
+            props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);
+            props.put(SECONDARY_FS_URI, uri);
         }
-        catch (IOException | URISyntaxException e) {
+        catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
-
-        uri = fileSys.getUri().toString();
-
-        if (!uri.endsWith("/"))
-            uri += "/";
-
-        props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);
-        props.put(SECONDARY_FS_URI, uri);
     }
 
     /**

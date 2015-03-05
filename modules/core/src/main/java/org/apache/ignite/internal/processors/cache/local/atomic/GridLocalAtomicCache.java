@@ -490,9 +490,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        if (ctx.portableEnabled())
-            key = (K)ctx.marshalToPortable(key);
-
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
@@ -503,10 +500,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
-        if (ctx.portableEnabled())
-            return m.isEmpty() ? null : m.values().iterator().next();
-        else
-            return m.get(key);
+        return m.isEmpty() ? null : m.values().iterator().next();
     }
 
     /** {@inheritDoc} */
@@ -518,14 +512,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
-
-        if (ctx.portableEnabled() && !F.isEmpty(keys)) {
-            keys = F.viewReadOnly(keys, new C1<K, K>() {
-                @Override public K apply(K k) {
-                    return (K)ctx.marshalToPortable(k);
-                }
-            });
-        }
 
         return getAllInternal(keys,
             ctx.isSwapOrOffheapEnabled(),
@@ -707,7 +693,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             invokeMap.values(),
             args,
             expiryPerCall(),
-            true,
+            false,
             false,
             null,
             ctx.writeThrough());
@@ -731,7 +717,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
             invokeMap,
             args,
-            true,
+            false,
             false,
             null);
 
@@ -795,7 +781,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             map.values(),
             args,
             expiryPerCall(),
-            true,
+            false,
             false,
             null,
             ctx.writeThrough());
@@ -1050,7 +1036,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             throw err;
 
         Object ret = res == null ? null : rawRetval ?
-            new GridCacheReturn<>(res.get2(), res.get1()) : retval ? res.get2() : res.get1();
+            new GridCacheReturn<>(res.get2(), res.get1()) : (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
             ret = Collections.emptyMap();
@@ -1149,7 +1135,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             taskName,
                             null);
 
-                        Object keyVal = entry.key().value(ctx, false);
+                        Object keyVal = entry.key().value(ctx.cacheObjectContext(), false);
                         Object oldVal = CU.value(old, ctx, false);
 
                         CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, keyVal, oldVal);
@@ -1261,7 +1247,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 null);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(
-                                entry.key().value(ctx, false),
+                                entry.key().value(ctx.cacheObjectContext(), false),
                                 CU.value(old, ctx, false),
                                 val);
 
@@ -1294,7 +1280,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 null);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                entry.key().value(ctx, false),
+                                entry.key().value(ctx.cacheObjectContext(), false),
                                 CU.value(old, ctx, false));
 
                             if (ctx.cancelRemove(interceptorRes))
@@ -1443,11 +1429,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 if (intercept) {
                     if (op == UPDATE) {
-                        ctx.config().getInterceptor().onAfterPut(entry.key().value(ctx, false),
-                            writeVal.value(ctx, false));
+                        ctx.config().getInterceptor().onAfterPut(entry.key().value(ctx.cacheObjectContext(), false),
+                            writeVal.value(ctx.cacheObjectContext(), false));
                     }
                     else
-                        ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx, false), t.get2());
+                        ctx.config().getInterceptor().onAfterRemove(entry.key().value(ctx.cacheObjectContext(), false),
+                            t.get2());
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {

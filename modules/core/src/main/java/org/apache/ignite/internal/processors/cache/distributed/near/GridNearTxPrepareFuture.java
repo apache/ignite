@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -935,7 +934,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     assert F.isEmpty(res.invalidPartitions());
 
-                    for (Map.Entry<IgniteTxKey, IgniteBiTuple<GridCacheVersion, CacheObject>> entry : res.ownedValues().entrySet()) {
+                    for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
                         IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
                         assert txEntry != null;
@@ -947,17 +946,17 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 if (cacheCtx.isNear()) {
                                     GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                                    IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
+                                    CacheVersionedValue tup = entry.getValue();
 
-                                    nearEntry.resetFromPrimary(tup.get2(), tx.xidVersion(),
-                                        tup.get1(), m.node().id());
+                                    nearEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion(),
+                                        tup.version(), m.node().id());
                                 }
                                 else if (txEntry.cached().detached()) {
                                     GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                                    IgniteBiTuple<GridCacheVersion, CacheObject> tup = entry.getValue();
+                                    CacheVersionedValue tup = entry.getValue();
 
-                                    detachedEntry.resetFromPrimary(tup.get2(), tx.xidVersion());
+                                    detachedEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion());
                                 }
 
                                 break;

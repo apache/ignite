@@ -15,98 +15,76 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
 import java.nio.*;
 
 /**
- * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
- * for multiple caches.
+ * Cache object and version.
  */
-public class IgniteTxKey implements Message {
-    /** Key. */
-    @GridToStringInclude
-    private KeyCacheObject key;
+public class CacheVersionedValue implements Message {
+    /** Cache version. */
+    private GridCacheVersion vers;
 
-    /** Cache ID. */
-    private int cacheId;
+    /** Cache object. */
+    private CacheObject obj;
 
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public IgniteTxKey() {
+    /** */
+    public CacheVersionedValue() {
         // No-op.
     }
 
     /**
-     * @param key User key.
-     * @param cacheId Cache ID.
+     * @param vers Cache version.
+     * @param obj Cache object.
      */
-    public IgniteTxKey(KeyCacheObject key, int cacheId) {
-        this.key = key;
-        this.cacheId = cacheId;
+    CacheVersionedValue(GridCacheVersion vers, CacheObject obj) {
+        this.vers = vers;
+        this.obj = obj;
     }
 
     /**
-     * @return User key.
+     * @return Cache version.
      */
-    public KeyCacheObject key() {
-        return key;
+    public GridCacheVersion version() {
+        return vers;
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache object.
      */
-    public int cacheId() {
-        return cacheId;
+    public CacheObject cacheObject() {
+        return obj;
     }
 
     /**
-     * @param ctx Context.
+     * This method is called before the whole message is sent
+     * and is responsible for pre-marshalling state.
+     *
+     * @param ctx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
+    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        if (obj != null)
+            obj.prepareMarshal(ctx);
     }
 
     /**
+     * This method is called after the whole message is recived
+     * and is responsible for unmarshalling state.
+     *
      * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert key != null;
-
-        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (!(o instanceof IgniteTxKey))
-            return false;
-
-        IgniteTxKey that = (IgniteTxKey)o;
-
-        return cacheId == that.cacheId && key.equals(that.key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = key.hashCode();
-
-        res = 31 * res + cacheId;
-
-        return res;
+        if (obj != null)
+            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -122,13 +100,13 @@ public class IgniteTxKey implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeMessage("obj", obj))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage("vers", vers))
                     return false;
 
                 writer.incrementState();
@@ -147,7 +125,7 @@ public class IgniteTxKey implements Message {
 
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                obj = reader.readMessage("obj");
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +133,7 @@ public class IgniteTxKey implements Message {
                 reader.incrementState();
 
             case 1:
-                key = reader.readMessage("key");
+                vers = reader.readMessage("vers");
 
                 if (!reader.isLastRead())
                     return false;
@@ -169,16 +147,11 @@ public class IgniteTxKey implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 94;
+        return 102;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(IgniteTxKey.class, this);
     }
 }

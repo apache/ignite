@@ -539,7 +539,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
-                                    key.value(cacheCtx, false),
+                                    key.value(cacheCtx.cacheObjectContext(), false),
                                     oldVal,
                                     CU.value(val, cacheCtx, false));
 
@@ -582,7 +582,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 Object oldVal = CU.value(e.cached().rawGetOrUnmarshal(true), cacheCtx, false);
 
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(key.value(cacheCtx, false), oldVal);
+                                    .onBeforeRemove(key.value(cacheCtx.cacheObjectContext(), false), oldVal);
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -1647,7 +1647,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1790,7 +1791,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2463,7 +2465,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx, false);
+        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), false);
         Object val = CU.value(cacheVal, ctx, false);
 
         try {
@@ -2535,43 +2537,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             invokeMap0 = null;
         }
-// TODO IGNITE-51.
-//        else if (cacheCtx.portableEnabled()) {
-//            if (map != null) {
-//                map0 = U.newHashMap(map.size());
-//
-//                try {
-//                    for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
-//                        K key = (K)cacheCtx.marshalToPortable(e.getKey());
-//                        V val = (V)cacheCtx.marshalToPortable(e.getValue());
-//
-//                        map0.put(key, val);
-//                    }
-//                }
-//                catch (IgniteException e) {
-//                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//                }
-//            }
-//            else
-//                map0 = null;
-//
-//            if (invokeMap != null) {
-//                invokeMap0 = U.newHashMap(invokeMap.size());
-//
-//                try {
-//                    for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, Object>> e : invokeMap.entrySet()) {
-//                        K key = (K)cacheCtx.marshalToPortable(e.getKey());
-//
-//                        invokeMap0.put(key, e.getValue());
-//                    }
-//                }
-//                catch (IgniteException e) {
-//                    return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//                }
-//            }
-//            else
-//                invokeMap0 = null;
-//        }
         else {
             map0 = (Map<K, V>)map;
             invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
@@ -2635,21 +2600,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 // Loose all skipped.
                 final Set<KeyCacheObject> loaded = loadFut.get();
 
-                final Collection<KeyCacheObject> keys;
-
-                if (keySet != null ) {
-                    keys = new ArrayList<>(keySet.size());
-
-                    // TODO IGNITE-51.
-                    for (K k : keySet) {
-                        KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(k);
-
-                        if (k != null && (loaded == null || !loaded.contains(cacheKey)))
-                            keys.add(cacheKey);
-                    }
-                }
-                else
-                    keys = Collections.emptyList();
+                final Collection<KeyCacheObject> keys = F.view(enlisted, F0.notIn(loaded));
 
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + keys);
@@ -2786,24 +2737,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             keys0 = drMap.keySet();
         }
-// TODO IGNITE-51.
-//        else if (cacheCtx.portableEnabled()) {
-//            try {
-//                if (keys != null) {
-//                    Collection<K> pKeys = new ArrayList<>(keys.size());
-//
-//                    for (K key : keys)
-//                        pKeys.add((K)cacheCtx.marshalToPortable(key));
-//
-//                    keys0 = pKeys;
-//                }
-//                else
-//                    keys0 = null;
-//            }
-//            catch (IgniteException e) {
-//                return new GridFinishedFuture<>(cctx.kernalContext(), e);
-//            }
-//        }
         else
             keys0 = keys;
 

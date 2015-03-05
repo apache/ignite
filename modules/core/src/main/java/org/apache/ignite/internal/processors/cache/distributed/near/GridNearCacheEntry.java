@@ -315,7 +315,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             taskName,
             true,
             null,
-            false).get().get(key.value(cctx, false));
+            false).get().get(key.value(cctx.cacheObjectContext(), false));
     }
 
     /**

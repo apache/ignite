@@ -316,7 +316,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         assert key != null : "Key cannot be null for cache entry: " + e;
 
-        Object key0 = key.value(cache.context(), false);
+        Object key0 = key.value(cache.context().cacheObjectContext(), false);
         Object val0 = CU.value(v, cache.context(), false);
 
         ClassLoader keyLdr = U.detectObjectClassLoader(key0);

@@ -371,7 +371,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         // TODO IGNITE-51.
         Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
             @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
-                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey());
+                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), null);
                 CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), null);
 
                 return new IgniteDataLoaderEntry(key, val);
@@ -414,9 +414,18 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /**
      * @param key Key.
      * @param val Value.
+     * @return Future.
      */
     public IgniteFuture<?> addDataInternal(KeyCacheObject key, CacheObject val) {
         return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, val)));
+    }
+
+    /**
+     * @param key Key.
+     * @return Future.
+     */
+    public IgniteFuture<?> removeDataInternal(KeyCacheObject key) {
+        return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, null)));
     }
 
     /**
@@ -426,9 +435,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     public IgniteFuture<?> addDataInternal(Collection<? extends IgniteDataLoaderEntry> entries) {
         enterBusy();
 
-        try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+        GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
 
+        try {
             resFut.listenAsync(rmvActiveFut);
 
             activeFuts.add(resFut);
@@ -446,7 +455,12 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             return new IgniteFutureImpl<>(resFut);
         }
-        catch (IgniteException e) {
+        catch (Throwable e) {
+            resFut.onDone(e);
+
+            if (e instanceof Error)
+                throw e;
+
             return new IgniteFinishedFutureImpl<>(ctx, e);
         }
         finally {
@@ -465,7 +479,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key);
+        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, null);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, null);
 
         return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key0, val0)));
@@ -503,8 +517,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataLoaderPda(key.value(null, false),
-                        CU.value(entry.getValue(), null, false),
+                    jobPda = new DataLoaderPda(key.value(cacheObjCtx, false),
+                        entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
                         updater);
 
                     initPda = false;
@@ -1341,7 +1355,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             for (Map.Entry<KeyCacheObject, CacheObject> e : entries) {
                 try {
-                    e.getKey().finishUnmarshal(cctx, cctx.deploy().globalLoader());
+                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                     GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 

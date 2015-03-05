@@ -130,13 +130,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(cctx, ldr);
+        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         if (newVal != null)
-            newVal.finishUnmarshal(cctx, ldr);
+            newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
         if (oldVal != null)
-            oldVal.finishUnmarshal(cctx, ldr);
+            oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
     }
 
     /**

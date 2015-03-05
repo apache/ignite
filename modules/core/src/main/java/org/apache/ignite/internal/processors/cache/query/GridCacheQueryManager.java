@@ -2334,7 +2334,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (key != null)
                     return key;
 
-                key = cctx.toCacheKeyObject(null, keyBytes(), false).value(cctx, false);
+                key = cctx.toCacheKeyObject(null, keyBytes(), false).value(cctx.cacheObjectContext(), false);
 
                 return key;
             }
@@ -2463,7 +2463,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override protected V unmarshalValue() throws IgniteCheckedException {
             long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
 
-            V val = (V)cctx.portable().unmarshal(ptr, false);
+            CacheObject obj = cctx.fromOffheap(ptr, false);
+
+            V val = CU.value(obj, cctx, false);
 
             assert val != null;
 

@@ -489,11 +489,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 88:
-                msg = new GridCacheValueBytes();
-
-                break;
-
             case 89:
                 msg = new CacheObjectImpl();
 
@@ -546,6 +541,21 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 99:
                 msg = new CacheEntrySerializablePredicate();
+
+                break;
+
+            case 100:
+                msg = new IgniteTxEntry();
+
+                break;
+
+            case 101:
+                msg = new TxEntryValueHolder();
+
+                break;
+
+            case 102:
+                msg = new CacheVersionedValue();
 
                 break;
 

@@ -30,7 +30,7 @@ public interface CacheObject extends Message {
      * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
-    @Nullable public <T> T value(GridCacheContext ctx, boolean cpy);
+    @Nullable public <T> T value(CacheObjectContext ctx, boolean cpy);
 
     /**
      * @param name Field name.
@@ -54,19 +54,19 @@ public interface CacheObject extends Message {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException;
+    public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+    public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.
      *
      * @return Instance to store in cache.
      */
-    public CacheObject prepareForCache(GridCacheContext ctx);
+    public CacheObject prepareForCache(CacheObjectContext ctx);
 }

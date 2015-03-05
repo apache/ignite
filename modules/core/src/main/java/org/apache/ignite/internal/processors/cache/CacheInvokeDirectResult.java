@@ -105,13 +105,13 @@ public class CacheInvokeDirectResult implements Message {
 
     /** {@inheritDoc} */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, ldr);
+        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
 
         if (res != null)
-            res.finishUnmarshal(ctx, ldr);
+            res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

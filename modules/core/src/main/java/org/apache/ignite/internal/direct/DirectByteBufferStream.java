@@ -246,6 +246,12 @@ public class DirectByteBufferStream {
     private Iterator<?> it;
 
     /** */
+    private Iterator<?> arrIt;
+
+    /** */
+    private Object arrCur = NULL;
+
+    /** */
     private Object mapCur = NULL;
 
     /** */
@@ -443,6 +449,18 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param val Value.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void writeByteArray(byte[] val, long off, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {
@@ -569,28 +587,28 @@ public class DirectByteBufferStream {
      */
     public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
         if (arr != null) {
-            if (it == null) {
+            if (arrIt == null) {
                 writeInt(arr.length);
 
                 if (!lastFinished)
                     return;
 
-                it = arrayIterator(arr);
+                arrIt = arrayIterator(arr);
             }
 
-            while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
-                    cur = it.next();
+            while (arrIt.hasNext() || arrCur != NULL) {
+                if (arrCur == NULL)
+                    arrCur = arrIt.next();
 
-                write(itemType, cur, writer);
+                write(itemType, arrCur, writer);
 
                 if (!lastFinished)
                     return;
 
-                cur = NULL;
+                arrCur = NULL;
             }
 
-            it = null;
+            arrIt = null;
         }
         else
             writeInt(-1);

@@ -1225,7 +1225,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 boolean modified = false;
 
-                Object key = txEntry.key().value(txEntry.context(), false);
+                Object key = txEntry.key().value(txEntry.context().cacheObjectContext(), false);
 
                 Object val = CU.value(cacheVal, txEntry.context(), false);
 

@@ -109,12 +109,12 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
             final GridCacheContext cctx = cache.context();
 
             for (IgniteDataLoaderEntry e : col) {
-                e.getKey().finishUnmarshal(cctx, cctx.deploy().globalLoader());
+                e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                 CacheObject val = e.getValue();
 
                 if (val != null)
-                    val.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+                    val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
             }
 
             if (unwrapEntries()) {

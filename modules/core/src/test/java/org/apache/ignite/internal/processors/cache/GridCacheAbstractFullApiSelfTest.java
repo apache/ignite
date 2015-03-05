@@ -3439,7 +3439,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             locKeys.addAll(cache.keySet(new CacheEntryPredicateAdapter() {
                 @Override public boolean apply(GridCacheEntryEx e) {
-                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.key().value(e.context(), false));
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(),
+                        e.key().value(e.context().cacheObjectContext(), false));
                 }
             }));
 

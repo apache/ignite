@@ -46,7 +46,7 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
 
     /** Injected ignite instance. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    protected Ignite ignite;
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
@@ -76,7 +76,7 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
 
     /** Logger. */
     @LoggerResource
-    private transient IgniteLogger log;
+    protected transient IgniteLogger log;
 
     /**
      * If key class has annotation {@link CacheAffinityKeyMapped},
@@ -89,32 +89,26 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        IgniteKernal kernal = (IgniteKernal)ignite;
+        try {
+            Object o = reflectCache.firstFieldValue(key);
 
-        if (kernal.context().portable().isPortableObject(key))
-            return kernal.context().portable().affinityKey(key);
-        else {
-            try {
-                Object o = reflectCache.firstFieldValue(key);
+            if (o != null)
+                return o;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to access affinity field for key [field=" +
+                reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
+        }
 
-                if (o != null)
-                    return o;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to access affinity field for key [field=" +
-                    reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
-            }
+        try {
+            Object o = reflectCache.firstMethodValue(key);
 
-            try {
-                Object o = reflectCache.firstMethodValue(key);
-
-                if (o != null)
-                    return o;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to invoke affinity method for key [mtd=" +
-                    reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
-            }
+            if (o != null)
+                return o;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to invoke affinity method for key [mtd=" +
+                reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
         }
 
         return key;

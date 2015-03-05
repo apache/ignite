@@ -18,22 +18,21 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -44,16 +43,13 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
+public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
-
     /** Owning transaction. */
     @GridToStringExclude
+    @GridDirectTransient
     private IgniteInternalTx tx;
 
     /** Cache key. */
@@ -64,6 +60,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     private int cacheId;
 
     /** Transient tx key. */
+    @GridDirectTransient
     private IgniteTxKey txKey;
 
     /** Cache value. */
@@ -72,13 +69,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
 
     /** Visible value for peek. */
     @GridToStringInclude
+    @GridDirectTransient
     private TxEntryValueHolder prevVal = new TxEntryValueHolder();
-
-    /** Filter bytes. */
-    private byte[] filterBytes;
 
     /** Transform. */
     @GridToStringInclude
+    @GridDirectTransient
     private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transform closure bytes. */
@@ -99,48 +95,59 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     private GridCacheVersion explicitVer;
 
     /** DHT version. */
-    private transient volatile GridCacheVersion dhtVer;
+    @GridDirectTransient
+    private volatile GridCacheVersion dhtVer;
 
     /** Put filters. */
     @GridToStringInclude
     private CacheEntryPredicate[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
+    @GridDirectTransient
     private boolean filtersPassed;
 
     /** Flag indicating that filter is set and can not be replaced. */
-    private transient boolean filtersSet;
+    @GridDirectTransient
+    private boolean filtersSet;
 
     /** Underlying cache entry. */
-    private transient volatile GridCacheEntryEx entry;
+    @GridDirectTransient
+    private volatile GridCacheEntryEx entry;
 
     /** Cache registry. */
-    private transient GridCacheContext<?, ?> ctx;
+    @GridDirectTransient
+    private GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
     @SuppressWarnings({"TransientFieldNotInitialized"})
-    private transient AtomicBoolean prepared = new AtomicBoolean();
+    @GridDirectTransient
+    private AtomicBoolean prepared = new AtomicBoolean();
 
     /** Lock flag for colocated cache. */
+    @GridDirectTransient
     private transient boolean locked;
 
     /** Assigned node ID (required only for partitioned cache). */
-    private transient UUID nodeId;
+    @GridDirectTransient
+    private UUID nodeId;
 
     /** Flag if this node is a back up node. */
+    @GridDirectTransient
     private boolean locMapped;
 
     /** Group lock entry flag. */
     private boolean grpLock;
 
-    /** Deployment enabled flag. */
-    private boolean depEnabled;
-
     /** Expiry policy. */
+    @GridDirectTransient
     private ExpiryPolicy expiryPlc;
 
     /** Expiry policy transfer flag. */
+    @GridDirectTransient
     private boolean transferExpiryPlc;
+
+    /** Expiry policy bytes. */
+    private byte[] expiryPlcBytes;
 
     /**
      * Required by {@link Externalizable}
@@ -185,8 +192,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         key = entry.key();
 
         cacheId = entry.context().cacheId();
-
-        depEnabled = ctx.gridDeploy().enabled();
     }
 
     /**
@@ -232,8 +237,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         key = entry.key();
 
         cacheId = entry.context().cacheId();
-
-        depEnabled = ctx.gridDeploy().enabled();
     }
 
     /**
@@ -293,7 +296,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         cp.conflictExpireTime = conflictExpireTime;
         cp.explicitVer = explicitVer;
         cp.grpLock = grpLock;
-        cp.depEnabled = depEnabled;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
 
@@ -645,8 +647,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
      * @param filters Put filters.
      */
     public void filters(CacheEntryPredicate[] filters) {
-        filterBytes = null;
-
         this.filters = filters;
     }
 
@@ -692,22 +692,17 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         }
 
         // Do not serialize filters if they are null.
-        if (depEnabled) {
-            if (transformClosBytes == null && entryProcessorsCol != null)
-                transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
-
-            if (F.isEmptyOrNulls(filters))
-                filterBytes = null;
-            else if (filterBytes == null)
-                filterBytes = CU.marshal(ctx, filters);
-        }
+        if (transformClosBytes == null && entryProcessorsCol != null)
+            transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
         if (transferExpiry)
             transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
         key.prepareMarshal(context().cacheObjectContext());
 
-        val.marshal(ctx, context(), depEnabled);
+        val.marshal(ctx, context());
+
+        expiryPlcBytes = transferExpiryPlc ?  CU.marshal(ctx, new IgniteExternalizableExpiryPolicy(expiryPlc)) : null;
     }
 
     /**
@@ -730,28 +725,25 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
             this.ctx = cacheCtx;
         }
 
-        if (depEnabled) {
-            // Unmarshal transform closure anyway if it exists.
-            if (transformClosBytes != null && entryProcessorsCol == null)
-                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+        // Unmarshal transform closure anyway if it exists.
+        if (transformClosBytes != null && entryProcessorsCol == null)
+            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
-            if (filters == null && filterBytes != null) {
-                filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
-
-                if (filters == null)
-                    filters = CU.empty0();
-                else {
-                    for (CacheEntryPredicate p : filters) {
-                        if (p != null)
-                            p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
-                    }
-                }
+        if (filters == null)
+            filters = CU.empty0();
+        else {
+            for (CacheEntryPredicate p : filters) {
+                if (p != null)
+                    p.finishUnmarshal(ctx.cacheContext(cacheId), clsLdr);
             }
         }
 
-        key.finishUnmarshal(context(), clsLdr);
+        key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
 
-        val.unmarshal(this.ctx, clsLdr, depEnabled);
+        val.unmarshal(this.ctx, clsLdr);
+
+        if (expiryPlcBytes != null)
+            expiryPlc =  ctx.marshaller().unmarshal(expiryPlcBytes, clsLdr);
     }
 
     /**
@@ -769,75 +761,197 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(depEnabled);
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
 
-        if (depEnabled) {
-            U.writeByteArray(out, transformClosBytes);
-            U.writeByteArray(out, filterBytes);
-        }
-        else {
-            U.writeCollection(out, entryProcessorsCol);
-            U.writeArray(out, filters);
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
         }
 
-        out.writeObject(key);
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
 
-        out.writeInt(cacheId);
+                writer.incrementState();
 
-        val.writeTo(out);
+            case 1:
+                if (!writer.writeLong("conflictExpireTime", conflictExpireTime))
+                    return false;
 
-        out.writeLong(ttl);
+                writer.incrementState();
 
-        CU.writeVersion(out, explicitVer);
-        out.writeBoolean(grpLock);
+            case 2:
+                if (!writer.writeMessage("conflictVer", conflictVer))
+                    return false;
 
-        if (conflictExpireTime != CU.EXPIRE_TIME_CALCULATE) {
-            out.writeBoolean(true);
-            out.writeLong(conflictExpireTime);
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeByteArray("expiryPlcBytes", expiryPlcBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMessage("explicitVer", explicitVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeObjectArray("filters", !F.isEmptyOrNulls(filters) ? filters : null, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeBoolean("grpLock", grpLock))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeLong("ttl", ttl))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
         }
-        else
-            out.writeBoolean(false);
 
-        CU.writeVersion(out, conflictVer);
-
-        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
+        return true;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        depEnabled = in.readBoolean();
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
 
-        if (depEnabled) {
-            transformClosBytes = U.readByteArray(in);
-            filterBytes = U.readByteArray(in);
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                conflictExpireTime = reader.readLong("conflictExpireTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                conflictVer = reader.readMessage("conflictVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                explicitVer = reader.readMessage("explicitVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                filters = reader.readObjectArray("filters", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                grpLock = reader.readBoolean("grpLock");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                transformClosBytes = reader.readByteArray("transformClosBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
-        else {
-            entryProcessorsCol = U.readCollection(in);
-            filters = GridCacheUtils.readEntryFilterArray(in);
-        }
 
-        key = (KeyCacheObject)in.readObject();
-
-        cacheId = in.readInt();
-
-        val.readFrom(in);
-
-        ttl = in.readLong();
-
-        explicitVer = CU.readVersion(in);
-        grpLock = in.readBoolean();
-
-        conflictExpireTime = in.readBoolean() ? in.readLong() : CU.EXPIRE_TIME_CALCULATE;
-        conflictVer = CU.readVersion(in);
-
-        expiryPlc = (ExpiryPolicy)in.readObject();
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
+    @Override public byte directType() {
+        return 100;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -861,196 +975,4 @@ public class IgniteTxEntry implements GridPeerDeployAware, Externalizable, Optim
         return GridToStringBuilder.toString(IgniteTxEntry.class, this, "xidVer", tx == null ? "null" : tx.xidVersion());
     }
 
-    /**
-     * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
-     */
-    private static class TxEntryValueHolder {
-        /** */
-        @GridToStringInclude
-        private CacheObject val;
-
-        /** */
-        @GridToStringInclude
-        private GridCacheOperation op = NOOP;
-
-        /** Flag indicating that value has been set for write. */
-        private boolean hasWriteVal;
-
-        /** Flag indicating that value has been set for read. */
-        private boolean hasReadVal;
-
-        /**
-         * @param op Cache operation.
-         * @param val Value.
-         * @param hasWriteVal Write value presence flag.
-         * @param hasReadVal Read value presence flag.
-         */
-        public void value(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
-            if (hasReadVal && this.hasWriteVal)
-                return;
-
-            this.op = op;
-            this.val = val;
-
-            this.hasWriteVal = hasWriteVal || op == CREATE || op == UPDATE || op == DELETE;
-            this.hasReadVal = hasReadVal || op == READ;
-        }
-
-        /**
-         * @return {@code True} if has read or write value.
-         */
-        public boolean hasValue() {
-            return hasWriteVal || hasReadVal;
-        }
-
-        /**
-         * Gets stored value.
-         *
-         * @return Value.
-         */
-        public CacheObject value() {
-            return val;
-        }
-
-        /**
-         * @param val Stored value.
-         */
-        public void value(@Nullable CacheObject val) {
-            this.val = val;
-        }
-
-        /**
-         * Gets cache operation.
-         *
-         * @return Cache operation.
-         */
-        public GridCacheOperation op() {
-            return op;
-        }
-
-        /**
-         * Sets cache operation.
-         *
-         * @param op Cache operation.
-         */
-        public void op(GridCacheOperation op) {
-            this.op = op;
-        }
-
-        /**
-         * @return {@code True} if write value was set.
-         */
-        public boolean hasWriteValue() {
-            return hasWriteVal;
-        }
-
-        /**
-         * @return {@code True} if read value was set.
-         */
-        public boolean hasReadValue() {
-            return hasReadVal;
-        }
-
-        /**
-         * @param sharedCtx Shared cache context.
-         * @param ctx Cache context.
-         * @param depEnabled Deployment enabled flag.
-         * @throws IgniteCheckedException If marshaling failed.
-         */
-        public void marshal(GridCacheSharedContext<?, ?> sharedCtx, GridCacheContext<?, ?> ctx, boolean depEnabled)
-            throws IgniteCheckedException {
-            if (hasWriteVal && val != null)
-                val.prepareMarshal(ctx.cacheObjectContext());
-// TODO IGNITE-51.
-//            boolean valIsByteArr = val != null && val instanceof byte[];
-//
-//            // Do not send write values to remote nodes.
-//            if (hasWriteVal && val != null && !valIsByteArr && valBytes == null &&
-//                (depEnabled || !ctx.isUnmarshalValues()))
-//                valBytes = CU.marshal(sharedCtx, val);
-//
-//            valBytesSent = hasWriteVal && !valIsByteArr && valBytes != null && (depEnabled || !ctx.isUnmarshalValues());
-        }
-
-        /**
-         * @param ctx Cache context.
-         * @param ldr Class loader.
-         * @param depEnabled Deployment enabled flag.
-         * @throws IgniteCheckedException If unmarshalling failed.
-         */
-        public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
-            if (val != null)
-                val.finishUnmarshal(ctx, ldr);
-// TODO IGNITE-51.
-//            if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
-//                val = ctx.marshaller().unmarshal(valBytes, ldr);
-        }
-
-        /**
-         * @param out Data output.
-         * @throws IOException If failed.
-         */
-        public void writeTo(ObjectOutput out) throws IOException {
-            out.writeBoolean(hasWriteVal);
-
-            if (hasWriteVal)
-                out.writeObject(val);
-
-            out.writeInt(op.ordinal());
-// TODO IGNITE-51.
-//            out.writeBoolean(hasWriteVal);
-//            out.writeBoolean(valBytesSent);
-//
-//            if (hasWriteVal) {
-//                if (valBytesSent)
-//                    U.writeByteArray(out, valBytes);
-//                else {
-//                    if (val != null && val instanceof byte[]) {
-//                        out.writeBoolean(true);
-//
-//                        U.writeByteArray(out, (byte[]) val);
-//                    }
-//                    else {
-//                        out.writeBoolean(false);
-//
-//                        out.writeObject(val);
-//                    }
-//                }
-//            }
-//
-//            out.writeInt(op.ordinal());
-        }
-
-        /**
-         * @param in Data input.
-         * @throws IOException If failed.
-         * @throws ClassNotFoundException If failed.
-         */
-        @SuppressWarnings("unchecked")
-        public void readFrom(ObjectInput in) throws IOException, ClassNotFoundException {
-            hasWriteVal = in.readBoolean();
-
-            if (hasWriteVal)
-                val = (CacheObject)in.readObject();
-
-            op = fromOrdinal(in.readInt());
-// TODO IGNITE-51.
-//            hasWriteVal = in.readBoolean();
-//            valBytesSent = in.readBoolean();
-//
-//            if (hasWriteVal) {
-//                if (valBytesSent)
-//                    valBytes = U.readByteArray(in);
-//                else
-//                    val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
-//            }
-//
-//            op = fromOrdinal(in.readInt());
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "[op=" + op +", val=" + val + ']';
-        }
-    }
 }
