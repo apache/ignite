@@ -390,7 +390,9 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     /** {@inheritDoc} */
     @Override public long usedSpaceSize() {
         try {
-            return fileSys.getContentSummary(new Path(fileSys.getUri())).getSpaceConsumed();
+            // We don't use FileSystem#getUsed() since it counts only the files
+            // in the filesystem root, not all the files recursively.
+            return fileSys.getContentSummary(new Path("/")).getSpaceConsumed();
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to get used space size of file system.");
