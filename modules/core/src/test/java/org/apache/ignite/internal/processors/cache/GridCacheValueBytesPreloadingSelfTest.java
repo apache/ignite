@@ -57,7 +57,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setDistributionMode(PARTITIONED_ONLY);
-        ccfg.setStoreValueBytes(true);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
