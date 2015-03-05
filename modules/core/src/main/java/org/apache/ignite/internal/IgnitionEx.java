@@ -506,7 +506,7 @@ public class IgnitionEx {
     }
 
     /**
-     * Start Grid for interop scenario.
+     * Start Grid passing a closure which will modify configuration before it is passed to start routine.
      *
      * @param springCfgPath Spring config path.
      * @param gridName Grid name.
@@ -514,7 +514,7 @@ public class IgnitionEx {
      * @return Started Grid.
      * @throws IgniteCheckedException If failed.
      */
-    public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName,
+    public static Ignite startWithClosure(@Nullable String springCfgPath, @Nullable String gridName,
         IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo) throws IgniteCheckedException {
         URL url = resolveSpringUrl(springCfgPath);
 
@@ -1605,15 +1605,15 @@ public class IgnitionEx {
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
 
-            IgfsConfiguration[] igfsCfgs = myCfg.getIgfsConfiguration();
+            FileSystemConfiguration[] igfsCfgs = myCfg.getFileSystemConfiguration();
 
             if (igfsCfgs != null) {
-                IgfsConfiguration[] clone = igfsCfgs.clone();
+                FileSystemConfiguration[] clone = igfsCfgs.clone();
 
                 for (int i = 0; i < igfsCfgs.length; i++)
-                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
+                    clone[i] = new FileSystemConfiguration(igfsCfgs[i]);
 
-                myCfg.setIgfsConfiguration(clone);
+                myCfg.setFileSystemConfiguration(clone);
             }
 
             StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();

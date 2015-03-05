@@ -59,7 +59,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
             int notDeleted = 0;
 
             try {
-                IgniteFs igfs = ignite.fileSystem(arg);
+                IgniteFileSystem igfs = ignite.fileSystem(arg);
 
                 Path logsDir = resolveIgfsProfilerLogsDir(igfs);
 

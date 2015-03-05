@@ -48,7 +48,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         if (U.isWindows())
             suite.addTest(new TestSuite(IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheIgfsPerBlockLruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(IgfsCachePerBlockLruEvictionPolicySelfTest.class));
 
         suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));

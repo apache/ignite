@@ -282,7 +282,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Hadoop processor.
      */
-    public IgniteHadoopProcessorAdapter hadoop();
+    public HadoopProcessorAdapter hadoop();
 
     /**
      * Gets utility cache pool.
@@ -516,6 +516,36 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Exception registry.
      */
     public IgniteExceptionRegistry exceptionRegistry();
+
+    /**
+     * Get node attribute by name.
+     *
+     * @param key Attribute name.
+     * @return Attribute value.
+     */
+    public Object nodeAttribute(String key);
+
+    /**
+     * Check if node has specified attribute.
+     *
+     * @param key Attribute name.
+     * @return {@code true} If node has attribute with specified name.
+     */
+    public boolean hasNodeAttribute(String key);
+
+    /**
+     * Add attribute to node attributes.
+     *
+     * @param key Attribute name.
+     * @param val Attribute value.
+     * @return Previous attribute value associated with attribute name.
+     */
+    public Object addNodeAttribute(String key, Object val);
+
+    /**
+     * @return Node attributes.
+     */
+    public Map<String, Object> nodeAttributes();
 
     /**
      * Gets Cluster processor.
