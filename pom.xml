@@ -69,83 +69,7 @@
         <module>modules/codegen</module>
     </modules>
 
-    <profiles>
-        <profile>
-            <id>check-licenses</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.rat</groupId>
-                        <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.11</version>
-                        <executions>
-                            <execution>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <excludes>
-                                        <exclude>work/**</exclude>
-                                        <exclude>**/target/**</exclude>
-                                        <exclude>**/*.log</exclude>
-                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
-                                        <exclude>**/*.dylib</exclude><!--bin-files-->
-                                        <exclude>**/*.gar</exclude><!--bin-files-->
-                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
-                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
-                                        <exclude>**/*.iml</exclude><!--IDEA files-->
-                                        <exclude>**/*.md</exclude><!--readme-files-->
-                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
-                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
-                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
-                                        <!--special excludes-->
-                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
-                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/config/start-nodes.ini</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
-                                        <exclude>modules/winservice/IgniteService.sln</exclude>
-                                        <exclude>modules/winservice/IgniteService/IgniteService.csproj</exclude>
-                                        <!--shmem-->
-                                        <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude>
-                                        <exclude>ipc/shmem/config.guess</exclude><!--own license-->
-                                        <exclude>ipc/shmem/config.sub</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure.ac</exclude>
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
-                                        <exclude>ipc/shmem/install-sh</exclude><!--own license-->
-                                        <exclude>ipc/shmem/depcomp</exclude><!--own license-->
-                                        <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/libtool</exclude><!--own license-->
-                                        <exclude>ipc/shmem/missing</exclude><!--own license-->
-                                        <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/include/org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
-                                    </excludes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
+   <profiles>
         <profile>
             <id>test</id>
             <build>
@@ -279,7 +203,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages*:org.apache.ignite.spi.discovery.tcp.internal*:org.apache.ignite.spi.deployment.uri.scanners*:org.apache.ignite.spi.deployment.uri.tasks*</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks</subpackages>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
