@@ -52,6 +52,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 /**
  * Responsible for all grid job execution and communication.
  */
+@SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
