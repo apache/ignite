@@ -148,12 +148,11 @@ public interface GridCacheEntryEx {
     public <K, V> Cache.Entry<K, V> wrapLazyValue();
 
     /**
-     * Wraps this map entry into cache entry for filter evaluation inside entry lock.
+     * Peeks value provided to public API entries and to entry filters.
      *
-     * @return Wrapped entry.
-     * @throws IgniteCheckedException If failed.
+     * @return Value.
      */
-    public <K, V> Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException;
+    @Nullable public CacheObject peekVisibleValue();
 
     /**
      * @return Entry which is safe to pass into eviction policy.
@@ -622,7 +621,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable public <K, V> GridTuple<CacheObject> peek0(boolean failFast,
+    @Nullable public GridTuple<CacheObject> peek0(boolean failFast,
         GridCachePeekMode mode,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable IgniteInternalTx tx)

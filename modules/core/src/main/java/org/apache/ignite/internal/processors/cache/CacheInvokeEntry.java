@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 
@@ -39,7 +40,9 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      */
-    public CacheInvokeEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
+    public CacheInvokeEntry(GridCacheContext cctx,
+        KeyCacheObject keyObj,
+        @Nullable CacheObject valObj) {
         super(cctx, keyObj, valObj);
 
         this.hadVal = valObj != null;
@@ -47,14 +50,17 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
 
     /** 
      * @param ctx Cache context.
-     * @param keyObject Key cache object.
+     * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Value cache object.
      * @param val Value.
      */
-    public CacheInvokeEntry(GridCacheContext<K, V> ctx, KeyCacheObject keyObject, K key, CacheObject valObj,
-        V val) {
-        super(ctx, keyObject, key, valObj, val);
+    public CacheInvokeEntry(GridCacheContext<K, V> ctx,
+        KeyCacheObject keyObj,
+        @Nullable K key,
+        @Nullable CacheObject valObj,
+        @Nullable V val) {
+        super(ctx, keyObj, key, valObj, val);
 
         this.hadVal = valObj != null || val != null;
     }

@@ -18,16 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
 import java.nio.*;
 
 /**
  *
  */
-public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate, Serializable {
+public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
@@ -64,34 +62,5 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate,
         assert false : this;
 
         return false;
-    }
-
-    /**
-     * @param e Entry.
-     * @return {@code True} if given entry has value.
-     */
-    protected boolean hasValue(GridCacheEntryEx e) {
-        try {
-            if (e.hasValue())
-                return true;
-
-            GridCacheContext cctx = e.context();
-
-            if (cctx.transactional()) {
-                IgniteInternalTx tx = cctx.tm().userTx();
-
-                if (tx != null)
-                    return tx.peek(cctx, false, e.key(), null) != null;
-            }
-
-            return false;
-        }
-        catch (GridCacheFilterFailedException err) {
-            assert false;
-
-            err.printStackTrace();
-
-            return false;
-        }
     }
 }

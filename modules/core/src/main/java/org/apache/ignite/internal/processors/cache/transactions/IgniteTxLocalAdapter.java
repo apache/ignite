@@ -2459,37 +2459,37 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = null;
-        Object val = null;
+        Object key0 = null;
+        Object val0 = null;
 
         try {
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), keyVal, cacheVal, val);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val = invokeEntry.value();
+                val0 = invokeEntry.value();
 
-                keyVal = invokeEntry.key();
+                key0 = invokeEntry.key();
             }
 
             if (res != null) {
-                if (keyVal == null)
-                    keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+                if (key0 == null)
+                    key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
                 
-                ret.addEntryProcessResult(keyVal, new CacheInvokeResult<>(res));
+                ret.addEntryProcessResult(key0, new CacheInvokeResult<>(res));
             }
         }
         catch (Exception e) {
-            if (keyVal == null)
-                keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+            if (key0 == null)
+                key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
 
-            ret.addEntryProcessResult(keyVal, new CacheInvokeResult(e));
+            ret.addEntryProcessResult(key0, new CacheInvokeResult(e));
         }
     }
 

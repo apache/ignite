@@ -904,7 +904,7 @@ public class GridCacheUtils {
                 try {
                     Object val = CU.value(e.rawGetOrUnmarshal(true), e.context(), false);
 
-                    return val != null &&
+                    return val == null ||
                         valType.isAssignableFrom(val.getClass()) &&
                         keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
                 }

@@ -126,7 +126,7 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
             return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, ldr), bytes);
         }
         else
-            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, U.gridClassLoader()), bytes);
+            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, ctx.deploy().localLoader()), bytes);
     }
 
     /** {@inheritDoc} */

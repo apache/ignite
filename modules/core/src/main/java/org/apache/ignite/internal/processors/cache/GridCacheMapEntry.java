@@ -2855,7 +2855,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable @Override public <K, V> GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
+    @Nullable @Override public GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
         CacheEntryPredicate[] filter, @Nullable IgniteInternalTx tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
@@ -3763,12 +3763,38 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         return new LazyValueEntry(key);
     }
 
-        /** {@inheritDoc} */
-    @Override public <K, V> Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException {
-        CacheObject val = rawGetOrUnmarshal(true);
+    /** {@inheritDoc} */
+    @Nullable public CacheObject peekVisibleValue() {
+        try {
+            IgniteInternalTx tx = cctx.tm().userTx();
 
-        return new CacheEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false),
-            CU.<V>value(val, cctx, false));
+            if (tx != null) {
+                GridTuple<CacheObject> peek = tx.peek(cctx, false, key, null);
+
+                if (peek != null)
+                    return peek.get();
+            }
+
+            if (detached())
+                return rawGet();
+
+            for (;;) {
+                GridCacheEntryEx e = cctx.cache().peekEx(key);
+
+                if (e == null)
+                    return null;
+
+                try {
+                    return e.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+        catch (GridCacheFilterFailedException ignored) {
+            throw new IgniteException("Should never happen.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -4313,36 +4339,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public V getValue() {
-            try {
-                IgniteInternalTx tx = cctx.tm().userTx();
-
-                if (tx != null) {
-                    GridTuple<CacheObject> peek = tx.peek(cctx, false, key, null);
-
-                    if (peek != null)
-                        return CU.value(peek.get(), cctx, false);
-                }
-
-                if (detached())
-                    return CU.value(rawGet(), cctx, false);
-
-                for (;;) {
-                    GridCacheEntryEx e = cctx.cache().peekEx(key);
-
-                    if (e == null)
-                        return null;
-
-                    try {
-                        return CU.value(e.peek(GridCachePeekMode.GLOBAL, CU.empty0()), cctx, false);
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        // No-op.
-                    }
-                }
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                throw new IgniteException("Should never happen.");
-            }
+            return CU.value(peekVisibleValue(), cctx, true);
         }
 
         /** {@inheritDoc} */

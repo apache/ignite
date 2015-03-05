@@ -1788,7 +1788,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (transferOnly)
                 return new KeyCacheObjectTransferImpl(bytes);
 
-            obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().globalLoader());
+            obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
         }
 
         return ctx.portable().toCacheKeyObject(cacheObjCtx, obj, bytes);
@@ -1812,7 +1812,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (ldr == null)
             return null;
 
-        return new CacheObjectImpl(portable().unmarshal(cacheObjCtx, bytes, ldr), bytes);
+        return ctx.portable().toCacheObject(cacheObjCtx, ctx.portable().unmarshal(cacheObjCtx, bytes, ldr), bytes);
     }
 
     /**
