@@ -204,9 +204,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr = null;
         }
 
-        assert lsnr == null;
+        assert lsnrs0 == null;
 
-        notifyListener(lsnr);
+        notifyListener(lsnrs0);
     }
 
     /**

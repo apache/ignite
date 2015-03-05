@@ -35,19 +35,18 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** */
     private Set<IgniteInternalTx<K, V>> remainingTxs;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /**
      * @param cctx Cache context.
      */
     public GridCacheMultiTxFuture(GridCacheContext<K, V> cctx) {
-        super();
-
-        log = U.logger(cctx.kernalContext(),  logRef, GridCacheMultiTxFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMultiTxFuture.class);
     }
 
     /**

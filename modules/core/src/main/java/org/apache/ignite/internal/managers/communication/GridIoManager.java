@@ -560,8 +560,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) {
         workersCnt.increment();
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -612,8 +612,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) {
         workersCnt.increment();
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -811,8 +811,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         final GridCommunicationMessageSet msgSet0 = set;
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -1329,8 +1329,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     workersCnt.increment();
 
-                    pool(msgSet.policy()).execute(new GridWorker(ctx.gridName(), "msg-worker", log) {
-                        @Override protected void body() {
+                    pool(msgSet.policy()).execute(
+                        new Runnable() {
+                            @Override public void run() {
                             try {
                                 unwindMessageSet(msgSet, lsnrs0);
                             }
