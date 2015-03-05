@@ -36,14 +36,38 @@ if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user 
     then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
 
-echo 'Usage: scripts/git-format-patch.sh.'
+#
+# Read command line params.
+#
+while [[ $# > 1 ]]
+do
+    key="$1"
+
+    case $key in
+        -idb|--ignitedefbranch)
+        IGNITE_DEFAULT_BRANCH="$2"
+        shift
+        ;;
+        -ph|--patchhome)
+        PATCHES_HOME="$2"
+        shift
+        ;;
+        *)
+                # unknown option
+        ;;
+    esac
+    shift
+done
+
+echo 'Usage: scripts/git-format-patch.sh <ignite-task> [-idb|--ignitedefbranch <branch-name>] [-ph|--patchhome <path>]'
 echo "It should be called from IGNITE_HOME directory."
-echo "Patch will be applyed to DEFAULT_BRANCH from PATCHES_HOME."
+echo "Patch will be applied to DEFAULT_BRANCH from PATCHES_HOME."
 echo "Note: you can use ${IGNITE_HOME}/scripts/git-patch-prop-local.sh to set your own local properties (to rewrite settings at git-patch-prop-local.sh). "
 echo
-echo "Master branch  : ${IGNITE_DEFAULT_BRANCH}"
 echo "IGNITE_HOME    : ${IGNITE_HOME}"
+echo "Master branch  : ${IGNITE_DEFAULT_BRANCH}"
 echo "Ignite task    : ${IGNITE_TASK}"
+echo
 echo "PATCHES_HOME   : ${PATCHES_HOME}"
 echo
 
@@ -51,7 +75,7 @@ echo
 # Main script logic.
 #
 
-currentBranchAndDefaultShouldBeEqual ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
+currentAndDefaultBranchesShouldBeEqual ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
 
 requireCleanWorkTree ${IGNITE_HOME}
 

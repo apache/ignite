@@ -109,6 +109,7 @@ applyPatch () {
         exit 1
     fi
 
+    echo "Patch $PATCH_FILE will be applied to $DEFAULT_BRANCH branch."
 #    git apply ${PATCH_FILE}
     git am ${PATCH_FILE}
 }
