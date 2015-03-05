@@ -19,6 +19,7 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.h2.tools.*;
@@ -26,35 +27,57 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.integration.*;
 import java.io.*;
+import java.sql.*;
 
 /**
- * TODO: Add class description.
+ * Example of {@link CacheJdbcPojoStore} implementation that uses JDBC
+ * transaction with cache transactions and maps {@link Long} to {@link Person}.
  */
-public class CacheJdbcPojoPersonStore<K, V> extends CacheJdbcPojoStore {
+public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
+    /**
+     * Constructor.
+     *
+     * @throws IgniteException If failed.
+     */
     public CacheJdbcPojoPersonStore() throws IgniteException {
+        // Construct example database in memory.
         dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
 
-        File script = U.resolveIgnitePath("examples/config/store/initdb.script");
+        prepareDb();
+    }
+
+    /**
+     * Prepares database for example execution. This method will create a
+     * table called "PERSONS" so it can be used by store implementation.
+     *
+     * @throws IgniteException If failed.
+     */
+    private void prepareDb() throws IgniteException {
+        File script = U.resolveIgnitePath("examples/config/store/example-database.script");
 
         if (script == null)
-            throw new IgniteException("Failed to find initial database script: " + "examples/config/store/initdb.script");
+            throw new IgniteException("Failed to find example database script: " +
+                "examples/config/store/example-database.script");
 
         try {
             RunScript.execute(dataSrc.getConnection(), new FileReader(script));
         }
-        catch (Exception e) {
+        catch (SQLException e) {
             throw new IgniteException("Failed to initialize database", e);
+        }
+        catch (FileNotFoundException e) {
+            throw new IgniteException("Failed to find example database script: " + script.getPath(), e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, @Nullable Object... args)
         throws CacheLoaderException {
         if (args == null || args.length == 0 || args[0] == null)
             throw new CacheLoaderException("Expected entry count parameter is not provided.");
 
         final int entryCnt = (Integer)args[0];
 
-        super.loadCache(clo, "java.lang.Long", "select * from PERSON limit " + entryCnt);
+        super.loadCache(clo, "java.lang.Long", "select * from PERSONS limit " + entryCnt);
     }
 }

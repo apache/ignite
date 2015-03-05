@@ -79,7 +79,7 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="databaseTable" value="PERSON"/>
+                                <property name="databaseTable" value="PERSONS"/>
                                 <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Person"/>
                                 <property name="keyFields">

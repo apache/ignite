@@ -31,7 +31,7 @@ import java.util.*;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC
- * transaction with cache transactions and maps {@link UUID} to {@link Person}.
+ * transaction with cache transactions and maps {@link Long} to {@link Person}.
  *
  */
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {

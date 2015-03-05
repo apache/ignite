@@ -74,16 +74,19 @@ public class CacheNodeWithStoreStartup {
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        // Set query indexing enabled for use query in example.
+        cacheCfg.setQueryIndexEnabled(true);
+
         CacheStore<Long, Person> store;
 
         // Uncomment other cache stores to try them.
-//        store = new CacheDummyPersonStore();
+        store = new CacheDummyPersonStore();
         // store = new CacheJdbcPersonStore();
         // store = new CacheHibernatePersonStore();
 
-        // Uncomment two lines for try .
-        store = new CacheJdbcPojoPersonStore();
-        cacheCfg.setTypeMetadata(typeMetadata());
+        // Uncomment two lines for try CacheJdbcPojoStore.
+//        store = new CacheJdbcPojoPersonStore();
+//        cacheCfg.setTypeMetadata(typeMetadata());
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
@@ -95,10 +98,13 @@ public class CacheNodeWithStoreStartup {
         return cfg;
     }
 
+    /**
+     *
+     */
     private static Collection<CacheTypeMetadata> typeMetadata() {
         CacheTypeMetadata tm = new CacheTypeMetadata();
 
-        tm.setDatabaseTable("PERSON");
+        tm.setDatabaseTable("PERSONS");
 
         tm.setKeyType("java.lang.Long");
         tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
@@ -112,6 +118,5 @@ public class CacheNodeWithStoreStartup {
         ));
 
         return F.asList(tm);
-
     }
 }

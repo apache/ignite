@@ -67,7 +67,7 @@ public class CacheStoreLoadDataExample {
 
             long end = System.currentTimeMillis();
 
-            System.out.println(">>> Loaded " + ENTRY_COUNT + " keys with backups in " + (end - start) + "ms.");
+            System.out.println(">>> Loaded " + cache.size() +" keys with backups in " + (end - start) + "ms.");
         }
     }
 }
