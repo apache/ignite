@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -245,8 +246,12 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         assertEquals(8, res.get(0).get(1));
     }
 
-    public void _testLoop() throws InterruptedException {
-        IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+//    @Override protected long getTestTimeout() {
+//        return 10 * 60 * 1000;
+//    }
+
+    public void _testLoop() throws Exception {
+        final IgniteCache<Object,Object> c = ignite.jcache("partitioned");
 
         X.println("___ GET READY");
 
@@ -254,19 +259,25 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         X.println("___ GO");
 
-        long start = System.currentTimeMillis();
+        multithreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                long start = System.currentTimeMillis();
 
-        for (int i = 0; i < 1000000; i++) {
-            if (i % 1000 == 0) {
-                long t = System.currentTimeMillis();
+                for (int i = 0; i < 1000000; i++) {
+                    if (i % 10000 == 0) {
+                        long t = System.currentTimeMillis();
 
-                X.println("__ " + i + " -> " + (t - start));
+                        X.println(Thread.currentThread().getId() + "__ " + i + " -> " + (t - start));
 
-                start = t;
+                        start = t;
+                    }
+
+                    c.queryFields(new SqlFieldsQuery("select * from FactPurchase")).getAll();
+                }
+
+                return null;
             }
-
-            c.queryFields(new SqlFieldsQuery("select * from FactPurchase")).getAll();
-        }
+        }, 20);
 
         X.println("___ OK");
 
