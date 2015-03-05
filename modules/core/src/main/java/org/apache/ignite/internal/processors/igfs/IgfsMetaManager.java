@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -51,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 @SuppressWarnings("all")
 public class IgfsMetaManager extends IgfsManager {
     /** IGFS configuration. */
-    private IgfsConfiguration cfg;
+    private FileSystemConfiguration cfg;
 
     /** Metadata cache. */
     private GridCache<Object, Object> metaCache;
@@ -1588,7 +1589,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If file creation failed.
      */
-    public IgfsSecondaryOutputStreamDescriptor createDual(final Igfs fs,
+    public IgfsSecondaryOutputStreamDescriptor createDual(final IgfsSecondaryFileSystem fs,
         final IgfsPath path,
         final boolean simpleCreate,
         @Nullable final Map<String, String> props,
@@ -1752,7 +1753,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If output stream open for append has failed.
      */
-    public IgfsSecondaryOutputStreamDescriptor appendDual(final Igfs fs, final IgfsPath path,
+    public IgfsSecondaryOutputStreamDescriptor appendDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
         final int bufSize) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1783,7 +1784,7 @@ public class IgfsMetaManager extends IgfsManager {
                             if (remainder > 0) {
                                 int blockIdx = (int)(len / blockSize);
 
-                                IgfsReader reader = fs.open(path, bufSize);
+                                IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize);
 
                                 try {
                                     igfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
@@ -1832,7 +1833,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Input stream descriptor.
      * @throws IgniteCheckedException If input stream open has failed.
      */
-    public IgfsSecondaryInputStreamDescriptor openDual(final Igfs fs, final IgfsPath path,
+    public IgfsSecondaryInputStreamDescriptor openDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
         final int bufSize)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
@@ -1893,7 +1894,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info or {@code null} if file not found.
      * @throws IgniteCheckedException If sync task failed.
      */
-    @Nullable public IgfsFileInfo synchronizeFileDual(final Igfs fs, final IgfsPath path)
+    @Nullable public IgfsFileInfo synchronizeFileDual(final IgfsSecondaryFileSystem fs, final IgfsPath path)
         throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
@@ -1941,7 +1942,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return {@code True} in case rename was successful.
      * @throws IgniteCheckedException If directory creation failed.
      */
-    public boolean mkdirsDual(final Igfs fs, final IgfsPath path, final Map<String, String> props)
+    public boolean mkdirsDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final Map<String, String> props)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -2025,7 +2026,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Operation result.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean renameDual(final Igfs fs, final IgfsPath src, final IgfsPath dest) throws
+    public boolean renameDual(final IgfsSecondaryFileSystem fs, final IgfsPath src, final IgfsPath dest) throws
         IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -2124,7 +2125,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Operation result.
      * @throws IgniteCheckedException If delete failed.
      */
-    public boolean deleteDual(final Igfs fs, final IgfsPath path, final boolean recursive)
+    public boolean deleteDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final boolean recursive)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -2190,7 +2191,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Update file info.
      * @throws IgniteCheckedException If update failed.
      */
-    public IgfsFileInfo updateDual(final Igfs fs, final IgfsPath path, final Map<String, String> props)
+    public IgfsFileInfo updateDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final Map<String, String> props)
         throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
@@ -2243,7 +2244,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info of the end path.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo synchronize(Igfs fs,
+    private IgfsFileInfo synchronize(IgfsSecondaryFileSystem fs,
         IgfsPath startPath,
         IgfsFileInfo startPathInfo,
         IgfsPath endPath,
@@ -2328,7 +2329,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task,
-        Igfs fs,
+        IgfsSecondaryFileSystem fs,
         boolean strict,
         IgfsPath... paths)
         throws IgniteCheckedException
@@ -2349,7 +2350,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task,
-        Igfs fs,
+        IgfsSecondaryFileSystem fs,
         boolean strict,
         @Nullable Collection<IgniteUuid> extraLockIds,
         IgfsPath... paths)

@@ -41,7 +41,7 @@ public class IpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception{
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -60,7 +60,7 @@ public class IpcSharedMemoryNodeStartup {
         igfsCfg.setMetaCacheName("partitioned");
         igfsCfg.setName("igfs");
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
