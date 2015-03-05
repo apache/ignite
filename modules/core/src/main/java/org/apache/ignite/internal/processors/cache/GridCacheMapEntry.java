@@ -2692,13 +2692,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /**
-     * @return {@code true} If value bytes should be stored.
-     */
-    protected boolean isStoreValueBytes() {
-        return cctx.config().isStoreValueBytes();
-    }
-
-    /**
      * @return {@code True} if values should be stored off-heap.
      */
     protected boolean isOffHeapValuesOnly() {
