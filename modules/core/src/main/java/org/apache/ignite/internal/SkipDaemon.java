@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import java.lang.annotation.*;
 
 /**
- * Interface for all processors.
+ * Lifecycle callbacks will not be called for grid components marked with this annotation.
  */
-@GridToStringExclude
-public interface GridProcessor extends GridComponent {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface SkipDaemon {
     // No-op.
 }

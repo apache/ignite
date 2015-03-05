@@ -280,6 +280,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     protected ExecutorService restExecSvc;
 
+    /** */
+    @GridToStringExclude
+    private Map<String, Object> attrs = new HashMap<>();
 
     /** */
     private IgniteEx grid;
@@ -858,6 +861,26 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return registry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object nodeAttribute(String key) {
+        return attrs.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNodeAttribute(String key) {
+        return attrs.containsKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object addNodeAttribute(String key, Object val) {
+        return attrs.put(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return attrs;
     }
 
     /** {@inheritDoc} */
