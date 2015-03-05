@@ -50,14 +50,6 @@ echo
 # Main script logic.
 #
 
-require_clean_work_tree ${IGNITE_HOME}
-#
-#checkBranchExists ${IGNITE_HOME} ${CURRENT_BRANCH}
-#
-#if [ -n ${BRANCH_EXISTS} ]
-#then
-#    exitIfBranchDoesNotExist ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
-#
-#    updateBranches ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH}
-#    formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch
-#fi
+requireCleanWorkTree ${IGNITE_HOME}
+
+#formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch

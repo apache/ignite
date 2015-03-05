@@ -29,21 +29,14 @@ formatPatch () {
     PATCHED_BRANCH=$3
     PATCH_SUFFIX=$4
 
-    echo
-    echo '>>> FORMAT PATCH FOR BRANCHES '${DEFAULT_BRANCH}' AND '${PATCHED_BRANCH}' AT '${GIT_HOME}
-    echo
-
     cd ${GIT_HOME}
 
-#    echo '>>>>>> Checkout '${DEFAULT_BRANCH}
-#    git checkout ${DEFAULT_BRANCH}
+    echo ">>>>>> Checkout origin/${DEFAULT_BRANCH} as master_copy"
+    git checkout -b master_copy origin/${DEFAULT_BRANCH}
 
-#    echo '>>>>>> Create tmpsquash.'
-#    git checkout -b tmpsquash
-#
 #    echo '>>>>>> Merge '${PATCHED_BRANCH}' at tmpsquash'
-#    git merge --squash ${PATCHED_BRANCH}
-#    git commit -a -m "My squashed commits"
+    git merge --squash ${PATCHED_BRANCH}
+    git commit -a -m "My squashed commits"
 
     git checkout ${PATCHED_BRANCH}
 
@@ -113,7 +106,7 @@ determineCurrentBranch () {
     echo "$CURRENT_BRANCH"
 }
 
-require_clean_work_tree () {
+requireCleanWorkTree () {
     cd $1 # At git home.
 
     # Update the index
