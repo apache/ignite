@@ -42,10 +42,11 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         " WHERE a.owner = ? and a.table_name = ? AND a.constraint_type = 'P'";
 
     /** SQL to get indexes metadata. */
-    private static final String SQL_INDEXES = "select index_name, column_name, descend" +
-        " FROM all_ind_columns" +
-        " WHERE index_owner = ? and table_name = ?" +
-        " ORDER BY index_name, column_position";
+    private static final String SQL_INDEXES = "select i.index_name, u.column_expression, i.column_name, i.descend" +
+        " FROM all_ind_columns i" +
+        " LEFT JOIN user_ind_expressions u on u.index_name = i.index_name and i.table_name = u.table_name" +
+        " WHERE i.index_owner = ? and i.table_name = ?" +
+        " ORDER BY i.index_name, i.column_position";
 
     /** Owner index. */
     private static final int OWNER_IDX = 1;
@@ -71,11 +72,14 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** Index name index. */
     private static final int IDX_NAME_IDX = 1;
 
+    /** Index name index. */
+    private static final int IDX_EXPR_IDX = 2;
+
     /** Index column name index. */
-    private static final int IDX_COL_NAME_IDX = 2;
+    private static final int IDX_COL_NAME_IDX = 3;
 
     /** Index column sort order index. */
-    private static final int IDX_COL_DESCEND_IDX = 3;
+    private static final int IDX_COL_DESCEND_IDX = 4;
 
     /**
      * @param rs Result set with column type metadata from Oracle database.
@@ -206,7 +210,11 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     idxs.put(idxName, idx);
                 }
 
-                idx.put(idxsRs.getString(IDX_COL_NAME_IDX), "DESC".equals(idxsRs.getString(IDX_COL_DESCEND_IDX)));
+                String expr = idxsRs.getString(IDX_EXPR_IDX);
+
+                String col = expr == null ? idxsRs.getString(IDX_COL_NAME_IDX) : expr.replaceAll("\"", "");
+
+                idx.put(col, "DESC".equals(idxsRs.getString(IDX_COL_DESCEND_IDX)));
             }
         }
 
@@ -236,28 +244,25 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 String prevSchema = "";
                 String prevTbl = "";
 
+                boolean first = true;
+
                 while (colsRs.next()) {
                     String owner = colsRs.getString(OWNER_IDX);
                     String tbl = colsRs.getString(TBL_NAME_IDX);
 
-                    if (!prevSchema.equals(owner) || !prevTbl.equals(tbl)) {
-                        pkCols = primaryKeys(pkStmt, owner, tbl);
+                    boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
 
-                        idxs = indexes(idxStmt, owner, tbl);
-                    }
-
-                    if (prevSchema.isEmpty()) {
-                        prevSchema = owner;
-                        prevTbl = tbl;
-                    }
-
-                    if (!owner.equals(prevSchema) || !tbl.equals(prevTbl)) {
-                        tbls.add(table(prevSchema, prevTbl, cols, idxs));
+                    if (changed) {
+                        if (first)
+                            first = false;
+                        else
+                            tbls.add(table(prevSchema, prevTbl, cols, idxs));
 
                         prevSchema = owner;
                         prevTbl = tbl;
-
                         cols = new ArrayList<>();
+                        pkCols = primaryKeys(pkStmt, owner, tbl);
+                        idxs = indexes(idxStmt, owner, tbl);
                     }
 
                     String colName = colsRs.getString(COL_NAME_IDX);

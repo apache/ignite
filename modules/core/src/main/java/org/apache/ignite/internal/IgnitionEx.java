@@ -506,7 +506,7 @@ public class IgnitionEx {
     }
 
     /**
-     * Start Grid for interop scenario.
+     * Start Grid passing a closure which will modify configuration before it is passed to start routine.
      *
      * @param springCfgPath Spring config path.
      * @param gridName Grid name.
@@ -514,7 +514,7 @@ public class IgnitionEx {
      * @return Started Grid.
      * @throws IgniteCheckedException If failed.
      */
-    public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName,
+    public static Ignite startWithClosure(@Nullable String springCfgPath, @Nullable String gridName,
         IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo) throws IgniteCheckedException {
         URL url = resolveSpringUrl(springCfgPath);
 
