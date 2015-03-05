@@ -1145,18 +1145,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
-                            if (invokeEntry.modified()) {
-                                updated = ctx.toCacheObject(updatedVal);
+                            updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                                oldVal = invokeEntry.originVal();
-
-                                updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
-                            }
-                            else {
-                                updated = old;
-
-                                updatedVal = oldVal = CU.value(old, ctx, false);
-                            }
+                            updated = ctx.toCacheObject(updatedVal);
 
                             if (computed != null)
                                 invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
@@ -1206,8 +1197,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         else {
                             if (intercept) {
                                 Object interceptorVal = ctx.config().getInterceptor()
-                                        .onBeforePut(new CacheLazyEntry(ctx, entry.key(), invokeEntry.getKey(),
-                                                old, oldVal), updatedVal);
+                                    .onBeforePut(new CacheLazyEntry(ctx, entry.key(), invokeEntry.getKey(),
+                                        old, oldVal), updatedVal);
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1287,7 +1278,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 null);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old));
+                                .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old));
 
                             if (ctx.cancelRemove(interceptorRes))
                                 continue;

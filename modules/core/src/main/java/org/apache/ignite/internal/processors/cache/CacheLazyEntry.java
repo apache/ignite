@@ -104,7 +104,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /**
      * @return Return value. This methods doesn't initialize value.
      */
-    public V val() {
+    public V value() {
         return val;
     }
 

@@ -32,7 +32,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     private Operation op = Operation.NONE;
 
     /** */
-    private V originVal;
+    private V oldVal;
 
     /**
      * @param cctx Cache context.
@@ -80,7 +80,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         if (val == null)
             throw new NullPointerException();
 
-        this.originVal = val;
+        this.oldVal = this.val;
 
         this.val = val;
 
@@ -90,8 +90,8 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /**
      * @return Return origin value, before modification.
      */
-    public V originVal() {
-        return originVal == null ? val : originVal;
+    public V oldVal() {
+        return oldVal == null ? val : oldVal;
     }
 
     /**

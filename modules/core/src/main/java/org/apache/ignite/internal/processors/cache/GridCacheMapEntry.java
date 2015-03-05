@@ -966,8 +966,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
+        Object key0 = null;
         Object val0 = null;
-        Object keyVal = null;
 
         synchronized (this) {
             checkObsolete();
@@ -1001,7 +1001,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 Object interceptorVal = cctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(cctx, key, old),
                     val0);
 
-                keyVal = e.key();
+                key0 = e.key();
 
                 if (interceptorVal == null)
                     return new GridCacheUpdateTxResult(false, (CacheObject)cctx.unwrapTemporary(old));
@@ -1083,7 +1083,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             cctx.store().putToStore(tx, key, val, newVer);
 
         if (intercept)
-            cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, keyVal, val, val0));
+            cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0));
 
         return valid ? new GridCacheUpdateTxResult(true, retval ? old : null) :
             new GridCacheUpdateTxResult(false, null);
@@ -1395,14 +1395,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         updated0 = cctx.unwrapTemporary(entry.getValue());
 
                         updated = cctx.toCacheObject(updated0);
-
-                        old0 = entry.originVal();
                     }
-                    else {
+                    else
                         updated = old;
-
-                        old0 = entry.val();
-                    }
 
                     key0 = entry.key();
 
@@ -1454,7 +1449,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 key0 = e.key();
-                old0 = e.val();
+                old0 = e.value();
             }
 
             boolean hadVal = hasValueUnlocked();
@@ -1855,14 +1850,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (entry.modified()) {
                         updated0 = cctx.unwrapTemporary(entry.getValue());
                         updated = cctx.toCacheObject(updated0);
-
-                        old0 = entry.originVal();
                     }
-                    else {
+                    else
                         updated = oldVal;
-
-                        old0 = entry.val();
-                    }
 
                     key0 = entry.key();
 

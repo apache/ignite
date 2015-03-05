@@ -67,7 +67,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        interceptor = new Interceptor();
+        interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
+        
+        for (int i = 0; i < gridCount(); i++)
+            cache(i, null).clearLocally();
     }
 
     /** {@inheritDoc} */
@@ -116,7 +119,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>() {
                 @Override public void onAfterPut(Cache.Entry<TestKey, TestValue> entry) {
                     assertNotSame(key, entry.getKey());
-                    assertNotSame(val, entry.getValue());
 
                     assertSame(entry.getValue(), entry.getValue());
                     assertSame(entry.getKey(), entry.getKey());
@@ -153,7 +155,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
                 @Override public void onAfterPut(Cache.Entry<TestKey, TestValue> entry) {
                     assertNotSame(key, entry.getKey());
-                    assertNotSame(newTestVal, entry.getValue());
 
                     assertSame(entry.getValue(), entry.getValue());
                     assertSame(entry.getKey(), entry.getKey());
@@ -193,58 +194,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testEntryProcessor() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
-
-        Set<TestKey> keys = new LinkedHashSet<>();
-
-        for (int i = 0; i < ITER_CNT; i++) {
-            TestKey key = new TestKey(i, i);
-            keys.add(key);
-
-            cache.put(key, new TestValue(i));
-        }
-
-        for (int i = 0; i < ITER_CNT; i++) {
-            cache.invoke(new TestKey(i, i), new EntryProcessor<TestKey, TestValue, Object>() {
-                @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments)
-                    throws EntryProcessorException {
-                    // Try change entry.
-                    entry.getKey().field(WRONG_VALUE);
-                    entry.getValue().val(WRONG_VALUE);
-   
-                    return -1;
-                }
-            });
-
-            // Check that internal entry isn't changed.
-            Cache.Entry<Object, Object> e = internalCache(0).entry(new TestKey(i, i));
-
-            assertEquals(i, ((TestKey)e.getKey()).field());
-            assertEquals(i, ((TestValue)e.getValue()).val());
-        }
-        
-        cache.invokeAll(keys, new EntryProcessor<TestKey, TestValue, Object>() {
-            @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments) 
-                throws EntryProcessorException {
-                // Try change entry.
-                entry.getKey().field(WRONG_VALUE);
-                entry.getValue().val(WRONG_VALUE);
-                
-                return -1;
-            }
-        });
-
-        // Check that entries weren't changed.
-        for (Cache.Entry<Object, Object> e : internalCache(0).entrySet()) {
-            assertNotEquals(WRONG_VALUE, ((TestKey)e.getKey()).field());
-            assertNotEquals(WRONG_VALUE, ((TestValue)e.getValue()).val());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testInvokeAndInterceptor() throws Exception {
         IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
 
@@ -255,7 +204,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             @Override public TestValue onBeforePut(Cache.Entry<TestKey, TestValue> entry, TestValue newVal) {
                 // Check that we have correct value and key.
                 assertEquals(entry.getKey().key(), entry.getKey().field());
-                assertEquals(entry.getKey().key(), entry.getValue().val());
 
                 // Try changed entry.
                 entry.getKey().field(WRONG_VALUE);
@@ -266,7 +214,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             @Override public void onAfterPut(Cache.Entry<TestKey, TestValue> entry) {
                 assertEquals(entry.getKey().key(), entry.getKey().field());
-                assertEquals(entry.getKey().key(), entry.getValue().val());
 
                 entry.getValue().val(WRONG_VALUE);
                 entry.getKey().field(WRONG_VALUE);
@@ -286,75 +233,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
                     // Try changed entry.
                     entry.getKey().field(WRONG_VALUE);
                     entry.getValue().val(WRONG_VALUE);
-                    
+
                     return -1;
                 }
             });
-
-        // Check that entries weren't changed.
-        for (Cache.Entry<Object, Object> e : internalCache(0).entrySet()) {
-            assertNotEquals(WRONG_VALUE, ((TestKey)e.getKey()).field());
-            assertNotEquals(WRONG_VALUE, ((TestValue)e.getValue()).val());
-        }
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAndInterceptor() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
-
-        Set<TestKey> keys = new LinkedHashSet<>();
-        
-        for (int i = 0; i < ITER_CNT; i++) {
-            TestKey key = new TestKey(i, i);
-
-            keys.add(key);
-
-            cache.put(key, new TestValue(i));
-        }
-
-        interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>(){
-            @Override public TestValue onBeforePut(Cache.Entry<TestKey, TestValue> entry, TestValue newVal) {
-                // Check that we have correct value and key.
-                assertEquals(entry.getKey().key(), entry.getKey().field());
-                assertEquals(entry.getKey().key(), entry.getValue().val());
-
-                // Try changed entry.
-                entry.getKey().field(WRONG_VALUE);
-                entry.getValue().val(WRONG_VALUE);
-
-                return super.onBeforePut(entry, newVal);
-            }
-
-            @Override public void onAfterPut(Cache.Entry<TestKey, TestValue> entry) {
-                // Check that we have correct value and key.
-                assertEquals(entry.getKey().key(), entry.getKey().field());
-                assertEquals(entry.getKey().key(), entry.getValue().val());
-
-                // Try changed entry.
-                entry.getValue().val(WRONG_VALUE);
-                entry.getKey().field(WRONG_VALUE);
-
-                super.onAfterPut(entry);
-            }
-        });
-
-        cache.invokeAll(keys, new EntryProcessor<TestKey, TestValue, Object>() {
-            @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments)
-                throws EntryProcessorException {
-                // Check that we have correct value and key.
-                assertEquals(entry.getKey().key(), entry.getKey().field());
-                assertEquals(entry.getKey().key(), entry.getValue().val());
-
-                // Try changed entry.
-                entry.getKey().field(WRONG_VALUE);
-                entry.getValue().val(WRONG_VALUE);
-
-                return -1;
-            }
-        });
 
         // Check that entries weren't changed.
         for (Cache.Entry<Object, Object> e : internalCache(0).entrySet()) {

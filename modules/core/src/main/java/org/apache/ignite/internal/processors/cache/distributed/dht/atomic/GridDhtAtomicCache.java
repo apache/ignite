@@ -1334,16 +1334,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
-                        if (invokeEntry.modified()) {
-                            updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
+                        updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                            updated = ctx.toCacheObject(updatedVal);
-                        }
-                        else {
-                            updated = old;
-
-                            oldVal = updatedVal = CU.value(old, ctx, false);
-                        }
+                        updated = ctx.toCacheObject(updatedVal);
 
                         if (computed != null)
                             invokeRes = new CacheInvokeDirectResult(entry.key(),

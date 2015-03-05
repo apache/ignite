@@ -2476,11 +2476,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val = invokeEntry.val();
+                val = invokeEntry.value();
+
+                keyVal = invokeEntry.key();
             }
 
-            if (res != null)
+            if (res != null) {
+                if (keyVal == null)
+                    keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+                
                 ret.addEntryProcessResult(keyVal, new CacheInvokeResult<>(res));
+            }
         }
         catch (Exception e) {
             if (keyVal == null)

@@ -1226,6 +1226,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                 boolean modified = false;
 
                 Object val = null;
+
                 Object key = null;
 
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
