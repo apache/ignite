@@ -104,7 +104,7 @@ public class GridReduceQueryExecutor {
         QueryRun r = runs.get(msg.queryRequestId());
 
         if (r != null && r.latch.getCount() != 0) {
-            r.rmtErr = msg.error();
+            r.rmtErr = new CacheException("Failed to execute map query on the node: " + node.id(), msg.error());
 
             while(r.latch.getCount() > 0)
                 r.latch.countDown();
@@ -217,7 +217,7 @@ public class GridReduceQueryExecutor {
         }
         finally {
             if (!runs.remove(qryReqId, r))
-                U.warn(log, "Query run was removed: " + qryReqId);
+                U.warn(log, "Query run was already removed: " + qryReqId);
         }
     }
 
