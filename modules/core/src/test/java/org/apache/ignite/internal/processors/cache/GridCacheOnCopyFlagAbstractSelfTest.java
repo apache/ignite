@@ -31,6 +31,7 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**
@@ -68,7 +69,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         super.afterTest();
 
         interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
-        
+
         for (int i = 0; i < gridCount(); i++)
             cache(i, null).clearLocally();
     }
@@ -95,10 +96,11 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         assertNotNull(interceptor);
 
         ccfg.setInterceptor(interceptor);
-        
+
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setDistributionMode(distributionMode());
         ccfg.setCacheMode(cacheMode());
+        ccfg.setDistributionMode(PARTITIONED_ONLY);
 
         return ccfg;
     }
@@ -222,9 +224,9 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             }
         });
 
-        for (int i = 0; i < ITER_CNT; i++) 
+        for (int i = 0; i < ITER_CNT; i++)
             cache.invoke(new TestKey(i, i), new EntryProcessor<TestKey, TestValue, Object>() {
-                @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments) 
+                @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments)
                     throws EntryProcessorException {
                     // Check that we have correct value and key.
                     assertEquals(entry.getKey().key(), entry.getKey().field());
@@ -251,13 +253,42 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     public void testPutGet() throws Exception {
         IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
 
-        Map<Integer, TestValue> maps = new HashMap<>();
-        
-        for (int i = 0; i < ITER_CNT; i++) 
-            cache.put(new TestKey(i, i), new TestValue(i));
+        Map<TestKey, TestValue> map = new HashMap<>();
 
-        for (Cache.Entry<Object, Object> entry : internalCache(0, null).entrySet())
-            assertNotSame(entry.getValue(), maps.get(((TestKey)entry.getKey()).key()));
+        for (int i = 0; i < ITER_CNT; i++) {
+            TestKey key = new TestKey(i, i);
+            TestValue val = new TestValue(i);
+
+            cache.put(key, val);
+
+            map.put(key, val);
+        }
+
+        GridCacheAdapter cache0 = internalCache(cache);
+
+        GridCacheContext cctx = cache0.context();
+
+        for (Map.Entry<TestKey, TestValue> e : map.entrySet()) {
+            GridCacheEntryEx entry = cache0.peekEx(e.getKey());
+
+            assertNotNull("No entry for key: " + e.getKey(), entry);
+
+            TestKey key0 = entry.key().value(cctx.cacheObjectContext(), false);
+
+            assertNotSame(key0, e.getKey());
+
+            TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
+
+            assertNotSame(key0, key1);
+
+            TestValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
+
+            assertNotSame(val0, e.getValue());
+
+            TestValue val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
+
+            assertNotSame(val0, val1);
+        }
     }
 
     /**
@@ -274,6 +305,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
          * Constructor.
          *
          * @param key Key.
+         * @param field Field.
          */
         public TestKey(int key, int field) {
             this.key = key;
@@ -336,6 +368,11 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             key = in.readInt();
             field = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestKey [field=" + field + ", key=" + key + ']';
         }
     }
 

@@ -1452,9 +1452,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                 try {
                     if (cctx.isDht())
-                        cctx.dht().near().removex(cur.getKey(), CU.<K, V>empty());
+                        cctx.dht().near().removex(cur.getKey());
                     else
-                        cctx.cache().removex(cur.getKey(), CU.<K, V>empty());
+                        cctx.cache().removex(cur.getKey());
                 }
                 finally {
                     cur = null;
