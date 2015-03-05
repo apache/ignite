@@ -216,7 +216,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
          * @param expProps Expected properties.
          * @param expCacheName Expected cache name.
          */
-        public ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, String expCacheName) {
+        ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, String expCacheName) {
             this.tx = tx;
             this.expMtd = expMtd;
             this.expProps = expProps;
@@ -227,7 +227,16 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestStore implements CacheStore<Object, Object> {
+    private static class AbstractStore {
+        /** */
+        @CacheStoreSessionResource
+        protected CacheStoreSession sesInParent;
+    }
+
+    /**
+     *
+     */
+    private class TestStore extends AbstractStore implements CacheStore<Object, Object> {
         /** Auto-injected store session. */
         @CacheStoreSessionResource
         private CacheStoreSession ses;
@@ -323,6 +332,8 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
             CacheStoreSession ses = session();
 
             assertNotNull(ses);
+
+            assertSame(ses, sesInParent);
 
             if (exp.tx)
                 assertNotNull(ses.transaction());
