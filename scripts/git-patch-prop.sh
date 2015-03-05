@@ -19,7 +19,10 @@
 #
 # Git patch-file maker/applyer properties.
 #
+if [ "${IGNITE_DEFAULT_BRANCH}" = "" ]
+    then IGNITE_DEFAULT_BRANCH='sprint-2'
+fi
 
-IGNITE_DEFAULT_BRANCH='sprint-2'
-
-PATCHES_HOME=${IGNITE_HOME}
+if [ "${PATCHES_HOME}" = "" ]
+    then PATCHES_HOME=${GG_HOME}
+fi

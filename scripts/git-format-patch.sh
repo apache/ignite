@@ -21,20 +21,6 @@
 #
 
 #
-# Init home and import properties and functions.
-#
-if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
-    then IGNITE_HOME=$PWD
-fi
-
-. ${IGNITE_HOME}/scripts/git-patch-prop.sh # Import properties.
-. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
-
-if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
-    then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
-fi
-
-#
 # Read command line params.
 #
 while [[ $# > 1 ]]
@@ -42,6 +28,10 @@ do
     key="$1"
 
     case $key in
+        -ih|--ignitehome)
+        IGNITE_HOME="$2"
+        shift
+        ;;
         -idb|--ignitedefbranch)
         IGNITE_DEFAULT_BRANCH="$2"
         shift
@@ -57,9 +47,23 @@ do
     shift
 done
 
+#
+# Init home and import properties and functions.
+#
+if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
+    then IGNITE_HOME=$PWD
+fi
+
+. ${IGNITE_HOME}/scripts/git-patch-prop.sh # Import properties.
+. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
+
+if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
+    then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
+fi
+
 IGNITE_CURRENT_BRANCH=$( determineCurrentBranch ${IGNITE_HOME} )
 
-echo 'Usage: scripts/git-format-patch.sh [-idb|--ignitedefbranch <branch-name>] [-ph|--patchhome <path>]'
+echo 'Usage: scripts/git-format-patch.sh [-ih|--ignitehome <path>] [-idb|--ignitedefbranch <branch-name>] [-ph|--patchhome <path>]'
 echo "It should be called from IGNITE_HOME directory."
 echo "Patch will be created at PATCHES_HOME between Master branch (IGNITE_DEFAULT_BRANCH) and Current branch."
 echo "Note: you can use ${IGNITE_HOME}/scripts/git-patch-prop-local.sh to set your own local properties (to rewrite settings at git-patch-prop-local.sh). "
