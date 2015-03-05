@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.client.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
@@ -41,6 +43,8 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      */
     public GridClientOptimizedMarshaller() {
         opMarsh = new OptimizedMarshaller();
+
+        opMarsh.setContext(new ClientMarshallerContext());
     }
 
     /**
@@ -55,6 +59,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public GridClientOptimizedMarshaller(boolean requireSer, int poolSize) throws IOException {
         opMarsh = new OptimizedMarshaller();
 
+        opMarsh.setContext(new ClientMarshallerContext());
         opMarsh.setRequireSerializable(requireSer);
         opMarsh.setPoolSize(poolSize);
     }
@@ -90,6 +95,24 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);
+        }
+    }
+
+    /**
+     */
+    private static class ClientMarshallerContext extends MarshallerContextAdapter {
+        /** {@inheritDoc} */
+        @Override public void registerClass(int id, Class cls) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
+            String clsName = clsNameById.get(id);
+
+            assert clsName != null : id;
+
+            return U.forName(clsName, ldr);
         }
     }
 }

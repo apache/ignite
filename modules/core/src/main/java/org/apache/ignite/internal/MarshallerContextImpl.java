@@ -20,52 +20,18 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.jdk8.backport.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 
 /**
  * Marshaller context implementation.
  */
-public class MarshallerContextImpl implements MarshallerContext {
-    /** */
-    private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
-
-    /** */
-    private final ConcurrentMap<Integer, String> clsNameById = new ConcurrentHashMap8<>();
-
+public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** */
     private volatile GridCacheAdapter<Integer, String> cache;
-
-    /**
-     * Constructor.
-     */
-    MarshallerContextImpl() {
-        try {
-            ClassLoader ldr = getClass().getClassLoader();
-
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
-
-            String line;
-
-            while ((line = rdr.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#"))
-                    continue;
-
-                String clsName = line.trim();
-
-                clsNameById.put(clsName.hashCode(), clsName);
-            }
-        }
-        catch (IOException e) {
-            throw new IllegalStateException("Failed to initialize marshaller context.", e);
-        }
-    }
 
     /**
      * @param ctx Kernal context.
@@ -82,8 +48,6 @@ public class MarshallerContextImpl implements MarshallerContext {
     @Override public void registerClass(int id, Class cls) {
         if (!clsNameById.containsKey(id)) {
             try {
-                U.debug("REG: " + cls.getName());
-
                 if (cache == null)
                     U.awaitQuiet(latch);
 
