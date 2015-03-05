@@ -23,12 +23,17 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 
+import java.util.logging.*;
+
 import static org.apache.ignite.schema.ui.Controls.*;
 
 /**
  * Message box functionality.
  */
 public class MessageBox extends ModalDialog {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(MessageBox.class.getName());
+
     /** Message box type. */
     private enum MessageType {
         /** Information. */
@@ -232,6 +237,8 @@ public class MessageBox extends ModalDialog {
      * @param e Optional exception to show.
      */
     public static void errorDialog(Stage owner, String msg, Throwable e) {
+        log.log(Level.SEVERE, msg, e);
+
         String exMsg = e != null ? (e.getMessage() != null ? e.getMessage() : e.getClass().getName()) : null;
 
         showDialog(owner, MessageType.ERROR, exMsg != null ? msg + "\n" + exMsg : msg, false);
