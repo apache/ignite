@@ -34,9 +34,6 @@ import java.util.*;
  */
 public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private ComputeTaskSession ses;
 
     /** */

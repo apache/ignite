@@ -954,7 +954,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
-                fut,
                 new C2<GridNearLockResponse<K, V>, Exception, Boolean>() {
                     @Override public Boolean apply(GridNearLockResponse<K, V> res, Exception e) {
                         if (CU.isLockTimeoutOrCancelled(e) ||
@@ -1081,8 +1080,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                         return true;
                     }
                 },
-                false
-            ));
+                fut));
         }
         else {
             final MiniFuture fut = new MiniFuture(node, mappedKeys, mappings);

@@ -892,7 +892,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             final GridCacheVersion mappedVer = fut.version();
 
                             return new GridDhtEmbeddedFuture<>(
-                                fut,
                                 new C2<Boolean, Exception, GridNearLockResponse<K, V>>() {
                                     @Override public GridNearLockResponse<K, V> apply(Boolean b, Exception e) {
                                         if (e != null)
@@ -911,7 +910,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                         return res;
                                     }
-                                }, false);
+                                },
+                                fut);
                         }
                     }
                     catch (IgniteCheckedException e) {

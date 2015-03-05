@@ -29,20 +29,16 @@ import org.apache.ignite.lang.*;
  */
 @SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Embedded future to wait for. */
     private IgniteInternalFuture<B> embedded;
 
     /**
-     * @param embedded Embedded future.
      * @param c Closure to execute upon completion of embedded future.
+     * @param embedded Embedded future.
      */
     public GridEmbeddedFuture(
-        IgniteInternalFuture<B> embedded,
         final IgniteBiClosure<B, Exception, A> c,
-        boolean fake
+        IgniteInternalFuture<B> embedded
     ) {
         assert embedded != null;
         assert c != null;
@@ -220,14 +216,12 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     private abstract class AL1 extends AsyncListener1 {
         /** */
         private static final long serialVersionUID = 0L;
-
     }
 
     /** Typedef. */
     private abstract class AL2 extends AsyncListener2 {
         /** */
         private static final long serialVersionUID = 0L;
-
     }
 
     /**

@@ -209,7 +209,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (!F.isEmpty(fut.invalidPartitions()))
             retries.addAll(fut.invalidPartitions());
 
-        add(new GridEmbeddedFuture<>(fut,
+        add(new GridEmbeddedFuture<>(
             new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
                 @Override public Collection<GridCacheEntryInfo<K, V>> apply(Object o, Exception e) {
                     if (e != null) { // Check error first.
@@ -240,8 +240,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     return Collections.emptyList();
                 }
             },
-            false)
-        );
+            fut));
     }
 
     /**
@@ -408,7 +407,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return new GridEmbeddedFuture<>(
-            fut,
             new C2<Map<K, V>, Exception, Collection<GridCacheEntryInfo<K, V>>>() {
                 @Override public Collection<GridCacheEntryInfo<K, V>> apply(Map<K, V> map, Exception e) {
                     if (e != null) {
@@ -432,7 +430,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     }
                 }
             },
-            false);
+            fut);
     }
 
     /**

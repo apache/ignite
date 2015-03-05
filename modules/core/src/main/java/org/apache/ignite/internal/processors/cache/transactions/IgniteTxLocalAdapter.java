@@ -1414,119 +1414,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final Collection<K> loaded = new HashSet<>();
 
         return new GridEmbeddedFuture<>(
-            loadMissing(
-                cacheCtx,
-                true, false, missedMap.keySet(), deserializePortable, skipVals, new CI2<K, V>() {
-                /** */
-                private GridCacheVersion nextVer;
-
-                @Override public void apply(K key, V val) {
-                    if (isRollbackOnly()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Ignoring loaded value for read because transaction was rolled back: " +
-                                IgniteTxLocalAdapter.this);
-
-                        return;
-                    }
-
-                    GridCacheVersion ver = missedMap.get(key);
-
-                    if (ver == null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Value from storage was never asked for [key=" + key + ", val=" + val + ']');
-
-                        return;
-                    }
-
-                    V visibleVal = val;
-
-                    IgniteTxKey<K> txKey = cacheCtx.txKey(key);
-
-                    IgniteTxEntry<K, V> txEntry = entry(txKey);
-
-                    if (txEntry != null) {
-                        if (!readCommitted())
-                            txEntry.readValue(val);
-
-                        if (!F.isEmpty(txEntry.entryProcessors()))
-                            visibleVal = txEntry.applyEntryProcessors(visibleVal);
-                    }
-
-                    // In pessimistic mode we hold the lock, so filter validation
-                    // should always be valid.
-                    if (pessimistic())
-                        ver = null;
-
-                    // Initialize next version.
-                    if (nextVer == null)
-                        nextVer = cctx.versions().next(topologyVersion());
-
-                    while (true) {
-                        assert txEntry != null || readCommitted() || groupLock() || skipVals;
-
-                        GridCacheEntryEx<K, V> e = txEntry == null ? entryEx(cacheCtx, txKey) : txEntry.cached();
-
-                        try {
-                            // Must initialize to true since even if filter didn't pass,
-                            // we still record the transaction value.
-                            boolean set;
-
-                            try {
-                                set = e.versionedValue(val, ver, nextVer);
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Got removed entry in transaction getAll method " +
-                                        "(will try again): " + e);
-
-                                if (pessimistic() && !readCommitted() && !isRollbackOnly() &&
-                                    (!groupLock() || F.eq(e.key(), groupLockKey()))) {
-                                    U.error(log, "Inconsistent transaction state (entry got removed while " +
-                                        "holding lock) [entry=" + e + ", tx=" + IgniteTxLocalAdapter.this + "]");
-
-                                    setRollbackOnly();
-
-                                    return;
-                                }
-
-                                if (txEntry != null)
-                                    txEntry.cached(entryEx(cacheCtx, txKey), txEntry.keyBytes());
-
-                                continue; // While loop.
-                            }
-
-                            // In pessimistic mode, we should always be able to set.
-                            assert set || !pessimistic();
-
-                            if (readCommitted() || groupLock() || skipVals) {
-                                cacheCtx.evicts().touch(e, topologyVersion());
-
-                                if (visibleVal != null)
-                                    map.put(key, (V)CU.skipValue(visibleVal, skipVals));
-                            }
-                            else {
-                                assert txEntry != null;
-
-                                txEntry.setAndMarkValid(val);
-
-                                if (visibleVal != null)
-                                    map.put(key, visibleVal);
-                            }
-
-                            loaded.add(key);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Set value loaded from store into entry from transaction [set=" + set +
-                                    ", matchVer=" + ver + ", newVer=" + nextVer + ", entry=" + e + ']');
-
-                            break; // While loop.
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException("Failed to put value for cache entry: " + e, ex);
-                        }
-                    }
-                }
-            }),
             new C2<Boolean, Exception, Map<K, V>>() {
                 @Override public Map<K, V> apply(Boolean b, Exception e) {
                     if (e != null) {
@@ -1565,7 +1452,125 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     return map;
                 }
             },
-        false);
+            loadMissing(
+                cacheCtx,
+                true,
+                false,
+                missedMap.keySet(),
+                deserializePortable,
+                skipVals,
+                new CI2<K, V>() {
+                    /** */
+                    private GridCacheVersion nextVer;
+
+                    @Override public void apply(K key, V val) {
+                        if (isRollbackOnly()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Ignoring loaded value for read because transaction was rolled back: " +
+                                    IgniteTxLocalAdapter.this);
+
+                            return;
+                        }
+
+                        GridCacheVersion ver = missedMap.get(key);
+
+                        if (ver == null) {
+                            if (log.isDebugEnabled())
+                                log.debug("Value from storage was never asked for [key=" + key + ", val=" + val + ']');
+
+                            return;
+                        }
+
+                        V visibleVal = val;
+
+                        IgniteTxKey<K> txKey = cacheCtx.txKey(key);
+
+                        IgniteTxEntry<K, V> txEntry = entry(txKey);
+
+                        if (txEntry != null) {
+                            if (!readCommitted())
+                                txEntry.readValue(val);
+
+                            if (!F.isEmpty(txEntry.entryProcessors()))
+                                visibleVal = txEntry.applyEntryProcessors(visibleVal);
+                        }
+
+                        // In pessimistic mode we hold the lock, so filter validation
+                        // should always be valid.
+                        if (pessimistic())
+                            ver = null;
+
+                        // Initialize next version.
+                        if (nextVer == null)
+                            nextVer = cctx.versions().next(topologyVersion());
+
+                        while (true) {
+                            assert txEntry != null || readCommitted() || groupLock() || skipVals;
+
+                            GridCacheEntryEx<K, V> e = txEntry == null ? entryEx(cacheCtx, txKey) : txEntry.cached();
+
+                            try {
+                                // Must initialize to true since even if filter didn't pass,
+                                // we still record the transaction value.
+                                boolean set;
+
+                                try {
+                                    set = e.versionedValue(val, ver, nextVer);
+                                }
+                                catch (GridCacheEntryRemovedException ignore) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Got removed entry in transaction getAll method " +
+                                            "(will try again): " + e);
+
+                                    if (pessimistic() && !readCommitted() && !isRollbackOnly() &&
+                                        (!groupLock() || F.eq(e.key(), groupLockKey()))) {
+                                        U.error(log, "Inconsistent transaction state (entry got removed while " +
+                                            "holding lock) [entry=" + e + ", tx=" + IgniteTxLocalAdapter.this + "]");
+
+                                        setRollbackOnly();
+
+                                        return;
+                                    }
+
+                                    if (txEntry != null)
+                                        txEntry.cached(entryEx(cacheCtx, txKey), txEntry.keyBytes());
+
+                                    continue; // While loop.
+                                }
+
+                                // In pessimistic mode, we should always be able to set.
+                                assert set || !pessimistic();
+
+                                if (readCommitted() || groupLock() || skipVals) {
+                                    cacheCtx.evicts().touch(e, topologyVersion());
+
+                                    if (visibleVal != null)
+                                        map.put(key, (V)CU.skipValue(visibleVal, skipVals));
+                                }
+                                else {
+                                    assert txEntry != null;
+
+                                    txEntry.setAndMarkValid(val);
+
+                                    if (visibleVal != null)
+                                        map.put(key, visibleVal);
+                                }
+
+                                loaded.add(key);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Set value loaded from store into entry from transaction [set=" + set +
+                                        ", matchVer=" + ver + ", newVer=" + nextVer + ", entry=" + e + ']');
+
+                                break; // While loop.
+                            }
+                            catch (IgniteCheckedException ex) {
+                                throw new IgniteException("Failed to put value for cache entry: " + e, ex);
+                            }
+                        }
+                    }
+                })
+        );
     }
 
     /** {@inheritDoc} */
@@ -1731,7 +1736,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         return fut1.isDone() ?
                             new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
-                            new GridEmbeddedFuture<>(fut1, finClos, false);
+                            new GridEmbeddedFuture<>(finClos, fut1);
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
@@ -2239,7 +2244,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 });
 
             return new GridEmbeddedFuture<>(
-                fut,
                 new C2<Boolean, Exception, Set<K>>() {
                     @Override public Set<K> apply(Boolean b, Exception e) {
                         if (e != null)
@@ -2247,8 +2251,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         return Collections.emptySet();
                     }
-                },
-                false
+                }, fut
             );
         }
 

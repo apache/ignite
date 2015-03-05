@@ -34,12 +34,14 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
     private Collection<Integer> invalidParts;
 
     /**
-     * @param embedded Embedded.
      * @param c Closure.
-     * @param fake Fake.
+     * @param embedded Embedded.
      */
-    public GridDhtEmbeddedFuture(IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, A> c, boolean fake) {
-        super(embedded, c, fake);
+    public GridDhtEmbeddedFuture(
+        IgniteBiClosure<B, Exception, A> c,
+        IgniteInternalFuture<B> embedded
+    ) {
+        super(c, embedded);
 
         invalidParts = Collections.emptyList();
     }
@@ -48,8 +50,10 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param embedded Future to embed.
      * @param c Embedding closure.
      */
-    public GridDhtEmbeddedFuture(IgniteInternalFuture<B> embedded,
-        IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c) {
+    public GridDhtEmbeddedFuture(
+        IgniteInternalFuture<B> embedded,
+        IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
+    ) {
         super(embedded, c);
 
         invalidParts = Collections.emptyList();

@@ -85,7 +85,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             final GridFutureAdapter<Integer> origFut = new GridFutureAdapter<>();
 
             // Embedded future to test.
-            GridEmbeddedFuture<Double, Integer> embFut = new GridEmbeddedFuture<>(origFut,
+            GridEmbeddedFuture<Double, Integer> embFut = new GridEmbeddedFuture<>(
                 new C2<Integer, Exception, Double>() {
                     @Override public Double apply(Integer val, Exception e) {
                         if (x instanceof Error)
@@ -99,7 +99,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                false);
+                origFut);
 
             assertFalse("Expect original future is not complete.", origFut.isDone());
             assertFalse("Expect embedded future is not complete.", embFut.isDone());

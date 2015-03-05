@@ -731,7 +731,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             fut.map();
 
             return new GridDhtEmbeddedFuture<>(
-                fut,
                 new C2<Boolean, Exception, Exception>() {
                     @Override public Exception apply(Boolean b, Exception e) {
                         if (e != null)
@@ -741,7 +740,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         return e;
                     }
-                }, false);
+                },
+                fut);
         }
         else {
             // Handle implicit locks for pessimistic transactions.
@@ -757,7 +757,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl);
 
             return new GridDhtEmbeddedFuture<>(
-                txFut,
                 new C2<GridCacheReturn<V>, Exception, Exception>() {
                     @Override public Exception apply(GridCacheReturn<V> ret,
                         Exception e) {
@@ -768,7 +767,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         return e;
                     }
-                }, false);
+                },
+                txFut);
         }
     }
 

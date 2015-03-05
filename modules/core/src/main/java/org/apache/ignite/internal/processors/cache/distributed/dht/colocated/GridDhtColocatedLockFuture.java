@@ -877,7 +877,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
-            fut,
             new C2<Exception, Exception, Boolean>() {
                 @Override public Boolean apply(Exception resEx, Exception e) {
                     if (CU.isLockTimeoutOrCancelled(e) ||
@@ -923,8 +922,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     return true;
                 }
             },
-            false
-        ));
+            fut));
     }
 
     /**

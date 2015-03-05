@@ -28,9 +28,6 @@ import java.util.*;
  * Error future.
  */
 public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<T>> implements CacheQueryFuture<T> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * @param ctx Context.
      * @param err Error.
