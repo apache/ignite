@@ -293,8 +293,8 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
 
                 byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
 
-                out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
                 out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
+                out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.
 
                 d.reset();
 
