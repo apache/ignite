@@ -155,10 +155,20 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         return OTHER;
     }
 
+    /**
+     * Retrieve primary key columns.
+     *
+     * @param stmt Prepared SQL statement to execute.
+     * @param owner DB owner.
+     * @param tbl Table name.
+     * @return Primary key columns.
+     * @throws SQLException If failed to retrieve primary key columns.
+     */
     private Set<String> primaryKeys(PreparedStatement stmt, String owner, String tbl) throws SQLException {
         Set<String> pkCols = new HashSet<>();
 
-        stmt.setString(1, tbl);
+        stmt.setString(1, owner);
+        stmt.setString(2, tbl);
 
         try (ResultSet pkRs = stmt.executeQuery()) {
             while(pkRs.next())
@@ -168,6 +178,15 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         return pkCols;
     }
 
+    /**
+     * Retrieve index columns.
+     *
+     * @param stmt Prepared SQL statement to execute.
+     * @param owner DB owner.
+     * @param tbl Table name.
+     * @return Index columns.
+     * @throws SQLException If failed to retrieve indexe columns.
+     */
     private Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
         throws SQLException {
         Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
@@ -233,7 +252,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     }
 
                     if (!owner.equals(prevSchema) || !tbl.equals(prevTbl)) {
-                        tbls.add(new DbTable(prevSchema, prevTbl, cols, null, null, null)); // TODO !!!
+                        tbls.add(table(prevSchema, prevTbl, cols, idxs));
 
                         prevSchema = owner;
                         prevTbl = tbl;
