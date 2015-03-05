@@ -120,12 +120,12 @@ currentAndDefaultBranchesShouldBeEqual () {
 
     cd ${GIT_HOME}
 
-    IGNITE_CURRENT_BRANCH=$( determineCurrentBranch ${IGNITE_HOME} )
+    CURRENT_BRANCH=$( determineCurrentBranch ${GIT_HOME} )
     
-    if [ "$IGNITE_CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
+    if [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
     then 
         echo $0", ERROR:"
-        echo "You are not on a expected branch. Your current branch is $IGNITE_CURRENT_BRANCH, should be $DEFAULT_BRANCH."
+        echo "You are not on an expected branch. Your current branch at $GIT_HOME is $CURRENT_BRANCH, should be $DEFAULT_BRANCH."
         
         exit 1
     fi
