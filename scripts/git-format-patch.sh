@@ -50,7 +50,7 @@ echo
 # Main script logic.
 #
 
-#exitIfThereAreUncommittedChanges
+require_clean_work_tree ${IGNITE_HOME}
 #
 #checkBranchExists ${IGNITE_HOME} ${CURRENT_BRANCH}
 #
