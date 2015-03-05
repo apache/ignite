@@ -741,7 +741,7 @@ public class GridCacheUtils {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
-        assert oldest != null;
+        assert oldest != null : "Failed to find oldest node for cache context: " + cctx.name();
         assert oldest.order() <= topOrder || topOrder < 0;
 
         return oldest;

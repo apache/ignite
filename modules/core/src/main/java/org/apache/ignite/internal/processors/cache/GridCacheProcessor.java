@@ -663,6 +663,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
+        // Start dynamic caches received from collect discovery data.
+        for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
+            GridCacheContext ctx = createCache(desc.cacheConfiguration());
+
+            sharedCtx.addCacheContext(ctx);
+
+            GridCacheAdapter cache = ctx.cache();
+
+            String name = desc.cacheConfiguration().getName();
+
+            caches.put(name, cache);
+
+            startCache(cache);
+
+            proxies.put(name, new GridCacheProxyImpl(ctx, cache, null));
+
+            jCacheProxies.put(name, new IgniteCacheProxy(ctx, cache, null, false));
+        }
+
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkCache(n);
@@ -1182,11 +1201,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
         assert req.isStart();
 
-        CacheConfiguration cfg = new CacheConfiguration(req.startCacheConfiguration());
-
-        initialize(cfg);
-
-        GridCacheContext cacheCtx = createCache(cfg);
+        GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
 
         cacheCtx.dynamicDeploymentId(req.deploymentId());
 
@@ -1309,6 +1324,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.CACHE_PROC;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
+        // Collect dynamically started caches to a single object.
+        Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(dynamicCaches.size());
+
+        for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
+            if (!desc.cancelled())
+                reqs.add(new DynamicCacheChangeRequest(desc.cacheConfiguration(), desc.nodeFilter()));
+        }
+
+        U.debug(log, "Collected discovery data for cache: " + reqs.size());
+
+        return new DynamicCacheChangeBatch(reqs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
+        if (data instanceof DynamicCacheChangeBatch) {
+            DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
+
+            U.debug(log, "Received discovery data: " + batch.requests());
+
+            for (DynamicCacheChangeRequest req : batch.requests()) {
+                dynamicCaches.put(req.cacheName(), new DynamicCacheDescriptor(
+                    req.startCacheConfiguration(),
+                    req.startNodeFilter(),
+                    req.deploymentId()));
+
+                ctx.discovery().addDynamicCacheFilter(req.cacheName(), req.startNodeFilter());
+            }
+        }
+    }
+
     /**
      * Dynamically starts cache.
      *
@@ -1317,12 +1370,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCache(CacheConfiguration ccfg, IgnitePredicate<ClusterNode> nodeFilter) {
-        if (nodeFilter == null)
-            nodeFilter = F.alwaysTrue();
+        try {
+            if (nodeFilter == null)
+                nodeFilter = F.alwaysTrue();
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ccfg, nodeFilter);
+            CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
-        return F.first(initiateCacheChanges(F.asList(req)));
+            initialize(cfg);
+
+            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cfg, nodeFilter);
+
+            return F.first(initiateCacheChanges(F.asList(req)));
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFutureEx<>(e);
+        }
     }
 
     /**
@@ -1425,6 +1487,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param batch Change request batch.
      */
     private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
+        U.debug(log, "<><><>Received cache change request: " + batch.requests().size());
+
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.isStart()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -1470,6 +1534,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     return;
                 }
+
+                U.debug(log, "Cancelling descriptor: " + desc);
 
                 desc.onCancelled();
 

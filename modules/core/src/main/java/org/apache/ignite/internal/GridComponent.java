@@ -36,6 +36,9 @@ public interface GridComponent {
         CONTINUOUS_PROC,
 
         /** */
+        CACHE_PROC,
+
+        /** */
         PLUGIN
     }
 

@@ -249,7 +249,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testStartStopCacheAddNode() throws Exception {
+    public void testStartStopCacheAddNode() throws Exception {
         final IgniteKernal kernal = (IgniteKernal)grid(0);
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -271,7 +271,12 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", grid(g).jcache(CACHE_NAME).get("1"));
 
             // Undeploy cache.
-            kernal.context().cache().dynamicStopCache(CACHE_NAME);
+            kernal.context().cache().dynamicStopCache(CACHE_NAME).get(); // TODO debug without get().
+
+            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
             startGrid(nodeCount() + 1);
 
