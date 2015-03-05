@@ -53,7 +53,6 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setStoreValueBytes(storeValBytes);
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -102,7 +102,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setPreloadMode(SYNC);
-        cfg.setStoreValueBytes(true);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setBackups(1);
