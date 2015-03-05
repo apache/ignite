@@ -78,12 +78,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     }
 
     /**
-     * @param ctx Context.
      * @param rdc Reducer to add.
      * @param futs Futures to add.
      */
-    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Iterable<IgniteInternalFuture<T>> futs) {
+    public GridCompoundFuture(
+        @Nullable IgniteReducer<T, R> rdc,
+        @Nullable Iterable<IgniteInternalFuture<T>> futs
+    ) {
         this.rdc = rdc;
 
         addAll(futs);

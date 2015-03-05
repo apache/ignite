@@ -36,7 +36,6 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1048,15 +1047,6 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         @GridToStringInclude
         private final Map<IgniteTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
             new ConcurrentHashMap8<>();
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public FinishLockFuture() {
-            assert false;
-
-            topVer = 0;
-        }
 
         /**
          * @param topVer Topology version.

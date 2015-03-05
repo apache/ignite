@@ -354,7 +354,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
-                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                                 @Override public void run() {
                                     prepare();
                                 }
@@ -839,8 +839,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
          * @param m Mapping.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridDistributedTxMapping<K, V> m,
-            ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings) {
+        MiniFuture(
+            GridDistributedTxMapping<K, V> m,
+            ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings
+        ) {
             this.m = m;
             this.mappings = mappings;
         }

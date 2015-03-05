@@ -446,7 +446,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             futs.add(cancel(dep.configuration().getName()));
         }
 
-        return futs.isEmpty() ? new GridFinishedFuture<>() : new GridCompoundFuture(ctx, null, futs);
+        return futs.isEmpty() ? new GridFinishedFuture<>() : new GridCompoundFuture(null, futs);
     }
 
     /**

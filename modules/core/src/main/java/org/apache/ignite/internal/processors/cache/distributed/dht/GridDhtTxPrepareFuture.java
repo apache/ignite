@@ -311,7 +311,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
-                                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), key, val);
+                                    CacheInvokeEntry<K, V> invokeEntry =
+                                        new CacheInvokeEntry<>(txEntry.context(), key, val);
 
                                     EntryProcessor<K, V, ?> processor = t.get1();
 
@@ -486,7 +487,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             if (!tx.near()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
+                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ?
+                        tx.commitAsync() : tx.rollbackAsync();
 
                     fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> gridCacheTxGridFuture) {
