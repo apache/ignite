@@ -27,7 +27,8 @@ import java._
 import java.awt.Image
 import java.io._
 import java.text.SimpleDateFormat
-import java.util._
+
+import scala.io._
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -118,7 +119,7 @@ object VisorConsole extends App {
         visor.quit()
     }
 
-    var batchStream: Option[InputStream] = None
+    var batchStream: Option[String] = None
 
     batchFile.foreach(name => {
         val f = U.resolveIgnitePath(name)
@@ -132,17 +133,13 @@ object VisorConsole extends App {
             visor.quit()
         }
 
-        batchStream = Some(new FileInputStream(f))
+        batchStream = Some(Source.fromFile(f).getLines().mkString("\n"))
     })
 
-    batchCommand.foreach(commands =>
-        batchStream = Some(new ByteArrayInputStream(commands.replaceAll(";", "\n").getBytes("UTF-8"))))
+    batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
 
     val inputStream = batchStream match {
-        case Some(stream) =>
-            new SequenceInputStream(Collections.enumeration(util.Arrays.asList(stream,
-                new ByteArrayInputStream("\nquit\n".getBytes("UTF-8")))))
-
+        case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
         case None => new FileInputStream(FileDescriptor.in)
     }
 
