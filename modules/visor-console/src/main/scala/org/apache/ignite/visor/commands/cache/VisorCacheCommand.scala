@@ -780,6 +780,7 @@ object VisorCacheCommand {
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
+        val queryCfg = cfg.queryConfiguration()
 
         val cacheT = VisorTextTable()
 
@@ -864,8 +865,40 @@ object VisorCacheCommand {
         cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
 
+        cacheT +=("Query Execution Time Threshold", queryCfg.longQueryWarningTimeout())
+        cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
+        cacheT +=("Query Onheap Cache Size", queryCfg.sqlOnheapRowCacheSize())
+
         println(title)
 
         cacheT.render()
+
+        val sqlFxs = queryCfg.sqlFunctionClasses()
+
+        if (sqlFxs.nonEmpty) {
+            println("\nQuery SQL functions:")
+
+            val sqlFxsT = VisorTextTable()
+
+            sqlFxsT #= "Function Class Name"
+
+            sqlFxs.foreach(s => sqlFxsT += s)
+
+            sqlFxsT.render()
+        }
+
+        val indexedTypes = queryCfg.indexedTypes()
+
+        if (indexedTypes.nonEmpty) {
+            println("\nQuery Indexed Types:")
+
+            val indexedTypesT = VisorTextTable()
+
+            indexedTypesT #= ("Key Class Name", "Value Class Name")
+
+            indexedTypes.grouped(2).foreach(types => indexedTypesT += (types(0), types(1)))
+
+            indexedTypesT.render()
+        }
     }
 }
