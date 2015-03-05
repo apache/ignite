@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -306,7 +307,7 @@ public class IgfsDataManager extends IgfsManager {
         IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
             igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
-        IgfsConfiguration cfg = igfsCtx.configuration();
+        FileSystemConfiguration cfg = igfsCtx.configuration();
 
         if (cfg.getPerNodeBatchSize() > 0)
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
@@ -382,7 +383,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsFileInfo fileInfo, final IgfsPath path,
-        final long blockIdx, @Nullable final IgfsReader secReader)
+        final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 

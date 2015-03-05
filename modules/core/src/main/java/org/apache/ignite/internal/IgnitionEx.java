@@ -1606,15 +1606,15 @@ public class IgnitionEx {
             if (myCfg.getPeerClassLoadingLocalClassPathExclude() == null)
                 myCfg.setPeerClassLoadingLocalClassPathExclude(EMPTY_STR_ARR);
 
-            IgfsConfiguration[] igfsCfgs = myCfg.getIgfsConfiguration();
+            FileSystemConfiguration[] igfsCfgs = myCfg.getFileSystemConfiguration();
 
             if (igfsCfgs != null) {
-                IgfsConfiguration[] clone = igfsCfgs.clone();
+                FileSystemConfiguration[] clone = igfsCfgs.clone();
 
                 for (int i = 0; i < igfsCfgs.length; i++)
-                    clone[i] = new IgfsConfiguration(igfsCfgs[i]);
+                    clone[i] = new FileSystemConfiguration(igfsCfgs[i]);
 
-                myCfg.setIgfsConfiguration(clone);
+                myCfg.setFileSystemConfiguration(clone);
             }
 
             StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();

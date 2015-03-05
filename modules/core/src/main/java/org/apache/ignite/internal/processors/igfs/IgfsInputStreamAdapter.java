@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 
 import java.io.*;
 
 /**
  * Implementation adapter providing necessary methods.
  */
-public abstract class IgfsInputStreamAdapter extends IgfsInputStream {
+public abstract class IgfsInputStreamAdapter extends IgfsInputStream
+    implements IgfsSecondaryFileSystemPositionedReadable {
     /** {@inheritDoc} */
     @Override public long length() {
         return fileInfo().length();
