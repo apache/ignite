@@ -100,6 +100,14 @@ applyPatch () {
     PATCH_FILE=$3
 
     cd ${GIT_HOME}
+    
+    if [ -f ${PATCH_FILE} ] 
+    then
+        echo $0", ERROR:"
+        echo "Expected patch file not found: $PATCH_FILE."
+        
+        exit 1
+    fi
 
 #    git apply ${PATCH_FILE}
     git am ${PATCH_FILE}
@@ -118,5 +126,7 @@ currentAndDefaultBranchesShouldBeEqual () {
         echo $0", ERROR:"
         echo "You are not on a expected branch. Your current branch is $IGNITE_CURRENT_BRANCH, 
         should be $DEFAULT_BRANCH."
+        
+        exit 1
     fi
 }
