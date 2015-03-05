@@ -130,38 +130,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         return spis;
     }
 
-    /** {@inheritDoc} */
-    @Override public final void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        for (T spi : spis) {
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
-
-            // Inject SPI internal objects.
-            inject(spi);
-
-            try {
-                Map<String, Object> retval = spi.getNodeAttributes();
-
-                if (retval != null) {
-                    for (Map.Entry<String, Object> e : retval.entrySet()) {
-                        if (attrs.containsKey(e.getKey()))
-                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
-                                ", attr=" + e.getKey() + ']' +
-                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
-                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
-                                "attribute name collisions.");
-
-                        attrs.put(e.getKey(), e.getValue());
-                    }
-                }
-            }
-            catch (IgniteSpiException e) {
-                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
-            }
-        }
-    }
-
     /**
      * @param spi SPI whose internal objects need to be injected.
      * @throws IgniteCheckedException If injection failed.
@@ -190,6 +158,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAfterSpiStart() {
+        // No-op.
+    }
+
     /**
      * Starts wrapped SPI.
      *
@@ -199,6 +177,33 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+
+            try {
+                Map<String, Object> retval = spi.getNodeAttributes();
+
+                if (retval != null) {
+                    for (Map.Entry<String, Object> e : retval.entrySet()) {
+                        if (ctx.hasNodeAttribute(e.getKey()))
+                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
+                                ", attr=" + e.getKey() + ']' +
+                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
+                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
+                                "attribute name collisions.");
+
+                        ctx.addNodeAttribute(e.getKey(), e.getValue());
+                    }
+                }
+            }
+            catch (IgniteSpiException e) {
+                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
+            }
+
             // Print-out all SPI parameters only in DEBUG mode.
             if (log.isDebugEnabled())
                 log.debug("Starting SPI: " + spi);
@@ -212,12 +217,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             if (log.isDebugEnabled())
                 log.debug("Starting SPI implementation: " + spi.getClass().getName());
 
+            onBeforeSpiStart();
+
             try {
                 spi.spiStart(ctx.gridName());
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
             }
+
+            onAfterSpiStart();
 
             if (log.isDebugEnabled())
                 log.debug("SPI module started OK: " + spi.getClass().getName());

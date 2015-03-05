@@ -28,8 +28,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -1120,7 +1120,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfsSecondary, FILE, true, chunk);
+        createFile(igfsSecondary.asSecondary(), FILE, true, chunk);
 
         checkFileContent(igfs, FILE, chunk);
     }
@@ -1148,7 +1148,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         out.close();
 
-        awaitFileClose(igfsSecondary, FILE);
+        awaitFileClose(igfsSecondary.asSecondary(), FILE);
 
         // Read the first block.
         int totalRead = 0;
@@ -1227,7 +1227,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         out.close();
 
-        awaitFileClose(igfsSecondary, FILE);
+        awaitFileClose(igfsSecondary.asSecondary(), FILE);
 
         // Read the first two blocks.
         int totalRead = 0;
@@ -1292,7 +1292,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         igfsSecondary.update(SUBDIR, props);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs.asSecondary(), FILE, true, chunk);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
@@ -1317,7 +1317,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         igfsSecondary.update(DIR, propsDir);
         igfsSecondary.update(SUBDIR, propsSubDir);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs.asSecondary(), FILE, true, chunk);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk);

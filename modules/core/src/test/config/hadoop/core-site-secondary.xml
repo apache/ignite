@@ -29,12 +29,12 @@
 
     <property>
         <name>fs.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v1.IgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem</value>
     </property>
 
     <property>
         <name>fs.AbstractFileSystem.igfs.impl</name>
-        <value>org.apache.ignite.igfs.hadoop.v2.IgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem</value>
     </property>
 
     <property>

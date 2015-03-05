@@ -24,7 +24,6 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -96,7 +95,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -104,7 +103,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
     }
