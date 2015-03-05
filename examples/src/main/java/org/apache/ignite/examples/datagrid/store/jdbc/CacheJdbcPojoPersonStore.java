@@ -17,11 +17,44 @@
 
 package org.apache.ignite.examples.datagrid.store.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.h2.tools.*;
+import org.jetbrains.annotations.*;
+
+import javax.cache.integration.*;
+import java.io.*;
 
 /**
  * TODO: Add class description.
  */
 public class CacheJdbcPojoPersonStore<K, V> extends CacheJdbcPojoStore {
+    public CacheJdbcPojoPersonStore() throws IgniteException {
+        dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
 
+        File script = U.resolveIgnitePath("examples/config/store/initdb.script");
+
+        if (script == null)
+            throw new IgniteException("Failed to find initial database script: " + "examples/config/store/initdb.script");
+
+        try {
+            RunScript.execute(dataSrc.getConnection(), new FileReader(script));
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to initialize database", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
+        throws CacheLoaderException {
+        if (args == null || args.length == 0 || args[0] == null)
+            throw new CacheLoaderException("Expected entry count parameter is not provided.");
+
+        final int entryCnt = (Integer)args[0];
+
+        super.loadCache(clo, "java.lang.Long", "select * from PERSON limit " + entryCnt);
+    }
 }

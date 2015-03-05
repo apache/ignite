@@ -64,7 +64,7 @@ public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
             try {
                 cls = Class.forName(clsName);
 
-                if (simpleKey = cls.isAssignableFrom(Number.class) || cls.isInstance(String.class))
+                if (simpleKey = (Number.class.isAssignableFrom(cls) || cls.isInstance(String.class)))
                     return;
 
                 ctor = cls.getDeclaredConstructor();

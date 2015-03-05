@@ -27,10 +27,13 @@
     Ignition.start("examples/config/example-jdbc-pojo-store.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:util="http://www.springframework.org/schema/util"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
@@ -76,53 +79,17 @@
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="databaseTable" value="ORGANIZATION"/>
-                                <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.OrganizationKey"/>
-                                <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Organization"/>
-                                <property name="keyFields">
-                                    <list>
-                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="ID"/>
-                                            <property name="databaseType" value="4"/>
-                                            <property name="javaName" value="id"/>
-                                            <property name="javaType" value="int"/>
-                                        </bean>
-                                    </list>
-                                </property>
-                                <property name="valueFields">
-                                    <list>
-                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="ID"/>
-                                            <property name="databaseType" value="4"/>
-                                            <property name="javaName" value="id"/>
-                                            <property name="javaType" value="int"/>
-                                        </bean>
-                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="NAME"/>
-                                            <property name="databaseType" value="12"/>
-                                            <property name="javaName" value="name"/>
-                                            <property name="javaType" value="java.lang.String"/>
-                                        </bean>
-                                        <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                            <property name="databaseName" value="CITY"/>
-                                            <property name="databaseType" value="12"/>
-                                            <property name="javaName" value="city"/>
-                                            <property name="javaType" value="java.lang.String"/>
-                                        </bean>
-                                    </list>
-                                </property>
-                            </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                 <property name="databaseTable" value="PERSON"/>
-                                <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.PersonKey"/>
+                                <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Person"/>
                                 <property name="keyFields">
                                     <list>
                                         <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                                             <property name="databaseName" value="ID"/>
-                                            <property name="databaseType" value="4"/>
+                                            <property name="databaseType">
+                                                <util:constant static-field="java.sql.Types.BIGINT"/>
+                                            </property>
                                             <property name="javaName" value="id"/>
-                                            <property name="javaType" value="long"/>
                                         </bean>
                                     </list>
                                 </property>
@@ -130,19 +97,25 @@
                                     <list>
                                         <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                                             <property name="databaseName" value="ID"/>
-                                            <property name="databaseType" value="4"/>
+                                            <property name="databaseType">
+                                                <util:constant static-field="java.sql.Types.BIGINT"/>
+                                            </property>
                                             <property name="javaName" value="id"/>
                                             <property name="javaType" value="long"/>
                                         </bean>
                                         <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                                             <property name="databaseName" value="FIRST_NAME"/>
-                                            <property name="databaseType" value="12"/>
+                                            <property name="databaseType">
+                                                <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                            </property>
                                             <property name="javaName" value="firstName"/>
                                             <property name="javaType" value="java.lang.String"/>
                                         </bean>
                                         <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                                             <property name="databaseName" value="LAST_NAME"/>
-                                            <property name="databaseType" value="12"/>
+                                            <property name="databaseType">
+                                                <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                            </property>
                                             <property name="javaName" value="lastName"/>
                                             <property name="javaType" value="java.lang.String"/>
                                         </bean>

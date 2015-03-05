@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
+import org.apache.ignite.examples.datagrid.store.jdbc.*;
 import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -76,13 +77,13 @@ public class CacheNodeWithStoreStartup {
         CacheStore<Long, Person> store;
 
         // Uncomment other cache stores to try them.
-        store = new CacheDummyPersonStore();
+//        store = new CacheDummyPersonStore();
         // store = new CacheJdbcPersonStore();
         // store = new CacheHibernatePersonStore();
 
         // Uncomment two lines for try .
-        // store = new CacheJdbcPojoPersonStore();
-        // cacheCfg.setTypeMetadata(typeMetadata());
+        store = new CacheJdbcPojoPersonStore();
+        cacheCfg.setTypeMetadata(typeMetadata());
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
@@ -99,16 +100,15 @@ public class CacheNodeWithStoreStartup {
 
         tm.setDatabaseTable("PERSON");
 
-        tm.setKeyType("org.apache.ignite.examples.datagrid.store.model.PersonKey");
+        tm.setKeyType("java.lang.Long");
         tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
 
-        CacheTypeFieldMetadata keyFld = new CacheTypeFieldMetadata("id", long.class, "ID", Types.BIGINT);
+        tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
 
-        tm.setKeyFields(F.asList(keyFld));
-
-        tm.setValueFields(F.asList(keyFld,
-            new CacheTypeFieldMetadata("firstName", String.class, "FIRST_NAME", Types.VARCHAR),
-            new CacheTypeFieldMetadata("lastName", String.class, "LAST_NAME", Types.VARCHAR)
+        tm.setValueFields(F.asList(
+            new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", long.class),
+            new CacheTypeFieldMetadata("FIRST_NAME", Types.VARCHAR, "firstName", String.class),
+            new CacheTypeFieldMetadata("LAST_NAME", Types.VARCHAR, "lastName", String.class)
         ));
 
         return F.asList(tm);

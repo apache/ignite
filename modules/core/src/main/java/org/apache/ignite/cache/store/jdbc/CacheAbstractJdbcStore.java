@@ -1322,13 +1322,15 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             this.typeMeta = typeMeta;
 
-            final Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
+            Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
 
             Collection<CacheTypeFieldMetadata> valFields = typeMeta.getValueFields();
 
+            keyCols = databaseColumns(keyFields);
+
             uniqValFields = F.view(valFields, new IgnitePredicate<CacheTypeFieldMetadata>() {
                 @Override public boolean apply(CacheTypeFieldMetadata col) {
-                    return !keyFields.contains(col);
+                    return !keyCols.contains(col.getDatabaseName());
                 }
             });
 
@@ -1337,8 +1339,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             String tblName = typeMeta.getDatabaseTable();
 
             fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
-
-            keyCols = databaseColumns(keyFields);
 
             Collection<String> uniqValCols = databaseColumns(uniqValFields);
 
