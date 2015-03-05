@@ -537,9 +537,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             if (intercept) {
                                 Object interceptorVal = cacheCtx.config().getInterceptor()
-                                    .onBeforePut(new CacheLazyEntry(
-                                                    cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
-                                            CU.value(val, cacheCtx, false));
+                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
+                                        CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -2463,18 +2462,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), false);
+        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+        Object val = null;
 
         try {
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), cacheVal);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), keyVal, cacheVal, val);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
+
+                val = invokeEntry.val();
             }
 
             if (res != null)

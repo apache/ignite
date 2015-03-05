@@ -556,17 +556,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @SuppressWarnings("unchecked")
     public CacheObject applyEntryProcessors(CacheObject cacheVal) {
-        Object val = CU.value(cacheVal, ctx, false);
+        Object val = null;
+        Object keyVal = null;
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, key, cacheVal);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val);
 
                 EntryProcessor processor = t.get1();
 
                 processor.process(invokeEntry, t.get2());
 
                 val = invokeEntry.getValue();
+
+                keyVal = invokeEntry.key();
             }
             catch (Exception ignore) {
                 // No-op.

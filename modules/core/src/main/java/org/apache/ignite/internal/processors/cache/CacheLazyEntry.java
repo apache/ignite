@@ -66,6 +66,25 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
         this.cctx = cctx;
     }
 
+    /**
+     * @param ctx Cache context.
+     * @param keyObject Key cache object.
+     * @param key Key value.
+     * @param valObj Cache object
+     * @param val Cache value.
+     */
+    public CacheLazyEntry(GridCacheContext<K, V> ctx, 
+        KeyCacheObject keyObject, 
+        K key, 
+        CacheObject valObj, 
+        V val) {
+        this.cctx = ctx;
+        this.keyObj = keyObject;
+        this.key = key;
+        this.valObj = valObj;
+        this.val = val;
+    }
+
     /** {@inheritDoc} */
     @Override public K getKey() {
         if (key == null)
@@ -80,6 +99,20 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
             val = CU.value(valObj, cctx, true);
 
         return val;
+    }
+
+    /**
+     * @return Return value. This methods doesn't initialize value.
+     */
+    public V val() {
+        return val;
+    }
+
+    /**
+     * @return Return key. This methods doesn't initialize key.
+     */
+    public K key() {
+        return key;
     }
 
     /** {@inheritDoc} */

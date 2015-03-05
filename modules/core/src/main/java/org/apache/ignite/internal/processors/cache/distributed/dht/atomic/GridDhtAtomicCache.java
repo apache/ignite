@@ -1323,6 +1323,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         null);
 
+                    Object oldVal = null;
                     Object updatedVal = null;
 
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, entry.key(), old);
@@ -1341,7 +1342,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         else {
                             updated = old;
 
-                            updatedVal = CU.value(old, ctx, true);
+                            oldVal = updatedVal = CU.value(old, ctx, false);
                         }
 
                         if (computed != null)
@@ -1359,8 +1360,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
-                                new CacheLazyEntry(ctx, entry.key(), old));
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal);
+
+                            IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
                             if (ctx.cancelRemove(interceptorRes))
                                 continue;
@@ -1402,8 +1404,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            Object val = ctx.config().getInterceptor()
-                                .onBeforePut(new CacheLazyEntry(ctx, entry.key(), old), updatedVal);
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal);
+
+                            Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
                             if (val == null)
                                 continue;

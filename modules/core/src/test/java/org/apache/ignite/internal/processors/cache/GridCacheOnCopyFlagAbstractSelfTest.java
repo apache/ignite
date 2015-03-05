@@ -364,6 +364,21 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutGet() throws Exception {
+        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
+
+        Map<Integer, TestValue> maps = new HashMap<>();
+        
+        for (int i = 0; i < ITER_CNT; i++) 
+            cache.put(new TestKey(i, i), new TestValue(i));
+
+        for (Cache.Entry<Object, Object> entry : internalCache(0, null).entrySet())
+            assertNotSame(entry.getValue(), maps.get(((TestKey)entry.getKey()).key()));
+    }
+
+    /**
      *
      */
     public static class TestKey implements Externalizable {
@@ -441,7 +456,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             field = in.readInt();
         }
     }
-
 
     /**
      *

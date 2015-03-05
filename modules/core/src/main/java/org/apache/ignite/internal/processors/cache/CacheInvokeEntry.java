@@ -31,6 +31,9 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** */
     private Operation op = Operation.NONE;
 
+    /** */
+    private V originVal;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
@@ -40,6 +43,20 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         super(cctx, keyObj, valObj);
 
         this.hadVal = valObj != null;
+    }
+
+    /** 
+     * @param ctx Cache context.
+     * @param keyObject Key cache object.
+     * @param key Key value.
+     * @param valObj Value cache object.
+     * @param val Value.
+     */
+    public CacheInvokeEntry(GridCacheContext<K, V> ctx, KeyCacheObject keyObject, K key, CacheObject valObj,
+        V val) {
+        super(ctx, keyObject, key, valObj, val);
+
+        this.hadVal = valObj != null || val != null;
     }
 
     /** {@inheritDoc} */
@@ -63,9 +80,18 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         if (val == null)
             throw new NullPointerException();
 
+        this.originVal = val;
+
         this.val = val;
 
         op = hadVal ? Operation.UPDATE : Operation.CREATE;
+    }
+
+    /**
+     * @return Return origin value, before modification.
+     */
+    public V originVal() {
+        return originVal == null ? val : originVal;
     }
 
     /**

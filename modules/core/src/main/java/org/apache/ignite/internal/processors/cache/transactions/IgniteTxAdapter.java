@@ -1225,11 +1225,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 boolean modified = false;
 
-                Object val = CU.value(cacheVal, txEntry.context(), false);
+                Object val = null;
+                Object key = null;
 
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), 
-                        txEntry.key(), cacheVal);
+                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
+                        txEntry.key(), key, cacheVal, val);
 
                     try {
                         EntryProcessor<Object, Object, Object> processor = t.get1();
@@ -1237,6 +1238,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                         processor.process(invokeEntry, t.get2());
 
                         val = invokeEntry.getValue();
+
+                        key = invokeEntry.key();
                     }
                     catch (Exception ignore) {
                         // No-op.
