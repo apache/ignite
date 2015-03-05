@@ -500,10 +500,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
-        if (ctx.portableEnabled())
-            return m.isEmpty() ? null : m.values().iterator().next();
-        else
-            return m.get(key);
+        return m.isEmpty() ? null : m.values().iterator().next();
     }
 
     /** {@inheritDoc} */
@@ -696,7 +693,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             invokeMap.values(),
             args,
             expiryPerCall(),
-            true,
+            false,
             false,
             null,
             ctx.writeThrough());
@@ -720,7 +717,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
             invokeMap,
             args,
-            true,
+            false,
             false,
             null);
 
@@ -784,7 +781,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             map.values(),
             args,
             expiryPerCall(),
-            true,
+            false,
             false,
             null,
             ctx.writeThrough());
@@ -1039,7 +1036,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             throw err;
 
         Object ret = res == null ? null : rawRetval ?
-            new GridCacheReturn<>(res.get2(), res.get1()) : retval ? res.get2() : res.get1();
+            new GridCacheReturn<>(res.get2(), res.get1()) : (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
             ret = Collections.emptyMap();
@@ -1138,7 +1135,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             taskName,
                             null);
 
-                        Object keyVal = entry.key().value(ctx, false);
+                        Object keyVal = entry.key().value(ctx.cacheObjectContext(), false);
                         Object oldVal = CU.value(old, ctx, false);
 
                         CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old);

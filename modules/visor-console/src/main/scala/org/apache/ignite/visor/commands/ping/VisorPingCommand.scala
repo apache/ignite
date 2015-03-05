@@ -224,5 +224,5 @@ object VisorPingCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromPing2Visor(vs: VisorTag) = cmd
+    implicit def fromPing2Visor(vs: VisorTag): VisorPingCommand = cmd
 }

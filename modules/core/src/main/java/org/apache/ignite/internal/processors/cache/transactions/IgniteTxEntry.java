@@ -737,7 +737,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             }
         }
 
-        key.finishUnmarshal(context(), clsLdr);
+        key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
 
         val.unmarshal(this.ctx, clsLdr);
 

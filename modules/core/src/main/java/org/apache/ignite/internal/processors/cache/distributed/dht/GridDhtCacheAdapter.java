@@ -438,7 +438,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         long topVer,
         boolean replicate,
         @Nullable ExpiryPolicy plc) {
-        if (p != null && !p.apply(key.<K>value(ctx, false), (V)val))
+        if (p != null && !p.apply(key.<K>value(ctx.cacheObjectContext(), false), (V)val))
             return;
 
         try {

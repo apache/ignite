@@ -316,7 +316,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
 
         /** {@inheritDoc} */
         @Override public boolean apply(GridCacheEntryEx e) {
-            DataKey key = e.key().value(e.context(), false);
+            DataKey key = e.key().value(e.context().cacheObjectContext(), false);
 
             return name != null ? name.equals(key.name) : key.name == null;
         }

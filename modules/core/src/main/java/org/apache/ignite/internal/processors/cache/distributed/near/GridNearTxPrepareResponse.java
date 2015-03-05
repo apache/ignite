@@ -61,7 +61,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, NearTxPrepareResponseOwnedValue> ownedVals;
+    private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */
     @GridToStringExclude
@@ -70,8 +70,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** OwnedVals' values for marshalling. */
     @GridToStringExclude
-    @GridDirectCollection(NearTxPrepareResponseOwnedValue.class)
-    private Collection<NearTxPrepareResponseOwnedValue> ownedValVals;
+    @GridDirectCollection(CacheVersionedValue.class)
+    private Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
     @GridDirectTransient
@@ -174,7 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        NearTxPrepareResponseOwnedValue oVal = new NearTxPrepareResponseOwnedValue(ver, val);
+        CacheVersionedValue oVal = new CacheVersionedValue(ver, val);
 
         ownedVals.put(key, oVal);
     }
@@ -182,9 +182,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return Owned values map.
      */
-    public Map<IgniteTxKey, NearTxPrepareResponseOwnedValue> ownedValues() {
+    public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
         return ownedVals == null ?
-            Collections.<IgniteTxKey, NearTxPrepareResponseOwnedValue>emptyMap() :
+            Collections.<IgniteTxKey, CacheVersionedValue>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
     }
 
@@ -234,7 +234,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             ownedValVals = ownedVals.values();
 
-            for (Map.Entry<IgniteTxKey, NearTxPrepareResponseOwnedValue> entry : ownedVals.entrySet()) {
+            for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
                 GridCacheContext cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
 
                 entry.getKey().prepareMarshal(cacheCtx);
@@ -266,14 +266,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
 
-            Iterator<NearTxPrepareResponseOwnedValue> valueIter = ownedValVals.iterator();
+            Iterator<CacheVersionedValue> valueIter = ownedValVals.iterator();
 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-                NearTxPrepareResponseOwnedValue value = valueIter.next();
+                CacheVersionedValue value = valueIter.next();
 
                 key.finishUnmarshal(cctx, ldr);
 

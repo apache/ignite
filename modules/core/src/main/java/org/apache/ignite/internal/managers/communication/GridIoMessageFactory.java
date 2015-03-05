@@ -560,7 +560,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 102:
-                msg = new NearTxPrepareResponseOwnedValue();
+                msg = new CacheVersionedValue();
 
                 break;
 

@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.portable;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -75,7 +77,7 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
         if (obj == null)
             return null;
 
-        return obj.prepareForCache(cctx);
+        return obj.prepareForCache(cctx.cacheObjectContext());
     }
 
     /** {@inheritDoc} */
@@ -140,7 +142,20 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
 
     /** {@inheritDoc} */
     @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName) {
-        return new CacheObjectContext(ctx);
+        CacheConfiguration ccfg = null;
+
+        for (CacheConfiguration ccfg0 : ctx.config().getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg0.getName())) {
+                ccfg = ccfg0;
+
+                break;
+            }
+        }
+
+        return new CacheObjectContext(ctx,
+            new GridCacheDefaultAffinityKeyMapper(),
+            ccfg != null && ccfg.isCopyOnGet(),
+            ccfg != null && ccfg.isQueryIndexEnabled());
     }
 
     /** {@inheritDoc} */

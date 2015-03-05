@@ -538,8 +538,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (intercept) {
                                 Object interceptorVal = cacheCtx.config().getInterceptor()
                                     .onBeforePut(new CacheLazyEntry(
-                                        cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
-                                        CU.value(val, cacheCtx, false));
+                                                    cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
+                                            CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1645,7 +1645,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         // Load keys only after the locks have been acquired.
                         for (KeyCacheObject cacheKey : lockKeys) {
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.
@@ -1788,7 +1789,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal = (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx, false));
+                            K keyVal =
+                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2461,7 +2463,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = txEntry.key().value(ctx, false);
+        Object keyVal = txEntry.key().value(ctx.cacheObjectContext(), false);
 
         try {
             Object res = null;
@@ -2593,21 +2595,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 // Loose all skipped.
                 final Set<KeyCacheObject> loaded = loadFut.get();
 
-                final Collection<KeyCacheObject> keys;
-
-                if (keySet != null ) {
-                    keys = new ArrayList<>(keySet.size());
-
-                    // TODO IGNITE-51.
-                    for (K k : keySet) {
-                        KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(k);
-
-                        if (k != null && (loaded == null || !loaded.contains(cacheKey)))
-                            keys.add(cacheKey);
-                    }
-                }
-                else
-                    keys = Collections.emptyList();
+                final Collection<KeyCacheObject> keys = F.view(enlisted, F0.notIn(loaded));
 
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + keys);

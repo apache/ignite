@@ -137,7 +137,7 @@ public class TxEntryValueHolder implements Message {
      */
     public void unmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (hasWriteVal && val != null)
-            val.finishUnmarshal(ctx, ldr);
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

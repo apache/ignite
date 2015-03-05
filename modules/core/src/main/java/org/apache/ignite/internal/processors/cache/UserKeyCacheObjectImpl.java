@@ -40,23 +40,23 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
+            valBytes = ctx.processor().marshal(ctx, val);
 
         return valBytes;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         try {
             if (valBytes == null)
-                valBytes = ctx.portable().marshal(ctx.cacheObjectContext(), val);
+                valBytes = ctx.processor().marshal(ctx, val);
 
             if (needCopy(ctx)) {
-                Object val = ctx.portable().unmarshal(ctx.cacheObjectContext(),
+                Object val = ctx.processor().unmarshal(ctx,
                     valBytes,
-                    ctx.deploy().globalLoader());
+                    ctx.kernalContext().config().getClassLoader());
 
                 return new KeyCacheObjectImpl(val, valBytes);
             }

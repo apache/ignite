@@ -25,9 +25,9 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import java.nio.*;
 
 /**
- * Message for owned values to set on near node.
+ * Cache object and version.
  */
-public class NearTxPrepareResponseOwnedValue implements Message {
+public class CacheVersionedValue implements Message {
     /** Cache version. */
     private GridCacheVersion vers;
 
@@ -35,7 +35,7 @@ public class NearTxPrepareResponseOwnedValue implements Message {
     private CacheObject obj;
 
     /** */
-    public NearTxPrepareResponseOwnedValue() {
+    public CacheVersionedValue() {
         // No-op.
     }
 
@@ -43,7 +43,7 @@ public class NearTxPrepareResponseOwnedValue implements Message {
      * @param vers Cache version.
      * @param obj Cache object.
      */
-    NearTxPrepareResponseOwnedValue(GridCacheVersion vers, CacheObject obj) {
+    CacheVersionedValue(GridCacheVersion vers, CacheObject obj) {
         this.vers = vers;
         this.obj = obj;
     }
@@ -67,7 +67,7 @@ public class NearTxPrepareResponseOwnedValue implements Message {
      * and is responsible for pre-marshalling state.
      *
      * @param ctx Cache object context.
-     * @throws org.apache.ignite.IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (obj != null)
@@ -80,11 +80,11 @@ public class NearTxPrepareResponseOwnedValue implements Message {
      *
      * @param ctx Context.
      * @param ldr Class loader.
-     * @throws org.apache.ignite.IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (obj != null)
-            obj.finishUnmarshal(ctx, ldr);
+            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

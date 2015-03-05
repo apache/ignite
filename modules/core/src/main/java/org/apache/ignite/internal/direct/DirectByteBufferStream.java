@@ -449,6 +449,18 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param val Value.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void writeByteArray(byte[] val, long off, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {

@@ -55,7 +55,8 @@ public class CacheEntryPredicateContainsValue implements CacheEntryPredicate {
         try {
             CacheObject val = entry.rawGetOrUnmarshal(true);
 
-            return F.eq(this.val.value(entry.context(), false), CU.value(val, entry.context(), false));
+            return F.eq(this.val.value(entry.context().cacheObjectContext(), false),
+                CU.value(val, entry.context(), false));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -64,7 +65,7 @@ public class CacheEntryPredicateContainsValue implements CacheEntryPredicate {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        val.finishUnmarshal(ctx, ldr);
+        val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

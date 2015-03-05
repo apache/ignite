@@ -65,7 +65,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(GridCacheContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         assert valBytes != null : this;
 
         return valBytes;
@@ -80,14 +80,14 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(GridCacheContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
 
         if (cpy) {
             try {
-                return (T)ctx.portable().unmarshal(ctx.cacheObjectContext(),
+                return (T)ctx.processor().unmarshal(ctx,
                     valBytes,
-                    ctx.deploy().globalLoader());
+                    ctx.kernalContext().config().getClassLoader());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal object.", e);
@@ -98,7 +98,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(GridCacheContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         return this;
     }
 
@@ -166,15 +166,15 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = CU.marshal(ctx.kernalContext().cache().context(), val);
+            valBytes = ctx.kernalContext().portable().marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val == null) {
             assert valBytes != null;
 
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+            val = ctx.kernalContext().portable().unmarshal(ctx, valBytes, ldr);
         }
     }
 

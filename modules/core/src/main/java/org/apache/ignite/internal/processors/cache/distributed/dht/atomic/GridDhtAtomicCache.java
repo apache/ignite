@@ -670,7 +670,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             args,
             null,
             null,
-            true,
+            false,
             false,
             null,
             null);
@@ -714,7 +714,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             args,
             null,
             null,
-            true,
+            false,
             false,
             null,
             null);
@@ -744,7 +744,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             args,
             null,
             null,
-            true,
+            false,
             false,
             null,
             null);
@@ -1470,7 +1470,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
                             old),
-                            updated.value(ctx, false));
+                            updated.value(ctx.cacheObjectContext(), false));
 
                         if (val == null)
                             continue;
@@ -1787,7 +1787,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 if (op == TRANSFORM) {
-                    assert req.returnValue();
+                    assert !req.returnValue();
 
                     if (updRes.computedResult() != null) {
                         if (retVal == null) {

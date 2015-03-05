@@ -56,7 +56,7 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        return e.key().value(cctx, false);
+        return e.key().value(cctx.cacheObjectContext(), false);
     }
 
     /** {@inheritDoc} */
