@@ -550,10 +550,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
+        FileSystemConfiguration[] igfsCfgs = ctx.grid().configuration().getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
-            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 sysCaches.add(igfsCfg.getMetaCacheName());
                 sysCaches.add(igfsCfg.getDataCacheName());
             }
@@ -902,6 +902,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
 
+        if (!(ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))) {
+            GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
+
+            Map<String, String> interceptors = new HashMap<>();
+
+            int i = 0;
+
+            for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+                assert caches.containsKey(cfg.getName()) : cfg.getName();
+
+                GridCacheContext ctx = caches.get(cfg.getName()).context();
+
+                attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
+
+                if (cfg.getInterceptor() != null)
+                    interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
+            }
+
+            ctx.addNodeAttribute(ATTR_CACHE, attrVals);
+
+            ctx.addNodeAttribute(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
+
+            if (!interceptors.isEmpty())
+                ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
+        }
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
     }
@@ -930,36 +956,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchMgr,
             ioMgr
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        if (ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))
-            return;
-
-        GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
-
-        Map<String, String> interceptors = new HashMap<>();
-
-        int i = 0;
-
-        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-            assert caches.containsKey(cfg.getName()) : cfg.getName();
-
-            GridCacheContext ctx = caches.get(cfg.getName()).context();
-
-            attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
-
-            if (cfg.getInterceptor() != null)
-                interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
-        }
-
-        attrs.put(ATTR_CACHE, attrVals);
-
-        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
-
-        if (!interceptors.isEmpty())
-            attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
 
     /**

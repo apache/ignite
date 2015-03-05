@@ -79,7 +79,7 @@ public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
 
     /** {@inheritDoc} */
     @Override public Object execute() {
-        IgniteFs fs = ignite.fileSystem(igfsName);
+        IgniteFileSystem fs = ignite.fileSystem(igfsName);
 
         try (IgfsInputStream in = fs.open(path)) {
             IgfsFileRange split = new IgfsFileRange(path, start, len);

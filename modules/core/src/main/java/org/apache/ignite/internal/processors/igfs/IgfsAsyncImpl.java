@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -32,7 +33,7 @@ import java.util.*;
 /**
  * Igfs supporting asynchronous operations.
  */
-public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements IgfsEx {
+public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> implements IgfsEx {
     /** */
     private final IgfsImpl igfs;
 
@@ -192,7 +193,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsConfiguration configuration() {
+    @Override public FileSystemConfiguration configuration() {
         return igfs.configuration();
     }
 
@@ -310,7 +311,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFs> implements Igfs
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> properties() {
-        return igfs.properties();
+    @Override public IgfsSecondaryFileSystem asSecondary() {
+        return igfs.asSecondary();
     }
 }

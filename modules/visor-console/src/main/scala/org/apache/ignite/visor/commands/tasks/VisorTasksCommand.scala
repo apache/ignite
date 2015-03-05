@@ -638,14 +638,10 @@ class VisorTasksCommand {
                     execsT.maxCellWidth = 35
 
                     execsT #=(
-                        (
-                            "ID8(@ID), Start/End,",
-                            "State & Duration"
-                            ),
+                        ("ID8(@ID), Start/End,", "State & Duration"),
                         "Task Name(@)",
                         "Nodes IP, ID8(@)",
-                        "Jobs"
-                        )
+                        "Jobs")
 
                     var sortedExecs = if (!reverse) eLst.sortBy(_.startTs).reverse else eLst.sortBy(_.startTs)
 
@@ -900,14 +896,10 @@ class VisorTasksCommand {
                     execsT.maxCellWidth = 35
 
                     execsT #= (
-                        (
-                            "ID8(@ID), Start/End,",
-                            "State & Duration"
-                            ),
+                        ("ID8(@ID), Start/End,", "State & Duration"),
                         "Task Name(@)",
                         "Nodes IP, ID8(@)",
-                        "Jobs"
-                        )
+                        "Jobs")
 
                     var sorted = if (!reverse) eLst.sortBy(_.startTs).reverse else eLst.sortBy(_.startTs)
 
@@ -1025,14 +1017,10 @@ class VisorTasksCommand {
                 execT.maxCellWidth = 35
 
                 execT #= (
-                    (
-                        "ID8(@ID), Start/End,",
-                        "State & Duration"
-                        ),
+                    ("ID8(@ID), Start/End,", "State & Duration"),
                     "Task Name(@)",
                     "Nodes IP, ID8(@)",
-                    "Jobs"
-                    )
+                    "Jobs")
 
                 val e = eLst.head
 
@@ -1480,5 +1468,5 @@ object VisorTasksCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromTrace2Visor(vs: VisorTag) = cmd
+    implicit def fromTrace2Visor(vs: VisorTag): VisorTasksCommand = cmd
 }

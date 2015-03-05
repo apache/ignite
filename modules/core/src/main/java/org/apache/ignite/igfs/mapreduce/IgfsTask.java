@@ -37,7 +37,7 @@ import java.util.*;
  * <p>
  * Each file participating in IGFS task is split into {@link IgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code IgfssGroupDataBlocksKeyMapper}). In case maximum range size
- * is provided (either through {@link org.apache.ignite.configuration.IgfsConfiguration#getMaximumTaskRangeLength()} or {@code IgniteFs.execute()}
+ * is provided (either through {@link org.apache.ignite.configuration.FileSystemConfiguration#getMaximumTaskRangeLength()} or {@code IgniteFs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
  * Once file is split into ranges, each range is passed to {@code IgfsTask.createJob()} method in order to create a
@@ -88,7 +88,7 @@ public abstract class IgfsTask<T, R> extends ComputeTaskAdapter<IgfsTaskArgs<T>,
         assert ignite != null;
         assert args != null;
 
-        IgniteFs fs = ignite.fileSystem(args.igfsName());
+        IgniteFileSystem fs = ignite.fileSystem(args.igfsName());
         IgfsProcessorAdapter igfsProc = ((IgniteKernal) ignite).context().igfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();

@@ -7421,6 +7421,66 @@ public abstract class IgniteUtils {
      * @param cls Object.
      * @param obj Object.
      * @param mtdName Field name.
+     * @param params Parameters.
+     * @return Field value.
+     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     */
+    public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
+        Object... params) throws IgniteCheckedException {
+        assert cls != null || obj != null;
+        assert mtdName != null;
+
+        try {
+            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+                Method[] mtds = c.getDeclaredMethods();
+
+                Method mtd = null;
+
+                for (Method declaredMtd : c.getDeclaredMethods()) {
+                    if (declaredMtd.getName().equals(mtdName)) {
+                        if (mtd == null)
+                            mtd = declaredMtd;
+                        else
+                            throw new IgniteCheckedException("Failed to invoke (ambigous method name) [mtdName=" +
+                                mtdName + ", cls=" + cls + ']');
+                    }
+                }
+
+                if (mtd == null)
+                    continue;
+
+                boolean accessible = mtd.isAccessible();
+
+                T res;
+
+                try {
+                    mtd.setAccessible(true);
+
+                    res = (T)mtd.invoke(obj, params);
+                }
+                finally {
+                    if (!accessible)
+                        mtd.setAccessible(false);
+                }
+
+                return res;
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to invoke [mtdName=" + mtdName + ", cls=" + cls + ']',
+                e);
+        }
+
+        throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
+            ", cls=" + cls + ']');
+    }
+
+    /**
+     * Invokes method.
+     *
+     * @param cls Object.
+     * @param obj Object.
+     * @param mtdName Field name.
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
@@ -7467,7 +7527,6 @@ public abstract class IgniteUtils {
         throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
             ", cls=" + cls + ']');
     }
-
 
     /**
      * Gets property value.

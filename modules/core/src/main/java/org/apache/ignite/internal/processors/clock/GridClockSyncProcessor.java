@@ -109,14 +109,9 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     timeCoord0.onDiscoveryEvent(discoEvt);
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED);
-    }
 
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        super.addAttributes(attrs);
-
-        attrs.put(ATTR_TIME_SERVER_HOST, srv.host());
-        attrs.put(ATTR_TIME_SERVER_PORT, srv.port());
+        ctx.addNodeAttribute(ATTR_TIME_SERVER_HOST, srv.host());
+        ctx.addNodeAttribute(ATTR_TIME_SERVER_PORT, srv.port());
     }
 
     /** {@inheritDoc} */

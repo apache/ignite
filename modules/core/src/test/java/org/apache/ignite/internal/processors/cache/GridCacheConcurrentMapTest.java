@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -69,10 +68,9 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * todo uncomment when IGNITE-203 will be done.
      * @throws Exception If failed.
      */
-    public void _testRandomEntry() throws Exception {
+    public void testRandomEntry() throws Exception {
         IgniteCache<String, String> cache = grid(0).jcache(null);
 
         for (int i = 0; i < 500; i++)
