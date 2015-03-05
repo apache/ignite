@@ -131,9 +131,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         new GridBoundedConcurrentLinkedHashSet<>(MAX_CLOSED_TOPICS, MAX_CLOSED_TOPICS, 0.75f, 256,
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
-    /** Workers count. */
-    private final LongAdder workersCnt = new LongAdder();
-
     /** */
     private MessageFactory msgFactory;
 
@@ -586,8 +583,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final GridIoMessage msg,
         final IgniteRunnable msgC
     ) {
-        workersCnt.increment();
-
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
             @Override protected void body() {
                 try {
@@ -606,8 +601,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -638,8 +631,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         GridIoPolicy plc,
         final IgniteRunnable msgC
     ) {
-        workersCnt.increment();
-
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
             @Override protected void body() {
                 try {
@@ -649,8 +640,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -834,9 +823,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return;
         }
 
-        // Set is not reserved and new worker should be submitted.
-        workersCnt.increment();
-
         final GridCommunicationMessageSet msgSet0 = set;
 
         Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
@@ -848,8 +834,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -1349,26 +1333,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (msgSets != null) {
             final GridMessageListener lsnrs0 = lsnrs;
 
-            boolean success = true;
-
             try {
                 for (final GridCommunicationMessageSet msgSet : msgSets) {
-                    success = false;
-
-                    workersCnt.increment();
-
                     pool(msgSet.policy()).execute(new GridWorker(ctx.gridName(), "msg-worker", log) {
                         @Override protected void body() {
-                            try {
-                                unwindMessageSet(msgSet, lsnrs0);
-                            }
-                            finally {
-                                workersCnt.decrement();
-                            }
+                            unwindMessageSet(msgSet, lsnrs0);
                         }
                     });
-
-                    success = true;
                 }
             }
             catch (RejectedExecutionException e) {
@@ -1378,11 +1349,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 for (GridCommunicationMessageSet msgSet : msgSets)
                     unwindMessageSet(msgSet, lsnr);
-            }
-            finally {
-                // Decrement for last runnable submission of which failed.
-                if (!success)
-                    workersCnt.decrement();
             }
         }
     }
