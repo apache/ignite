@@ -63,9 +63,9 @@
             </bean>
         </property>
 
-        <property name="igfsConfiguration">
+        <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgfsConfiguration">
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
                     <property name="metaCacheName" value="igfs-meta"/>
                     <property name="dataCacheName" value="igfs-data"/>

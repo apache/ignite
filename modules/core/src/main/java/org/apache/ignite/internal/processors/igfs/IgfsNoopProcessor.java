@@ -49,12 +49,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> igfss() {
+    @Override public Collection<IgniteFileSystem> igfss() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs igfs(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfs(@Nullable String name) {
         return null;
     }
 

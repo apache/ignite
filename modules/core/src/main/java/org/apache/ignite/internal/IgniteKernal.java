@@ -701,7 +701,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
+            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg));
 
@@ -753,7 +753,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new GridDataLoaderProcessor(ctx));
             startProcessor(new GridStreamProcessor(ctx));
-            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())));
+            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -2320,11 +2320,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs fileSystem(String name) {
+    @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
         try{
-            IgniteFs fs = ctx.igfs().igfs(name);
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
                 throw new IllegalArgumentException("IGFS is not configured: " + name);
@@ -2337,7 +2337,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
         guard();
 
         try {
@@ -2349,7 +2349,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> fileSystems() {
+    @Override public Collection<IgniteFileSystem> fileSystems() {
         guard();
 
         try {
@@ -2361,7 +2361,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
+    @Override public Hadoop hadoop() {
         guard();
 
         try {

@@ -230,7 +230,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private IgniteHadoopProcessorAdapter hadoopProc;
+    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -459,8 +459,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof IgniteHadoopProcessorAdapter)
-            hadoopProc = (IgniteHadoopProcessorAdapter)comp;
+        else if (comp instanceof HadoopProcessorAdapter)
+            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -683,7 +683,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteHadoopProcessorAdapter hadoop() {
+    @Override public HadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 

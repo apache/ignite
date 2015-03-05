@@ -52,7 +52,7 @@
     <!--
         Abstract IGFS file system configuration to be used as a template.
     -->
-    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.IgfsConfiguration" abstract="true">
+    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.FileSystemConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -94,7 +94,7 @@
             Apache Hadoop Accelerator configuration.
         -->
         <property name="hadoopConfiguration">
-            <bean class="org.apache.ignite.internal.processors.hadoop.GridHadoopConfiguration">
+            <bean class="org.apache.ignite.configuration.HadoopConfiguration">
                 <!-- Information about finished jobs will be kept for 30 seconds. -->
                 <property name="finishedJobInfoTtl" value="30000"/>
             </bean>
@@ -112,9 +112,9 @@
         <!--
             Configure one IGFS file system instance named "igfs" on this node.
         -->
-        <property name="igfsConfiguration">
+        <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgfsConfiguration" parent="igfsCfgBase">
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration" parent="igfsCfgBase">
                     <property name="name" value="igfs"/>
 
                     <!-- Caches with these names must be configured. -->
@@ -135,7 +135,7 @@
                     <property name="defaultMode" value="PROXY"/>
 
                     <property name="secondaryFileSystem">
-                        <bean class="org.apache.ignite.igfs.hadoop.IgfsHadoopFileSystemWrapper">
+                        <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
                             <constructor-arg name="uri"     value="hdfs://1.2.3.4:9000"/>
                             <constructor-arg name="cfgPath" value="/opt/hadoop-server/etc/hadoop/core-site.xml"/>
                         </bean>

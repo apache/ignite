@@ -114,7 +114,7 @@ public class VisorGridConfiguration implements Serializable {
         rest = VisorRestConfiguration.from(c);
         userAttrs = c.getUserAttributes();
         caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
-        igfss = VisorIgfsConfiguration.list(c.getIgfsConfiguration());
+        igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
         env = new HashMap<>(getenv());
         sysProps = getProperties();

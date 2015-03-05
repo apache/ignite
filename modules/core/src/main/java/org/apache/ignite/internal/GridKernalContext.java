@@ -282,7 +282,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Hadoop processor.
      */
-    public IgniteHadoopProcessorAdapter hadoop();
+    public HadoopProcessorAdapter hadoop();
 
     /**
      * Gets utility cache pool.
