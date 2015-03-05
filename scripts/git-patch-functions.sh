@@ -39,11 +39,16 @@ formatPatch () {
 #    git merge --squash ${PATCHED_BRANCH}
 #    git commit -a -m "# PATCHED_BRANCH"
 
-    git format-patch ${DEFAULT_BRANCH}  --stdout > ${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
+    PATCH_FILE=${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
+
+    git format-patch ${DEFAULT_BRANCH}  --stdout > ${PATCH_FILE}
 
     git checkout ${PATCHED_BRANCH}
     
     git branch -D tmppatch # Delete tmp branch.
+    
+    echo 
+    echo "Patch created: ${PATCH_FILE}"
 }
 
 updateBranches () {
