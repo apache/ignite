@@ -743,7 +743,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debug(Object msg) {
-        X.println(debugPrefix() + msg);
+        X.error(debugPrefix() + msg);
     }
 
     /**

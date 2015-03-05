@@ -65,7 +65,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Committing transactions. */
-    private final ThreadLocal<IgniteInternalTx> threadCtx = new GridThreadLocalEx<>();
+    private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx<K, V>> threadMap = newMap();

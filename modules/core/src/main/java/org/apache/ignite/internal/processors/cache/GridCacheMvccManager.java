@@ -51,8 +51,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     private static final int MAX_REMOVED_LOCKS = 10240;
 
     /** Pending locks per thread. */
-    private final GridThreadLocal<Queue<GridCacheMvccCandidate<K>>> pending =
-        new GridThreadLocal<Queue<GridCacheMvccCandidate<K>>>() {
+    private final ThreadLocal<Queue<GridCacheMvccCandidate<K>>> pending =
+        new ThreadLocal<Queue<GridCacheMvccCandidate<K>>>() {
             @Override protected Queue<GridCacheMvccCandidate<K>> initialValue() {
                 return new LinkedList<>();
             }
@@ -722,6 +722,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         return add;
+    }
+
+    /**
+     * Reset MVCC context.
+     */
+    public void contextReset() {
+        pending.set(new LinkedList<GridCacheMvccCandidate<K>>());
     }
 
     /**

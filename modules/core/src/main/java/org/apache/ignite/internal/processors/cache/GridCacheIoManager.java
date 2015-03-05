@@ -293,10 +293,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private void processMessage(UUID nodeId, GridCacheMessage<K, V> msg,
         IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         try {
-            // Start clean.
-            if (msg.transactional())
-                CU.resetTxContext(cctx);
-
             // We will not end up with storing a bunch of new UUIDs
             // in each cache entry, since node ID is stored in NIO session
             // on handshake.
@@ -309,8 +305,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             U.error(log, "Failed processing message [senderId=" + nodeId + ']', e);
         }
         finally {
-            // Clear thread-local tx contexts.
-            CU.resetTxContext(cctx);
+            // Reset thread local context.
+            cctx.tm().txContextReset();
+            cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
             CU.unwindEvicts(cctx);

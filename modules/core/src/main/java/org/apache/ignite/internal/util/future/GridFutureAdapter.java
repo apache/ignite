@@ -179,12 +179,15 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                         else {
                             lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
                         }
+
+                        return;
                     }
                 }
             }
 
-            if (done)
-                notifyListener(lsnr0);
+            assert done;
+
+            notifyListener(lsnr0);
         }
     }
 
@@ -197,20 +200,20 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * Notifies all registered listeners.
      */
     private void notifyListeners() {
-        IgniteInClosure<? super IgniteInternalFuture<R>> lsnrs0;
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0;
 
         synchronized (this) {
-            lsnrs0 = lsnr;
+            lsnr0 = lsnr;
 
-            if (lsnrs0 == null)
+            if (lsnr0 == null)
                 return;
 
             lsnr = null;
         }
 
-        assert lsnrs0 != null;
+        assert lsnr0 != null;
 
-        notifyListener(lsnrs0);
+        notifyListener(lsnr0);
     }
 
     /**

@@ -1096,7 +1096,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxPrepareFuture.class, this, "super", super.toString());
+        return S.toString(GridDhtTxPrepareFuture.class, this, "xid", tx.xidVersion(), "super", super.toString());
     }
 
     /**

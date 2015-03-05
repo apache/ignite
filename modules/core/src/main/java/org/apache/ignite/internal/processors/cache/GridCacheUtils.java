@@ -1240,15 +1240,6 @@ public class GridCacheUtils {
     /**
      * @param ctx Cache context.
      */
-    public static void resetTxContext(GridCacheSharedContext ctx) {
-        assert ctx != null;
-
-        ctx.tm().txContextReset();
-    }
-
-    /**
-     * @param ctx Cache context.
-     */
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
 
