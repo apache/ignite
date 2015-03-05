@@ -32,9 +32,6 @@ import java.util.concurrent.locks.*;
  * Future adapter.
  */
 public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Initial state. */
     private static final int INIT = 0;
 
@@ -44,12 +41,18 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /** Done state. */
     private static final int DONE = 2;
 
+    /** */
+    private static final byte ERR = 1;
+
+    /** */
+    private static final byte RES = 2;
+
+    /** */
+    private byte resFlag;
+
     /** Result. */
     @GridToStringInclude
-    private R res;
-
-    /** Error. */
-    private Throwable err;
+    private Object res;
 
     /** Future start time. */
     private final long startTime = U.currentTimeMillis();
@@ -57,11 +60,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /** Future end time. */
     private volatile long endTime;
 
-    /** Asynchronous listeners. */
-    private Collection<IgniteInClosure<? super IgniteInternalFuture<R>>> lsnrs;
-
     /** */
-    private final Object mux = new Object();
+    private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
 
     /** {@inheritDoc} */
     @Override public long startTime() {
@@ -86,14 +86,14 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return Value of error.
      */
     protected Throwable error() {
-        return err;
+        return (resFlag == RES) ? null : (Throwable)res;
     }
 
     /**
      * @return Value of result.
      */
     protected R result() {
-        return res;
+        return (R)res;
     }
 
     /** {@inheritDoc} */
@@ -105,10 +105,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             if (getState() == CANCELLED)
                 throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-            if (err != null)
-                throw U.cast(err);
+            if (resFlag != ERR)
+                throw U.cast((Throwable)res);
 
-            return res;
+            return (R)res;
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -152,33 +152,35 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         if (getState() == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        if (err != null)
-            throw U.cast(err);
+        if (resFlag != ERR)
+            throw U.cast((Throwable)res);
 
-        return res;
+        return (R)res;
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
-        if (lsnr != null) {
+    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
+        if (lsnr0 != null) {
             boolean done = isDone();
 
             if (!done) {
-                synchronized (mux) {
+                synchronized (this) {
                     done = isDone(); // Double check.
 
                     if (!done) {
-                        if (lsnrs == null)
-                            lsnrs = new ArrayList<>();
-
-                        lsnrs.add(lsnr);
+                        if (lsnr == null)
+                            lsnr = lsnr0;
+                        else if (lsnr instanceof ArrayListener)
+                            ((ArrayListener)lsnr).add(lsnr0);
+                        else {
+                            lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
+                        }
                     }
                 }
             }
 
-            if (done) {
-                notifyListener(lsnr);
-            }
+            if (done)
+                notifyListener(lsnr0);
         }
     }
 
@@ -191,21 +193,20 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * Notifies all registered listeners.
      */
     private void notifyListeners() {
-        final Collection<IgniteInClosure<? super IgniteInternalFuture<R>>> lsnrs0;
+        IgniteInClosure<? super IgniteInternalFuture<R>> lsnrs0;
 
-        synchronized (mux) {
-            lsnrs0 = lsnrs;
+        synchronized (this) {
+            lsnrs0 = lsnr;
 
-            if (lsnrs0 == null || lsnrs0.isEmpty())
+            if (lsnrs0 == null)
                 return;
 
-            lsnrs = null;
+            lsnr = null;
         }
 
-        assert !lsnrs0.isEmpty();
+        assert lsnr == null;
 
-        for (IgniteInClosure<? super IgniteInternalFuture<R>> lsnr : lsnrs0)
-            notifyListener(lsnr);
+        notifyListener(lsnr);
     }
 
     /**
@@ -252,7 +253,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      */
     public boolean isFailed() {
         // Must read endTime first.
-        return endTime != 0 && err != null;
+        return endTime != 0 && resFlag == ERR;
     }
 
     /** {@inheritDoc} */
@@ -315,8 +316,14 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
         try {
             if (compareAndSetState(INIT, cancel ? CANCELLED : DONE)) {
-                this.res = res;
-                this.err = err;
+                if (err != null) {
+                    resFlag = ERR;
+                    this.res = err;
+                }
+                else {
+                    resFlag = RES;
+                    this.res = res;
+                }
 
                 notify = true;
 
@@ -367,6 +374,41 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridFutureAdapter.class, this, "state", state());
+    }
+
+    /**
+     *
+     */
+    private static class ArrayListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
+        /** */
+        private IgniteInClosure<? super IgniteInternalFuture<R>>[] arr;
+
+        /**
+         * @param lsnrs Listeners.
+         */
+        private ArrayListener(IgniteInClosure... lsnrs) {
+            this.arr = lsnrs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteInternalFuture<R> fut) {
+            for (int i = 0; i < arr.length; i++)
+                arr[i].apply(fut);
+        }
+
+        /**
+         * @param lsnr Listener.
+         */
+        void add(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
+            arr = Arrays.copyOf(arr, arr.length + 1);
+
+            arr[arr.length - 1] = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ArrayListener.class, this, "arr", Arrays.toString(arr));
+        }
     }
 
     /**
