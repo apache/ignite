@@ -1002,7 +1002,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         boolean intercept = cctx.config().getInterceptor() != null;
 
-        Object val0 = null;
+        Object val0;
 
         synchronized (this) {
             checkObsolete();
