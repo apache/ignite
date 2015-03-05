@@ -93,3 +93,30 @@ requireCleanWorkTree () {
         exit 1
     fi
 }
+
+applyPatch () {
+    GIT_HOME=$1
+    DEFAULT_BRANCH=$2
+    PATCH_FILE=$3
+
+    cd ${GIT_HOME}
+
+#    git apply ${PATCH_FILE}
+    git am ${PATCH_FILE}
+}
+
+currentAndDefaultBranchesShouldBeEqual () {
+    GIT_HOME=$1
+    DEFAULT_BRANCH=$2
+
+    cd ${GIT_HOME}
+
+    IGNITE_CURRENT_BRANCH=$( determineCurrentBranch ${IGNITE_HOME} )
+    
+    if [ "$IGNITE_CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
+    then 
+        echo $0", ERROR:"
+        echo "You are not on a expected branch. Your current branch is $IGNITE_CURRENT_BRANCH, 
+        should be $DEFAULT_BRANCH."
+    fi
+}

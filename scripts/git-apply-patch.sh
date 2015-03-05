@@ -20,37 +20,41 @@
 # Git patch-file applyer.
 #
 
-PATCHED_BRANCH=$1
+#
+# Ignite task.
+#
+IGNITE_TASK=$1
 
-if [ "${GG_HOME}" = "" ];
-    then GG_HOME=$PWD
+if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
+    then IGNITE_HOME=$PWD
 fi
 
-. ${GG_HOME}/scripts/git-patch-prop.sh # Import properties.
-. ${GG_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
+. ${IGNITE_HOME}/scripts/git-patch-prop.sh # Import properties.
+. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
 
-applyPatch () {
-    GIT_HOME=$1
-    DEFAULT_BRANCH=$2
-    PATCH_FILE=$3
-
-    cd ${GIT_HOME}
-
-    git checkout ${DEFAULT_BRANCH}
-
-#    git apply ${PATCH_FILE}
-    git am ${PATCH_FILE}
-}
-
-IGNITE_PATCH_FILE=${PATCHES_HOME}/${IGNITE_DEFAULT_BRANCH}_${PATCHED_BRANCH}_ignite.patch
-GG_PATCH_FILE=${PATCHES_HOME}/${GG_DEFAULT_BRANCH}_${PATCHED_BRANCH}_gg.patch
-
-if [ -f ${IGNITE_PATCH_FILE} ] # Whether a patch-file exists
-then
-    applyPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_PATCH_FILE}
+if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
+    then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
 
-if [ -f ${GG_PATCH_FILE} ] # Whether a patch-file exists
-then
-    applyPatch ${GG_HOME} ${GG_DEFAULT_BRANCH} ${GG_PATCH_FILE}
-fi
+echo 'Usage: scripts/git-format-patch.sh.'
+echo "It should be called from IGNITE_HOME directory."
+echo "Patch will be applyed to DEFAULT_BRANCH from PATCHES_HOME."
+echo "Note: you can use ${IGNITE_HOME}/scripts/git-patch-prop-local.sh to set your own local properties (to rewrite settings at git-patch-prop-local.sh). "
+echo
+echo "Master branch  : ${IGNITE_DEFAULT_BRANCH}"
+echo "IGNITE_HOME    : ${IGNITE_HOME}"
+echo "Ignite task    : ${IGNITE_TASK}"
+echo "PATCHES_HOME   : ${PATCHES_HOME}"
+echo
+
+#
+# Main script logic.
+#
+
+currentBranchAndDefaultShouldBeEqual ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
+
+requireCleanWorkTree ${IGNITE_HOME}
+
+IGNITE_PATCH_FILE=${PATCHES_HOME}/${IGNITE_DEFAULT_BRANCH}_${IGNITE_TASK}_ignite.patch
+
+applyPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_PATCH_FILE}
