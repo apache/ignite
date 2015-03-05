@@ -31,6 +31,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
  */
+@IgniteCodeGeneratingFail // Need to handle 'hasWriteVal' flag during write.
 public class TxEntryValueHolder implements Message {
     /** */
     @GridToStringInclude
