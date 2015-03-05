@@ -352,8 +352,6 @@ private[commands] class VisorFileNameCompleter extends Completer {
             if (files.size == 1) {
                 val candidate = files(0)
 
-                if (candidate.isDirectory) separator else " "
-
                 candidates.add(candidate.getName + (if (candidate.isDirectory) separator else " "))
             }
             else

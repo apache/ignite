@@ -23,7 +23,7 @@ ARGS=$@
 # Import common functions.
 #
 if [ "${IGNITE_HOME}" = "" ];
-    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";IGNITE_HOME_TMP="$(dirname "${IGNITE_HOME_TMP}")" # Will be removed in release.
+    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
