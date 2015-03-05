@@ -1041,9 +1041,6 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      */
     private class SyncFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Remaining workers. */
         private Collection<DemandWorker> remaining;
 
@@ -1051,8 +1048,6 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param workers List of workers.
          */
         private SyncFuture(Collection<DemandWorker> workers) {
-            super();
-
             assert workers.size() == poolSize();
 
             remaining = Collections.synchronizedList(new LinkedList<>(workers));

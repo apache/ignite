@@ -309,7 +309,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         validate(cfg);
 
-        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(ctx, cfg);
+        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
 
         GridServiceDeploymentFuture old = depFuts.putIfAbsent(cfg.getName(), fut);
 

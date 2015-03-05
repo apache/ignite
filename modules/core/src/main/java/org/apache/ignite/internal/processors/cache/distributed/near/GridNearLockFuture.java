@@ -39,7 +39,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -50,11 +49,11 @@ import static org.apache.ignite.events.EventType.*;
  */
 public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** */
+    private static IgniteLogger log;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -92,10 +91,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /** Lock timeout. */
     private long timeout;
 
-    /** Logger. */
-    @GridToStringExclude
-    private IgniteLogger log;
-
     /** Filter. */
     private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
@@ -123,13 +118,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
     /** TTL for read operation. */
     private long accessTtl;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridNearLockFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Registry.
@@ -171,7 +159,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
         entries = new ArrayList<>(keys.size());
 
-        log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -1225,9 +1214,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
@@ -1246,21 +1232,12 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         private AtomicBoolean rcvRes = new AtomicBoolean(false);
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param node Node.
          * @param keys Keys.
          * @param mappings Mappings to proceed.
          */
         MiniFuture(ClusterNode node, Collection<K> keys,
             ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings) {
-            super();
-
             this.node = node;
             this.keys = keys;
             this.mappings = mappings;

@@ -1306,7 +1306,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         .get(order);
 
                     if (fut == null) {
-                        fut = new GridCompoundFuture<>(ctx);
+                        fut = new GridCompoundFuture<>();
 
                         preloadFuts.put(order, fut);
                     }

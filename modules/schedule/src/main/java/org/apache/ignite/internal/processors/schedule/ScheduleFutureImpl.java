@@ -30,7 +30,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -166,13 +165,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
             }
         }
     };
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public ScheduleFutureImpl() {
-        // No-op.
-    }
 
     /**
      * Creates descriptor for task scheduling. To start scheduling call {@link #schedule(Callable)}.

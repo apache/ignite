@@ -1638,7 +1638,7 @@ public final class IgfsImpl implements IgfsEx {
             if (log.isDebugEnabled())
                 log.debug("Constructing delete future for trash entries: " + ids);
 
-            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>(igfsCtx.kernalContext());
+            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>();
 
             for (IgniteUuid id : ids) {
                 GridFutureAdapter<Object> fut = new GridFutureAdapter<>();

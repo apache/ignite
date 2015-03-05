@@ -51,8 +51,6 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
      * @param ctx Kernal context.
      */
     public ComputeTaskInternalFuture(ComputeTaskSession ses, GridKernalContext ctx) {
-        super();
-
         assert ses != null;
         assert ctx != null;
 

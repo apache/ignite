@@ -1698,9 +1698,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for stop routine.
      */
     private static class StopFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
@@ -1711,7 +1708,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param ctx Kernal context.
          */
         StopFuture(GridKernalContext ctx) {
-            super();
             this.ctx = ctx;
         }
 
@@ -1745,25 +1741,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private UUID nodeId;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public SyncMessageAckFuture() {
-            // No-op.
-        }
 
         /**
          * @param ctx Kernal context.
          * @param nodeId Master node ID.
          */
         SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
-            super();
-
             this.nodeId = nodeId;
         }
 

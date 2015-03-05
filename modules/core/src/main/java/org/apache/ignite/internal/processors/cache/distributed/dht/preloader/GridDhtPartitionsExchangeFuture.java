@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -49,9 +48,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Dummy flag. */
     private final boolean dummy;
 
@@ -156,7 +152,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId
     ) {
-        super();
         dummy = true;
         forcePreload = false;
 
@@ -178,7 +173,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
-        super();
         dummy = false;
         forcePreload = true;
 
@@ -198,8 +192,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId) {
-        super();
-
         assert busyLock != null;
         assert exchId != null;
 
@@ -223,20 +215,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() +
                 ", fut=" + this + ']');
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtPartitionsExchangeFuture() {
-        assert false;
-
-        dummy = true;
-        forcePreload = false;
-        reassign = false;
-
-        exchId = null;
-        cctx = null;
     }
 
     /** {@inheritDoc} */

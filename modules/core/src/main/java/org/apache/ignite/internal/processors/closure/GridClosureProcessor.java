@@ -742,7 +742,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture fut = new GridWorkerFuture(ctx);
+            final GridWorkerFuture fut = new GridWorkerFuture();
 
             workersCnt.increment();
 
@@ -879,7 +879,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture<R> fut = new GridWorkerFuture<>(ctx);
+            final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
             workersCnt.increment();
 
@@ -1653,7 +1653,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C1MLA() {
-            super();
+            // No-op.
         }
 
         /**
@@ -1741,7 +1741,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C2MLA() {
-            super();
+            // No-op.
         }
 
         /**
@@ -1824,7 +1824,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C4MLA() {
-            super();
+            // No-op.
         }
 
         /**

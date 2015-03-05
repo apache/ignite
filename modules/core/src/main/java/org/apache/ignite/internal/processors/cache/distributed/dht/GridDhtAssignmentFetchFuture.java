@@ -36,20 +36,17 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<ClusterNode>>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Nodes order comparator. */
     private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** List of available nodes this future can fetch data from. */
     private Queue<ClusterNode> availableNodes;
@@ -69,8 +66,6 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
         long topVer,
         Collection<ClusterNode> availableNodes
     ) {
-        super();
-
         this.ctx = ctx;
         this.topVer = topVer;
 
@@ -80,7 +75,8 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
 
         this.availableNodes = tmp;
 
-        log = U.logger(ctx.kernalContext(), logRef, GridDhtAssignmentFetchFuture.class);
+        if (log == null)
+            log = U.logger(ctx.kernalContext(), logRef, GridDhtAssignmentFetchFuture.class);
     }
 
     /**

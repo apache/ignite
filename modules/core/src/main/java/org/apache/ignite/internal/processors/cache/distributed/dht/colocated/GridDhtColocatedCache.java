@@ -633,7 +633,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 new C2<Object, Exception, IgniteInternalFuture<Exception>>() {
                     @Override public IgniteInternalFuture<Exception> apply(Object o, Exception exx) {
                         if (exx != null)
-                            return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
+                            return new GridDhtFinishedFuture<>(exx);
 
                         return lockAllAsync0(cacheCtx,
                             tx,
@@ -722,7 +722,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         fut.onError(e);
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridDhtFinishedFuture<>(e);
                     }
                 }
             }

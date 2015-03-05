@@ -23,26 +23,15 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Embedded DHT future.
  */
 public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implements GridDhtFuture<A> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Retries. */
     @GridToStringInclude
     private Collection<Integer> invalidParts;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtEmbeddedFuture() {
-        // No-op.
-    }
 
     /**
      * @param embedded Embedded.

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.future.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -37,13 +36,6 @@ public class GridCacheLocalFieldsQueryFuture
 
     /** Meta data future. */
     private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheLocalFieldsQueryFuture() {
-        metaFut = null;
-    }
 
     /**
      * @param ctx Cache context.

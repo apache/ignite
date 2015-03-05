@@ -491,7 +491,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
     public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(igfsCtx.kernalContext(), fileInfo.id());
+        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
 
@@ -1772,9 +1772,6 @@ public class IgfsDataManager extends IgfsManager {
      * Future that is completed when all participating
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** File id to remove future from map. */
         private IgniteUuid fileId;
 
@@ -1785,19 +1782,9 @@ public class IgfsDataManager extends IgfsManager {
         private volatile boolean awaitingLast;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public WriteCompletionFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
          * @param fileId File id.
          */
-        private WriteCompletionFuture(GridKernalContext ctx, IgniteUuid fileId) {
-            super();
-
+        private WriteCompletionFuture(IgniteUuid fileId) {
             assert fileId != null;
 
             this.fileId = fileId;

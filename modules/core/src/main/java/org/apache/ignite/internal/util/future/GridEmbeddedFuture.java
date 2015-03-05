@@ -23,8 +23,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
-
 /**
  * Future which waits for embedded future to complete and then asynchronously executes
  * provided closure with embedded future result.
@@ -36,13 +34,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
     /** Embedded future to wait for. */
     private IgniteInternalFuture<B> embedded;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridEmbeddedFuture() {
-        // No-op.
-    }
 
     /**
      * @param embedded Embedded future.
@@ -82,7 +73,9 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
     public GridEmbeddedFuture(
-        IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c) {
+        IgniteInternalFuture<B> embedded,
+        final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
+    ) {
         assert embedded != null;
         assert c != null;
 
@@ -145,8 +138,8 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
      * @param c2 Closure will runs upon completion of future returned by {@code c1} closure.
      */
     public GridEmbeddedFuture(
-        IgniteInternalFuture<B> embedded, final IgniteBiClosure<B, Exception,
-        IgniteInternalFuture<A>> c1,
+        IgniteInternalFuture<B> embedded,
+        final IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c1,
         final IgniteBiClosure<A, Exception, A> c2
     ) {
         assert embedded != null;

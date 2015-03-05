@@ -932,7 +932,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Explicit locks release future.
      */
     public IgniteInternalFuture<?> finishExplicitLocks(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         for (GridCacheExplicitLockSpan<K> span : pendingExplicit.values()) {
             GridDiscoveryTopologySnapshot snapshot = span.topologySnapshot();
@@ -952,7 +952,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Finish update future.
      */
     public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
@@ -1040,9 +1040,6 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      *
      */
     private class FinishLockFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
         private final long topVer;
@@ -1066,8 +1063,6 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
          * @param entries Entries.
          */
         FinishLockFuture(Iterable<GridDistributedCacheEntry<K, V>> entries, long topVer) {
-            super();
-
             assert topVer > 0;
 
             this.topVer = topVer;

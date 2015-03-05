@@ -498,7 +498,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      */
     public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
-            new GridCompoundFuture<>(context().kernalContext(),
+            new GridCompoundFuture<>(
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
                     @Override public boolean collect(IgniteInternalTx e) {
                         return true;

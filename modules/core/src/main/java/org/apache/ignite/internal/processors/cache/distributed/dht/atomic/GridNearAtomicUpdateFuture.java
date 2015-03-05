@@ -54,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  */
 public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<K, Object>{
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -179,8 +176,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         UUID subjId,
         int taskNameHash
     ) {
-        super();
-
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();

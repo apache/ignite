@@ -416,7 +416,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             // Exceeding max line width for readability.
             GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>>
                 fut = new GridCompoundFuture<>(
-                ctx,
                 CU.<GridTuple3<String, Boolean, String>>objectsReducer()
             );
 

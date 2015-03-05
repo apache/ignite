@@ -71,6 +71,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
 
@@ -96,9 +99,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** Mapping. */
     @GridToStringInclude
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;
@@ -179,7 +179,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         this.flushQ = flushQ;
         this.compact = compact;
 
-        log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
+        if (log == null)
+            log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
@@ -928,14 +929,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             for (IgniteInternalFuture<Object> f : locFuts) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }
 
             for (IgniteInternalFuture<Object> f : reqs.values()) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }

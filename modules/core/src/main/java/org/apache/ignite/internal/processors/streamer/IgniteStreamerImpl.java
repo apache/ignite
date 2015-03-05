@@ -1221,7 +1221,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private long schedTs;
 
         /** Stage completion future. */
-        private BatchExecutionFuture fut = new BatchExecutionFuture(ctx);
+        private BatchExecutionFuture fut = new BatchExecutionFuture();
 
         /**
          * Creates worker.
@@ -1350,20 +1350,6 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         /** */
         private BatchWorker w;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public BatchExecutionFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Context.
-         */
-        private BatchExecutionFuture(GridKernalContext ctx) {
-            super(ctx);
-        }
 
         /** {@inheritDoc} */
         @Override public boolean cancel() throws IgniteCheckedException {

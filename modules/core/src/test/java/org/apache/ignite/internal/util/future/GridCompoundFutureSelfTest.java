@@ -54,9 +54,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCompleteOnReducer() throws Exception {
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(ctx, CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         List<GridFutureAdapter<Boolean>> futs = new ArrayList<>(5);
 
@@ -88,9 +86,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCompleteOnException() throws Exception {
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(ctx, CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         List<GridFutureAdapter<Boolean>> futs = new ArrayList<>(5);
 
@@ -122,9 +118,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentCompletion() throws Exception {
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(ctx, CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         final ConcurrentLinkedDeque8<GridFutureAdapter<Boolean>> futs =
             new ConcurrentLinkedDeque8<>();
@@ -157,9 +151,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentRandomCompletion() throws Exception {
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(ctx, CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
         final ConcurrentLinkedDeque8<GridFutureAdapter<Boolean>> futs =
             new ConcurrentLinkedDeque8<>();

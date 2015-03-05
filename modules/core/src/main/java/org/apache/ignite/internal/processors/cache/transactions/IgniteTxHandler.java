@@ -458,7 +458,7 @@ public class IgniteTxHandler<K, V> {
             nearFinishFut = finishDhtLocal(nodeId, locTx, req);
 
         if (colocatedFinishFut != null && nearFinishFut != null) {
-            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>(ctx.kernalContext());
+            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>();
 
             res.add(colocatedFinishFut);
             res.add(nearFinishFut);

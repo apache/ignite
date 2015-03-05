@@ -86,14 +86,14 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return Value of error.
      */
     protected Throwable error() {
-        return (resFlag == RES) ? null : (Throwable)res;
+        return (resFlag == ERR) ? (Throwable)res : null;
     }
 
     /**
      * @return Value of result.
      */
     protected R result() {
-        return (R)res;
+        return resFlag == RES ? (R)res : null;
     }
 
     /** {@inheritDoc} */
@@ -105,7 +105,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             if (getState() == CANCELLED)
                 throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-            if (resFlag != ERR)
+            assert resFlag != 0;
+
+            if (resFlag == ERR)
                 throw U.cast((Throwable)res);
 
             return (R)res;
@@ -152,7 +154,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         if (getState() == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        if (resFlag != ERR)
+        assert resFlag != 0;
+
+        if (resFlag == ERR)
             throw U.cast((Throwable)res);
 
         return (R)res;
@@ -204,7 +208,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr = null;
         }
 
-        assert lsnrs0 == null;
+        assert lsnrs0 != null;
 
         notifyListener(lsnrs0);
     }
@@ -416,9 +420,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private GridFutureAdapter<R> fut;
 
         /** */
@@ -439,8 +440,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             GridFutureAdapter<R> fut,
             IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb
         ) {
-            super();
-
             this.fut = fut;
             this.doneCb = doneCb;
 

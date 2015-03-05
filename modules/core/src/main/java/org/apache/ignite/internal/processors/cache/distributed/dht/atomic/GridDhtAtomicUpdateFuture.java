@@ -44,9 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     implements GridCacheAtomicFuture<K, Void> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -102,8 +99,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridNearAtomicUpdateRequest<K, V> updateReq,
         GridNearAtomicUpdateResponse<K, V> updateRes
     ) {
-        super();
-
         this.cctx = cctx;
         this.writeVer = writeVer;
 

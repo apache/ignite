@@ -591,7 +591,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
-            return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
+            return new GridDhtFinishedFuture<>(true);
 
         GridDhtTxLocalAdapter<K, V> tx = (GridDhtTxLocalAdapter<K, V>)txx;
 
@@ -635,7 +635,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (log.isDebugEnabled())
                             log.debug("Got lock request for cancelled lock (will fail): " + entry);
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridDhtFinishedFuture<>(e);
                     }
                 }
             }
@@ -690,7 +690,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse<K,V>>>() {
                 @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
                     if (exx != null)
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
+                        return new GridDhtFinishedFuture<>(exx);
 
                     IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
 
@@ -772,7 +772,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                     fut.onError(e);
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                                    return new GridDhtFinishedFuture<>(e);
                                 }
                             }
                         }
@@ -815,7 +815,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (tx != null)
                                         tx.rollback();
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), new IgniteCheckedException(msg));
+                                    return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
                                 }
 
                                 tx.topologyVersion(req.topologyVersion());
@@ -928,7 +928,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             }
                         }
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(),
+                        return new GridDhtFinishedFuture<>(
                             new IgniteCheckedException(err, e));
                     }
                 }

@@ -236,7 +236,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
         try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
+            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
                 fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));

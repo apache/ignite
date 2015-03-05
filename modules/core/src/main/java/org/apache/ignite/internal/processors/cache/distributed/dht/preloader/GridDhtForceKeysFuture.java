@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -46,9 +45,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  */
 public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Object, Collection<K>>
     implements GridDhtFuture<Collection<K>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -96,8 +92,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         long topVer, Collection<? extends K> keys,
         GridDhtPreloader<K, V> preloader
     ) {
-        super(cctx.kernalContext());
-
         assert topVer != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
 
@@ -110,13 +104,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtForceKeysFuture.class);
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtForceKeysFuture() {
-        // No-op.
     }
 
     /**
@@ -372,9 +359,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini-future ID. */
         private IgniteUuid miniId = IgniteUuid.randomUuid();
 
@@ -394,21 +378,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private Collection<ClusterNode> exc;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param node Node.
          * @param keys Keys.
          * @param curTopVer Topology version for this mini-future.
          * @param exc Exclude node list.
          */
         MiniFuture(ClusterNode node, Collection<K> keys, int curTopVer, Collection<ClusterNode> exc) {
-            super();
-
             assert node != null;
             assert curTopVer > 0;
             assert exc != null;

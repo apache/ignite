@@ -508,7 +508,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     }
                 });
             else {
-                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
+                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>();
 
                 compound.add((IgniteInternalFuture<Object>)startFut);
                 compound.add((IgniteInternalFuture<Object>)topReadyFut);

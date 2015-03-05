@@ -37,7 +37,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -51,11 +50,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
     implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -72,9 +71,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
     /** DHT mappings. */
     private Map<UUID, GridDistributedTxMapping<K, V>> dhtMap;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
@@ -166,7 +162,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         this.nearMiniId = nearMiniId;
 
-        log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -1106,9 +1103,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
@@ -1123,20 +1117,15 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         private GridDistributedTxMapping<K, V> nearMapping;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            super();
-        }
-
-        /**
          * @param nodeId Node ID.
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
-        MiniFuture(UUID nodeId, GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
-            super();
-
+        MiniFuture(
+            UUID nodeId,
+            GridDistributedTxMapping<K, V> dhtMapping,
+            GridDistributedTxMapping<K, V> nearMapping
+        ) {
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 
             this.nodeId = nodeId;

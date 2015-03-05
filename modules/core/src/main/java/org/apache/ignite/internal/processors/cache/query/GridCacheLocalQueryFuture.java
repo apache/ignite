@@ -26,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -41,13 +40,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
     /** */
     private IgniteInternalFuture<?> fut;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheLocalQueryFuture() {
-        // No-op.
-    }
 
     /**
      * @param ctx Context.

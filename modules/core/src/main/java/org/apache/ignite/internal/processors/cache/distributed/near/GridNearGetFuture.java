@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -47,14 +46,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
     implements GridCacheFuture<Map<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
@@ -83,9 +82,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Trackable flag. */
     private boolean trackable;
 
@@ -106,13 +102,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearGetFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -161,7 +150,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
-        log = U.logger(cctx.kernalContext(), logRef, GridNearGetFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearGetFuture.class);
     }
 
     /**
@@ -689,13 +679,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         /** Topology version on which this future was mapped. */
         private long topVer;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
 
         /**
          * @param node Node.

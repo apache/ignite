@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -39,11 +38,11 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Collection<GridCacheEntryInfo<K, V>>>
     implements GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Message ID. */
     private long msgId;
@@ -78,9 +77,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Retries because ownership changed. */
     private Collection<Integer> retries = new GridLeanSet<>();
 
@@ -98,13 +94,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
     /** Skip values flag. */
     private boolean skipVals;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtGetFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -159,7 +148,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
-        log = U.logger(cctx.kernalContext(), logRef, GridDhtGetFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtGetFuture.class);
     }
 
     /**
@@ -326,7 +316,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
                     if (f != null) {
                         if (txFut == null)
-                            txFut = new GridCompoundFuture<>(cctx.kernalContext(), CU.boolReducer());
+                            txFut = new GridCompoundFuture<>(CU.boolReducer());
 
                         txFut.add(f);
                     }
