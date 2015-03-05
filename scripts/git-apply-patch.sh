@@ -20,11 +20,6 @@
 # Git patch-file applyer.
 #
 
-#
-# Ignite task.
-#
-IGNITE_TASK=$1
-
 if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
     then IGNITE_HOME=$PWD
 fi
@@ -35,6 +30,11 @@ fi
 if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
     then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
+
+#
+# Ignite task.
+#
+IGNITE_TASK=$1
 
 #
 # Read command line params.
