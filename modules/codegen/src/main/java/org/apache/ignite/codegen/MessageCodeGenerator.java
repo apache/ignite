@@ -18,8 +18,6 @@
 package org.apache.ignite.codegen;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -302,6 +300,9 @@ public class MessageCodeGenerator {
      */
     private void generate(Class<? extends Message> cls) throws Exception {
         assert cls != null;
+
+        if (cls.isAnnotationPresent(IgniteCodeGeneratingFail.class))
+            throw new IllegalStateException("@IgniteCodeGeneratingFail is provided for class: " + cls.getName());
 
         write.clear();
         read.clear();
