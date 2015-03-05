@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
 
 /**
- * 
+ *
  */
 public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** Cache context. */
@@ -84,7 +85,9 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
+        if (cls.isAssignableFrom(Ignite.class))
+            return (T)cctx.kernalContext().grid();
+        else if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);

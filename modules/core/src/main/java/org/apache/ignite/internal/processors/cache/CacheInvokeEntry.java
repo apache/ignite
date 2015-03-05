@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.processor.*;
@@ -33,19 +32,19 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     private Operation op = Operation.NONE;
 
     /**
-     * @param cctx   Cache context.
+     * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      */
     public CacheInvokeEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
         super(cctx, keyObj, valObj);
 
-        this.hadVal = getValue() != null;
+        this.hadVal = valObj != null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return getValue() != null;
+        return val != null || valObj != null;
     }
 
     /** {@inheritDoc} */
@@ -67,17 +66,6 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         this.val = val;
 
         op = hadVal ? Operation.UPDATE : Operation.CREATE;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.isAssignableFrom(Ignite.class))
-            return (T)cctx.kernalContext().grid();
-        else if (cls.isAssignableFrom(getClass()))
-            return cls.cast(this);
-
-        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /**
