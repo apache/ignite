@@ -414,9 +414,18 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /**
      * @param key Key.
      * @param val Value.
+     * @return Future.
      */
     public IgniteFuture<?> addDataInternal(KeyCacheObject key, CacheObject val) {
         return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, val)));
+    }
+
+    /**
+     * @param key Key.
+     * @return Future.
+     */
+    public IgniteFuture<?> removeDataInternal(KeyCacheObject key) {
+        return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, null)));
     }
 
     /**

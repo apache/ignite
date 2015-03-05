@@ -1698,18 +1698,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param bytes Object marshalled with portable marshaller.
-     * @return Object marshalled with grid marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    // TODO IGNITE-51.
-    public byte[] convertPortableBytes(byte[] bytes) throws IgniteCheckedException {
-        assert portableEnabled() && offheapTiered();
-
-        return marshaller().marshal(portable().unmarshal(bytes, 0));
-    }
-
-    /**
      * @param obj Object.
      * @return Portable object.
      * @throws IgniteException In case of error.

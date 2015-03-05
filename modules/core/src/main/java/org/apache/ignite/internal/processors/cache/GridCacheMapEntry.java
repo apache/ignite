@@ -76,7 +76,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * </ul>
      */
     // 7 * 8 /*references*/  + 2 * 8 /*long*/  + 1 * 4 /*int*/ + 1 * 1 /*byte*/ = 77
-    private static final int SIZE_OVERHEAD = 77 /*entry*/ + 32 /* version */;
+    private static final int SIZE_OVERHEAD = 77 /*entry*/ + 32 /* version */ + 4 * 7 /* key + val */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -247,19 +247,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param valBytes Value bytes.
      * @return Length of value.
      */
-    private int valueLength(@Nullable byte[] val, GridCacheValueBytes valBytes) {
-        assert valBytes != null;
-
-        return val != null ? val.length : valBytes.isNull() ? 0 : valBytes.get().length - (valBytes.isPlain() ? 0 : 6);
-    }
-
-    /**
-     * Isolated method to get length of IGFS block.
-     *
-     * @param val Value.
-     * @param valBytes Value bytes.
-     * @return Length of value.
-     */
     private int valueLength0(@Nullable CacheObject val, @Nullable IgniteBiTuple<byte[], Boolean> valBytes) {
         byte[] bytes = val != null ? (byte[])val.value(cctx.cacheObjectContext(), false) : null;
 
@@ -289,43 +276,26 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
-// TODO IGNITE-51
-//        byte[] kb;
-//        GridCacheValueBytes vb;
-//
-//        CacheObject v;
-//
-//        int extrasSize;
-//
-//        synchronized (this) {
-//            kb = keyBytes;
-//            vb = valueBytesUnlocked();
-//
-//            v = val;
-//
-//            extrasSize = extrasSize();
-//        }
-//
-//        if (kb == null || (vb.isNull() && v != null)) {
-//            if (kb == null)
-//                kb = CU.marshal(cctx.shared(), key);
-//
-//            if (vb.isNull())
-//                vb = (v != null && v instanceof byte[]) ? GridCacheValueBytes.plain(v) :
-//                    GridCacheValueBytes.marshaled(CU.marshal(cctx.shared(), v));
-//
-//            synchronized (this) {
-//                if (keyBytes == null)
-//                    keyBytes = kb;
-//
-//                // If value didn't change.
-//                if (!isOffHeapValuesOnly() && valBytes == null && val == v && cctx.config().isStoreValueBytes())
-//                    valBytes = vb.isPlain() ? null : vb.get();
-//            }
-//        }
-//
-//        return SIZE_OVERHEAD + extrasSize + kb.length + (vb.isNull() ? 0 : vb.get().length);
-        return 0;
+        byte[] kb;
+        byte[] vb = null;
+
+        int extrasSize;
+
+        synchronized (this) {
+            key.prepareMarshal(cctx.cacheObjectContext());
+
+            kb = key.valueBytes(cctx.cacheObjectContext());
+
+            if (val != null) {
+                val.prepareMarshal(cctx.cacheObjectContext());
+
+                vb = val.valueBytes(cctx.cacheObjectContext());
+            }
+
+           extrasSize = extrasSize();
+        }
+
+        return SIZE_OVERHEAD + extrasSize + kb.length + (vb == null ? 1 : vb.length);
     }
 
     /** {@inheritDoc} */
@@ -473,13 +443,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                                 e.value(val);
                             }
                         }
-                        else { // Read from swap.
+                        else // Read from swap.
                             valPtr = 0;
-
-                            // TODO IGNITE-51.
-                            if (cctx.portableEnabled() && !e.valueIsByteArray())
-                                e.valueBytes(null); // Clear bytes marshalled with portable marshaller.
-                        }
                     }
                 }
                 else
@@ -830,7 +795,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
             }
 
-            // TODO IGNITE-51.
             Object storeVal = readThrough(tx0, key, false, subjId, taskName);
 
             if (storeVal != null)
@@ -3113,7 +3077,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 return null;
         }
 
-        // TODO IGNITE-51.
         return cctx.toCacheObject(cctx.store().loadFromStore(cctx.tm().localTxx(), key));
     }
 
@@ -3269,12 +3232,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (isNew()) {
             CacheObject val = unswapped.value();
 
-            if (cctx.portableEnabled()) {
-                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
-
-                if (cctx.offheapTiered() && !unswapped.valueIsByteArray())
-                    unswapped.valueBytes(cctx.convertPortableBytes(unswapped.valueBytes()));
-            }
+            val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
             // Version does not change for load ops.
             update(val,
@@ -3317,7 +3275,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 long expTime = CU.toExpireTime(ttl);
 
                 // Detach value before index update.
-                val = (CacheObject)cctx.kernalContext().portable().prepareForCache(val, cctx);
+                val = cctx.kernalContext().portable().prepareForCache(val, cctx);
 
                 if (val != null) {
                     updateIndex(val, expTime, newVer, old);

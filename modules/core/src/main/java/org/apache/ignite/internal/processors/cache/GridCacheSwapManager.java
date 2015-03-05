@@ -419,27 +419,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             e.value(val);
         }
 
-// TODO IGNITE-51 remove after tested with portables.
-//        if (e.valueIsByteArray())
-//            e.value((V)e.valueBytes());
-//        else if (unmarshal) {
-//            V val;
-//
-//            if (cctx.portableEnabled() && cctx.offheapTiered())
-//                val = (V)cctx.portable().unmarshal(e.valueBytes(), 0);
-//            else {
-//                ClassLoader ldr = e.valueClassLoaderId() != null ? cctx.deploy().getClassLoader(e.valueClassLoaderId()) :
-//                    cctx.deploy().localLoader();
-//
-//                if (ldr == null)
-//                    return null;
-//
-//                val = cctx.marshaller().unmarshal(e.valueBytes(), ldr);
-//            }
-//
-//            e.value(val);
-//        }
-
         return e;
     }
 
