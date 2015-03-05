@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.jdk.*;
+
 /**
  * External test for sorting.
  */
@@ -26,6 +29,15 @@ public class GridHadoopSortingExternalTest extends GridHadoopSortingTest {
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
         cfg.setExternalExecution(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new JdkMarshaller());
 
         return cfg;
     }

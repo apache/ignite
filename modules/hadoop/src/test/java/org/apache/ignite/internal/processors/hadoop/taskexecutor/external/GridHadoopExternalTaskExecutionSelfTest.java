@@ -24,10 +24,12 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.marshaller.jdk.*;
 
 import java.io.*;
 import java.util.*;
@@ -58,6 +60,15 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
         cfg.setExternalExecution(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new JdkMarshaller());
 
         return cfg;
     }
