@@ -519,29 +519,27 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     GridCacheVersionConflictContext conflictCtx = null;
 
                                     if (conflictNeedResolve) {
-// TODO IGNITE-51.
-//                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext>
-//                                            drRes = conflictResolve(op, txEntry, val, valBytes, explicitVer, cached);
-//
-//                                        assert drRes != null;
-//
-//                                        conflictCtx = drRes.get2();
-//
-//                                        if (conflictCtx.isUseOld())
-//                                            op = NOOP;
-//                                        else if (conflictCtx.isUseNew()) {
-//                                            txEntry.ttl(conflictCtx.ttl());
-//                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-//                                        }
-//                                        else if (conflictCtx.isMerge()) {
-//                                            op = drRes.get1();
-//                                            val = conflictCtx.mergeValue();
-//                                            valBytes = null;
-//                                            explicitVer = writeVersion();
-//
-//                                            txEntry.ttl(conflictCtx.ttl());
-//                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-//                                        }
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext>
+                                            drRes = conflictResolve(op, txEntry, val, explicitVer, cached);
+
+                                        assert drRes != null;
+
+                                        conflictCtx = drRes.get2();
+
+                                        if (conflictCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
+                                        else if (conflictCtx.isMerge()) {
+                                            op = drRes.get1();
+                                            val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
+                                            explicitVer = writeVersion();
+
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.

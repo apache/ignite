@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -25,12 +27,12 @@ import java.io.*;
 /**
  * Cache DR info used as argument in PUT cache internal interfaces.
  */
-public class GridCacheDrInfo<V> implements Externalizable {
+public class GridCacheDrInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Value. */
-    private V val;
+    private CacheObject val;
 
     /** DR version. */
     private GridCacheVersion ver;
@@ -48,7 +50,7 @@ public class GridCacheDrInfo<V> implements Externalizable {
      * @param val Value.
      * @param ver Version.
      */
-    public GridCacheDrInfo(V val, GridCacheVersion ver) {
+    public GridCacheDrInfo(CacheObject val, GridCacheVersion ver) {
         assert val != null;
         assert ver != null;
 
@@ -59,7 +61,7 @@ public class GridCacheDrInfo<V> implements Externalizable {
     /**
      * @return Value.
      */
-    public V value() {
+    public CacheObject value() {
         return val;
     }
 
@@ -84,21 +86,18 @@ public class GridCacheDrInfo<V> implements Externalizable {
         return CU.EXPIRE_TIME_ETERNAL;
     }
 
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        assert false;
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        assert false;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheDrInfo.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(val);
-        CU.writeVersion(out, ver);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        val = (V)in.readObject();
-        ver = CU.readVersion(in);
     }
 }

@@ -2570,7 +2570,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void putAllConflict(final Map<? extends K, GridCacheDrInfo<V>> drMap)
+    @Override public void putAllConflict(final Map<KeyCacheObject, GridCacheDrInfo> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return;
@@ -2591,7 +2591,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllConflictAsync(final Map<? extends K, GridCacheDrInfo<V>> drMap)
+    @Override public IgniteInternalFuture<?> putAllConflictAsync(final Map<KeyCacheObject, GridCacheDrInfo> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
@@ -3483,7 +3483,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(final Map<? extends K, GridCacheVersion> drMap)
+    @Override public void removeAllConflict(final Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException {
         ctx.denyOnLocalRead();
 
@@ -3504,7 +3504,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(final Map<? extends K, GridCacheVersion> drMap)
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(final Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException {
         ctx.denyOnLocalRead();
 
@@ -3977,10 +3977,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
+                ldr.updater(new GridDrDataLoadCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
@@ -4193,10 +4193,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
+                ldr.updater(new GridDrDataLoadCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 
@@ -5760,7 +5760,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * @param keys Keys involved.
          */
-        protected AsyncInOp(Collection<? extends K> keys) {
+        protected AsyncInOp(Collection<?> keys) {
             super(keys);
         }
 
@@ -6229,7 +6229,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final IgniteBiPredicate<K, V> p;
 
         /** */
-        final Collection<Map.Entry<K, V>> col;
+        final Collection<GridCacheRawVersionedEntry> col;
 
         /** */
         final IgniteDataLoaderImpl<K, V> ldr;
@@ -6272,20 +6272,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     ttl = 0;
             }
 
-            GridCacheRawVersionedEntry e = new GridCacheRawVersionedEntry<>(ctx.toCacheKeyObject(key),
-                null,
+            GridCacheRawVersionedEntry e = new GridCacheRawVersionedEntry(ctx.toCacheKeyObject(key),
                 ctx.toCacheObject(val),
-                null,
                 ttl,
                 0,
                 ver);
 
-            e.marshal(ctx.marshaller());
+            e.prepareDirectMarshal(ctx.cacheObjectContext());
 
             col.add(e);
 
             if (col.size() == ldr.perNodeBufferSize()) {
-                ldr.addData(col);
+                ldr.addDataInternal(col);
 
                 col.clear();
             }
@@ -6296,7 +6294,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          */
         void onDone() {
             if (!col.isEmpty())
-                ldr.addData(col);
+                ldr.addDataInternal(col);
         }
     }
 

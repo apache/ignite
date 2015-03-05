@@ -517,12 +517,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAllConflict(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
+    @Override public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException {
         dht.putAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
+        throws IgniteCheckedException {
         return dht.putAllConflictAsync(drMap);
     }
 
@@ -641,12 +642,14 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+    @Override public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap)
+        throws IgniteCheckedException {
         dht.removeAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap)
+        throws IgniteCheckedException {
         return dht.removeAllConflictAsync(drMap);
     }
 

@@ -86,7 +86,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
     /** Conflict put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<GridCacheDrInfo<?>> conflictPutVals;
+    private Collection<GridCacheDrInfo> conflictPutVals;
 
     /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -187,7 +187,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         Collection<?> keys,
         @Nullable Collection<?> vals,
         @Nullable Object[] invokeArgs,
-        @Nullable Collection<GridCacheDrInfo<?>> conflictPutVals,
+        @Nullable Collection<GridCacheDrInfo> conflictPutVals,
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
@@ -543,7 +543,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             }
             else if (conflictPutVals != null) {
                 // Conflict PUT.
-                GridCacheDrInfo<?> conflictPutVal =  F.first(conflictPutVals);
+                GridCacheDrInfo conflictPutVal = F.first(conflictPutVals);
 
                 val = conflictPutVal.value();
                 conflictVer = conflictPutVal.version();
@@ -631,7 +631,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (vals != null)
             it = vals.iterator();
 
-        Iterator<GridCacheDrInfo<?>> conflictPutValsIt = null;
+        Iterator<GridCacheDrInfo> conflictPutValsIt = null;
 
         if (conflictPutVals != null)
             conflictPutValsIt = conflictPutVals.iterator();
@@ -679,7 +679,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     }
                 }
                 else if (conflictPutVals != null) {
-                    GridCacheDrInfo<?> conflictPutVal =  conflictPutValsIt.next();
+                    GridCacheDrInfo conflictPutVal =  conflictPutValsIt.next();
 
                     val = conflictPutVal.value();
                     conflictVer = conflictPutVal.version();

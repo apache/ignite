@@ -28,7 +28,7 @@ import javax.transaction.*;
 /**
  * Implementation of {@link CacheJtaManagerAdapter}.
  */
-public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
+public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
     private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
 

@@ -770,32 +770,29 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
                                     if (conflictNeedResolve) {
-// TODO IGNITE-51.
-//                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
-//                                            conflictRes = conflictResolve(op, txEntry, val, valBytes, explicitVer,
-//                                                cached);
-//
-//                                        assert conflictRes != null;
-//
-//                                        conflictCtx = conflictRes.get2();
-//
-//                                        if (conflictCtx.isUseOld())
-//                                            op = NOOP;
-//                                        else if (conflictCtx.isUseNew()) {
-//                                            txEntry.ttl(conflictCtx.ttl());
-//                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-//                                        }
-//                                        else {
-//                                            assert conflictCtx.isMerge();
-//
-//                                            op = conflictRes.get1();
-//                                            val = conflictCtx.mergeValue();
-//                                            valBytes = null;
-//                                            explicitVer = writeVersion();
-//
-//                                            txEntry.ttl(conflictCtx.ttl());
-//                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-//                                        }
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictRes =
+                                            conflictResolve(op, txEntry, val, explicitVer, cached);
+
+                                        assert conflictRes != null;
+
+                                        conflictCtx = conflictRes.get2();
+
+                                        if (conflictCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
+                                        else {
+                                            assert conflictCtx.isMerge();
+
+                                            op = conflictRes.get1();
+                                            val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
+                                            explicitVer = writeVersion();
+
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
@@ -1886,11 +1883,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteInternalFuture<?> putAllDrAsync(
+    @Override public IgniteInternalFuture<?> putAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<? extends K, GridCacheDrInfo<V>> drMap
+        Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        return putAllAsync0(cacheCtx,
+        return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
             null,
             null,
@@ -1918,9 +1915,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K> IgniteInternalFuture<?> removeAllDrAsync(
+    @Override public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<? extends K, GridCacheVersion> drMap
+        Map<KeyCacheObject, GridCacheVersion> drMap
     ) {
         return removeAllAsync0(cacheCtx, null, drMap, null, false, null);
     }
@@ -1960,20 +1957,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     protected <K, V> IgniteInternalFuture<Set<KeyCacheObject>> enlistWrite(
         final GridCacheContext cacheCtx,
-        Collection<? extends K> keys,
+        Collection<?> keys,
         @Nullable GridCacheEntryEx cached,
         @Nullable ExpiryPolicy expiryPlc,
         boolean implicit,
-        @Nullable Map<? extends K, ? extends V> lookup,
-        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> invokeMap,
+        @Nullable Map<?, ?> lookup,
+        @Nullable Map<?, EntryProcessor<K, V, Object>> invokeMap,
         @Nullable Object[] invokeArgs,
         boolean retval,
         boolean lockOnly,
         CacheEntryPredicate[] filter,
         final GridCacheReturn<CacheObject> ret,
         Collection<KeyCacheObject> enlisted,
-        @Nullable Map<? extends K, GridCacheDrInfo<V>> drPutMap,
-        @Nullable Map<? extends K, GridCacheVersion> drRmvMap
+        @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
+        @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap
     ) {
         assert cached == null || keys.size() == 1;
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1998,14 +1995,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             groupLockSanityCheck(cacheCtx, keys);
 
-            for (K key : keys) {
+            for (Object key : keys) {
                 if (key == null) {
                     setRollbackOnly();
 
                     throw new NullPointerException("Null key.");
                 }
 
-                V val = rmv || lookup == null ? null : lookup.get(key);
+                Object val = rmv || lookup == null ? null : lookup.get(key);
                 EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
 
                 GridCacheVersion drVer;
@@ -2013,7 +2010,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 long drExpireTime;
 
                 if (drPutMap != null) {
-                    GridCacheDrInfo<V> info = drPutMap.get(key);
+                    GridCacheDrInfo info = drPutMap.get(key);
 
                     assert info != null;
 
@@ -2510,7 +2507,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
-        @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
+        @Nullable final Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx cached,
         @Nullable final CacheEntryPredicate[] filter
@@ -2523,14 +2520,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             needReturnValue(true);
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<K, V> map0;
-        final Map<K, EntryProcessor<K, V, Object>> invokeMap0;
+        final Map<?, ?> map0;
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0;
 
         if (drMap != null) {
             assert map == null;
 
-            map0 = (Map<K, V>)F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo<V>, V>() {
-                @Override public V apply(GridCacheDrInfo<V> val) {
+            map0 = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
+                @Override public Object apply(GridCacheDrInfo val) {
                     return val.value();
                 }
             });
@@ -2538,7 +2535,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             invokeMap0 = null;
         }
         else {
-            map0 = (Map<K, V>)map;
+            map0 = map;
             invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
         }
 
@@ -2573,7 +2570,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
 
         try {
-            Set<? extends K> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
+            Set<?> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
@@ -2721,7 +2718,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> removeAllAsync0(
         final GridCacheContext cacheCtx,
         @Nullable final Collection<? extends K> keys,
-        @Nullable Map<? extends  K, GridCacheVersion> drMap,
+        @Nullable Map<KeyCacheObject, GridCacheVersion> drMap,
         @Nullable GridCacheEntryEx cached,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter) {
@@ -2730,7 +2727,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (retval)
             needReturnValue(true);
 
-        final Collection<? extends K> keys0;
+        final Collection<?> keys0;
 
         if (drMap != null) {
             assert keys == null;

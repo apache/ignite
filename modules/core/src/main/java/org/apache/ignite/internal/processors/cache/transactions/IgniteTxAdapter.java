@@ -1298,8 +1298,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    protected <K, V> IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
-        GridCacheOperation op, IgniteTxEntry txEntry, V newVal, byte[] newValBytes, GridCacheVersion newVer,
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictResolve(
+        GridCacheOperation op,
+        IgniteTxEntry txEntry,
+        CacheObject newVal,
+        GridCacheVersion newVer,
         GridCacheEntryEx old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert newVer != null;
@@ -1351,19 +1354,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         GridCacheVersionedEntryEx oldEntry = old.versionedEntry();
 
         // Construct new entry info.
-        if (newVal == null && newValBytes != null)
-            newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
+        Object newVal0 = CU.value(newVal, txEntry.context(), false);
 
-        GridCacheVersionedEntryEx newEntry =
-            new GridCachePlainVersionedEntry<>((K)txEntry.key(), newVal, newTtl, newExpireTime, newVer);
+        GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry(
+            oldEntry.key(),
+            newVal0,
+            newTtl,
+            newExpireTime,
+            newVer);
 
-        GridCacheVersionConflictContext<K, V> ctx = null;
-
-        // TODO IGNITE-51.
-        //GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 
         if (ctx.isMerge()) {
-            V resVal = ctx.mergeValue();
+            Object resVal = ctx.mergeValue();
 
             if ((op == CREATE || op == UPDATE) && resVal == null)
                 op = DELETE;

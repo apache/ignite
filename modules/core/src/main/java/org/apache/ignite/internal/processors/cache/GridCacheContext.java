@@ -124,19 +124,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheDataStructuresManager<K, V> dataStructuresMgr;
 
     /** Eager TTL manager. */
-    private GridCacheTtlManager<K, V> ttlMgr;
+    private GridCacheTtlManager ttlMgr;
 
     /** Store manager. */
     private GridCacheStoreManager storeMgr;
 
     /** Replication manager. */
-    private GridCacheDrManager<K, V> drMgr;
+    private GridCacheDrManager drMgr;
 
     /** Serialization manager. */
     private IgniteCacheSerializationManager<K, V> serMgr;
 
     /** JTA manager. */
-    private CacheJtaManagerAdapter<K, V> jtaMgr;
+    private CacheJtaManagerAdapter jtaMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -238,9 +238,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
         CacheDataStructuresManager<K, V> dataStructuresMgr,
-        GridCacheTtlManager<K, V> ttlMgr,
-        GridCacheDrManager<K, V> drMgr,
-        CacheJtaManagerAdapter<K, V> jtaMgr) {
+        GridCacheTtlManager ttlMgr,
+        GridCacheDrManager drMgr,
+        CacheJtaManagerAdapter jtaMgr) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
@@ -839,7 +839,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Lock order manager.
      */
-    public GridCacheVersionManager<K, V> versions() {
+    public GridCacheVersionManager versions() {
         return sharedCtx.versions();
     }
 
@@ -930,21 +930,21 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return DR manager.
      */
-    public GridCacheDrManager<K, V> dr() {
+    public GridCacheDrManager dr() {
         return drMgr;
     }
 
     /**
      * @return TTL manager.
      */
-    public GridCacheTtlManager<K, V> ttl() {
+    public GridCacheTtlManager ttl() {
         return ttlMgr;
     }
 
     /**
      * @return JTA manager.
      */
-    public CacheJtaManagerAdapter<K, V> jta() {
+    public CacheJtaManagerAdapter jta() {
         return jtaMgr;
     }
 
@@ -958,7 +958,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (CacheEntryPredicate p0 : p) {
             if ((p0 instanceof CacheEntrySerializablePredicate) &&
-               ((CacheEntrySerializablePredicate) p0).predicate() instanceof CacheEntryPredicateNoValue)
+               ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
             return true;
         }
 
@@ -1589,15 +1589,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param oldEntry Old entry.
      * @param newEntry New entry.
-     * @param atomicVerComparator Whether to use atomic version comparator.
+     * @param atomicVerComp Whether to use atomic version comparator.
      * @return Conflict resolution result.
      * @throws IgniteCheckedException In case of exception.
      */
     public GridCacheVersionConflictContext<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
+        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComp) throws IgniteCheckedException {
         assert conflictRslvr != null : "Should not reach this place.";
 
-        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComparator);
+        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComp);
 
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());

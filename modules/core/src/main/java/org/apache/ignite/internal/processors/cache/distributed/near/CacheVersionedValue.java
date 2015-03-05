@@ -28,11 +28,11 @@ import java.nio.*;
  * Cache object and version.
  */
 public class CacheVersionedValue implements Message {
-    /** Cache version. */
-    private GridCacheVersion vers;
+    /** Value. */
+    private CacheObject val;
 
-    /** Cache object. */
-    private CacheObject obj;
+    /** Cache version. */
+    private GridCacheVersion ver;
 
     /** */
     public CacheVersionedValue() {
@@ -40,26 +40,26 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
-     * @param vers Cache version.
-     * @param obj Cache object.
+     * @param val Cache value.
+     * @param ver Cache version.
      */
-    CacheVersionedValue(GridCacheVersion vers, CacheObject obj) {
-        this.vers = vers;
-        this.obj = obj;
+    CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+        this.val = val;
+        this.ver = ver;
     }
 
     /**
      * @return Cache version.
      */
     public GridCacheVersion version() {
-        return vers;
+        return ver;
     }
 
     /**
      * @return Cache object.
      */
-    public CacheObject cacheObject() {
-        return obj;
+    public CacheObject value() {
+        return val;
     }
 
     /**
@@ -70,12 +70,12 @@ public class CacheVersionedValue implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        if (obj != null)
-            obj.prepareMarshal(ctx);
+        if (val != null)
+            val.prepareMarshal(ctx);
     }
 
     /**
-     * This method is called after the whole message is recived
+     * This method is called after the whole message is received
      * and is responsible for unmarshalling state.
      *
      * @param ctx Context.
@@ -83,8 +83,8 @@ public class CacheVersionedValue implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (obj != null)
-            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -100,13 +100,13 @@ public class CacheVersionedValue implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("obj", obj))
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("vers", vers))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -125,7 +125,7 @@ public class CacheVersionedValue implements Message {
 
         switch (reader.state()) {
             case 0:
-                obj = reader.readMessage("obj");
+                val = reader.readMessage("obj");
 
                 if (!reader.isLastRead())
                     return false;
@@ -133,7 +133,7 @@ public class CacheVersionedValue implements Message {
                 reader.incrementState();
 
             case 1:
-                vers = reader.readMessage("vers");
+                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;

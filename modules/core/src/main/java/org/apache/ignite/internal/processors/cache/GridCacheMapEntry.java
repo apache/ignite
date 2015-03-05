@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
@@ -142,8 +143,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    protected GridCacheMapEntry(GridCacheContext<?, ?> cctx, KeyCacheObject key, int hash, CacheObject val,
-        GridCacheMapEntry next, long ttl, int hdrId) {
+    protected GridCacheMapEntry(GridCacheContext<?, ?> cctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         key = (KeyCacheObject)cctx.kernalContext().portable().prepareForCache(key, cctx);
@@ -1654,79 +1661,83 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 // Cache is conflict-enabled.
                 if (cctx.conflictNeedResolve()) {
-// TODO IGNITE-51.
-//                    // Get new value, optionally unmarshalling and/or transforming it.
-//                    if (writeObj == null && valBytes != null)
-//                        writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-//
-//                    if (op == GridCacheOperation.TRANSFORM) {
-//                        transformClo = writeObj;
-//
-//                        writeObj = ((IgniteClosure<V, V>)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
-//                        valBytes = null;
-//                    }
-//
-//                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc, explicitTtl,
-//                        explicitExpireTime);
-//
-//                    // Prepare old and new entries for conflict resolution.
-//                    GridCacheVersionedEntryEx oldEntry = versionedEntry();
-//                    GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(key, (V)writeObj,
-//                        expiration.get1(), expiration.get2(), conflictVer != null ? conflictVer : newVer);
-//
-//                    // Resolve conflict.
-//                    conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
-//
-//                    assert conflictCtx != null;
-//
-//                    // Use old value?
-//                    if (conflictCtx.isUseOld()) {
-//                        GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
-//
-//                        // Handle special case with atomic comparator.
-//                        if (!isNew() &&                                                           // Not initial value,
-//                            verCheck &&                                                           // and atomic version check,
-//                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
-//                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
-//                            cctx.writeThrough() &&                                                // and store is enabled,
-//                            primary)                                                              // and we are primary.
-//                        {
-//                            V val = rawGetOrUnmarshalUnlocked(false);
-//
-//                            if (val == null) {
-//                                assert deletedUnlocked();
-//
-//                                cctx.store().removeFromStore(null, key());
-//                            }
-//                            else
-//                                cctx.store().putToStore(null, key(), val, ver);
-//                        }
-//
-//                        return new GridCacheUpdateAtomicResult<>(false,
-//                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
-//                            null,
-//                            invokeRes,
-//                            CU.TTL_ETERNAL,
-//                            CU.EXPIRE_TIME_ETERNAL,
-//                            null,
-//                            null,
-//                            false);
-//                    }
-//                    // Will update something.
-//                    else {
-//                        // Merge is a local update which override passed value bytes.
-//                        if (conflictCtx.isMerge()) {
-//                            writeObj = conflictCtx.mergeValue();
-//                            valBytes = null;
-//
-//                            conflictVer = null;
-//                        }
-//                        else
-//                            assert conflictCtx.isUseNew();
-//
-//                        // Update value is known at this point, so update operation type.
-//                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
-//                    }
+                    // Get new value, optionally unmarshalling and/or transforming it.
+                    Object writeObj0;
+
+                    if (op == GridCacheOperation.TRANSFORM) {
+                        transformClo = writeObj;
+
+                        // TODO IGNITE-51
+                        writeObj0 = ((IgniteClosure)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
+                    }
+                    else
+                        writeObj0 = CU.value((CacheObject)writeObj, cctx, false);
+
+                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
+                        explicitTtl,
+                        explicitExpireTime);
+
+                    // Prepare old and new entries for conflict resolution.
+                    GridCacheVersionedEntryEx oldEntry = versionedEntry();
+                    GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
+                        oldEntry.key(),
+                        writeObj0,
+                        expiration.get1(),
+                        expiration.get2(),
+                        conflictVer != null ? conflictVer : newVer);
+
+                    // Resolve conflict.
+                    conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
+
+                    assert conflictCtx != null;
+
+                    // Use old value?
+                    if (conflictCtx.isUseOld()) {
+                        GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
+
+                        // Handle special case with atomic comparator.
+                        if (!isNew() &&                                                           // Not initial value,
+                            verCheck &&                                                           // and atomic version check,
+                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
+                            cctx.writeThrough() &&                                                // and store is enabled,
+                            primary)                                                              // and we are primary.
+                        {
+                            CacheObject val = rawGetOrUnmarshalUnlocked(false);
+
+                            if (val == null) {
+                                assert deletedUnlocked();
+
+                                cctx.store().removeFromStore(null, key());
+                            }
+                            else
+                                cctx.store().putToStore(null, key(), val, ver);
+                        }
+
+                        return new GridCacheUpdateAtomicResult(false,
+                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
+                            null,
+                            invokeRes,
+                            CU.TTL_ETERNAL,
+                            CU.EXPIRE_TIME_ETERNAL,
+                            null,
+                            null,
+                            false);
+                    }
+                    // Will update something.
+                    else {
+                        // Merge is a local update which override passed value bytes.
+                        if (conflictCtx.isMerge()) {
+                            writeObj = cctx.toCacheObject(conflictCtx.mergeValue());
+
+                            conflictVer = null;
+                        }
+                        else
+                            assert conflictCtx.isUseNew();
+
+                        // Update value is known at this point, so update operation type.
+                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+                    }
                 }
                 else
                     // Nullify conflict version on this update, so that we will use regular version during next updates.
@@ -1914,7 +1925,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     newVer.nodeOrder(),
                     newVer.dataCenterId(),
                     conflictVer);
-
 
             if (op == GridCacheOperation.UPDATE) {
                 // Conflict context is null if there were no explicit conflict resolution.
@@ -2274,9 +2284,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
-//            cctx.dr().replicate(key, null, val, valBytes, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
+            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
     }
 
     /**
@@ -3292,8 +3301,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Override public synchronized GridCacheVersionedEntryEx versionedEntry() throws IgniteCheckedException {
         boolean isNew = isStartVersion();
 
-        return new GridCachePlainVersionedEntry<>(key, isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
-            ttlExtras(), expireTimeExtras(), ver.conflictVersion(), isNew);
+        CacheObject val = isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false);
+
+        return new GridCachePlainVersionedEntry<>(key.value(cctx.cacheObjectContext(), true),
+            CU.value(val, cctx, true),
+            ttlExtras(),
+            expireTimeExtras(),
+            ver.conflictVersion(),
+            isNew);
     }
 
     /** {@inheritDoc} */

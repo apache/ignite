@@ -129,18 +129,18 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param drMap DR map to put.
      * @return Future for DR put operation.
      */
-    public <K, V> IgniteInternalFuture<?> putAllDrAsync(
+    public IgniteInternalFuture<?> putAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<? extends K, GridCacheDrInfo<V>> drMap);
+        Map<KeyCacheObject, GridCacheDrInfo> drMap);
 
     /**
      * @param cacheCtx Cache context.
      * @param drMap DR map.
      * @return Future for asynchronous remove.
      */
-    public <K> IgniteInternalFuture<?> removeAllDrAsync(
+    public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<? extends K, GridCacheVersion> drMap);
+        Map<KeyCacheObject, GridCacheVersion> drMap);
 
     /**
      * Performs keys locking for affinity-based group lock transactions.

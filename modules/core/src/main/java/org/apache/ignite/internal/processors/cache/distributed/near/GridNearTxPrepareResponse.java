@@ -174,7 +174,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(ver, val);
+        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
 
         ownedVals.put(key, oVal);
     }
@@ -266,20 +266,20 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
             Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
 
-            Iterator<CacheVersionedValue> valueIter = ownedValVals.iterator();
+            Iterator<CacheVersionedValue> valIter = ownedValVals.iterator();
 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-                CacheVersionedValue value = valueIter.next();
+                CacheVersionedValue val = valIter.next();
 
                 key.finishUnmarshal(cctx, ldr);
 
-                value.finishUnmarshal(cctx, ldr);
+                val.finishUnmarshal(cctx, ldr);
 
-                ownedVals.put(key, value);
+                ownedVals.put(key, val);
             }
         }
 

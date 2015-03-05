@@ -243,6 +243,13 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /**
+     * @return Cache object context.
+     */
+    public CacheObjectContext cacheObjectContext() {
+        return cacheObjCtx;
+    }
+
+    /**
      * Enters busy lock.
      */
     private void enterBusy() {

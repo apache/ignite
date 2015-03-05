@@ -948,7 +948,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     CacheVersionedValue tup = entry.getValue();
 
-                                    nearEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion(),
+                                    nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
                                         tup.version(), m.node().id());
                                 }
                                 else if (txEntry.cached().detached()) {
@@ -956,7 +956,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     CacheVersionedValue tup = entry.getValue();
 
-                                    detachedEntry.resetFromPrimary(tup.cacheObject(), tx.xidVersion());
+                                    detachedEntry.resetFromPrimary(tup.value(), tx.xidVersion());
                                 }
 
                                 break;
