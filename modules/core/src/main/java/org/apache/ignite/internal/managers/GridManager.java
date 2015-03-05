@@ -33,12 +33,12 @@ public interface GridManager extends GridComponent {
     public boolean enabled();
 
     /**
-     * This method is called before manager will start SPI.
+     * This method executed before manager will start SPI.
      */
     public void onBeforeSpiStart();
 
     /**
-     * This method is called after manager started SPI.
+     * This method executed after manager started SPI.
      */
     public void onAfterSpiStart();
 }

@@ -2673,7 +2673,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param comp Grid component class.
+     * @param comp Grid component.
      * @return {@code true} if node running in daemon mode and component marked by {@code SkipDaemon} annotation.
      */
     private boolean skipDaemon(GridComponent comp) {
