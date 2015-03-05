@@ -24,13 +24,26 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.h2.command.ddl.*;
+import org.h2.command.dml.Query;
+import org.h2.engine.*;
+import org.h2.expression.*;
+import org.h2.index.*;
+import org.h2.jdbc.*;
+import org.h2.result.*;
+import org.h2.table.*;
+import org.h2.value.*;
 import org.jdk8.backport.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,6 +67,34 @@ public class GridReduceQueryExecutor {
 
     /** */
     private final ConcurrentMap<Long, QueryRun> runs = new ConcurrentHashMap8<>();
+
+    /** */
+    private static ThreadLocal<GridMergeTable> curFunTbl = new GridThreadLocal<>();
+
+    /** */
+    private static final Constructor<JdbcResultSet> CONSTRUCTOR;
+
+    /**
+     * Init constructor.
+     */
+    static {
+        try {
+            CONSTRUCTOR = JdbcResultSet.class.getDeclaredConstructor(
+                JdbcConnection.class,
+                JdbcStatement.class,
+                ResultInterface.class,
+                Integer.TYPE,
+                Boolean.TYPE,
+                Boolean.TYPE,
+                Boolean.TYPE
+            );
+
+            CONSTRUCTOR.setAccessible(true);
+        }
+        catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Check H2 version in classpath.", e);
+        }
+    }
 
     /**
      * @param ctx Context.
@@ -94,6 +135,9 @@ public class GridReduceQueryExecutor {
                 return true;
             }
         });
+
+        h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
+            " FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
     }
 
     /**
@@ -170,7 +214,7 @@ public class GridReduceQueryExecutor {
             GridMergeTable tbl;
 
             try {
-                tbl = createTable(r.conn, mapQry);
+                tbl = createFunctionTable((JdbcConnection)r.conn, mapQry); // createTable(r.conn, mapQry); TODO
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -179,6 +223,8 @@ public class GridReduceQueryExecutor {
             tbl.getScanIndex(null).setNumberOfSources(nodes.size());
 
             r.tbls.add(tbl);
+
+            curFunTbl.set(tbl);
         }
 
         r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
@@ -202,12 +248,12 @@ public class GridReduceQueryExecutor {
                 if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
                     ctx.io().sendUserMessage(nodes, new GridQueryCancelRequest(qryReqId), GridTopic.TOPIC_QUERY, false, 0);
 
-                dropTable(r.conn, tbl.getName());
+//                dropTable(r.conn, tbl.getName()); TODO
             }
 
             return new QueryCursorImpl<>(new Iter(res));
         }
-        catch (IgniteCheckedException | InterruptedException | SQLException | RuntimeException e) {
+        catch (IgniteCheckedException | InterruptedException | RuntimeException e) {
             U.closeQuiet(r.conn);
 
             if (e instanceof CacheException)
@@ -218,6 +264,8 @@ public class GridReduceQueryExecutor {
         finally {
             if (!runs.remove(qryReqId, r))
                 U.warn(log, "Query run was already removed: " + qryReqId);
+
+            curFunTbl.remove();
         }
     }
 
@@ -229,6 +277,83 @@ public class GridReduceQueryExecutor {
     private void dropTable(Connection conn, String tblName) throws SQLException {
         try (Statement s = conn.createStatement()) {
             s.execute("DROP TABLE " + tblName);
+        }
+    }
+
+    /**
+     * @return Merged result set.
+     */
+    public static ResultSet mergeTableFunction(JdbcConnection c) throws Exception {
+        GridMergeTable tbl = curFunTbl.get();
+
+        Session ses = (Session)c.getSession();
+
+        String url = c.getMetaData().getURL();
+
+        // URL is either "jdbc:default:connection" or "jdbc:columnlist:connection"
+        Cursor cursor = url.charAt(5) == 'c' ? null : tbl.getScanIndex(ses).find(ses, null, null);
+
+        return CONSTRUCTOR.newInstance(c, null, new Result0(cursor, tbl.getColumns()), 0, false, false, false);
+    }
+
+    /**
+     * @param asQuery Query.
+     * @return List of columns.
+     */
+    private static ArrayList<Column> generateColumnsFromQuery(org.h2.command.dml.Query asQuery) {
+        int columnCount = asQuery.getColumnCount();
+        ArrayList<Expression> expressions = asQuery.getExpressions();
+        ArrayList<Column> cols = new ArrayList<>();
+        for (int i = 0; i < columnCount; i++) {
+            Expression expr = expressions.get(i);
+            int type = expr.getType();
+            String name = expr.getAlias();
+            long precision = expr.getPrecision();
+            int displaySize = expr.getDisplaySize();
+            DataType dt = DataType.getDataType(type);
+            if (precision > 0 && (dt.defaultPrecision == 0 ||
+                (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
+                // dont' set precision to MAX_VALUE if this is the default
+                precision = dt.defaultPrecision;
+            }
+            int scale = expr.getScale();
+            if (scale > 0 && (dt.defaultScale == 0 ||
+                (dt.defaultScale > scale && dt.defaultScale < precision))) {
+                scale = dt.defaultScale;
+            }
+            if (scale > precision) {
+                precision = scale;
+            }
+            Column col = new Column(name, type, precision, scale, displaySize);
+            cols.add(col);
+        }
+
+        return cols;
+    }
+
+    /**
+     * @param conn Connection.
+     * @param qry Query.
+     * @return Table.
+     * @throws IgniteCheckedException
+     */
+    private GridMergeTable createFunctionTable(JdbcConnection conn, GridCacheSqlQuery qry) throws IgniteCheckedException {
+        try {
+            Session ses = (Session)conn.getSession();
+
+            CreateTableData data  = new CreateTableData();
+
+            data.tableName = "T___";
+            data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
+            data.create = true;
+            data.columns = generateColumnsFromQuery((Query)ses.prepare(qry.query(), false));
+
+            return new GridMergeTable(data);
+        }
+        catch (Exception e) {
+            U.closeQuiet(conn);
+
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -297,6 +422,135 @@ public class GridReduceQueryExecutor {
             Collections.addAll(res, row);
 
             return res;
+        }
+    }
+
+    /**
+     * Query result for H2.
+     */
+    private static class Result0 implements ResultInterface {
+        /** */
+        private Cursor cursor;
+
+        /** */
+        private Column[] cols;
+
+        /** */
+        private int rowId;
+
+        /**
+         * @param cursor Cursor.
+         * @param cols Columns.
+         */
+        Result0(@Nullable Cursor cursor, Column[] cols) {
+            this.cursor = cursor != null ? cursor : new SingleRowCursor(null);
+            this.cols = cols;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Value[] currentRow() {
+            return cursor.get().getValueList();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (cursor.next()) {
+                rowId++;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getRowId() {
+            return rowId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getVisibleColumnCount() {
+            return cols.length;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getRowCount() {
+            return Integer.MAX_VALUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needToClose() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getAlias(int i) {
+            return cols[i].getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSchemaName(int i) {
+            return cols[i].getTable().getSchema().getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getTableName(int i) {
+            return cols[i].getTable().getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getColumnName(int i) {
+            return cols[i].getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getColumnType(int i) {
+            return cols[i].getType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getColumnPrecision(int i) {
+            return cols[i].getPrecision();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getColumnScale(int i) {
+            return cols[i].getScale();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getDisplaySize(int i) {
+            return cols[i].getDisplaySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAutoIncrement(int i) {
+            return cols[i].isAutoIncrement();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getNullable(int i) {
+            return Column.NULLABLE_UNKNOWN;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setFetchSize(int fetchSize) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFetchSize() {
+            throw new UnsupportedOperationException();
         }
     }
 }

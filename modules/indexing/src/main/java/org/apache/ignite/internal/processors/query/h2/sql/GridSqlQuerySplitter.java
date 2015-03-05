@@ -35,6 +35,9 @@ public class GridSqlQuerySplitter {
     /** */
     private static final String COLUMN_PREFIX = "__C";
 
+    /** */
+    public static final String TABLE_FUNC_NAME = "__Z0";
+
     /**
      * @param idx Index of table.
      * @return Table name.
@@ -63,10 +66,10 @@ public class GridSqlQuerySplitter {
 
         GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
 
-        final String mergeTable = table(0);
+        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
         GridSqlSelect mapQry = srcQry.clone();
-        GridSqlSelect rdcQry = new GridSqlSelect().from(table(mergeTable));
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());

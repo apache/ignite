@@ -55,8 +55,8 @@ import org.h2.value.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.Cache;
+import javax.cache.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
@@ -259,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql SQL statement.
      * @throws IgniteCheckedException If failed.
      */
-    private void executeStatement(String schema, String sql) throws IgniteCheckedException {
+    public void executeStatement(String schema, String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
         try {
@@ -1031,21 +1031,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
-        if (ctx == null) // This is allowed in some tests.
-            marshaller = new OptimizedMarshaller();
-        else {
-            this.ctx = ctx;
-
-            nodeId = ctx.localNodeId();
-            marshaller = ctx.config().getMarshaller();
-
-            mapQryExec = new GridMapQueryExecutor();
-            rdcQryExec = new GridReduceQueryExecutor();
-
-            mapQryExec.start(ctx, this);
-            rdcQryExec.start(ctx, this);
-        }
-
         System.setProperty("h2.serializeJavaObject", "false");
 
         if (SysProperties.serializeJavaObject) {
@@ -1084,6 +1069,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
+        }
+
+        if (ctx == null) // This is allowed in some tests.
+            marshaller = new OptimizedMarshaller();
+        else {
+            this.ctx = ctx;
+
+            nodeId = ctx.localNodeId();
+            marshaller = ctx.config().getMarshaller();
+
+            mapQryExec = new GridMapQueryExecutor();
+            rdcQryExec = new GridReduceQueryExecutor();
+
+            mapQryExec.start(ctx, this);
+            rdcQryExec.start(ctx, this);
         }
 
 //        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
