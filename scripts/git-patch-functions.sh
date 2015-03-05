@@ -31,21 +31,19 @@ formatPatch () {
 
     cd ${GIT_HOME}
 
-    echo ">>>>>> Checkout origin/${DEFAULT_BRANCH} as master_copy"
     git checkout ${DEFAULT_BRANCH}
     git checkout -b tmppatch
-#    git merge --squash ${PATCHED_BRANCH} # In one commit
-    git merge ${PATCHED_BRANCH}
-#    git commit -a -m ""
+    
+    git merge --no-edit ${PATCHED_BRANCH}
+#    Or we can 'squashe' merge to make only one commit.
+#    git merge --squash ${PATCHED_BRANCH}
+#    git commit -a -m "# PATCHED_BRANCH"
 
-    git checkout ${PATCHED_BRANCH}
-
-    echo '>>>>>> Format patch.'
     git format-patch ${DEFAULT_BRANCH}  --stdout > ${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
 
-#    echo '>>>>>> Clean-up.'
-    git checkout ${DEFAULT_BRANCH}
-#    git branch -D tmpsquash # Delete tmp branch.
+    git checkout ${PATCHED_BRANCH}
+    
+    git branch -D tmppatch # Delete tmp branch.
 }
 
 updateBranches () {

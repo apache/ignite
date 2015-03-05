@@ -52,4 +52,4 @@ echo
 
 requireCleanWorkTree ${IGNITE_HOME}
 
-#formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch
+formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${CURRENT_BRANCH} _ignite.patch
