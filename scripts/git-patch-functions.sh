@@ -101,7 +101,7 @@ applyPatch () {
 
     cd ${GIT_HOME}
     
-    if [ -f ${PATCH_FILE} ] 
+    if [ ! -f ${PATCH_FILE} ]
     then
         echo $0", ERROR:"
         echo "Expected patch file not found: $PATCH_FILE."
