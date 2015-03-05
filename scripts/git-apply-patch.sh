@@ -72,7 +72,7 @@ echo "PATCHES_HOME   : ${PATCHES_HOME}"
 echo
 
 #
-# Main script logic.
+# Main script logic..
 #
 
 currentAndDefaultBranchesShouldBeEqual ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH}
