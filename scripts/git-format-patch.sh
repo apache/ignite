@@ -21,7 +21,7 @@
 #
 
 #
-# Imports and init
+# Init home and import properties and functions.
 #
 if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
     then IGNITE_HOME=$PWD
