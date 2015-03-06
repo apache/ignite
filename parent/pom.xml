@@ -531,9 +531,7 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>
-                                                org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler
-                                            </packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -545,35 +543,27 @@
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>
-                                                org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring
-                                            </packages>
+                                            <packages>org.apache.ignite.compute*</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>
-                                                org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload
-                                            </packages>
+                                            <packages>org.apache.ignite.cache*:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Service Grid APIs</title>
                                             <packages>org.apache.ignite.services</packages>
                                         </group>
                                         <group>
-                                            <title>Ignite File System</title>
-                                            <packages>org.apache.ignite.igfs</packages>
+                                            <title>File System APIs</title>
+                                            <packages>org.apache.ignite.igfs*</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>
-                                                org.apache.ignite.igfs.hadoop:org.apache.ignite.igfs.hadoop.v1:org.apache.ignite.igfs.hadoop.v2:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.hadoop
-                                            </packages>
+                                            <packages>org.apache.ignite.hadoop*</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
-                                            <packages>
-                                                org.apache.ignite.streamer:org.apache.ignite.streamer.router:org.apache.ignite.streamer.window:org.apache.ignite.streamer.index:org.apache.ignite.streamer.index.hash:org.apache.ignite.streamer.index.tree
-                                            </packages>
+                                            <packages>org.apache.ignite.streamer*</packages>
                                         </group>
                                         <group>
                                             <title>Security APIs</title>
@@ -585,63 +575,43 @@
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
-                                            <packages>
-                                                org.apache.ignite.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.checkpoint*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
-                                            <packages>
-                                                org.apache.ignite.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.collision*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>
-                                                org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.indexing*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
-                                            <packages>
-                                                org.apache.ignite.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.loadbalancing*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
-                                            <packages>
-                                                org.apache.ignite.spi.communication:org.apache.ignite.spi.communication.tcp
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.communication*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
-                                            <packages>
-                                                org.apache.ignite.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.deployment*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
-                                            <packages>
-                                                org.apache.ignite.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.swapspace*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Discovery</title>
-                                            <packages>
-                                                org.apache.ignite.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.discovery*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Failover</title>
-                                            <packages>
-                                                org.apache.ignite.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.failover*</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Event Storage</title>
-                                            <packages>
-                                                org.apache.ignite.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory
-                                            </packages>
+                                            <packages>org.apache.ignite.spi.eventstorage*</packages>
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
@@ -649,27 +619,27 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>
-                                                org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin
-                                            </packages>
+                                            <packages>org.apache.ignite.plugin*</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
-                                            <packages>
-                                                org.apache.ignite.logger:org.apache.ignite.logger.log4j:org.apache.ignite.logger.java:org.apache.ignite.logger.tomcat:org.apache.ignite.logger.jcl:org.apache.ignite.logger.slf4j:org.apache.ignite.logger.jboss
-                                            </packages>
+                                            <packages>org.apache.ignite.logger*</packages>
                                         </group>
                                         <group>
                                             <title>Loaders</title>
-                                            <packages>
-                                                org.apache.ignite.startup:org.apache.ignite.startup.cmdline:org.apache.ignite.startup.servlet:org.apache.ignite.startup.tomcat
-                                            </packages>
+                                            <packages>org.apache.ignite.startup*</packages>
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
-                                            <packages>
-                                                org.apache.ignite.marshaller:org.apache.ignite.marshaller.optimized:org.apache.ignite.marshaller.jdk
-                                            </packages>
+                                            <packages>org.apache.ignite.marshaller*</packages>
+                                        </group>
+                                        <group>
+                                            <title>Visor Plugins</title>
+                                            <packages>org.apache.ignite.visor.plugin</packages>
+                                        </group>
+                                        <group>
+                                            <title>Spring Caching</title>
+                                            <packages>org.apache.ignite.cache.spring</packages>
                                         </group>
                                     </groups>
                                     <header>
