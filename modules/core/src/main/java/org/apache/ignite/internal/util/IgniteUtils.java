@@ -516,6 +516,8 @@ public abstract class IgniteUtils {
         }
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+
+        System.setProperty("http.strictPostRedirect", "true");
     }
 
     /**
