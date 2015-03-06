@@ -988,6 +988,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param val Value to check.
+     * @return Predicate that checks for value.
+     */
+    public CacheEntryPredicate equalsValue(V val) {
+        return new CacheEntryPredicateContainsValue(toCacheObject(val));
+    }
+
+    /**
      * @return Empty cache version array.
      */
     public GridCacheVersion[] emptyVersion() {
@@ -1086,6 +1094,39 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         catch (RuntimeException ex) {
             throw U.cast(ex);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param e Entry.
+     * @param p Predicates.
+     * @return {@code True} if predicates passed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean isAllLocked(GridCacheEntryEx e, CacheEntryPredicate[] p) throws IgniteCheckedException {
+        if (p == null || p.length == 0)
+            return true;
+
+        try {
+            for (CacheEntryPredicate p0 : p) {
+                if (p0 != null) {
+                    p0.entryLocked(true);
+
+                    if (!p0.apply(e))
+                        return false;
+                }
+            }
+        }
+        catch (RuntimeException ex) {
+            throw U.cast(ex);
+        }
+        finally {
+            for (CacheEntryPredicate p0 : p) {
+                if (p0 != null)
+                    p0.entryLocked(false);
+            }
         }
 
         return true;

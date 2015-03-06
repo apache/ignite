@@ -901,16 +901,11 @@ public class GridCacheUtils {
     public static CacheEntryPredicate typeFilter0(final Class<?> keyType, final Class<?> valType) {
         return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                try {
-                    Object val = CU.value(e.rawGetOrUnmarshal(true), e.context(), false);
+                Object val = CU.value(peekVisibleValue(e), e.context(), false);
 
-                    return val == null ||
-                        valType.isAssignableFrom(val.getClass()) &&
-                        keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
-                }
-                catch (IgniteCheckedException err) {
-                    throw new IgniteException(err);
-                }
+                return val == null ||
+                    valType.isAssignableFrom(val.getClass()) &&
+                    keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
             }
         });
     }

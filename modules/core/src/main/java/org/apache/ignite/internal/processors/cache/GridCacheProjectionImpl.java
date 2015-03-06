@@ -736,7 +736,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        CacheEntryPredicate fltr = and(cctx.equalsValArray(oldVal));
+        CacheEntryPredicate fltr = this.filter != null ? and(cctx.equalsValArray(oldVal)) : cctx.equalsValue(oldVal);
 
         return cache.putxAsync(key, newVal, fltr);
     }

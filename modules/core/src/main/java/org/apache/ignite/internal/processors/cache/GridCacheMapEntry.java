@@ -1372,7 +1372,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             // Check filter inside of synchronization.
             if (!F.isEmpty(filter)) {
-                boolean pass = cctx.isAll(this, filter);
+                boolean pass = cctx.isAllLocked(this, filter);
 
                 if (!pass) {
                     if (expiryPlc != null && !readThrough && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
@@ -1829,7 +1829,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             // Check filter inside of synchronization.
             if (!F.isEmptyOrNulls(filter)) {
-                boolean pass = cctx.isAll(this, filter);
+                boolean pass = cctx.isAllLocked(this, filter);
 
                 if (!pass) {
                     if (expiryPlc != null && !readThrough && hasValueUnlocked() && !cctx.putIfAbsentFilter(filter))
