@@ -97,6 +97,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param miniId Mini future ID.
      * @param dhtVer DHT version.
      * @param invalidParts Invalid partitions.
+     * @param retVal Return value.
      * @param err Error.
      */
     public GridNearTxPrepareResponse(

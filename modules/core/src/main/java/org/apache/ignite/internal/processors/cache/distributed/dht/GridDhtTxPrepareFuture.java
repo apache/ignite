@@ -500,7 +500,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
 
                     fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> gridCacheTxGridFuture) {
+                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                             try {
                                 if (replied.compareAndSet(false, true))
                                     sendPrepareResponse(res);

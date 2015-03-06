@@ -31,6 +31,9 @@ import java.nio.*;
  */
 public class GridCacheEntryInfo implements Message {
     /** */
+    private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache key. */
@@ -62,9 +65,6 @@ public class GridCacheEntryInfo implements Message {
     /** Deleted flag. */
     @GridDirectTransient
     private boolean deleted;
-
-    /** */
-    private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
     /**
      * @return Cache ID.
