@@ -1740,9 +1740,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param ldr Class loader.
      */
     public void onUndeployed(ClassLoader ldr) {
-        if (!ctx.isStopping())
-            for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(ldr);
+        if (!ctx.isStopping()) {
+            for (GridCacheAdapter<?, ?> cache : caches.values()) {
+                // Do not notify system caches.
+                if (!cache.context().system() && !CU.isAtomicsCache(cache.context().name()))
+                    cache.onUndeploy(ldr);
+            }
+        }
     }
 
     /**

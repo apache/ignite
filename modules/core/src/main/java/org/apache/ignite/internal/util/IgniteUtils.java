@@ -299,7 +299,7 @@ public abstract class IgniteUtils {
         exceptionConverters;
 
     /** */
-    private volatile static IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /**
      * Initializes enterprise check.
@@ -612,6 +612,25 @@ public abstract class IgniteUtils {
         });
 
         return m;
+    }
+
+    /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
     }
 
     /**
@@ -3210,9 +3229,15 @@ public abstract class IgniteUtils {
             }
         }
 
-        String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
 
-        return Thread.currentThread().getContextClassLoader().getResource(locPath);
+        if (clsLdr != null) {
+            String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+
+            return clsLdr.getResource(locPath);
+        }
+        else
+            return null;
     }
 
     /**
@@ -4546,8 +4571,8 @@ public abstract class IgniteUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                out.writeUTF(e.getKey());
-                out.writeUTF(e.getValue());
+                writeUTFStringNullable(out, e.getKey());
+                writeUTFStringNullable(out, e.getValue());
             }
         }
         else
@@ -4570,10 +4595,38 @@ public abstract class IgniteUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(in.readUTF(), in.readUTF());
+                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
 
             return map;
         }
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeUTF(val);
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTFStringNullable(DataInput in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
     }
 
     /**
@@ -8834,7 +8887,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.arrayList(c, c.size(), p);
     }
 
     /**
