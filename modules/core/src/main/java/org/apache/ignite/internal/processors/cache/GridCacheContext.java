@@ -988,6 +988,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param val Value to check.
+     * @return Predicate that checks for value.
+     */
+    public CacheEntryPredicate equalsValue(V val) {
+        return new CacheEntryPredicateContainsValue(toCacheObject(val));
+    }
+
+    /**
      * @return Empty cache version array.
      */
     public GridCacheVersion[] emptyVersion() {
