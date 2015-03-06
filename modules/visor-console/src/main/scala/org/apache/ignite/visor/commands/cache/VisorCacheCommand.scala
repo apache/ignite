@@ -869,11 +869,19 @@ object VisorCacheCommand {
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
         cacheT +=("Query Onheap Cache Size", queryCfg.sqlOnheapRowCacheSize())
 
+        val sqlFxs = queryCfg.sqlFunctionClasses()
+
+        if (sqlFxs.isEmpty) {
+            cacheT +=("Query SQL functions", NA)
+
+        val indexedTypes = queryCfg.indexedTypes()
+
+        if (indexedTypes.isEmpty)
+            cacheT +=("Query Indexed Types", NA)
+
         println(title)
 
         cacheT.render()
-
-        val sqlFxs = queryCfg.sqlFunctionClasses()
 
         if (sqlFxs.nonEmpty) {
             println("\nQuery SQL functions:")
@@ -886,8 +894,6 @@ object VisorCacheCommand {
 
             sqlFxsT.render()
         }
-
-        val indexedTypes = queryCfg.indexedTypes()
 
         if (indexedTypes.nonEmpty) {
             println("\nQuery Indexed Types:")
