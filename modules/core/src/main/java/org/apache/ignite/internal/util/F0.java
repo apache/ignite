@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -173,6 +174,22 @@ public class F0 {
                     }
                 }
             }
+
+            @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+                if (!e1) {
+                    assert p1 != null;
+
+                    for (CacheEntryPredicate p : p1)
+                        p.prepareMarshal(ctx);
+                }
+
+                if (!e2) {
+                    assert p2 != null;
+
+                    for (CacheEntryPredicate p : p2)
+                        p.prepareMarshal(ctx);
+                }
+            }
         });
     }
 
@@ -218,6 +235,17 @@ public class F0 {
                     if (p != null)
                         p.entryLocked(locked);
                 }
+            }
+
+            @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+                assert ps != null;
+
+                if (p != null)
+                    p.prepareMarshal(ctx);
+
+                for (CacheEntryPredicate p : ps)
+                    if (p != null)
+                        p.prepareMarshal(ctx);
             }
         });
     }
