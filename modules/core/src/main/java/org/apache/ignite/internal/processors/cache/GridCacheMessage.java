@@ -323,8 +323,13 @@ public abstract class GridCacheMessage implements Message {
                 e.marshal(ctx, transferExpiry);
 
                 if (ctx.deploymentEnabled()) {
-                    prepareObject(e.key(), ctx);
-                    prepareObject(e.value(), ctx);
+                    CacheObjectContext cctx =ctx.cacheContext(e.cacheId()).cacheObjectContext();
+
+                    if (e.key() != null)
+                        prepareObject(e.key().value(cctx, false), ctx);
+
+                    if (e.value() != null)
+                        prepareObject(e.value().value(cctx, false), ctx);
                 }
             }
         }
