@@ -352,5 +352,5 @@ object VisorKillCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromKill2Visor(vs: VisorTag) = cmd
+    implicit def fromKill2Visor(vs: VisorTag): VisorKillCommand = cmd
 }

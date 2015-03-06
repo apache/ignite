@@ -255,6 +255,18 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                     "assign unique name to each streamer): " + c.getName());
             }
         }
+
+        if (F.isEmpty(cfg))
+            return;
+
+        GridStreamerAttributes[] arr = new GridStreamerAttributes[cfg.length];
+
+        int i = 0;
+
+        for (StreamerConfiguration c : cfg)
+            arr[i++] = new GridStreamerAttributes(c);
+
+        ctx.addNodeAttribute(ATTR_STREAMER, arr);
     }
 
     /** {@inheritDoc} */
@@ -288,25 +300,6 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         for (IgniteStreamerImpl s : map.values())
             s.stop(cancel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        super.addAttributes(attrs);
-
-        StreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();
-
-        if (F.isEmpty(cfg))
-            return;
-
-        GridStreamerAttributes[] arr = new GridStreamerAttributes[cfg.length];
-
-        int i = 0;
-
-        for (StreamerConfiguration c : cfg)
-            arr[i++] = new GridStreamerAttributes(c);
-
-        attrs.put(ATTR_STREAMER, arr);
     }
 
     /**

@@ -587,6 +587,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
+        if (configuration().getDistributionMode() == CacheDistributionMode.NEAR_PARTITIONED)
+            return dht().randomEntry();
+        else
+            return super.randomEntry();
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
         ctx.denyOnFlags(F.asList(SKIP_SWAP));
 

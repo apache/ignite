@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -80,7 +81,7 @@ public class VisorCacheLoadTask extends
 
                 cache.loadCache(null, ldrArgs);
 
-                res.put(cacheName, cache.size());
+                res.put(cacheName, cache.size(CachePeekMode.PRIMARY));
             }
 
             return res;
