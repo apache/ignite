@@ -64,6 +64,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     /**
      * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
+     * @param cacheId Cache ID.
      */
     GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId) {
         assert workerId >= 0;
@@ -213,7 +214,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      */
     void addEntry0(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert info != null;
-        assert info.key() != null;
+        assert (info.key() != null || info.keyBytes() != null);
         assert info.value() != null;
 
         // Need to call this method to initialize info properly.
@@ -232,21 +233,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
         }
 
         infoCol.add(info);
-
-// TODO IGNITE-51.
-//        byte[] bytes = CU.marshal(ctx, info);
-//
-//        msgSize += bytes.length;
-//
-//        Collection<byte[]> serInfo = infoBytesMap.get(p);
-//
-//        if (serInfo == null) {
-//            msgSize += 4;
-//
-//            infoBytesMap.put(p, serInfo = new LinkedList<>());
-//        }
-//
-//        serInfo.add(bytes);
     }
 
     /** {@inheritDoc} */
@@ -262,17 +248,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(cacheCtx, ldr);
         }
-
-// TODO IGNITE-51.
-        // infoBytesMap = ctx.marshaller().unmarshal(infoBytes, ldr);
-
-//        for (Map.Entry<Integer, Collection<byte[]>> e : infoBytesMap.entrySet()) {
-//            Collection<GridCacheEntryInfo> entries = unmarshalCollection(e.getValue(), ctx, ldr);
-//
-//            unmarshalInfos(entries, cacheCtx, ldr);
-//
-//            infos.put(e.getKey(), entries);
-//        }
     }
 
     /**

@@ -1075,9 +1075,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             int size = locked.size();
 
-            Map<KeyCacheObject, CacheObject> putMap = null;
+            Map<Object, Object> putMap = null;
 
-            Collection<KeyCacheObject> rmvKeys = null;
+            Collection<Object> rmvKeys = null;
+
+            List<CacheObject> writeVals = null;
 
             Map<K, EntryProcessorResult> invokeResMap =
                 op == TRANSFORM ? U.<K, EntryProcessorResult>newHashMap(size) : null;
@@ -1164,7 +1166,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (updated == null) {
                             if (intercept) {
                                 IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), 
+                                    .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(),
                                         old, oldVal));
 
                                 if (ctx.cancelRemove(interceptorRes))
@@ -1176,6 +1178,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 err = updatePartialBatch(
                                     filtered,
                                     ver,
+                                    writeVals,
                                     putMap,
                                     null,
                                     expiryPlc,
@@ -1184,6 +1187,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     taskName);
 
                                 putMap = null;
+                                writeVals = null;
 
                                 filtered = new ArrayList<>();
                             }
@@ -1192,7 +1196,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             if (rmvKeys == null)
                                 rmvKeys = new ArrayList<>(size);
 
-                            rmvKeys.add(entry.key());
+                            rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
                         }
                         else {
                             if (intercept) {
@@ -1212,6 +1216,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     filtered,
                                     ver,
                                     null,
+                                    null,
                                     rmvKeys,
                                     expiryPlc,
                                     err,
@@ -1223,10 +1228,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 filtered = new ArrayList<>();
                             }
 
-                            if (putMap == null)
+                            if (putMap == null) {
                                 putMap = new LinkedHashMap<>(size, 1.0f);
+                                writeVals = new ArrayList<>(size);
+                            }
 
-                            putMap.put(entry.key(), updated);
+                            putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                            writeVals.add(updated);
                         }
                     }
                     else if (op == UPDATE) {
@@ -1255,10 +1263,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             cacheVal = ctx.toCacheObject(ctx.unwrapTemporary(interceptorVal));
                         }
 
-                        if (putMap == null)
+                        if (putMap == null) {
                             putMap = new LinkedHashMap<>(size, 1.0f);
+                            writeVals = new ArrayList<>(size);
+                        }
 
-                        putMap.put(entry.key(), cacheVal);
+                        putMap.put(CU.value(entry.key(), ctx, false), CU.value(cacheVal, ctx, false));
+                        writeVals.add(cacheVal);
                     }
                     else {
                         assert op == DELETE;
@@ -1287,7 +1298,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (rmvKeys == null)
                             rmvKeys = new ArrayList<>(size);
 
-                        rmvKeys.add(entry.key());
+                        rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
                     }
 
                     filtered.add(entry);
@@ -1311,6 +1322,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 err = updatePartialBatch(
                     filtered,
                     ver,
+                    writeVals,
                     putMap,
                     rmvKeys,
                     expiryPlc,
@@ -1334,6 +1346,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /**
      * @param entries Entries to update.
      * @param ver Cache version.
+     * @param writeVals Cache values.
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
      * @param expiryPlc Expiry policy.
@@ -1346,8 +1359,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,
-        @Nullable Map<KeyCacheObject, CacheObject> putMap,
-        @Nullable Collection<KeyCacheObject> rmvKeys,
+        @Nullable List<CacheObject> writeVals,
+        @Nullable Map<Object, Object> putMap,
+        @Nullable Collection<Object> rmvKeys,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable CachePartialUpdateCheckedException err,
         UUID subjId,
@@ -1361,8 +1375,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             if (putMap != null) {
                 try {
-                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<CacheObject, IgniteBiTuple<CacheObject, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<CacheObject, GridCacheVersion> apply(CacheObject v) {
+                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
+                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
                             return F.t(v, ver);
                         }
                     }));
@@ -1405,7 +1419,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             try {
                 // We are holding java-level locks on entries at this point.
-                CacheObject writeVal = op == UPDATE ? putMap.get(entry.key()) : null;
+                CacheObject writeVal = op == UPDATE ? writeVals.get(i) : null;
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 

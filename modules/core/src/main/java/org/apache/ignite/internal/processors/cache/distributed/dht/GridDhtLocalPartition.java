@@ -502,7 +502,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                     cctx.swap().remove(key);
 
                     if (isLocStore)
-                        cctx.store().removeFromStore(null, key);
+                        cctx.store().removeFromStore(null, key.value(cctx.cacheObjectContext(), false));
                 }
             }
         }

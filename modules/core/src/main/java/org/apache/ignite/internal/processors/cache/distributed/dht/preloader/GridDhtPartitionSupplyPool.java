@@ -274,7 +274,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                     try {
                         if (cctx.isSwapOrOffheapEnabled()) {
-                            swapLsnr = new GridCacheEntryInfoCollectSwapListener(log, cctx);
+                            swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                             cctx.swap().addOffHeapListener(part, swapLsnr);
                             cctx.swap().addSwapListener(part, swapLsnr);

@@ -254,7 +254,9 @@ public abstract class GridCacheMessage implements Message {
             info.marshal(ctx);
 
             if (ctx.deploymentEnabled()) {
-                prepareObject(info.key().value(ctx.cacheObjectContext(), false), ctx.shared());
+                if (info.key() != null)
+                    prepareObject(info.key().value(ctx.cacheObjectContext(), false), ctx.shared());
+
                 prepareObject(CU.value(info.value(), ctx, false), ctx.shared());
             }
         }

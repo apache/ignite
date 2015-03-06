@@ -33,16 +33,11 @@ public class GridCacheEntryInfoCollectSwapListener implements GridCacheSwapListe
     /** */
     private final IgniteLogger log;
 
-    /** */
-    private final GridCacheContext ctx;
-
     /**
      * @param log Logger.
-     * @param ctx Context.
      */
-    public GridCacheEntryInfoCollectSwapListener(IgniteLogger log, GridCacheContext ctx) {
+    public GridCacheEntryInfoCollectSwapListener(IgniteLogger log) {
         this.log = log;
-        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -50,37 +45,21 @@ public class GridCacheEntryInfoCollectSwapListener implements GridCacheSwapListe
         KeyCacheObject key,
         GridCacheSwapEntry swapEntry)
     {
-// TODO IGNITE-51.
-//        try {
-//            if (log.isDebugEnabled())
-//                log.debug("Received unswapped event for key: " + key);
-//
-//            assert key != null;
-//            assert swapEntry != null;
-//
-//            GridCacheEntryInfo info = new GridCacheEntryInfo();
-//
-//            info.keyBytes(keyBytes);
-//            info.ttl(swapEntry.ttl());
-//            info.expireTime(swapEntry.expireTime());
-//            info.version(swapEntry.version());
-//
-//            if (!swapEntry.valueIsByteArray()) {
-//                boolean convertPortable = ctx.portableEnabled() && ctx.offheapTiered();
-//
-//                if (convertPortable)
-//                    info.valueBytes(ctx.convertPortableBytes(swapEntry.valueBytes()));
-//                else
-//                    info.valueBytes(swapEntry.valueBytes());
-//            }
-//            else
-//                swapEntry.value(swapEntry.value());
-//
-//            swappedEntries.put(key, info);
-//        }
-//        catch (IgniteCheckedException e) {
-//            U.error(log, "Failed to process unswapped entry", e);
-//        }
+        if (log.isDebugEnabled())
+            log.debug("Received unswapped event for key: " + key);
+
+        assert key != null;
+        assert swapEntry != null;
+
+        GridCacheEntryInfo info = new GridCacheEntryInfo();
+
+        info.key(key);
+        info.ttl(swapEntry.ttl());
+        info.expireTime(swapEntry.expireTime());
+        info.version(swapEntry.version());
+        info.value(swapEntry.value());
+
+        swappedEntries.put(key, info);
     }
 
     /**

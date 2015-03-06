@@ -488,8 +488,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
-                    Map<KeyCacheObject, IgniteBiTuple<CacheObject, GridCacheVersion>> putMap = null;
-                    List<KeyCacheObject> rmvCol = null;
+                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
+                    List<Object> rmvCol = null;
                     GridCacheStoreManager writeStore = null;
 
                     boolean skipNear = near() && store.writeToStoreFromDht();
@@ -549,7 +549,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (putMap == null)
                                 putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                            putMap.put(key, F.t(val, ver));
+                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
 
                             writeStore = cacheCtx.store();
                         }
@@ -576,10 +576,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx,
-                                        key,
-                                        e.cached().rawGetOrUnmarshal(true)));
+                                IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -588,7 +586,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (rmvCol == null)
                                 rmvCol = new ArrayList<>();
 
-                            rmvCol.add(key);
+                            rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
 
                             writeStore = cacheCtx.store();
                         }
@@ -2481,7 +2479,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (res != null) {
                 if (key0 == null)
                     key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
-                
+
                 ret.addEntryProcessResult(key0, new CacheInvokeResult<>(res));
             }
         }

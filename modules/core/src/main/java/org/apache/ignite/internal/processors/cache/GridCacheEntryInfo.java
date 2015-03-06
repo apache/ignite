@@ -38,7 +38,7 @@ public class GridCacheEntryInfo implements Externalizable, Message {
     @GridToStringInclude
     private KeyCacheObject key;
 
-    /** */
+    /** Key bytes, set when entry is read from swap and there is no key instance. */
     private byte[] keyBytes;
 
     /** Cache ID. */
@@ -90,6 +90,13 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      */
     public void keyBytes(byte[] bytes) {
         this.keyBytes = bytes;
+    }
+
+    /**
+     * @return Key bytes.
+     */
+    public byte[] keyBytes() {
+        return keyBytes;
     }
 
     /**
