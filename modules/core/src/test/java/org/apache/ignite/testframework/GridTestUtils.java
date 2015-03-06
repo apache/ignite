@@ -116,7 +116,7 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
