@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -26,14 +27,26 @@ import org.jetbrains.annotations.*;
 import java.net.*;
 
 /**
- * Internal API extension for {@link org.apache.ignite.IgniteFs}.
+ * Internal API extension for {@link org.apache.ignite.IgniteFileSystem}.
  */
-public interface IgfsEx extends IgniteFs {
+public interface IgfsEx extends IgniteFileSystem {
+    /** File property: user name. */
+    public static final String PROP_USER_NAME = "usrName";
+
+    /** File property: group name. */
+    public static final String PROP_GROUP_NAME = "grpName";
+
+    /** File property: permission. */
+    public static final String PROP_PERMISSION = "permission";
+
+    /** File property: prefer writes to local node. */
+    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
+
     /** Property name for path to Hadoop configuration. */
-    String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
+    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
 
     /** Property name for URI of file system. */
-    String SECONDARY_FS_URI = "SECONDARY_FS_URI";
+    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
 
     /**
      * Stops IGFS cleaning all used resources.
@@ -146,4 +159,11 @@ public interface IgfsEx extends IgniteFs {
      * @return {@code True} if proxy.
      */
     public boolean isProxy(URI path);
+
+    /**
+     * Return the given IGFS as a secondary file system.
+     *
+     * @return Secondary file system wrapper.
+     */
+    public IgfsSecondaryFileSystem asSecondary();
 }

@@ -453,8 +453,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -475,16 +474,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param attrs Current attributes.
      * @param name  New attribute name.
      * @param val New attribute value.
      * @throws IgniteCheckedException If duplicated SPI name found.
      */
-    private void add(Map<String, Object> attrs, String name, @Nullable Serializable val) throws IgniteCheckedException {
-        assert attrs != null;
+    private void add(String name, @Nullable Serializable val) throws IgniteCheckedException {
         assert name != null;
 
-        if (attrs.put(name, val) != null) {
+        if (ctx.addNodeAttribute(name, val) != null) {
             if (name.endsWith(ATTR_SPI_CLASS))
                 // User defined duplicated names for the different SPIs.
                 throw new IgniteCheckedException("Failed to set SPI attribute. Duplicated SPI name found: " +
@@ -659,8 +656,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -676,7 +671,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 igfsExecSvc,
                 restExecSvc);
 
-            startProcessor(ctx, new ClusterProcessor(ctx), attrs);
+            startProcessor(new ClusterProcessor(ctx));
+
+            fillNodeAttributes();
 
             U.onGridStart();
 
@@ -688,7 +685,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             scheduler = new IgniteSchedulerImpl(ctx);
 
-            startProcessor(ctx, rsrcProc, attrs);
+            startProcessor(rsrcProc);
 
             // Inject resources into lifecycle beans.
             if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
@@ -704,71 +701,71 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
+            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
+            startProcessor(new IgnitePluginProcessor(ctx, cfg));
 
             // Off-heap processor has no dependencies.
-            startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
+            startProcessor(new GridOffHeapProcessor(ctx));
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.
-            startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
+            startProcessor(new GridClosureProcessor(ctx));
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridPortProcessor(ctx), attrs);
-            startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
+            startProcessor(new GridPortProcessor(ctx));
+            startProcessor(new GridJobMetricsProcessor(ctx));
 
             // Timeout processor needs to be started before managers,
             // as managers may depend on it.
-            startProcessor(ctx, new GridTimeoutProcessor(ctx), attrs);
+            startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx), attrs);
+            startProcessor(createComponent(GridSecurityProcessor.class, ctx));
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, new GridIoManager(ctx), attrs);
-            startManager(ctx, new GridCheckpointManager(ctx), attrs);
+            startManager(new GridIoManager(ctx));
+            startManager(new GridCheckpointManager(ctx));
 
-            startManager(ctx, new GridEventStorageManager(ctx), attrs);
-            startManager(ctx, new GridDeploymentManager(ctx), attrs);
-            startManager(ctx, new GridLoadBalancerManager(ctx), attrs);
-            startManager(ctx, new GridFailoverManager(ctx), attrs);
-            startManager(ctx, new GridCollisionManager(ctx), attrs);
-            startManager(ctx, new GridSwapSpaceManager(ctx), attrs);
-            startManager(ctx, new GridIndexingManager(ctx), attrs);
+            startManager(new GridEventStorageManager(ctx));
+            startManager(new GridDeploymentManager(ctx));
+            startManager(new GridLoadBalancerManager(ctx));
+            startManager(new GridFailoverManager(ctx));
+            startManager(new GridCollisionManager(ctx));
+            startManager(new GridSwapSpaceManager(ctx));
+            startManager(new GridIndexingManager(ctx));
 
-            ackSecurity(ctx);
+            ackSecurity();
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
-            startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
-            startProcessor(ctx, new GridQueryProcessor(ctx), attrs);
-            startProcessor(ctx, new GridCacheProcessor(ctx), attrs);
-            startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
-            startProcessor(ctx, new GridJobProcessor(ctx), attrs);
-            startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-            startProcessor(ctx, new GridRestProcessor(ctx), attrs);
-            startProcessor(ctx, new IgniteDataStreamerProcessor(ctx), attrs);
-            startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())), attrs);
-            startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
+            startProcessor(new GridClockSyncProcessor(ctx));
+            startProcessor(new GridAffinityProcessor(ctx));
+            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+            startProcessor(createComponent(GridPortableProcessor.class, ctx));
+            startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new GridCacheProcessor(ctx));
+            startProcessor(new GridTaskSessionProcessor(ctx));
+            startProcessor(new GridJobProcessor(ctx));
+            startProcessor(new GridTaskProcessor(ctx));
+            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+            startProcessor(new GridRestProcessor(ctx));
+            startProcessor(new GridDataLoaderProcessor(ctx));
+            startProcessor(new GridStreamProcessor(ctx));
+            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor(new GridContinuousProcessor(ctx));
+            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
-            startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
-            startProcessor(ctx, new DataStructuresProcessor(ctx), attrs);
+                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
+            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor(new DataStructuresProcessor(ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
                 ctx.add(new GridPluginComponent(provider));
 
-                provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
+                provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
 
             gw.writeLock();
@@ -777,7 +774,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(ctx, new GridDiscoveryManager(ctx), attrs);
+                startManager(new GridDiscoveryManager(ctx));
             }
             finally {
                 gw.writeUnlock();
@@ -787,7 +784,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkPhysicalRam();
 
             // Suggest configuration optimizations.
-            suggestOptimizations(ctx, cfg);
+            suggestOptimizations(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -805,7 +802,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                comp.onKernalStart();
+                if (!skipDaemon(comp))
+                    comp.onKernalStart();
             }
 
             // Register MBeans.
@@ -882,12 +880,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private long lastCompletedCnt;
 
                 @Override protected void safeRun() {
-                    ExecutorService e = execSvc;
-
-                    if (!(e instanceof ThreadPoolExecutor))
+                    if (!(execSvc instanceof ThreadPoolExecutor))
                         return;
 
-                    ThreadPoolExecutor exec = (ThreadPoolExecutor)e;
+                    ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
                     long completedCnt = exec.getCompletedTaskCount();
 
@@ -949,10 +945,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         int pubPoolIdleThreads = 0;
                         int pubPoolQSize = 0;
 
-                        ExecutorService pubExec = execSvc;
-
-                        if (pubExec instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
+                        if (execSvc instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
                             int poolSize = exec.getPoolSize();
 
@@ -965,10 +959,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         int sysPoolIdleThreads = 0;
                         int sysPoolQSize = 0;
 
-                        ExecutorService sysExec = sysExecSvc;
-
-                        if (sysExec instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
+                        if (sysExecSvc instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
 
                             int poolSize = exec.getPoolSize();
 
@@ -1071,10 +1063,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Context.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridKernalContext ctx, IgniteConfiguration cfg) {
+    private void suggestOptimizations(IgniteConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
@@ -1100,25 +1091,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates attributes map and fills it in.
      *
-     * @param cfg Grid configuration.
-     * @param build Build string.
-     * @return Map of all node attributes.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private Map<String, Object> createNodeAttributes(IgniteConfiguration cfg, String build) throws IgniteCheckedException {
-        Map<String, Object> attrs = new HashMap<>();
-
+    private void fillNodeAttributes() throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
             // Stick all environment settings into node attributes.
-            attrs.putAll(F.view(System.getenv(), new P1<String>() {
-                @Override public boolean apply(String name) {
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name);
-                }
-            }));
+            for (Map.Entry<String, String> sysEntry : System.getenv().entrySet()) {
+                String name = sysEntry.getKey();
+
+                if (incProps == null || U.containsStringArray(incProps, name, true) ||
+                    U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
+                    ctx.addNodeAttribute(name, sysEntry.getValue());
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Added environment properties to node attributes.");
@@ -1139,13 +1126,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         U.isVisorRequiredProperty(name);
                 }
             }).entrySet()) {
-                Object val = attrs.get(e.getKey());
+                String key = (String)e.getKey();
+
+                Object val = ctx.nodeAttribute(key);
 
                 if (val != null && !val.equals(e.getValue()))
-                    U.warn(log, "System property will override environment variable with the same name: "
-                        + e.getKey());
+                    U.warn(log, "System property will override environment variable with the same name: " + key);
 
-                attrs.put((String)e.getKey(), e.getValue());
+                ctx.addNodeAttribute(key, e.getValue());
             }
 
             if (log.isDebugEnabled())
@@ -1173,23 +1161,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
-        add(attrs, ATTR_IPS, (ips.isEmpty() ? "" : ips));
-        add(attrs, ATTR_MACS, (macs.isEmpty() ? "" : macs));
+        add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
+        add(ATTR_MACS, (macs.isEmpty() ? "" : macs));
 
         // Stick in some system level attributes
-        add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, VER_STR);
-        add(attrs, ATTR_BUILD_DATE, build);
-        add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
-        add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
-        add(attrs, ATTR_USER_NAME, System.getProperty("user.name"));
-        add(attrs, ATTR_GRID_NAME, gridName);
+        add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
+        add(ATTR_BUILD_VER, VER_STR);
+        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
+        add(ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
+        add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
+        add(ATTR_USER_NAME, System.getProperty("user.name"));
+        add(ATTR_GRID_NAME, gridName);
 
-        add(attrs, ATTR_PEER_CLASSLOADING, cfg.isPeerClassLoadingEnabled());
-        add(attrs, ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
-        add(attrs, ATTR_LANG_RUNTIME, getLanguage());
+        add(ATTR_PEER_CLASSLOADING, cfg.isPeerClassLoadingEnabled());
+        add(ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
+        add(ATTR_LANG_RUNTIME, getLanguage());
 
-        add(attrs, ATTR_JVM_PID, U.jvmPid());
+        add(ATTR_JVM_PID, U.jvmPid());
 
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
@@ -1203,11 +1191,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             jvmArgs.a(arg);
         }
         // Add it to attributes.
-        add(attrs, ATTR_JVM_ARGS, jvmArgs.toString());
+        add(ATTR_JVM_ARGS, jvmArgs.toString());
 
         // Check daemon system property and override configuration if it's set.
         if (isDaemon())
-            add(attrs, ATTR_DAEMON, "true");
+            add(ATTR_DAEMON, "true");
 
         // In case of the parsing error, JMX remote disabled or port not being set
         // node attribute won't be set.
@@ -1216,7 +1204,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (portStr != null)
                 try {
-                    add(attrs, ATTR_JMX_PORT, Integer.parseInt(portStr));
+                    add(ATTR_JMX_PORT, Integer.parseInt(portStr));
                 }
                 catch (NumberFormatException ignore) {
                     // No-op.
@@ -1224,49 +1212,46 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         // Whether restart is enabled and stick the attribute.
-        add(attrs, ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
+        add(ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
 
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
-            add(attrs, ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+            add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         // Stick in SPI versions and classes attributes.
-        addAttributes(attrs, cfg.getCollisionSpi());
-        addAttributes(attrs, cfg.getSwapSpaceSpi());
-        addAttributes(attrs, cfg.getDiscoverySpi());
-        addAttributes(attrs, cfg.getFailoverSpi());
-        addAttributes(attrs, cfg.getCommunicationSpi());
-        addAttributes(attrs, cfg.getEventStorageSpi());
-        addAttributes(attrs, cfg.getCheckpointSpi());
-        addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getDeploymentSpi());
+        addSpiAttributes(cfg.getCollisionSpi());
+        addSpiAttributes(cfg.getSwapSpaceSpi());
+        addSpiAttributes(cfg.getDiscoverySpi());
+        addSpiAttributes(cfg.getFailoverSpi());
+        addSpiAttributes(cfg.getCommunicationSpi());
+        addSpiAttributes(cfg.getEventStorageSpi());
+        addSpiAttributes(cfg.getCheckpointSpi());
+        addSpiAttributes(cfg.getLoadBalancingSpi());
+        addSpiAttributes(cfg.getDeploymentSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
             for (Map.Entry<String, ?> e : cfg.getUserAttributes().entrySet()) {
-                if (attrs.containsKey(e.getKey()))
+                if (ctx.hasNodeAttribute(e.getKey()))
                     U.warn(log, "User or internal attribute has the same name as environment or system " +
                         "property and will take precedence: " + e.getKey());
 
-                attrs.put(e.getKey(), e.getValue());
+                ctx.addNodeAttribute(e.getKey(), e.getValue());
             }
         }
-
-        return attrs;
     }
 
     /**
      * Add SPI version and class attributes into node attributes.
      *
-     * @param attrs Node attributes map to add SPI attributes to.
      * @param spiList Collection of SPIs to get attributes from.
      * @throws IgniteCheckedException Thrown if was unable to set up attribute.
      */
-    private void addAttributes(Map<String, Object> attrs, IgniteSpi... spiList) throws IgniteCheckedException {
+    private void addSpiAttributes(IgniteSpi... spiList) throws IgniteCheckedException {
         for (IgniteSpi spi : spiList) {
             Class<? extends IgniteSpi> spiCls = spi.getClass();
 
-            add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
+            add(U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
         }
     }
 
@@ -1383,27 +1368,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Kernal context.
      * @param mgr Manager to start.
-     * @param attrs SPI attributes to set.
      * @throws IgniteCheckedException Throw in case of any errors.
      */
-    private void startManager(GridKernalContextImpl ctx, GridManager mgr, Map<String, Object> attrs)
-        throws IgniteCheckedException {
-        mgr.addSpiAttributes(attrs);
-
-        // Set all node attributes into discovery manager,
-        // so they can be distributed to all nodes.
-        if (mgr instanceof GridDiscoveryManager)
-            ((GridDiscoveryManager)mgr).setNodeAttributes(attrs, VER);
-
-        // Add manager to registry before it starts to avoid
-        // cases when manager is started but registry does not
-        // have it yet.
+    private void startManager(GridManager mgr) throws IgniteCheckedException {
+        // Add manager to registry before it starts to avoid cases when manager is started
+        // but registry does not have it yet.
         ctx.add(mgr);
 
         try {
-            mgr.start();
+            if (!skipDaemon(mgr))
+                mgr.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
@@ -1411,19 +1386,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param ctx Kernal context.
      * @param proc Processor to start.
-     * @param attrs Attributes.
      * @throws IgniteCheckedException Thrown in case of any error.
      */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
-        throws IgniteCheckedException {
+    private void startProcessor(GridProcessor proc) throws IgniteCheckedException {
         ctx.add(proc);
 
         try {
-            proc.start();
-
-            proc.addAttributes(attrs);
+            if (!skipDaemon(proc))
+                proc.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
@@ -1433,10 +1404,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Add helper.
      *
-     * @param ctx Context.
      * @param helper Helper.
      */
-    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+    private void addHelper(Object helper) {
         ctx.addHelper(helper);
     }
 
@@ -1733,7 +1703,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.onKernalStop(cancel);
+                    if (!skipDaemon(comp))
+                        comp.onKernalStop(cancel);
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -1760,7 +1731,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     if (gw.tryWriteLock(10))
                         break;
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     // Preserve interrupt status & ignore.
                     // Note that interrupted flag is cleared.
                     interrupted = true;
@@ -1807,10 +1778,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.stop(cancel);
+                    if (!skipDaemon(comp)) {
+                        comp.stop(cancel);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Component stopped: " + comp);
+                        if (log.isDebugEnabled())
+                            log.debug("Component stopped: " + comp);
+                    }
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -2075,10 +2048,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * Prints security status.
-     *
-     * @param ctx Kernal context.
      */
-    private void ackSecurity(GridKernalContext ctx) {
+    private void ackSecurity() {
         assert log != null;
 
         if (log.isInfoEnabled())
@@ -2185,7 +2156,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
-            return compute().<String, String>execute(taskName, arg);
+            return compute().execute(taskName, arg);
         }
         catch (IgniteException e) {
             throw U.jmException(e);
@@ -2349,11 +2320,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs fileSystem(String name) {
+    @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
         try{
-            IgniteFs fs = ctx.igfs().igfs(name);
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
                 throw new IllegalArgumentException("IGFS is not configured: " + name);
@@ -2366,7 +2337,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
         guard();
 
         try {
@@ -2378,7 +2349,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> fileSystems() {
+    @Override public Collection<IgniteFileSystem> fileSystems() {
         guard();
 
         try {
@@ -2390,7 +2361,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
+    @Override public Hadoop hadoop() {
         guard();
 
         try {
@@ -2699,6 +2670,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
+    }
+
+    /**
+     * @param comp Grid component.
+     * @return {@code true} if node running in daemon mode and component marked by {@code SkipDaemon} annotation.
+     */
+    private boolean skipDaemon(GridComponent comp) {
+        return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
     }
 
     /** {@inheritDoc} */

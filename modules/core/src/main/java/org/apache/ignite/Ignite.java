@@ -43,7 +43,7 @@ import java.util.concurrent.*;
  * <ul>
  * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
- * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
+ * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
@@ -213,7 +213,7 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName);
 
     /**
-     * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
+     * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
      * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
@@ -222,15 +222,16 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name IGFS name.
      * @return IGFS instance.
+     * @throws IllegalArgumentException If IGFS with such name is not configured.
      */
-    public IgniteFs fileSystem(String name);
+    public IgniteFileSystem fileSystem(String name);
 
     /**
-     * Gets all instances of the grid file systems.
+     * Gets all instances of IGFS (Ignite In-Memory File System).
      *
-     * @return Collection of grid file systems instances.
+     * @return Collection of IGFS instances.
      */
-    public Collection<IgniteFs> fileSystems();
+    public Collection<IgniteFileSystem> fileSystems();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then

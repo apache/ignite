@@ -410,7 +410,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, TransactionRollbackException.class, null);
+        }, CacheWriterException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -449,7 +449,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, CacheWriterException.class, null);
 
         assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionRollbackException);
 
@@ -498,7 +498,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, TransactionRollbackException.class, null);
+        }, CacheWriterException.class, null);
 
         for (Integer key : m.keySet())
             checkValue(key, putBefore);
@@ -532,7 +532,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, TransactionRollbackException.class, null);
+        }, CacheWriterException.class, null);
 
         checkValue(key, putBefore);
     }

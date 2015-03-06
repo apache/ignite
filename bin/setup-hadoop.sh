@@ -34,9 +34,10 @@ fi
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
-    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";IGNITE_HOME_TMP="$(dirname "${IGNITE_HOME_TMP}")" # Will be removed in release.
-    else IGNITE_HOME_TMP=${IGNITE_HOME};
+if [ "${IGNITE_HOME}" = "" ]; then 
+    IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")"
+else 
+    IGNITE_HOME_TMP=${IGNITE_HOME}
 fi
 
 #
@@ -54,7 +55,7 @@ setIgniteHome
 #
 # Set utility environment.
 #
-export MAIN_CLASS=org.apache.ignite.internal.processors.hadoop.GridHadoopSetup
+export MAIN_CLASS=org.apache.ignite.internal.processors.hadoop.HadoopSetup
 
 #
 # Start utility.
