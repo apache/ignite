@@ -21,6 +21,8 @@ import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
+import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -28,10 +30,10 @@ import java.util.concurrent.*;
  */
 public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** */
-    private static final String[] CLS_NAMES_FILES = {
-        "org/apache/ignite/internal/classnames.properties",
-        "org/apache/ignite/internal/classnames-jdk.properties"
-    };
+    private static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
+
+    /** */
+    private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
 
     /** */
     protected final ConcurrentMap<Integer, String> clsNameById = new ConcurrentHashMap8<>();
@@ -43,23 +45,36 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
-            for (String file : CLS_NAMES_FILES) {
-                BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(file)));
+            Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
 
-                String line;
+            while (urls.hasMoreElements())
+                processResource(urls.nextElement());
 
-                while ((line = rdr.readLine()) != null) {
-                    if (line.isEmpty() || line.startsWith("#"))
-                        continue;
-
-                    String clsName = line.trim();
-
-                    clsNameById.put(clsName.hashCode(), clsName);
-                }
-            }
+            processResource(ldr.getResource(JDK_CLS_NAMES_FILE));
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
+        }
+    }
+
+    /**
+     * @param url Resource URL.
+     * @throws IOException In case of error.
+     */
+    private void processResource(URL url) throws IOException {
+        try (InputStream in = url.openStream()) {
+            BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
+
+            String line;
+
+            while ((line = rdr.readLine()) != null) {
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+
+                String clsName = line.trim();
+
+                clsNameById.put(clsName.hashCode(), clsName);
+            }
         }
     }
 }

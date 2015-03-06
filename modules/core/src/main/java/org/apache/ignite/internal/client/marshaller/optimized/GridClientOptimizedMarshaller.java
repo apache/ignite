@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
@@ -112,7 +111,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
             assert clsName != null : id;
 
-            return U.forName(clsName, ldr);
+            return Class.forName(clsName, false, ldr);
         }
     }
 }

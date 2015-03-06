@@ -266,9 +266,6 @@ public abstract class IgniteUtils {
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
 
-    /** Primitive class map. */
-    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
-
     /** Boxed class map. */
     private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
 
@@ -397,15 +394,6 @@ public abstract class IgniteUtils {
         IgniteUtils.jvmImplName = jvmImplName;
         IgniteUtils.javaRtName = javaRtName;
         IgniteUtils.javaRtVer = javaRtVer;
-
-        primitiveMap.put("byte", byte.class);
-        primitiveMap.put("short", short.class);
-        primitiveMap.put("int", int.class);
-        primitiveMap.put("long", long.class);
-        primitiveMap.put("float", float.class);
-        primitiveMap.put("double", double.class);
-        primitiveMap.put("char", char.class);
-        primitiveMap.put("boolean", boolean.class);
 
         boxedClsMap.put(byte.class, Byte.class);
         boxedClsMap.put(short.class, Short.class);
@@ -7895,24 +7883,6 @@ public abstract class IgniteUtils {
         Class<?> boxed = boxedClsMap.get(cls);
 
         return boxed != null ? boxed : cls;
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
-        throws ClassNotFoundException {
-        if (clsName == null)
-            return null;
-
-        Class<?> cls = primitiveMap.get(clsName);
-
-        return cls != null ? cls : Class.forName(clsName, true, ldr);
     }
 
     /**

@@ -17,52 +17,33 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.internal.*;
 import org.jdk8.backport.*;
 
-import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Test marshaller context.
  */
-public class MarshallerContextTestImpl implements MarshallerContext {
-    /** */
-    private static final String[] CLS_NAMES_FILES = {
-        "org/apache/ignite/internal/classnames.properties",
-        "org/apache/ignite/internal/classnames-jdk.properties"
-    };
-
+public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     /** */
     private final ConcurrentMap<Integer, Class> map = new ConcurrentHashMap8<>();
 
     /**
      */
     public MarshallerContextTestImpl() {
-        try {
-            ClassLoader ldr = getClass().getClassLoader();
+        super();
 
-            for (String file : CLS_NAMES_FILES) {
-                BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(file)));
+        ClassLoader ldr = getClass().getClassLoader();
 
-                String line;
-
-                while ((line = rdr.readLine()) != null) {
-                    if (line.isEmpty() || line.startsWith("#"))
-                        continue;
-
-                    try {
-                        Class cls = Class.forName(line.trim(), false, ldr);
-
-                        map.put(cls.getName().hashCode(), cls);
-                    }
-                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                        // No-op.
-                    }
-                }
+        for (Map.Entry<Integer, String> e : clsNameById.entrySet()) {
+            try {
+                map.put(e.getKey(), Class.forName(e.getValue(), true, ldr));
             }
-        }
-        catch (IOException e) {
-            throw new IllegalStateException("Failed to initialize marshaller context.", e);
+            catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                // No-op.
+            }
         }
     }
 

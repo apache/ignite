@@ -877,7 +877,7 @@ class OptimizedClassDescriptor {
                 return in.readBooleanArray();
 
             case TYPE_OBJ_ARR:
-                return in.readArray(U.forName(in.readUTF(), in.classLoader()));
+                return in.readArray(Class.forName(in.readUTF(), false, in.classLoader()));
 
             case TYPE_STR:
                 return in.readString();

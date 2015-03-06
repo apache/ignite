@@ -30,10 +30,10 @@ import java.util.jar.*;
  */
 public class ClassesGenerator {
     /** */
-    private static final String DFLT_BASE_PATH = U.getIgniteHome() + "/modules/core/src/main/java";
+    private static final String FILE_PATH = "META-INF/classnames.properties";
 
     /** */
-    private static final String FILE_PATH = "org/apache/ignite/internal/classnames.properties";
+    private static final String DFLT_BASE_PATH = U.getIgniteHome() + "/modules/core/src/main/resources";
 
     /** */
     private static final String HEADER =
@@ -55,7 +55,7 @@ public class ClassesGenerator {
         "#";
 
     /** */
-    private static final String[] INCLUDED_PACKAGES = {
+    private static final String[] PACKAGES = {
         "org.apache.ignite",
         "org.jdk8.backport",
         "org.pcollections",
@@ -69,26 +69,9 @@ public class ClassesGenerator {
     public static void main(String[] args) throws Exception {
         String basePath = args.length > 0 ? args[0] : DFLT_BASE_PATH;
 
-        File file = new File(basePath, FILE_PATH);
+        ClassesGenerator gen = new ClassesGenerator(basePath, HEADER, PACKAGES);
 
-        ClassesGenerator gen = new ClassesGenerator();
-
-        write(file, gen.generate());
-    }
-
-    /**
-     * @param file File.
-     * @param classes Classes.
-     * @throws Exception In case of error.
-     */
-    private static void write(File file, Collection<Class> classes) throws Exception {
-        PrintStream out = new PrintStream(file);
-
-        out.println(HEADER);
-        out.println();
-
-        for (Class cls : classes)
-            out.println(cls.getName());
+        gen.generate();
     }
 
     /** */
@@ -104,11 +87,30 @@ public class ClassesGenerator {
     /** */
     private final Collection<String> errs = new ArrayList<>();
 
+    /** */
+    private final String basePath;
+
+    /** */
+    private final String header;
+
+    /** */
+    private final String[] packages;
+
+    /**
+     * @param basePath Base file path.
+     * @param header Header.
+     * @param packages Included packages.
+     */
+    public ClassesGenerator(String basePath, String header, String[] packages) {
+        this.basePath = basePath;
+        this.header = header;
+        this.packages = packages;
+    }
+
     /**
      * @throws Exception In case of error.
-     * @return Classes.
      */
-    private Collection<Class> generate() throws Exception {
+    public void generate() throws Exception {
         System.out.println("Generating classnames.properties...");
 
         for (URL url : ldr.getURLs())
@@ -123,7 +125,13 @@ public class ClassesGenerator {
             throw new Exception(sb.toString().trim());
         }
 
-        return classes;
+        PrintStream out = new PrintStream(new File(basePath, FILE_PATH));
+
+        out.println(header);
+        out.println();
+
+        for (Class cls : classes)
+            out.println(cls.getName());
     }
 
     /**
@@ -183,7 +191,7 @@ public class ClassesGenerator {
 
         boolean included = false;
 
-        for (String pkg : INCLUDED_PACKAGES) {
+        for (String pkg : packages) {
             if (clsName.startsWith(pkg)) {
                 included = true;
 
