@@ -79,7 +79,7 @@ public class MarshallerContextTestImpl implements MarshallerContext {
     @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
         Class cls = map.get(id);
 
-        assert cls != null;
+        assert cls != null : id;
 
         return cls;
     }
