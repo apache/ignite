@@ -167,6 +167,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        ignite1 = null;
+        ignite2 = null;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,15 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.product.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.messaging.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Basic test suite.
@@ -31,39 +39,39 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
-//        suite.addTest(IgniteLangSelfTestSuite.suite());
-//        suite.addTest(IgniteUtilSelfTestSuite.suite());
-//        suite.addTest(IgniteMarshallerSelfTestSuite.suite());
-//        suite.addTest(IgniteKernalSelfTestSuite.suite());
-//        suite.addTest(IgniteStartUpTestSuite.suite());
-//        suite.addTest(IgniteExternalizableSelfTestSuite.suite());
-//        suite.addTest(IgniteP2PSelfTestSuite.suite());
-//
-//        suite.addTest(new TestSuite(GridSelfTest.class));
-//        suite.addTest(new TestSuite(GridProjectionSelfTest.class));
-//        suite.addTest(new TestSuite(GridMessagingSelfTest.class));
-//        suite.addTest(new TestSuite(GridMessagingNoPeerClassLoadingSelfTest.class));
-//
-//        if (U.isLinux() || U.isMacOs())
-//            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
-//
-//        suite.addTestSuite(GridReleaseTypeSelfTest.class);
-//        suite.addTestSuite(GridProductVersionSelfTest.class);
+        suite.addTest(IgniteLangSelfTestSuite.suite());
+        suite.addTest(IgniteUtilSelfTestSuite.suite());
+        suite.addTest(IgniteMarshallerSelfTestSuite.suite());
+        suite.addTest(IgniteKernalSelfTestSuite.suite());
+        suite.addTest(IgniteStartUpTestSuite.suite());
+        suite.addTest(IgniteExternalizableSelfTestSuite.suite());
+        suite.addTest(IgniteP2PSelfTestSuite.suite());
+
+        suite.addTest(new TestSuite(GridSelfTest.class));
+        suite.addTest(new TestSuite(GridProjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridMessagingSelfTest.class));
+        suite.addTest(new TestSuite(GridMessagingNoPeerClassLoadingSelfTest.class));
+
+        if (U.isLinux() || U.isMacOs())
+            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
+
+        suite.addTestSuite(GridReleaseTypeSelfTest.class);
+        suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
-//        suite.addTestSuite(GridClosureProcessorSelfTest.class);
-//        suite.addTestSuite(GridStartStopSelfTest.class);
-//        suite.addTestSuite(GridProjectionForCachesSelfTest.class);
-//        suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
-//        suite.addTestSuite(GridLifecycleBeanSelfTest.class);
-//        suite.addTestSuite(GridStopWithCancelSelfTest.class);
-//        suite.addTestSuite(GridReduceSelfTest.class);
-//        suite.addTestSuite(GridEventConsumeSelfTest.class);
-//        suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
-//        suite.addTestSuite(GridLifecycleAwareSelfTest.class);
-//        suite.addTestSuite(GridMessageListenSelfTest.class);
-//
-//        // Streamer.
-//        suite.addTest(IgniteStreamerSelfTestSuite.suite());
+        suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(GridStartStopSelfTest.class);
+        suite.addTestSuite(GridProjectionForCachesSelfTest.class);
+        suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
+        suite.addTestSuite(GridLifecycleBeanSelfTest.class);
+        suite.addTestSuite(GridStopWithCancelSelfTest.class);
+        suite.addTestSuite(GridReduceSelfTest.class);
+        suite.addTestSuite(GridEventConsumeSelfTest.class);
+        suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
+        suite.addTestSuite(GridLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridMessageListenSelfTest.class);
+
+        // Streamer.
+        suite.addTest(IgniteStreamerSelfTestSuite.suite());
 
         return suite;
     }
