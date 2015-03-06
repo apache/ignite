@@ -37,4 +37,9 @@ public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, 
      * @throws IgniteCheckedException If failed.
      */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+
+    /**
+     * @param locked Entry locked
+     */
+    public void entryLocked(boolean locked);
 }

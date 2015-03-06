@@ -2241,7 +2241,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicUpdateRequest req,
         GridNearAtomicUpdateResponse res) {
         try {
-            return ctx.isAll(entry, req.filter());
+            return ctx.isAllLocked(entry, req.filter());
         }
         catch (IgniteCheckedException e) {
             res.addFailedKey(entry.key(), e);

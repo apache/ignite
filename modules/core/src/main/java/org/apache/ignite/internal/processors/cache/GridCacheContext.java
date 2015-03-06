@@ -1092,6 +1092,39 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param e Entry.
+     * @param p Predicates.
+     * @return {@code True} if predicates passed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean isAllLocked(GridCacheEntryEx e, CacheEntryPredicate[] p) throws IgniteCheckedException {
+        if (p == null || p.length == 0)
+            return true;
+
+        try {
+            for (CacheEntryPredicate p0 : p) {
+                if (p0 != null) {
+                    p0.entryLocked(true);
+
+                    if (!p0.apply(e))
+                        return false;
+                }
+            }
+        }
+        catch (RuntimeException ex) {
+            throw U.cast(ex);
+        }
+        finally {
+            for (CacheEntryPredicate p0 : p) {
+                if (p0 != null)
+                    p0.entryLocked(false);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Forces LOCAL flag.
      *
      * @return Previously forced flags.

@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  *
  */
-public class CacheEntryPredicateContainsValue implements CacheEntryPredicate {
+public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter {
     /** */
     @GridToStringInclude
     private CacheObject val;
@@ -52,7 +52,7 @@ public class CacheEntryPredicateContainsValue implements CacheEntryPredicate {
 
     /** {@inheritDoc} */
     @Override public boolean apply(GridCacheEntryEx e) {
-        CacheObject val = e.peekVisibleValue();
+        CacheObject val = peekVisibleValue(e);
 
         return F.eq(this.val.value(e.context().cacheObjectContext(), false),
             CU.value(val, e.context(), false));

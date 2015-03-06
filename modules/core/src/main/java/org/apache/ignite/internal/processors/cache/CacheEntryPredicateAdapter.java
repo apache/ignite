@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.nio.*;
 
@@ -26,6 +27,9 @@ import java.nio.*;
  *
  */
 public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
+    /** */
+    protected transient boolean locked;
+
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
@@ -34,6 +38,11 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void entryLocked(boolean locked) {
+        this.locked = locked;
     }
 
     /** {@inheritDoc} */
@@ -62,5 +71,18 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
         assert false : this;
 
         return false;
+    }
+
+    /**
+     * @param entry Entry.
+     * @return Value.
+     */
+    @Nullable protected CacheObject peekVisibleValue(GridCacheEntryEx entry) {
+        try {
+            return locked ? entry.rawGetOrUnmarshal(true) : entry.peekVisibleValue();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

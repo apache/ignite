@@ -1102,7 +1102,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 try {
                     try {
-                        if (!ctx.isAll(entry, filter)) {
+                        if (!ctx.isAllLocked(entry, filter)) {
                             if (log.isDebugEnabled())
                                 log.debug("Entry did not pass the filter (will skip write) [entry=" + entry +
                                     ", filter=" + Arrays.toString(filter) + ']');

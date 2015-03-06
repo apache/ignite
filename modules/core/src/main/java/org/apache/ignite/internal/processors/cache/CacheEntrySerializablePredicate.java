@@ -37,14 +37,14 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     private byte[] bytes;
 
     /**
-     *
+     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
      */
     public CacheEntrySerializablePredicate() {
         // No-op.
     }
 
     /**
-     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
+     * @param p Serializable predicate.
      */
     public CacheEntrySerializablePredicate(CacheEntryPredicate p) {
         assert p != null;
@@ -57,6 +57,13 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
      */
     public CacheEntryPredicate predicate() {
         return p;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void entryLocked(boolean locked) {
+        assert p != null;
+
+        p.entryLocked(locked);
     }
 
     /** {@inheritDoc} */
