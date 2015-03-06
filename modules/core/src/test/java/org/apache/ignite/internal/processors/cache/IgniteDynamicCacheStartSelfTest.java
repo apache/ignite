@@ -271,12 +271,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", grid(g).jcache(CACHE_NAME).get("1"));
 
             // Undeploy cache.
-            kernal.context().cache().dynamicStopCache(CACHE_NAME).get(); // TODO debug without get().
-
-            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            kernal.context().cache().dynamicStopCache(CACHE_NAME).get();
 
             startGrid(nodeCount() + 1);
 

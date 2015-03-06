@@ -667,6 +667,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
             GridCacheContext ctx = createCache(desc.cacheConfiguration());
 
+            ctx.dynamicDeploymentId(desc.deploymentId());
+
             sharedCtx.addCacheContext(ctx);
 
             GridCacheAdapter cache = ctx.cache();
@@ -1232,7 +1234,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.removeCacheContext(ctx);
 
-            assert req.deploymentId().equals(ctx.dynamicDeploymentId());
+            assert req.deploymentId().equals(ctx.dynamicDeploymentId()) : "Different deployment IDs [req=" + req +
+                ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
 
             onKernalStop(cache, true);
             stopCache(cache, true);
@@ -1335,11 +1338,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(dynamicCaches.size());
 
         for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
-            if (!desc.cancelled())
-                reqs.add(new DynamicCacheChangeRequest(desc.cacheConfiguration(), desc.nodeFilter()));
-        }
+            if (!desc.cancelled()) {
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
+                    desc.cacheConfiguration(),
+                    desc.nodeFilter());
 
-        U.debug(log, "Collected discovery data for cache: " + reqs.size());
+                req.deploymentId(desc.deploymentId());
+
+                reqs.add(req);
+            }
+        }
 
         return new DynamicCacheChangeBatch(reqs);
     }
@@ -1348,8 +1356,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         if (data instanceof DynamicCacheChangeBatch) {
             DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
-
-            U.debug(log, "Received discovery data: " + batch.requests());
 
             for (DynamicCacheChangeRequest req : batch.requests()) {
                 dynamicCaches.put(req.cacheName(), new DynamicCacheDescriptor(
@@ -1487,8 +1493,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param batch Change request batch.
      */
     private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
-        U.debug(log, "<><><>Received cache change request: " + batch.requests().size());
-
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.isStart()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -1534,8 +1538,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     return;
                 }
-
-                U.debug(log, "Cancelling descriptor: " + desc);
 
                 desc.onCancelled();
 
