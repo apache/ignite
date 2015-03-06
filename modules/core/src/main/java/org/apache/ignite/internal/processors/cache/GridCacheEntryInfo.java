@@ -63,6 +63,9 @@ public class GridCacheEntryInfo implements Message {
     @GridDirectTransient
     private boolean deleted;
 
+    /** */
+    private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
+
     /**
      * @return Cache ID.
      */
@@ -333,7 +336,8 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**
@@ -355,7 +359,7 @@ public class GridCacheEntryInfo implements Message {
         else
             size += key.valueBytes(cacheObjCtx).length;
 
-        return size;
+        return SIZE_OVERHEAD + size;
     }
 
     /**
