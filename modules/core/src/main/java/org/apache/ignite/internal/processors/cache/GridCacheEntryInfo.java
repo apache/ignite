@@ -24,13 +24,12 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
 import java.nio.*;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Externalizable, Message {
+public class GridCacheEntryInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -334,16 +333,13 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-// TODO IGNITE-51
-//        if (val == null && valBytes != null)
-//            val = ctx.marshaller().unmarshal(valBytes, ldr);
+        val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**
      * @return Marshalled size.
      */
     public int marshalledSize(GridCacheContext ctx) throws IgniteCheckedException {
-        // TODO IGNITE-51.
         int size = 0;
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
@@ -367,7 +363,6 @@ public class GridCacheEntryInfo implements Externalizable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
-        // TODO IGNITE-51: field 'remaining'.
         assert key != null ^ keyBytes != null;
 
         if (key != null)
@@ -375,6 +370,15 @@ public class GridCacheEntryInfo implements Externalizable, Message {
 
         if (val != null)
             val.prepareMarshal(ctx.cacheObjectContext());
+
+        if (expireTime == 0)
+            expireTime = -1;
+        else {
+            expireTime = expireTime - U.currentTimeMillis();
+
+            if (expireTime < 0)
+                expireTime = 0;
+        }
     }
 
     /**
@@ -399,92 +403,18 @@ public class GridCacheEntryInfo implements Externalizable, Message {
 
         if (val != null)
             val.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-// TODO IGNITE-51.
-//        out.writeInt(cacheId);
-//        out.writeBoolean(keyBytesSent);
-//        out.writeBoolean(valBytesSent);
-//
-//        if (keyBytesSent)
-//            IgniteByteUtils.writeByteArray(out, keyBytes);
-//        else
-//            out.writeObject(key);
-//
-//        if (valBytesSent)
-//            IgniteByteUtils.writeByteArray(out, valBytes);
-//        else {
-//            if (val != null && val instanceof byte[]) {
-//                out.writeBoolean(true);
-//
-//                IgniteByteUtils.writeByteArray(out, (byte[]) val);
-//            }
-//            else {
-//                out.writeBoolean(false);
-//
-//                out.writeObject(val);
-//            }
-//        }
-//
-//        out.writeLong(ttl);
-//
-//        long remaining;
-//
-//        // 0 means never expires.
-//        if (expireTime == 0)
-//            remaining = -1;
-//        else {
-//            remaining = expireTime - U.currentTimeMillis();
-//
-//            if (remaining < 0)
-//                remaining = 0;
-//        }
-//
-//        // Write remaining time.
-//        out.writeLong(remaining);
-//
-//        CU.writeVersion(out, ver);
-    }
+        long remaining = expireTime;
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-// TODO IGNITE-51.
-//        cacheId = in.readInt();
-//        keyBytesSent = in.readBoolean();
-//        valBytesSent = in.readBoolean();
-//
-//        if (keyBytesSent)
-//            keyBytes = IgniteByteUtils.readByteArray(in);
-//        else
-//            key = (K)in.readObject();
-//
-//        if (valBytesSent)
-//            valBytes = IgniteByteUtils.readByteArray(in);
-//        else
-//            val = in.readBoolean() ? (V) IgniteByteUtils.readByteArray(in) : (V)in.readObject();
-//
-//        ttl = in.readLong();
-//
-//        long remaining = in.readLong();
-//
-//        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
-//
-//        // Account for overflow.
-//        if (expireTime < 0)
-//            expireTime = 0;
-//
-//        ver = CU.readVersion(in);
+        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
+
+        // Account for overflow.
+        if (expireTime < 0)
+            expireTime = 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheEntryInfo.class, this);
-
-//        return S.toString(GridCacheEntryInfo.class, this,
-//            "isNull", val == null,
-//            "keyBytesSize", (keyBytes == null ? "null" : Integer.toString(keyBytes.length)),
-//            "valBytesSize", (valBytes == null ? "null" : Integer.toString(valBytes.length)));
     }
 }
