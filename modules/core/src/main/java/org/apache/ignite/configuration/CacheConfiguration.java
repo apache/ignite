@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,7 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import javax.cache.configuration.*;
+import javax.cache.expiry.ExpiryPolicy;
 import java.util.*;
 
 /**
@@ -329,13 +332,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param cfg Configuration to copy.
      */
-    public CacheConfiguration(CompleteConfiguration cfg) {
+    public CacheConfiguration(CompleteConfiguration<K, V> cfg) {
         super(cfg);
 
         if (!(cfg instanceof CacheConfiguration))
             return;
 
-        CacheConfiguration cc = (CacheConfiguration)cfg;
+        CacheConfiguration<K, V> cc = (CacheConfiguration<K, V>)cfg;
 
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
@@ -392,13 +395,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
+        typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
-        typeMeta = cc.getTypeMetadata();
     }
 
     /**
@@ -481,6 +484,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setDistributionMode(CacheDistributionMode distro) {
         this.distro = distro;
+    }
+
+    /**
+     * @return Near enabled flag.
+     */
+    public boolean isNearEnabled() {
+        return distro == CacheDistributionMode.NEAR_ONLY || distro == CacheDistributionMode.NEAR_PARTITIONED;
+    }
+
+    /**
+     * @param nearEnabled Near enabled flag.
+     */
+    public void setNearEnabled(boolean nearEnabled) {
+        distro = nearEnabled ? CacheDistributionMode.NEAR_PARTITIONED : CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /**
@@ -688,7 +705,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets eviction filter to specify which entries should not be evicted
      * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(javax.cache.Cache.Entry)} method
+     * If {@link CacheEvictionFilter#evictAllowed(Cache.Entry)} method
      * returns {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -718,8 +735,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link javax.cache.expiry.ExpiryPolicy} and should not be confused with entry
-     * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
+     * {@link ExpiryPolicy} and should not be confused with entry
+     * evictions based on configured {@link CacheEvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.
      */
@@ -1107,7 +1124,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
      * <p>
      * Note that this flag may be overridden for cache projection created with flag
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
+     * {@link CacheFlag#SKIP_SWAP}.
      *
      * @return {@code True} if swap storage is enabled.
      */
@@ -1343,7 +1360,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)}
+     * use {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1408,7 +1425,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
+     * is described in {@link CacheAffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
@@ -1418,7 +1435,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
+     * described in {@link CacheAffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
