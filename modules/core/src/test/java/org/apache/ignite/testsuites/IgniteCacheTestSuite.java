@@ -54,8 +54,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheEntryListenerTxLocalTest.class);
         suite.addTestSuite(IgniteCacheEntryListenerEagerTtlDisabledTest.class);
 
-        suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
-
         suite.addTestSuite(IgniteClientAffinityAssignmentSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
@@ -327,8 +325,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
         suite.addTestSuite(GridCacheReloadSelfTest.class);
 
-        // Full API.
-        suite.addTest(IgniteCacheFullApiSelfTestSuite.suite());
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 
         // Cache metrics.
