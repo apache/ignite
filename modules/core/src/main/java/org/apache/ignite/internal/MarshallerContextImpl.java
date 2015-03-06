@@ -47,8 +47,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** {@inheritDoc} */
     @Override public void registerClass(int id, Class cls) {
         if (!clsNameById.containsKey(id)) {
-            U.debug("REG: " + cls.getName());
-
             try {
                 if (cache == null)
                     U.awaitQuiet(latch);
