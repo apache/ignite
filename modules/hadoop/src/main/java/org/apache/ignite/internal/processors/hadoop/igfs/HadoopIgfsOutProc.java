@@ -465,7 +465,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
 
                     return (T)res.response();
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgfsException | IgniteCheckedException e) {
                     throw new GridClosureException(e);
                 }
             }
