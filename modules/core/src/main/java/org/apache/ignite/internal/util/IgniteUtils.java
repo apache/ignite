@@ -4544,8 +4544,8 @@ public abstract class IgniteUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                out.writeUTF(e.getKey());
-                out.writeUTF(e.getValue());
+                writeUTFStringNullable(out, e.getKey());
+                writeUTFStringNullable(out, e.getValue());
             }
         }
         else
@@ -4568,10 +4568,38 @@ public abstract class IgniteUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(in.readUTF(), in.readUTF());
+                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
 
             return map;
         }
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeUTF(val);
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTFStringNullable(DataInput in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
     }
 
     /**

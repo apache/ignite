@@ -53,9 +53,9 @@ public class HadoopSetup {
             " _/ // (_ /    // /  / / / _/   ",
             "/___/\\___/_/|_/___/ /_/ /___/  ",
             "                for Apache Hadoop        ",
-            "  ");
-
-        println("Version " + ACK_VER_STR);
+            " ",
+            "ver. " + ACK_VER_STR,
+            COPYRIGHT);
 
         configureHadoop();
     }
