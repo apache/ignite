@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
@@ -28,6 +27,12 @@ import java.io.*;
  *
  */
 public abstract class CacheObjectAdapter implements CacheObject, Externalizable {
+    /** */
+    public static final byte TYPE_REGULAR = 1;
+
+    /** */
+    public static final byte TYPE_BYTE_ARR = 2;
+
     /** */
     @GridToStringInclude
     @GridDirectTransient
@@ -42,6 +47,16 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      */
     protected boolean needCopy(CacheObjectContext ctx) {
         return ctx.copyOnGet() && val != null && !ctx.processor().immutable(val);
+    }
+
+    /**
+     * @return {@code True} if value is byte array.
+     */
+    protected abstract boolean byteArray();
+
+    /** {@inheritDoc} */
+    @Override public byte type() {
+        return byteArray() ? TYPE_BYTE_ARR : TYPE_REGULAR;
     }
 
     /** {@inheritDoc} */

@@ -239,10 +239,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         mxBean = new CacheMetricsMXBeanImpl(this);
 
-        IgfsConfiguration[] igfsCfgs = gridCfg.getIgfsConfiguration();
+        FileSystemConfiguration[] igfsCfgs = gridCfg.getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
-            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 if (F.eq(ctx.name(), igfsCfg.getDataCacheName())) {
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
@@ -652,7 +652,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
         return getAllAsync(
@@ -667,6 +667,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                 Map<K, V> kvMap = fut.get();
+
+                if (keys.size() != kvMap.size())
+                    return false;
 
                 for (Map.Entry<K, V> entry : kvMap.entrySet()) {
                     if (entry.getValue() == null)

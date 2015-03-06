@@ -35,6 +35,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -360,7 +361,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * Value object class.
      */
-    private static class ValueObject {
+    private static class ValueObject implements Serializable {
         /** Value. */
         @QuerySqlField
         private final int val;

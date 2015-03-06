@@ -488,8 +488,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
-                    Map<KeyCacheObject, IgniteBiTuple<CacheObject, GridCacheVersion>> putMap = null;
-                    List<KeyCacheObject> rmvCol = null;
+                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
+                    List<Object> rmvCol = null;
                     GridCacheStoreManager writeStore = null;
 
                     boolean skipNear = near() && store.writeToStoreFromDht();
@@ -549,7 +549,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (putMap == null)
                                 putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                            putMap.put(key, F.t(val, ver));
+                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
 
                             writeStore = cacheCtx.store();
                         }
@@ -576,10 +576,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor()
-                                    .onBeforeRemove(new CacheLazyEntry(cacheCtx,
-                                        key,
-                                        e.cached().rawGetOrUnmarshal(true)));
+                                IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -588,7 +586,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (rmvCol == null)
                                 rmvCol = new ArrayList<>();
 
-                            rmvCol.add(key);
+                            rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
 
                             writeStore = cacheCtx.store();
                         }
@@ -2459,37 +2457,37 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
         GridCacheContext ctx = txEntry.context();
 
-        Object keyVal = null;
-        Object val = null;
+        Object key0 = null;
+        Object val0 = null;
 
         try {
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), keyVal, cacheVal, val);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val = invokeEntry.value();
+                val0 = invokeEntry.value();
 
-                keyVal = invokeEntry.key();
+                key0 = invokeEntry.key();
             }
 
             if (res != null) {
-                if (keyVal == null)
-                    keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
-                
-                ret.addEntryProcessResult(keyVal, new CacheInvokeResult<>(res));
+                if (key0 == null)
+                    key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
+
+                ret.addEntryProcessResult(key0, new CacheInvokeResult<>(res));
             }
         }
         catch (Exception e) {
-            if (keyVal == null)
-                keyVal = txEntry.key().value(ctx.cacheObjectContext(), true);
+            if (key0 == null)
+                key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
 
-            ret.addEntryProcessResult(keyVal, new CacheInvokeResult(e));
+            ret.addEntryProcessResult(key0, new CacheInvokeResult(e));
         }
     }
 

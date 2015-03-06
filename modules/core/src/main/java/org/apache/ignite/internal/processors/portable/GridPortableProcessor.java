@@ -160,10 +160,17 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @param ctx Cache context.
      * @param obj Object.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj);
+
+    /**
+     * @param ctx Cache context.
+     * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes);
+    public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
 
     /**
      * @param ctx Context.
@@ -180,7 +187,7 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param bytes Optional key bytes.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, byte[] bytes);
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj);
 
     /**
      * @param obj Value.

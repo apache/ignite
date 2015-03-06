@@ -366,15 +366,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
-     * @return {@code true} if this check is optional.
-     */
-    private boolean checkDaemon() {
-        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
-
-        return ann != null && ann.checkDaemon();
-    }
-
-    /**
      * @return {@code true} if this check is enabled.
      */
     private boolean checkEnabled() {
@@ -407,13 +398,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
-
-        if (node.isDaemon() && !checkDaemon()) {
-            if (log.isDebugEnabled())
-                log.debug("Skipping configuration consistency check for daemon node: " + node);
-
-            return;
-        }
 
         /*
          * Optional SPI means that we should not print warning if SPIs are different but
@@ -640,8 +624,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override
-        public ClusterNode node(UUID nodeId) {
+        @Nullable @Override public ClusterNode node(UUID nodeId) {
             return null;
         }
 
@@ -696,6 +679,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public MessageFormatter messageFormatter() {
             return null;
         }

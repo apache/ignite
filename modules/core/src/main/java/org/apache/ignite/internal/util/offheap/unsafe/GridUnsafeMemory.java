@@ -414,10 +414,10 @@ public class GridUnsafeMemory {
      * @param ptr Optional pointer to allocated memory. First 4 bytes in allocated region must contain
      *      size of allocated chunk.
      * @param val Value to store.
-     * @param plain Whether provided bytes is not some marshaled value, but rather real value.
+     * @param type Value type.
      * @return Pointer.
      */
-    public long putOffHeap(long ptr, byte[] val, boolean plain) {
+    public long putOffHeap(long ptr, byte[] val, byte type) {
         int size = val.length;
 
         assert size != 0;
@@ -433,8 +433,7 @@ public class GridUnsafeMemory {
             writeInt(ptr, size);
         }
 
-        // Must override plain flag.
-        writeByte(ptr + 4, (byte)(plain ? 1 : 0));
+        writeByte(ptr + 4, type);
         writeBytes(ptr + 5, val);
 
         return ptr;
@@ -451,21 +450,20 @@ public class GridUnsafeMemory {
     }
 
     /**
-     * Get value stored in offheap along with a flag indicating whether this is "raw bytes", i.e. this is actual value
-     * or not.
+     * Get value stored in offheap along with a value type.
      *
      * @param ptr Pointer to read.
      * @return Stored byte array and "raw bytes" flag.
      */
-    public IgniteBiTuple<byte[], Boolean> get(long ptr) {
+    public IgniteBiTuple<byte[], Byte> get(long ptr) {
         assert ptr != 0;
 
         int size = readInt(ptr);
 
-        boolean plain = readByte(ptr + 4) == 1;
+        byte type = readByte(ptr + 4);
         byte[] bytes = readBytes(ptr + 5, size);
 
-        return new IgniteBiTuple<>(bytes, plain);
+        return new IgniteBiTuple<>(bytes, type);
     }
 
     /**

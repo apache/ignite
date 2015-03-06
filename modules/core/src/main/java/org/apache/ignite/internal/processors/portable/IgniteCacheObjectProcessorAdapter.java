@@ -93,49 +93,60 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
     }
 
     /** {@inheritDoc} */
-    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, byte[] bytes) {
+    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj) {
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
-        return new UserKeyCacheObjectImpl(obj, bytes);
+        return new UserKeyCacheObjectImpl(obj, null);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
         throws IgniteCheckedException
     {
+        assert valPtr != 0;
+
         long ptr = valPtr;
 
         int size = UNSAFE.getInt(ptr);
 
         ptr += 4;
 
-        boolean plainByteArr = UNSAFE.getByte(ptr++) == 1;
+        byte type = UNSAFE.getByte(ptr++);
 
         byte[] bytes = U.copyMemory(ptr, size);
 
-        if (plainByteArr)
-            return new CacheObjectImpl(bytes, null);
-
-        if (ctx.offheapTiered()) {
+        if (ctx.kernalContext().config().isPeerClassLoadingEnabled() &&
+            ctx.offheapTiered() &&
+            type != CacheObjectAdapter.TYPE_BYTE_ARR) {
             IgniteUuid valClsLdrId = U.readGridUuid(ptr + size);
 
             ClassLoader ldr =
                 valClsLdrId != null ? ctx.deploy().getClassLoader(valClsLdrId) : ctx.deploy().localLoader();
 
-            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, ldr), bytes);
+            return toCacheObject(ctx.cacheObjectContext(), unmarshal(ctx.cacheObjectContext(), bytes, ldr));
         }
         else
-            return new CacheObjectImpl(ctx.marshaller().unmarshal(bytes, U.gridClassLoader()), bytes);
+            return toCacheObject(ctx.cacheObjectContext(), type, bytes);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, byte[] bytes) {
-        if ((obj == null && bytes == null) || obj instanceof CacheObject)
-            return (CacheObject)obj;
+    @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
+        switch (type) {
+            case CacheObjectAdapter.TYPE_BYTE_ARR:
+                return new CacheObjectImpl(bytes, null);
 
-        if (bytes != null)
-            return new CacheObjectImpl(obj, bytes);
+            case CacheObjectAdapter.TYPE_REGULAR:
+                return new CacheObjectImpl(null, bytes);
+        }
+
+        throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj) {
+        if (obj == null || obj instanceof CacheObject)
+            return (CacheObject)obj;
 
         return new UserCacheObjectImpl(obj);
     }

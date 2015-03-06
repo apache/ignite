@@ -39,7 +39,7 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
      * @param key Key.
      * @param part Partition id.
      * @param valBytes Value bytes.
-     * @param valIsByteArr Whether value is byte array.
+     * @param type Value type.
      * @param ver Version.
      * @param ttl Time to live.
      * @param expireTime Expire time.
@@ -49,13 +49,13 @@ public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
     public GridCacheBatchSwapEntry(KeyCacheObject key,
         int part,
         ByteBuffer valBytes,
-        boolean valIsByteArr,
+        byte type,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
         IgniteUuid keyClsLdrId,
         @Nullable IgniteUuid valClsLdrId) {
-        super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
+        super(valBytes, type, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;
         this.part = part;

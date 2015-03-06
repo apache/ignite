@@ -1254,11 +1254,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int size = req.keys().size();
 
-        Map<KeyCacheObject, CacheObject> putMap = null;
+        Map<Object, Object> putMap = null;
 
         Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap = null;
 
-        Collection<KeyCacheObject> rmvKeys = null;
+        Collection<Object> rmvKeys = null;
+
+        List<CacheObject> writeVals = null;
 
         UpdateBatchResult updRes = new UpdateBatchResult();
 
@@ -1367,6 +1369,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 filtered,
                                 ver,
                                 node,
+                                writeVals,
                                 putMap,
                                 null,
                                 entryProcessorMap,
@@ -1382,6 +1385,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i;
 
                             putMap = null;
+                            writeVals = null;
                             entryProcessorMap = null;
 
                             filtered = new ArrayList<>();
@@ -1391,7 +1395,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (rmvKeys == null)
                             rmvKeys = new ArrayList<>(size);
 
-                        rmvKeys.add(entry.key());
+                        rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
                     }
                     else {
                         if (intercept) {
@@ -1414,6 +1418,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ver,
                                 node,
                                 null,
+                                null,
                                 rmvKeys,
                                 entryProcessorMap,
                                 dhtFut,
@@ -1433,10 +1438,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             filtered = new ArrayList<>();
                         }
 
-                        if (putMap == null)
+                        if (putMap == null) {
                             putMap = new LinkedHashMap<>(size, 1.0f);
+                            writeVals = new ArrayList<>(size);
+                        }
 
-                        putMap.put(entry.key(), updated);
+                        putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                        writeVals.add(updated);
                     }
 
                     if (entryProcessorMap == null)
@@ -1474,10 +1482,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     assert updated != null;
 
-                    if (putMap == null)
+                    if (putMap == null) {
                         putMap = new LinkedHashMap<>(size, 1.0f);
+                        writeVals = new ArrayList<>(size);
+                    }
 
-                    putMap.put(entry.key(), updated);
+                    putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                    writeVals.add(updated);
                 }
                 else {
                     assert op == DELETE;
@@ -1507,7 +1518,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (rmvKeys == null)
                         rmvKeys = new ArrayList<>(size);
 
-                    rmvKeys.add(entry.key());
+                    rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
                 }
 
                 filtered.add(entry);
@@ -1525,6 +1536,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filtered,
                 ver,
                 node,
+                writeVals,
                 putMap,
                 rmvKeys,
                 entryProcessorMap,
@@ -1836,8 +1848,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         List<GridDhtCacheEntry> entries,
         final GridCacheVersion ver,
         ClusterNode node,
-        @Nullable Map<KeyCacheObject, CacheObject> putMap,
-        @Nullable Collection<KeyCacheObject> rmvKeys,
+        @Nullable List<CacheObject> writeVals,
+        @Nullable Map<Object, Object> putMap,
+        @Nullable Collection<Object> rmvKeys,
         @Nullable Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
@@ -1863,17 +1876,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             if (putMap != null) {
                 // If fast mapping, filter primary keys for write to store.
-                Map<KeyCacheObject, CacheObject> storeMap = req.fastMap() ?
-                    F.view(putMap, new P1<KeyCacheObject>() {
-                        @Override public boolean apply(KeyCacheObject key) {
+                Map<Object, Object> storeMap = req.fastMap() ?
+                    F.view(putMap, new P1<Object>() {
+                        @Override public boolean apply(Object key) {
                             return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
                     putMap;
 
                 try {
-                    ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<CacheObject, IgniteBiTuple<CacheObject, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<CacheObject, GridCacheVersion> apply(CacheObject v) {
+                    ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
+                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
                             return F.t(v, ver);
                         }
                     }));
@@ -1886,9 +1899,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
             else {
                 // If fast mapping, filter primary keys for write to store.
-                Collection<KeyCacheObject> storeKeys = req.fastMap() ?
-                    F.view(rmvKeys, new P1<KeyCacheObject>() {
-                        @Override public boolean apply(KeyCacheObject key) {
+                Collection<Object> storeKeys = req.fastMap() ?
+                    F.view(rmvKeys, new P1<Object>() {
+                        @Override public boolean apply(Object key) {
                             return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
@@ -1923,7 +1936,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     // We are holding java-level locks on entries at this point.
-                    CacheObject writeVal = op == UPDATE ? putMap.get(entry.key()) : null;
+                    CacheObject writeVal = op == UPDATE ? writeVals.get(i) : null;
 
                     assert writeVal != null || op == DELETE : "null write value found.";
 
@@ -1967,7 +1980,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         if (op == UPDATE) {
                             ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
-                                ctx, 
+                                ctx,
                                 entry.key(),
                                 updRes.newValue()));
                         }
@@ -2045,7 +2058,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         catch (IgniteCheckedException e) {
-            res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e);
+            res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e, ctx);
         }
 
         if (storeErr != null)

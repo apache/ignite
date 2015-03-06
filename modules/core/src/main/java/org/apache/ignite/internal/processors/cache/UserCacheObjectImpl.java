@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -38,6 +38,11 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
      */
     public UserCacheObjectImpl() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        return super.value(ctx, false);
     }
 
     /** {@inheritDoc} */

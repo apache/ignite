@@ -560,7 +560,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 }
 
                 if (cctx.store().isLocalStore())
-                    cctx.store().removeFromStore(null, key());
+                    cctx.store().removeFromStore(null, keyValue(false));
 
                 rmv = true;
 

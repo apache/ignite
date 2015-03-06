@@ -118,22 +118,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             assert atomicsCache != null;
 
-            dsView = atomicsCache.projection(GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
+            dsView = atomicsCache.flagsOn(CLONE);
 
-            cntDownLatchView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
+            cntDownLatchView = atomicsCache.flagsOn(CLONE);
 
-            atomicLongView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
+            atomicLongView = atomicsCache.flagsOn(CLONE);
 
-            atomicRefView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
+            atomicRefView = atomicsCache.flagsOn(CLONE);
 
-            atomicStampedView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
+            atomicStampedView = atomicsCache.flagsOn(CLONE);
 
-            seqView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+            seqView = atomicsCache.flagsOn(CLONE);
 
             dsCacheCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
         }

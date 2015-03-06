@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Cache object wrapping key provided by user. Need to be copied before stored in cache.
@@ -40,6 +40,11 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        return super.value(ctx, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
             valBytes = ctx.processor().marshal(ctx, val);
@@ -56,7 +61,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
             if (needCopy(ctx)) {
                 Object val = ctx.processor().unmarshal(ctx,
                     valBytes,
-                    ctx.kernalContext().config().getClassLoader());
+                    this.val.getClass().getClassLoader());
 
                 return new KeyCacheObjectImpl(val, valBytes);
             }

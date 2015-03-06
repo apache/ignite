@@ -486,7 +486,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         assert state() == EVICTED;
 
         try {
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id, false);
+            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
 
             boolean isLocStore = cctx.store().isLocalStore();
 
@@ -497,12 +497,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                     byte[] keyBytes = entry.getKey();
 
-                    KeyCacheObject key = cctx.toCacheKeyObject(null, keyBytes, false);
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
                     cctx.swap().remove(key);
 
                     if (isLocStore)
-                        cctx.store().removeFromStore(null, key);
+                        cctx.store().removeFromStore(null, key.value(cctx.cacheObjectContext(), false));
                 }
             }
         }
