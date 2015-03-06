@@ -1980,7 +1980,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         req.subjectId(),
                         taskName);
 
-                    assert updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null;
+                    assert !updRes.success() || updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null :
+                        "success=" + updRes.success() + ", newTtl=" + updRes.newTtl() + ", expiry=" + expiry;
 
                     if (intercept) {
                         if (op == UPDATE)
@@ -2053,7 +2054,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                     assert f == null : f;
                                 }
-                            } else if (readers.contains(node.id())) // Reader became primary or backup.
+                            }
+                            else if (readers.contains(node.id())) // Reader became primary or backup.
                                 entry.removeReader(node.id(), req.messageId());
                             else
                                 res.addSkippedIndex(firstEntryIdx + i);
