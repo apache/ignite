@@ -113,11 +113,6 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }

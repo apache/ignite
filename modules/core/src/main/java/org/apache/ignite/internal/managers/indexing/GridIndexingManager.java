@@ -30,6 +30,7 @@ import java.util.*;
 /**
  * Manages cache indexing.
  */
+@SkipDaemon
 public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -45,9 +46,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         if (!enabled())
             U.warn(log, "Indexing is disabled (to enable please configure GridIndexingSpi).");
 

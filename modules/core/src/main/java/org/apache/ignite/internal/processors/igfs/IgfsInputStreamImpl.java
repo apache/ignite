@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -45,7 +46,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
     /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final IgfsReader secReader;
+    private final IgfsSecondaryFileSystemPositionedReadable secReader;
 
     /** Logger. */
     private IgniteLogger log;
@@ -110,7 +111,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
      * @param metrics Local IGFS metrics.
      */
     IgfsInputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable IgfsReader secReader, IgfsLocalMetrics metrics) {
+        int seqReadsBeforePrefetch, @Nullable IgfsSecondaryFileSystemPositionedReadable secReader, IgfsLocalMetrics metrics) {
         assert igfsCtx != null;
         assert path != null;
         assert fileInfo != null;

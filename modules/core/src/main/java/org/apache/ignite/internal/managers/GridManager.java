@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.managers;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
-
-import java.util.*;
 
 /**
  * This interface defines life-cycle for kernal manager. Managers provide layer of indirection
@@ -31,16 +28,17 @@ import java.util.*;
 @GridToStringExclude
 public interface GridManager extends GridComponent {
     /**
-     * Adds attributes from underlying SPI to map of all attributes.
-     *
-     * @param attrs Map of all attributes gotten from SPI's so far.
-     * @throws IgniteCheckedException Wrapper for exception thrown by underlying SPI.
-     */
-    public void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException;
-
-    /**
-     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
-     *      implementation, {@code false} otherwise.
+     * @return {@code true} if at least one SPI does not have a {@code NO-OP} implementation, {@code false} otherwise.
      */
     public boolean enabled();
+
+    /**
+     * This method executed before manager will start SPI.
+     */
+    public void onBeforeSpiStart();
+
+    /**
+     * This method executed after manager started SPI.
+     */
+    public void onAfterSpiStart();
 }

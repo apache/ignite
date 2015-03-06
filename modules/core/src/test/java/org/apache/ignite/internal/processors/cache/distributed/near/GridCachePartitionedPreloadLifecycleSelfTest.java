@@ -85,7 +85,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
-                    case AFTER_GRID_START: {
+                    case AFTER_NODE_START: {
                         IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
                         IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
 
@@ -118,9 +118,9 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
                         break;
                     }
 
-                    case BEFORE_GRID_START:
-                    case BEFORE_GRID_STOP:
-                    case AFTER_GRID_STOP: {
+                    case BEFORE_NODE_START:
+                    case BEFORE_NODE_STOP:
+                    case AFTER_NODE_STOP: {
                         info("Lifecycle event: " + evt);
 
                         break;

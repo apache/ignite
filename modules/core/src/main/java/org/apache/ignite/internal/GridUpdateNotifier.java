@@ -33,9 +33,7 @@ import java.util.concurrent.*;
 import static java.net.URLEncoder.*;
 
 /**
- * This class is responsible for notification about new version availability. Note that this class
- * does not send any information and merely accesses the {@code www.gridgain.com} web site for the
- * latest version data.
+ * This class is responsible for notification about new version availability.
  * <p>
  * Note also that this connectivity is not necessary to successfully start the system as it will
  * gracefully ignore any errors occurred during notification and verification process.
@@ -85,12 +83,11 @@ class GridUpdateNotifier {
      *
      * @param gridName gridName
      * @param ver Compound Ignite version.
-     * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param gw Kernal gateway.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, String site, GridKernalGateway gw, boolean reportOnlyNew)
+    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, boolean reportOnlyNew)
         throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -108,7 +105,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://" + site + "/update_status.php";
+            url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.reportOnlyNew = reportOnlyNew;
@@ -262,6 +259,13 @@ class GridUpdateNotifier {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
+            // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
+            // This system property was a hack to fix a jdk bug w/out changing back compat behavior.
+            // It's bogus that this is a system (and not a per-connection) property,
+            // so we just change it for the duration of the connection.
+            // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4023866
+            String postRedirect = System.getProperty("http.strictPostRedirect");
+
             try {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
@@ -281,6 +285,8 @@ class GridUpdateNotifier {
 
                     conn.setConnectTimeout(3000);
                     conn.setReadTimeout(3000);
+
+                    System.setProperty("http.strictPostRedirect", "true");
 
                     Document dom = null;
 
@@ -321,6 +327,12 @@ class GridUpdateNotifier {
             catch (Exception e) {
                 if (log.isDebugEnabled())
                     log.debug("Unexpected exception in update checker. " + e.getMessage());
+            }
+            finally {
+                if (postRedirect == null)
+                    System.clearProperty("http.strictPostRedirect");
+                else
+                    System.setProperty("http.strictPostRedirect", postRedirect);
             }
         }
 

@@ -17,35 +17,38 @@
 
 package org.apache.ignite.visor
 
-import java.io._
-import java.net._
-import java.text._
-import java.util.concurrent._
-import java.util.{HashSet => JHashSet, _}
-
 import org.apache.ignite.IgniteSystemProperties._
+import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
-import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
-import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
-import org.apache.ignite.internal.util.{IgniteUtils => U, GridConfigurationFinder}
+import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
+import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite._
+
 import org.jetbrains.annotations.Nullable
+
+import java.io._
+import java.net._
+import java.text._
+import java.util.concurrent._
+import java.util.{HashSet => JHashSet, _}
+
+import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -1317,7 +1320,7 @@ object visor extends VisorTag {
             else {
                 val n = ignite.name
 
-                if (n == null) "<default>" else n
+                escapeName(n)
             }
         )
         t += ("Config path", safe(cfgPath))
@@ -1517,8 +1520,8 @@ object visor extends VisorTag {
                 val cfgs =
                     try
                         // Cache, IGFS, streamer and DR configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "igfsConfiguration", "streamerConfiguration",
-                            "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
+                        spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
+                            "streamerConfiguration", "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
                             U.removeLog4jNoOpLogger(log4jTup)

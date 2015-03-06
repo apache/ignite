@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -83,7 +83,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction());
+        dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
@@ -92,7 +92,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
-        namedCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction());
+        namedCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
@@ -100,7 +100,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
         else if (gridName.contains(WRONG_AFFINITY_GRID_NAME)) {
-            dfltCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction() {
+            dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction() {
                 // No-op. Just to have another class name.
             });
         }

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -63,7 +63,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 521));
+        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

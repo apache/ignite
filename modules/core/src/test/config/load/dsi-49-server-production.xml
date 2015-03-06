@@ -53,7 +53,7 @@
                     <!-- 1 backup -->
                     <property name="backups" value="1"/>
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
                             <property name="excludeNeighbors" value="true"/>
                         </bean>
                     </property>

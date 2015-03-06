@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
@@ -85,7 +85,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
+        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -166,7 +166,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
-                    if (evt == LifecycleEventType.AFTER_GRID_START) {
+                    if (evt == LifecycleEventType.AFTER_NODE_START) {
                         IgniteCache<Integer, byte[]> c = ignite.jcache(null);
 
                         if (c.putIfAbsent(-1, new byte[1])) {
