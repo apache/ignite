@@ -211,8 +211,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
                     Object val0 = null;
 
-                    if (val != null) {
-                        val0 = val.value(cctx.cacheObjectContext(), false);
+                    if (val != null && val.type() != CacheObjectAdapter.TYPE_BYTE_ARR) {
+                        val0 = cctx.portable().unmarshal(cctx.cacheObjectContext(),
+                            val.valueBytes(cctx.cacheObjectContext()), cctx.deploy().globalLoader());
 
                         if (val0 != null)
                             cctx.gridDeploy().deploy(val0.getClass(), val0.getClass().getClassLoader());
@@ -386,31 +387,26 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         long time = U.currentTimeMillis();
 
-        try {
-            synchronized (this) {
-                if (!obsolete()) {
-                    info = new GridCacheEntryInfo();
+        synchronized (this) {
+            if (!obsolete()) {
+                info = new GridCacheEntryInfo();
 
-                    info.key(key);
-                    info.cacheId(cctx.cacheId());
+                info.key(key);
+                info.cacheId(cctx.cacheId());
 
-                    long expireTime = expireTimeExtras();
+                long expireTime = expireTimeExtras();
 
-                    boolean expired = expireTime != 0 && expireTime <= time;
+                boolean expired = expireTime != 0 && expireTime <= time;
 
-                    info.ttl(ttlExtras());
-                    info.expireTime(expireTime);
-                    info.version(ver);
-                    info.setNew(isStartVersion());
-                    info.setDeleted(deletedUnlocked());
+                info.ttl(ttlExtras());
+                info.expireTime(expireTime);
+                info.version(ver);
+                info.setNew(isStartVersion());
+                info.setDeleted(deletedUnlocked());
 
-                    if (!expired)
-                        info.value(valueBytesUnlocked());
-                }
+                if (!expired)
+                    info.value(valueBytesUnlocked());
             }
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to unmarshal object while creating entry info: " + this, e);
         }
 
         return info;

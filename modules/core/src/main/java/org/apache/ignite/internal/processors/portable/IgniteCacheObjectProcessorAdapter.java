@@ -104,6 +104,8 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
     @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
         throws IgniteCheckedException
     {
+        assert valPtr != 0;
+
         long ptr = valPtr;
 
         int size = UNSAFE.getInt(ptr);
