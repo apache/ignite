@@ -106,20 +106,16 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
     {
         assert valPtr != 0;
 
-        long ptr = valPtr;
+        int size = UNSAFE.getInt(valPtr);
 
-        int size = UNSAFE.getInt(ptr);
+        byte type = UNSAFE.getByte(valPtr + 4);
 
-        ptr += 4;
-
-        byte type = UNSAFE.getByte(ptr++);
-
-        byte[] bytes = U.copyMemory(ptr, size);
+        byte[] bytes = U.copyMemory(valPtr + 5, size);
 
         if (ctx.kernalContext().config().isPeerClassLoadingEnabled() &&
             ctx.offheapTiered() &&
             type != CacheObjectAdapter.TYPE_BYTE_ARR) {
-            IgniteUuid valClsLdrId = U.readGridUuid(ptr + size);
+            IgniteUuid valClsLdrId = U.readGridUuid(valPtr + 5 + size);
 
             ClassLoader ldr =
                 valClsLdrId != null ? ctx.deploy().getClassLoader(valClsLdrId) : ctx.deploy().localLoader();
@@ -188,5 +184,10 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
         reflectionCache.putIfAbsent(cls, immutable);
 
         return immutable;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean keepPortableInStore(@Nullable String cacheName) {
+        return false;
     }
 }

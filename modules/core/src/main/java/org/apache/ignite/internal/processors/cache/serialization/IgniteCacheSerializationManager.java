@@ -32,12 +32,6 @@ public interface IgniteCacheSerializationManager<K, V> extends GridCacheManager<
      */
     public boolean portableEnabled();
 
-    /**
-     * @return {@code True} if portable format should be preserved when passing values to cache store.
-     */
-    public boolean keepPortableInStore();
-
-
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable);
 
     /**

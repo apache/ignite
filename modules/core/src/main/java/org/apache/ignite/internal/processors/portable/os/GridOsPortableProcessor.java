@@ -49,10 +49,6 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
         return 0;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Object unmarshal(byte[] arr, int off) throws IgniteException {
-        return null;
-    }
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws IgniteException {
@@ -75,18 +71,8 @@ public class GridOsPortableProcessor extends IgniteCacheObjectProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean portableEnabled(ClusterNode node, String cacheName) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isPortableObject(Object obj) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object affinityKey(Object obj) {
-        return obj;
     }
 
     /** {@inheritDoc} */

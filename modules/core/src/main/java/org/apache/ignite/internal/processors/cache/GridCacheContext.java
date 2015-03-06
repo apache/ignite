@@ -1703,13 +1703,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Keep portable in store flag.
-     */
-    public boolean keepPortableInStore() {
-        return serMgr.keepPortableInStore();
-    }
-
-    /**
      * @return Keep portable flag.
      */
     public boolean keepPortable() {
@@ -1736,27 +1729,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             return (T)obj;
 
         return (T)portable().unwrapTemporary(this, obj);
-    }
-
-    /**
-     * @param obj Object.
-     * @return Portable object.
-     * @throws IgniteException In case of error.
-     */
-    @Nullable public Object marshalToPortable(@Nullable Object obj) throws IgniteException {
-        assert portableEnabled();
-
-        if (obj == null)
-            return null;
-
-        if (ctx.portable().isPortableObject(obj) || obj instanceof GridCacheInternal)
-            return obj;
-
-        GridPortableProcessor proc = kernalContext().portable();
-
-        assert proc != null;
-
-        return proc.marshalToPortable(obj);
     }
 
     /**

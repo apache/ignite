@@ -32,11 +32,6 @@ public class IgniteCacheOsSerializationManager<K, V> extends GridCacheManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean keepPortableInStore() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
         return o;
     }

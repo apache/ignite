@@ -1704,9 +1704,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Undeploy count.
      */
     public int onUndeploy(ClassLoader ldr) {
-        if (cctx.portableEnabled())
-            return 0;
-
         IgniteUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
 
         assert ldrId != null;

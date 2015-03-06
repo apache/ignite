@@ -49,14 +49,6 @@ public interface GridPortableProcessor extends GridProcessor {
     public int typeId(Object obj);
 
     /**
-     * @param arr Byte array.
-     * @param off Offset.
-     * @return Unmarshalled object.
-     * @throws IgniteException In case of error.
-     */
-    public Object unmarshal(byte[] arr, int off) throws IgniteException;
-
-    /**
      * Converts temporary offheap object to heap-based.
      *
      * @param ctx Context.
@@ -95,27 +87,12 @@ public interface GridPortableProcessor extends GridProcessor {
     public boolean isPortable(GridClientMarshaller marsh);
 
     /**
-     * @param node Node to check.
-     * @param cacheName Cache name to check.
-     * @return {@code True} if portable enabled for the specified cache, {@code false} otherwise.
-     */
-    public boolean portableEnabled(ClusterNode node, String cacheName);
-
-    /**
      * Checks whether object is portable object.
      *
      * @param obj Object to check.
      * @return {@code True} if object is already a portable object, {@code false} otherwise.
      */
     public boolean isPortableObject(Object obj);
-
-    /**
-     * Gets affinity key of portable object.
-     *
-     * @param obj Object to get affinity key for.
-     * @return Affinity key.
-     */
-    public Object affinityKey(Object obj);
 
     /**
      * @param obj Portable object to get field from.
@@ -184,7 +161,6 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @param ctx Cache context.
      * @param obj Key value.
-     * @param bytes Optional key bytes.
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj);
@@ -195,4 +171,9 @@ public interface GridPortableProcessor extends GridProcessor {
      *          with {@link IgniteImmutable} annotation.
      */
     public boolean immutable(Object obj);
+
+    /**
+     * @return {@code True} if portable format should be preserved when passing values to cache store.
+     */
+    public boolean keepPortableInStore(@Nullable String cacheName);
 }
