@@ -306,7 +306,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
         finally {
             // Reset thread local context.
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
             cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.

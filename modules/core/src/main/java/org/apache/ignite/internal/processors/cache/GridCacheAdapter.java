@@ -4467,7 +4467,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             saveFuture(holder, f);
 
-            ctx.tm().txContextReset();
+            ctx.tm().resetContext();
 
             return f;
         }
@@ -4602,10 +4602,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 throw e;
             }
             finally {
-                ctx.tm().txContextReset();
+                ctx.tm().resetContext();
 
                 if (ctx.isNear())
-                    ctx.near().dht().context().tm().txContextReset();
+                    ctx.near().dht().context().tm().resetContext();
             }
         }
         else
@@ -4714,7 +4714,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             saveFuture(holder, f);
 
             if (tx.implicit())
-                ctx.tm().txContextReset();
+                ctx.tm().resetContext();
 
             return f;
         }

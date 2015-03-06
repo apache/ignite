@@ -429,7 +429,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             commitAsync().get();
         }
         finally {
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
         }
     }
 
@@ -974,7 +974,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 }
             }
             finally {
-                cctx.tm().txContextReset();
+                cctx.tm().resetContext();
             }
         }
         else {

@@ -831,7 +831,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             rollbackAsync().get();
         }
         finally {
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
         }
     }
 

@@ -393,7 +393,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx<K, V>> txIdMap = transactionMap(tx);
 
         // Start clean.
-        txContextReset();
+        resetContext();
 
         if (isCompleted(tx)) {
             if (log.isDebugEnabled())
@@ -1233,7 +1233,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             }
 
             // 14. Clear context.
-            txContextReset();
+            resetContext();
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1308,7 +1308,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 10. Clear context.
-            txContextReset();
+            resetContext();
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1372,7 +1372,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 8. Clear context.
-            txContextReset();
+            resetContext();
 
             if (log.isDebugEnabled())
                 log.debug("Uncommitted from TM: " + tx);
@@ -1717,7 +1717,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * Commit ended.
      */
-    public void txContextReset() {
+    public void resetContext() {
         threadCtx.set(null);
     }
 
