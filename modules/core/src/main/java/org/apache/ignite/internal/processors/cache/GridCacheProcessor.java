@@ -665,23 +665,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Start dynamic caches received from collect discovery data.
         for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
-            GridCacheContext ctx = createCache(desc.cacheConfiguration());
+            if (hasStaticCache(desc.cacheConfiguration().getName()))
+                throw new IgniteCheckedException("Failed to start node (current grid has dynamic cache which " +
+                    "conflicts with locally configured static cache: " + desc.cacheConfiguration().getName());
 
-            ctx.dynamicDeploymentId(desc.deploymentId());
+            if (desc.nodeFilter().apply(ctx.discovery().localNode())) {
+                GridCacheContext ctx = createCache(desc.cacheConfiguration());
 
-            sharedCtx.addCacheContext(ctx);
+                ctx.dynamicDeploymentId(desc.deploymentId());
 
-            GridCacheAdapter cache = ctx.cache();
+                sharedCtx.addCacheContext(ctx);
 
-            String name = desc.cacheConfiguration().getName();
+                GridCacheAdapter cache = ctx.cache();
 
-            caches.put(name, cache);
+                String name = desc.cacheConfiguration().getName();
 
-            startCache(cache);
+                caches.put(name, cache);
 
-            proxies.put(name, new GridCacheProxyImpl(ctx, cache, null));
+                startCache(cache);
 
-            jCacheProxies.put(name, new IgniteCacheProxy(ctx, cache, null, false));
+                proxies.put(name, new GridCacheProxyImpl(ctx, cache, null));
+
+                jCacheProxies.put(name, new IgniteCacheProxy(ctx, cache, null, false));
+            }
         }
 
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
@@ -1203,16 +1209,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
         assert req.isStart();
 
-        GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
+        if (hasStaticCache(req.cacheName())) {
+            U.warn(log, "Failed to start dynamic cache (a static cache with the same name is already " +
+                "configured: " + req.cacheName());
 
-        cacheCtx.dynamicDeploymentId(req.deploymentId());
+            return;
+        }
 
-        sharedCtx.addCacheContext(cacheCtx);
+        if (req.startNodeFilter().apply(ctx.discovery().localNode())) {
+            GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
 
-        startCache(cacheCtx.cache());
-        onKernalStart(cacheCtx.cache());
+            cacheCtx.dynamicDeploymentId(req.deploymentId());
 
-        caches.put(cacheCtx.name(), cacheCtx.cache());
+            sharedCtx.addCacheContext(cacheCtx);
+
+            startCache(cacheCtx.cache());
+            onKernalStart(cacheCtx.cache());
+
+            caches.put(cacheCtx.name(), cacheCtx.cache());
+        }
     }
 
     /**
@@ -1366,6 +1381,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.discovery().addDynamicCacheFilter(req.cacheName(), req.startNodeFilter());
             }
         }
+    }
+
+    /**
+     * @param cacheName Cache name to check.
+     * @return {@code True} if local node has a static cache with the given name configured.
+     */
+    private boolean hasStaticCache(String cacheName) {
+        for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg.getName()))
+                return true;
+        }
+
+        return false;
     }
 
     /**
