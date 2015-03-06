@@ -489,6 +489,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 88:
+                msg = new GridCacheReturn();
+
+                break;
+
             case 89:
                 msg = new CacheObjectImpl();
 

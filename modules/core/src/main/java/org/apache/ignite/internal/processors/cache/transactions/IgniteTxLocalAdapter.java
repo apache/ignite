@@ -100,7 +100,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     protected boolean needRetVal;
 
     /** Implicit transaction result. */
-    protected GridCacheReturn<Object> implicitRes = new GridCacheReturn<>(false);
+    protected GridCacheReturn implicitRes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -148,6 +148,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         this.partLock = partLock;
 
         minVer = xidVer;
+    }
+
+    /**
+     * Creates result instance.
+     */
+    protected void initResult() {
+        implicitRes = new GridCacheReturn(localResult(), false);
     }
 
     /** {@inheritDoc} */
@@ -274,14 +281,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<Object> implicitSingleResult() {
+    @Override public GridCacheReturn implicitSingleResult() {
         return implicitRes;
     }
 
     /**
      * @param ret Result.
      */
-    public void implicitSingleResult(GridCacheReturn<Object> ret) {
+    public void implicitSingleResult(GridCacheReturn ret) {
         if (ret.invokeResult())
             implicitRes.mergeEntryProcessResults(ret);
         else
@@ -2100,7 +2107,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (!filter(entry, filter)) {
                                 skipped = skip(skipped, cacheKey);
 
-                                ret.set(old, false);
+                                ret.set(cacheCtx, old, false);
 
                                 if (!readCommitted() && old != null) {
                                     // Enlist failed filters as reads for non-read-committed mode,
@@ -2166,14 +2173,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         assert txEntry.op() != TRANSFORM;
 
                                         if (retval)
-                                            ret.set(null, true);
+                                            ret.set(cacheCtx, null, true);
                                         else
                                             ret.success(true);
                                     }
                                 }
                                 else {
                                     if (retval && !transform)
-                                        ret.set(old, true);
+                                        ret.set(cacheCtx, old, true);
                                     else {
                                         if (txEntry.op() == TRANSFORM)
                                             addInvokeResult(txEntry, old, ret);
@@ -2185,7 +2192,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             // Pessimistic.
                             else {
                                 if (retval && !transform)
-                                    ret.set(old, true);
+                                    ret.set(cacheCtx, old, true);
                                 else
                                     ret.success(true);
                             }
@@ -2213,7 +2220,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         if (!filter(entry, filter)) {
                             skipped = skip(skipped, cacheKey);
 
-                            ret.set(v, false);
+                            ret.set(cacheCtx, v, false);
 
                             continue;
                         }
@@ -2243,7 +2250,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         txEntry.markValid();
 
                         if (retval && !transform)
-                            ret.set(v, true);
+                            ret.set(cacheCtx, v, true);
                         else
                             ret.success(true);
                     }
@@ -2276,7 +2283,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         if (e.op() == TRANSFORM)
                             addInvokeResult(e, cacheVal, ret);
                         else
-                            ret.set(cacheVal, true);
+                            ret.set(cacheCtx, cacheVal, true);
                     }
                 });
 
@@ -2389,7 +2396,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 addInvokeResult(txEntry, v, ret);
                         }
                         else
-                            ret.value(v);
+                            ret.value(cacheCtx, v);
                     }
 
                     boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
@@ -2413,7 +2420,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         failed = skip(failed, k);
 
                         // Revert operation to previous. (if no - NOOP, so entry will be unlocked).
-                        txEntry.setAndMarkValid(txEntry.previousOperation(), (CacheObject)ret.value());
+                        txEntry.setAndMarkValid(txEntry.previousOperation(), cacheCtx.toCacheObject(ret.value()));
                         txEntry.filters(CU.empty0());
                         txEntry.filtersSet(false);
 
@@ -2454,7 +2461,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param cacheVal Value.
      * @param ret Return value to update.
      */
-    private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn<?> ret) {
+    private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn ret) {
         GridCacheContext ctx = txEntry.context();
 
         Object key0 = null;
@@ -2476,18 +2483,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 key0 = invokeEntry.key();
             }
 
-            if (res != null) {
-                if (key0 == null)
-                    key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
-
-                ret.addEntryProcessResult(key0, new CacheInvokeResult<>(res));
-            }
+            if (res != null)
+                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null);
         }
         catch (Exception e) {
-            if (key0 == null)
-                key0 = txEntry.key().value(ctx.cacheObjectContext(), true);
-
-            ret.addEntryProcessResult(key0, new CacheInvokeResult(e));
+            ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e);
         }
     }
 
@@ -2559,7 +2559,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         init();
 
-        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(false);
+        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
 
         if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
             if (implicit())
@@ -2670,7 +2670,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         loadFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFutureEx<>(new GridCacheReturn<V>(), e);
+                        return new GridFinishedFutureEx<>(new GridCacheReturn<V>(localResult()), e);
                     }
 
                     return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<Object>>() {
@@ -2755,7 +2755,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(false);
+        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
 
         if (F.isEmpty(keys0)) {
             if (implicit()) {
@@ -2974,7 +2974,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         try {
             init();
 
-            GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(false);
+            GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 

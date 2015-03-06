@@ -71,6 +71,8 @@ class GridLocalTx extends IgniteTxLocalAdapter {
     ) {
         super(ctx, ctx.versions().next(), implicit, implicitSingle, false, concurrency, isolation, timeout, false, true,
             txSize, null, false, subjId, taskNameHash);
+
+        initResult();
     }
 
     /** {@inheritDoc} */

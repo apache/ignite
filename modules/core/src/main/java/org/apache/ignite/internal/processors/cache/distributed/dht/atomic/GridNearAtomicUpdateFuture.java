@@ -359,12 +359,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         GridCacheReturn ret = res.returnValue();
 
-        if (op != TRANSFORM && ret != null) {
-            CacheObject val = (CacheObject)ret.value();
-
-            ret.value(CU.value(val, cctx, false));
-        }
-
         Boolean single0 = single;
 
         if (single0 != null && single0) {
@@ -811,7 +805,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
-                    onDone(new GridCacheReturn(null, true));
+                    onDone(new GridCacheReturn(cctx, true, null, true));
             }
             catch (IgniteCheckedException e) {
                 onDone(addFailedKeys(req.keys(), e));
@@ -857,7 +851,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         if (syncMode == FULL_ASYNC)
             // In FULL_ASYNC mode always return (null, true).
-            opRes = new GridCacheReturn<>(null, true);
+            opRes = new GridCacheReturn(cctx, true, null, true);
 
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
@@ -889,33 +883,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     @SuppressWarnings("unchecked")
     private synchronized void addInvokeResults(GridCacheReturn ret) {
         assert op == TRANSFORM : op;
-        assert ret.value() == null || ret.value() instanceof Collection : ret.value();
+        assert ret.value() == null || ret.value() instanceof Map : ret.value();
 
         if (ret.value() != null) {
-            Collection<CacheInvokeDirectResult> results =
-                (Collection<CacheInvokeDirectResult>)ret.value();
-
-            Map<Object, CacheInvokeResult> map0 = U.newHashMap(results.size());
-
-            for (CacheInvokeDirectResult res : results) {
-                CacheInvokeResult<?> res0 = res.error() == null ?
-                    new CacheInvokeResult<>(CU.value(res.result(), cctx, false)) : new CacheInvokeResult<>(res.error());
-
-                map0.put(res.key().value(cctx.cacheObjectContext(), false), res0);
-            }
-
-            if (opRes != null) {
-                Map<Object, CacheInvokeResult> oldMap = (Map<Object, CacheInvokeResult>)opRes.value();
-
-                assert oldMap != null;
-
-                oldMap.putAll(map0);
-            }
-            else {
-                ret.value(map0);
-
+            if (opRes != null)
+                opRes.mergeEntryProcessResults(ret);
+            else
                 opRes = ret;
-            }
         }
     }
 

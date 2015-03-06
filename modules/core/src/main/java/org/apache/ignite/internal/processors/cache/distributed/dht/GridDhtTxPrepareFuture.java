@@ -272,7 +272,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn<>(null, true);
+        ret = new GridCacheReturn<>(null, tx.localResult(), null, true);
 
         for (IgniteTxEntry txEntry : tx.optimisticLockEntries()) {
             GridCacheContext cacheCtx = txEntry.context();
@@ -337,13 +337,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             }
 
                             if (err != null || procRes != null)
-                                ret.addEntryProcessResult(key.value(cacheCtx.cacheObjectContext(), false),
-                                    err == null ? new CacheInvokeResult<>(procRes) : new CacheInvokeResult<>(err));
+                                ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
                             else
                                 ret.invokeResult(true);
                         }
                         else
-                            ret.value(val);
+                            ret.value(cacheCtx, val);
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {

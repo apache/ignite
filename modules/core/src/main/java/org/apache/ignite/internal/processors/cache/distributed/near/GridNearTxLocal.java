@@ -140,6 +140,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             partLock,
             subjId,
             taskNameHash);
+
+        initResult();
     }
 
     /** {@inheritDoc} */
@@ -1078,7 +1080,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<Object> ret = new GridCacheReturn<>(false);
+        final GridCacheReturn<Object> ret = new GridCacheReturn<>(localResult(), false);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);

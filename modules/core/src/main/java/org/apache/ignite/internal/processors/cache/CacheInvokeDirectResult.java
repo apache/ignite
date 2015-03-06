@@ -92,7 +92,10 @@ public class CacheInvokeDirectResult implements Message {
         return err;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx.cacheObjectContext());
 
@@ -103,7 +106,11 @@ public class CacheInvokeDirectResult implements Message {
             res.prepareMarshal(ctx.cacheObjectContext());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param ctx Cache context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 

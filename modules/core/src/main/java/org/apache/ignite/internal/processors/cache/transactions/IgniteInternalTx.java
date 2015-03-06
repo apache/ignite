@@ -29,7 +29,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 
 /**
@@ -53,6 +52,11 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
         /** Transaction is being finalized by recovery procedure. */
         RECOVERY_FINISH
     }
+
+    /**
+     * @return {@code True} if transaction started on the node initiated cache operation.
+     */
+    public boolean localResult();
 
     /**
      * Gets unique identifier for this transaction.

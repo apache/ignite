@@ -149,6 +149,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         threadId = nearThreadId;
 
         assert !F.eq(xidVer, nearXidVer);
+
+        initResult();
     }
 
     /** {@inheritDoc} */

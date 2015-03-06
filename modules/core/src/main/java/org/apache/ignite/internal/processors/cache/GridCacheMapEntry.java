@@ -1623,7 +1623,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
-        CacheInvokeDirectResult invokeRes = null;
+        IgniteBiTuple<Object, Exception> invokeRes = null;
 
         // System TTL/ET which may have special values.
         long newSysTtl;
@@ -1872,11 +1872,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     key0 = entry.key();
 
                     if (computed != null)
-                        invokeRes = new CacheInvokeDirectResult(key,
-                            cctx.toCacheObject(cctx.unwrapTemporary(computed)));
+                        invokeRes = new IgniteBiTuple(cctx.unwrapTemporary(computed), null);
                 }
                 catch (Exception e) {
-                    invokeRes = new CacheInvokeDirectResult(key, e);
+                    invokeRes = new IgniteBiTuple(null, e);
 
                     updated = oldVal;
                 }

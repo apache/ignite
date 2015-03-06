@@ -96,7 +96,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     };
 
     /** {@link GridCacheReturn}-to-value conversion. */
-    private IgniteClosure RET2VAL;
+    private static final IgniteClosure RET2VAL =
+        new CX1<IgniteInternalFuture<GridCacheReturn<Object>>, Object>() {
+            @Nullable @Override public Object applyx(IgniteInternalFuture<GridCacheReturn<Object>> fut) throws IgniteCheckedException {
+                return fut.get().value();
+            }
+
+            @Override public String toString() {
+                return "Cache return value to value converter.";
+            }
+        };
 
     /** {@link GridCacheReturn}-to-success conversion. */
     private static final IgniteClosure RET2FLAG =
@@ -211,18 +220,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
     protected GridCacheAdapter(final GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         assert ctx != null;
-
-        RET2VAL = new CX1<IgniteInternalFuture<GridCacheReturn<CacheObject>>, Object>() {
-            @Nullable @Override public Object applyx(IgniteInternalFuture<GridCacheReturn<CacheObject>> fut)
-                throws IgniteCheckedException
-            {
-                return CU.value(fut.get().value(), ctx, true);
-            }
-
-            @Override public String toString() {
-                return "Cache return value to value converter.";
-            }
-        };
 
         this.ctx = ctx;
 
@@ -2462,9 +2459,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         V prevVal = ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
-
-                return CU.value(prev, ctx, false);
+                return (V)tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
             }
 
             @Override public String toString() {
@@ -2882,9 +2877,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noValArray()).get().value();
-
-                return CU.value(prev, ctx, true);
+                return (V)tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noValArray()).get().value();
             }
 
             @Override public String toString() {
@@ -3001,9 +2994,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                CacheObject prev = tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasValArray()).get().value();
-
-                return CU.value(prev, ctx, true);
+                return (V)tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasValArray()).get().value();
             }
 
             @Override public String toString() {
@@ -3239,14 +3230,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         V prevVal = ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                CacheObject ret = tx.removeAllAsync(ctx, Collections.singletonList(key), entry, true, filter).get().value();
-
-                V retVal = CU.value(ret, ctx, true);
+                V ret = (V)tx.removeAllAsync(ctx, Collections.singletonList(key), entry, true, filter).get().value();
 
                 if (ctx.config().getInterceptor() != null)
-                    return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, retVal)).get2();
+                    return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
 
-                return retVal;
+                return ret;
             }
 
             @Override public String toString() {
@@ -3466,17 +3455,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(val);
 
-                GridCacheReturn ret = tx.removeAllAsync(ctx,
+                return (GridCacheReturn)tx.removeAllAsync(ctx,
                     Collections.singletonList(key),
                     null,
                     true,
                     ctx.equalsValArray(val)).get();
-
-                CacheObject val = (CacheObject)ret.value();
-
-                ret.value(CU.value(val, ctx, true));
-
-                return ret;
             }
 
             @Override public String toString() {
@@ -3544,14 +3527,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (ctx.deploymentEnabled())
                     ctx.deploy().registerClass(oldVal);
 
-                GridCacheReturn ret =
-                    tx.putAllAsync(ctx, F.t(key, newVal), true, null, -1, ctx.equalsValArray(oldVal)).get();
-
-                CacheObject val = (CacheObject)ret.value();
-
-                ret.value(CU.value(val, ctx, true));
-
-                return ret;
+                return (GridCacheReturn)tx.putAllAsync(ctx,
+                    F.t(key, newVal),
+                    true,
+                    null,
+                    -1,
+                    ctx.equalsValArray(oldVal)).get();
             }
 
             @Override public String toString() {
@@ -3580,24 +3561,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     return new GridFinishedFuture<>(ctx.kernalContext(), e);
                 }
 
-                IgniteInternalFuture<GridCacheReturn<CacheObject>> fut = tx.removeAllAsync(ctx,
+                IgniteInternalFuture<GridCacheReturn<V>> fut = (IgniteInternalFuture)tx.removeAllAsync(ctx,
                     Collections.singletonList(key),
                     null,
                     true,
                     ctx.equalsValArray(val));
 
-                return fut.chain(new CX1<IgniteInternalFuture<GridCacheReturn<CacheObject>>, GridCacheReturn<V>>() {
-                    @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<GridCacheReturn<CacheObject>> fut)
-                        throws IgniteCheckedException {
-                        GridCacheReturn ret = fut.get();
-
-                        CacheObject val = (CacheObject)ret.value();
-
-                        ret.value(CU.value(val, ctx, true));
-
-                        return ret;
-                    }
-                });
+                return fut;
             }
 
             @Override public String toString() {
@@ -3629,25 +3599,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     return new GridFinishedFuture<>(ctx.kernalContext(), e);
                 }
 
-                IgniteInternalFuture<GridCacheReturn<CacheObject>> fut = tx.putAllAsync(ctx,
+                IgniteInternalFuture<GridCacheReturn<V>> fut = (IgniteInternalFuture)tx.putAllAsync(ctx,
                     F.t(key, newVal),
                     true,
                     null,
                     -1,
                     ctx.equalsValArray(oldVal));
 
-                return fut.chain(new CX1<IgniteInternalFuture<GridCacheReturn<CacheObject>>, GridCacheReturn<V>>() {
-                    @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<GridCacheReturn<CacheObject>> fut)
-                        throws IgniteCheckedException {
-                        GridCacheReturn ret = fut.get();
-
-                        CacheObject val = (CacheObject)ret.value();
-
-                        ret.value(CU.value(val, ctx, true));
-
-                        return ret;
-                    }
-                });
+                return fut;
             }
 
             @Override public String toString() {

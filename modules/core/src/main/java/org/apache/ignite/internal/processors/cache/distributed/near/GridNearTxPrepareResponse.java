@@ -74,11 +74,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
-    @GridDirectTransient
     private GridCacheReturn<Object> retVal;
-
-    /** Return value bytes. */
-    private byte[] retValBytes;
 
     /** Filter failed keys. */
     @GridDirectCollection(IgniteTxKey.class)
@@ -244,8 +240,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             }
         }
 
-        if (retValBytes == null && retVal != null)
-            retValBytes = ctx.marshaller().marshal(retVal);
+        if (retVal != null && retVal.cacheId() != 0) {
+            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+
+            assert cctx != null : retVal.cacheId();
+
+            retVal.prepareMarshal(cctx);
+        }
 
         if (filterFailedKeys != null) {
             for (IgniteTxKey key :filterFailedKeys) {
@@ -284,8 +285,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             }
         }
 
-        if (retVal == null && retValBytes != null)
-            retVal = ctx.marshaller().unmarshal(retValBytes, ldr);
+        if (retVal != null && retVal.cacheId() != 0) {
+            GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
+
+            assert cctx != null : retVal.cacheId();
+
+            retVal.finishUnmarshal(cctx, ldr);
+        }
 
         if (filterFailedKeys != null) {
             for (IgniteTxKey key :filterFailedKeys) {
@@ -360,7 +366,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeByteArray("retValBytes", retValBytes))
+                if (!writer.writeMessage("retVal", retVal))
                     return false;
 
                 writer.incrementState();
@@ -446,7 +452,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 18:
-                retValBytes = reader.readByteArray("retValBytes");
+                retVal = reader.readMessage("retVal");
 
                 if (!reader.isLastRead())
                     return false;

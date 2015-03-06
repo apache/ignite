@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -57,7 +58,7 @@ public class GridCacheUpdateAtomicResult {
     private final boolean sndToDht;
 
     /** Value computed by entry processor. */
-    private CacheInvokeDirectResult res;
+    private IgniteBiTuple<Object, Exception> res;
 
     /**
      * Constructor.
@@ -75,7 +76,7 @@ public class GridCacheUpdateAtomicResult {
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable CacheObject oldVal,
         @Nullable CacheObject newVal,
-        @Nullable CacheInvokeDirectResult res,
+        @Nullable IgniteBiTuple<Object, Exception> res,
         long newTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
@@ -95,7 +96,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Value computed by the {@link EntryProcessor}.
      */
-    @Nullable public CacheInvokeDirectResult computedResult() {
+    @Nullable public IgniteBiTuple<Object, Exception> computedResult() {
         return res;
     }
 

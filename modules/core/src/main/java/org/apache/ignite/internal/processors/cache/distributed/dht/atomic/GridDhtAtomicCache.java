@@ -1128,7 +1128,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut = updRes.dhtFuture();
 
                             if (req.operation() == TRANSFORM)
-                                retVal = new GridCacheReturn<>((Object)updRes.invokeResults(), true);
+                                retVal = updRes.invokeResults();
                         }
                         else {
                             UpdateSingleResult<K, V> updRes = updateSingle(node,
@@ -1149,9 +1149,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
 
                         if (retVal == null)
-                            retVal = new GridCacheReturn<>(null, true);
+                            retVal = new GridCacheReturn<>(ctx, node.isLocal(), null, true);
 
-                        res.returnValue(req.operation() == TRANSFORM, retVal);
+                        res.returnValue(retVal);
                     }
                     else
                         // Should remap all keys.
@@ -1268,7 +1268,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridCacheOperation op = req.operation();
 
-        Collection<CacheInvokeDirectResult> invokeResults = op == TRANSFORM ? new ArrayList(size) : null;
+        GridCacheReturn invokeRes = null;
 
         int firstEntryIdx = 0;
 
@@ -1329,7 +1329,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, entry.key(), old);
 
                     CacheObject updated;
-                    CacheInvokeDirectResult invokeRes = null;
 
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
@@ -1338,18 +1337,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         updated = ctx.toCacheObject(updatedVal);
 
-                        if (computed != null)
-                            invokeRes = new CacheInvokeDirectResult(entry.key(),
-                                ctx.toCacheObject(ctx.unwrapTemporary(computed)));
+                        if (computed != null) {
+                            if (invokeRes == null)
+                                invokeRes = new GridCacheReturn(node.isLocal());
+
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
+                        }
                     }
                     catch (Exception e) {
-                        invokeRes = new CacheInvokeDirectResult(entry.key(), e);
+                        if (invokeRes == null)
+                            invokeRes = new GridCacheReturn(node.isLocal());
+
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e);
 
                         updated = old;
                     }
-
-                    if (invokeRes != null)
-                        invokeResults.add(invokeRes);
 
                     if (updated == null) {
                         if (intercept) {
@@ -1554,7 +1556,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         updRes.dhtFuture(dhtFut);
 
-        updRes.invokeResult(invokeResults);
+        updRes.invokeResult(invokeRes);
 
         return updRes;
     }
@@ -1651,8 +1653,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean readersOnly = false;
 
         boolean intercept = ctx.config().getInterceptor() != null;
-
-        Collection<CacheInvokeDirectResult> computed = null;
 
         // Avoid iterator creation.
         for (int i = 0; i < keys.size(); i++) {
@@ -1795,22 +1795,28 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (op == TRANSFORM) {
                     assert !req.returnValue();
 
-                    if (updRes.computedResult() != null) {
-                        if (retVal == null) {
-                            computed = new ArrayList(keys.size());
+                    IgniteBiTuple<Object, Exception> compRes = updRes.computedResult();
 
-                            retVal = new GridCacheReturn<>((Object)computed, updRes.success(), false);
-                        }
+                    if (compRes != null && (compRes.get1() != null || compRes.get2() != null)) {
+                        if (retVal == null)
+                            retVal = new GridCacheReturn<>(node.isLocal());
 
-                        computed.add(updRes.computedResult());
+                        retVal.addEntryProcessResult(ctx,
+                            k,
+                            null,
+                            compRes.get1(),
+                            compRes.get2());
                     }
                 }
                 else {
                     // Create only once.
                     if (retVal == null) {
-                        Object ret = updRes.oldValue();
+                        CacheObject ret = updRes.oldValue();
 
-                        retVal = new GridCacheReturn<>(req.returnValue() ? ret : null, updRes.success());
+                        retVal = new GridCacheReturn<>(ctx,
+                            node.isLocal(),
+                            req.returnValue() ? ret : null,
+                            updRes.success());
                     }
                 }
             }
@@ -1828,6 +1834,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param entries Entries to update.
      * @param ver Version to set.
      * @param node Originating node.
+     * @param writeVals Write values.
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
      * @param entryProcessorMap Entry processors.
@@ -2697,7 +2704,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private boolean readersOnly;
 
         /** */
-        private Collection<CacheInvokeDirectResult> invokeRes;
+        private GridCacheReturn invokeRes;
 
         /**
          * @param entry Entry.
@@ -2732,14 +2739,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @param invokeRes Result for invoke operation.
          */
-        private void invokeResult(Collection<CacheInvokeDirectResult> invokeRes) {
+        private void invokeResult(GridCacheReturn invokeRes) {
             this.invokeRes = invokeRes;
         }
 
         /**
          * @return Result for invoke operation.
          */
-        Collection<CacheInvokeDirectResult> invokeResults() {
+        GridCacheReturn invokeResults() {
             return invokeRes;
         }
 

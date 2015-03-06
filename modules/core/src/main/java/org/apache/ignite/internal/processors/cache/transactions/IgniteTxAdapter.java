@@ -326,6 +326,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         log = U.logger(cctx.kernalContext(), logRef, this);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean localResult() {
+        assert originatingNodeId() != null;
+
+        return cctx.localNodeId().equals(originatingNodeId());
+    }
+
     /**
      * Acquires lock.
      */
@@ -1293,7 +1300,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @param op Initially proposed operation.
      * @param txEntry TX entry being updated.
      * @param newVal New value.
-     * @param newValBytes New value bytes.
      * @param newVer New version.
      * @param old Old entry.
      * @return Tuple with adjusted operation type and conflict context.
@@ -1590,6 +1596,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean localResult() {
+            return false;
         }
 
         /** {@inheritDoc} */

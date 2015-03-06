@@ -159,7 +159,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @return Return value for
      */
-    public <V> GridCacheReturn<CacheObject> implicitSingleResult();
+    public GridCacheReturn implicitSingleResult();
 
     /**
      * Finishes transaction (either commit or rollback).

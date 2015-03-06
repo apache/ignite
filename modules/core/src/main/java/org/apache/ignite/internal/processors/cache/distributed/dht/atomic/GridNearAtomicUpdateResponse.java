@@ -56,16 +56,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Serialized error. */
     private byte[] errBytes;
 
-    /** */
-    private boolean success;
-
-    /** */
+    /** Return value. */
     @GridToStringInclude
-    private CacheObject retVal;
-
-    /** */
-    @GridDirectCollection(CacheInvokeDirectResult.class)
-    private Collection<CacheInvokeDirectResult> invokeRes;
+    private GridCacheReturn ret;
 
     /** Failed keys. */
     @GridToStringInclude
@@ -161,21 +154,15 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @return Return value.
      */
     public GridCacheReturn<?> returnValue() {
-        return invokeRes != null ? new GridCacheReturn<>(invokeRes, success) : new GridCacheReturn<>(retVal, success);
+        return ret;
     }
 
     /**
-     * @param invoke {@code True} if result for {@code invoke} operation.
-     * @param retVal Return value.
+     * @param ret Return value.
      */
     @SuppressWarnings("unchecked")
-    public void returnValue(boolean invoke, GridCacheReturn<Object> retVal) {
-        success = retVal.success();
-
-        if (invoke)
-            invokeRes = (Collection<CacheInvokeDirectResult>)retVal.value();
-        else
-            this.retVal = (CacheObject)retVal.value();
+    public void returnValue(GridCacheReturn ret) {
+        this.ret = ret;
     }
 
     /**
@@ -395,13 +382,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         prepareMarshalCacheObjects(nearVals, cctx);
 
-        if (retVal != null)
-            retVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (invokeRes != null) {
-            for (CacheInvokeDirectResult res : invokeRes)
-                res.prepareMarshal(cctx);
-        }
+        if (ret != null)
+            ret.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
@@ -419,13 +401,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         finishUnmarshalCacheObjects(nearVals, cctx, ldr);
 
-        if (retVal != null)
-            retVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-        if (invokeRes != null) {
-            for (CacheInvokeDirectResult res : invokeRes)
-                res.finishUnmarshal(cctx, ldr);
-        }
+        if (ret != null)
+            ret.finishUnmarshal(cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -462,61 +439,49 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("invokeRes", invokeRes, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
                 if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeMessage("nearVer", nearVer))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeCollection("remapKeys", remapKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
-                if (!writer.writeMessage("retVal", retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeBoolean("success", success))
+            case 13:
+                if (!writer.writeMessage("ret", ret))
                     return false;
 
                 writer.incrementState();
@@ -562,14 +527,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 6:
-                invokeRes = reader.readCollection("invokeRes", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
                 nearExpireTimes = reader.readMessage("nearExpireTimes");
 
                 if (!reader.isLastRead())
@@ -577,7 +534,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 nearSkipIdxs = reader.readCollection("nearSkipIdxs", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -585,7 +542,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 nearTtls = reader.readMessage("nearTtls");
 
                 if (!reader.isLastRead())
@@ -593,7 +550,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -601,7 +558,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 nearValsIdxs = reader.readCollection("nearValsIdxs", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -609,7 +566,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 nearVer = reader.readMessage("nearVer");
 
                 if (!reader.isLastRead())
@@ -617,7 +574,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 remapKeys = reader.readCollection("remapKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -625,16 +582,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 14:
-                retVal = reader.readMessage("retVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                success = reader.readBoolean("success");
+            case 13:
+                ret = reader.readMessage("ret");
 
                 if (!reader.isLastRead())
                     return false;
@@ -653,7 +602,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 14;
     }
 
     /** {@inheritDoc} */

@@ -515,7 +515,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<Object> ret = new GridCacheReturn<>(false);
+        final GridCacheReturn<Object> ret = new GridCacheReturn<>(localResult(), false);
 
         if (F.isEmpty(entries))
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);
