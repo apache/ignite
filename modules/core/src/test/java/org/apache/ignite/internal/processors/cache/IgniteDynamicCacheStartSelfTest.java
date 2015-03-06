@@ -45,6 +45,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     private static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
 
     /** */
+    private boolean cache = true;
+
+    /** */
     public static final IgnitePredicate<ClusterNode> NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
@@ -70,11 +73,13 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        if (cache) {
+            CacheConfiguration cacheCfg = new CacheConfiguration();
 
-        cacheCfg.setName(STATIC_CACHE_NAME);
+            cacheCfg.setName(STATIC_CACHE_NAME);
 
-        cfg.setCacheConfiguration(cacheCfg);
+            cfg.setCacheConfiguration(cacheCfg);
+        }
 
         return cfg;
     }
@@ -395,6 +400,53 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
         finally {
             testAttribute = true;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailWhenStaticCacheExists() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+                CacheConfiguration ccfg = new CacheConfiguration();
+                ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                // Cache is already configured, should fail.
+                ccfg.setName(STATIC_CACHE_NAME);
+
+                return kernal.context().cache().dynamicStartCache(ccfg, NODE_FILTER).get();
+            }
+        }, IgniteCheckedException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed. TODO Ignite-45.
+     */
+    public void _testFailWhenStaticCacheExistsOnOtherNode() throws Exception {
+        cache = false;
+
+        startGrid(nodeCount());
+
+        try {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    final IgniteKernal kernal = (IgniteKernal)grid(nodeCount());
+
+                    CacheConfiguration ccfg = new CacheConfiguration();
+                    ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                    // Cache is already configured, should fail.
+                    ccfg.setName(STATIC_CACHE_NAME);
+
+                    return kernal.context().cache().dynamicStartCache(ccfg, NODE_FILTER).get();
+                }
+            }, IgniteCheckedException.class, null);
+        }
+        finally {
+            stopGrid(nodeCount());
         }
     }
 }
