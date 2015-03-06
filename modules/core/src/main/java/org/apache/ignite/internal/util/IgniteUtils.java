@@ -299,7 +299,7 @@ public abstract class IgniteUtils {
         exceptionConverters;
 
     /** */
-    private volatile static IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /**
      * Initializes enterprise check.
@@ -610,6 +610,22 @@ public abstract class IgniteUtils {
         });
 
         return m;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionLight(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
     }
 
     /**
@@ -8866,7 +8882,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.arrayList(c, c.size(), p);
     }
 
     /**

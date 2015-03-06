@@ -1785,7 +1785,7 @@ public class GridCacheUtils {
      */
     @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
-            return new CacheWriterException(e);
+            return new CacheWriterException(U.convertExceptionLight(e));
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
