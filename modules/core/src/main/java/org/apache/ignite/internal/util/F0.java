@@ -157,6 +157,22 @@ public class F0 {
 
                 return true;
             }
+
+            @Override public void entryLocked(boolean locked) {
+                if (p1 != null) {
+                    for (CacheEntryPredicate p : p1) {
+                        if (p != null)
+                            p.entryLocked(locked);
+                    }
+                }
+
+                if (p2 != null) {
+                    for (CacheEntryPredicate p : p2) {
+                        if (p != null)
+                            p.entryLocked(locked);
+                    }
+                }
+            }
         });
     }
 
@@ -184,11 +200,24 @@ public class F0 {
                 if (p != null && !p.apply(e))
                     return false;
 
-                for (CacheEntryPredicate p : ps)
+                for (CacheEntryPredicate p : ps) {
                     if (p != null && !p.apply(e))
                         return false;
+                }
 
                 return true;
+            }
+
+            @Override public void entryLocked(boolean locked) {
+                assert ps != null;
+
+                if (p != null)
+                    p.entryLocked(locked);
+
+                for (CacheEntryPredicate p : ps) {
+                    if (p != null)
+                        p.entryLocked(locked);
+                }
             }
         });
     }
