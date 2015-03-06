@@ -27,7 +27,10 @@ import java.util.concurrent.*;
  */
 public class MarshallerContextTestImpl implements MarshallerContext {
     /** */
-    private static final String CLS_NAMES_FILE = "org/apache/ignite/internal/classnames.properties";
+    private static final String[] CLS_NAMES_FILES = {
+        "org/apache/ignite/internal/classnames.properties",
+        "org/apache/ignite/internal/classnames-jdk.properties"
+    };
 
     /** */
     private final ConcurrentMap<Integer, Class> map = new ConcurrentHashMap8<>();
@@ -38,21 +41,23 @@ public class MarshallerContextTestImpl implements MarshallerContext {
         try {
             ClassLoader ldr = getClass().getClassLoader();
 
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(CLS_NAMES_FILE)));
+            for (String file : CLS_NAMES_FILES) {
+                BufferedReader rdr = new BufferedReader(new InputStreamReader(ldr.getResourceAsStream(file)));
 
-            String line;
+                String line;
 
-            while ((line = rdr.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#"))
-                    continue;
+                while ((line = rdr.readLine()) != null) {
+                    if (line.isEmpty() || line.startsWith("#"))
+                        continue;
 
-                try {
-                    Class cls = Class.forName(line.trim(), false, ldr);
+                    try {
+                        Class cls = Class.forName(line.trim(), false, ldr);
 
-                    map.put(cls.getName().hashCode(), cls);
-                }
-                catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                    // No-op.
+                        map.put(cls.getName().hashCode(), cls);
+                    }
+                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                        // No-op.
+                    }
                 }
             }
         }
