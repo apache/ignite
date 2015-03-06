@@ -613,10 +613,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
      * @param e Ignite checked exception.
      * @return Ignite runtime exception.
      */
-    public static Exception convertExceptionLight(IgniteCheckedException e) {
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
         C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
 
         if (converter != null)
