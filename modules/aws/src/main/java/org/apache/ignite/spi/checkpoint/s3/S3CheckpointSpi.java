@@ -27,8 +27,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -123,10 +121,6 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
 
     /** Suffix to use in bucket name generation. */
     public static final String DFLT_BUCKET_NAME_SUFFIX = "default-bucket";
-
-    /** Marshaller. */
-    @GridToStringExclude
-    private final Marshaller marsh = new JdkMarshaller();
 
     /** Client to interact with S3 storage. */
     @GridToStringExclude
@@ -464,7 +458,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
             InputStream in = obj.getObjectContent();
 
             try {
-                return marsh.unmarshal(in, U.gridClassLoader());
+                return S3CheckpointData.fromStream(in);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to unmarshal S3CheckpointData [bucketName=" +
+                    bucketName + ", key=" + key + ']', e);
             }
             finally {
                 U.closeQuiet(in);
@@ -492,7 +490,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
         if (log.isDebugEnabled())
             log.debug("Writing data to S3 [bucket=" + bucketName + ", key=" + data.getKey() + ']');
 
-        byte[] buf = marsh.marshal(data);
+        byte[] buf = data.toBytes();
 
         ObjectMetadata meta = new ObjectMetadata();
 
