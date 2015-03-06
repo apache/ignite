@@ -3208,11 +3208,15 @@ public abstract class IgniteUtils {
             }
         }
 
-        String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
-
         ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
 
-        return clsLdr != null ? clsLdr.getResource(locPath) : null;
+        if (clsLdr != null) {
+            String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+
+            return clsLdr.getResource(locPath);
+        }
+        else
+            return null;
     }
 
     /**
