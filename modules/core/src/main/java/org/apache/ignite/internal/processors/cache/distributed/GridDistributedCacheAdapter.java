@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -48,6 +49,9 @@ import static org.apache.ignite.internal.GridClosureCallMode.*;
 public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int MAX_REMOVE_ALL_ATTEMPTS = 50;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -136,25 +140,58 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        try {
-            long topVer;
+        int attemptCnt = 0;
 
-            do {
-                topVer = ctx.affinity().affinityTopologyVersion();
+        while (true) {
+            long topVer = ctx.discovery().topologyVersion();
 
-                // Send job to all data nodes.
-                Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
+            IgniteInternalFuture<Long> fut = ctx.affinity().affinityReadyFuturex(topVer);
+            if (fut != null)
+                fut.get();
 
-                if (!nodes.isEmpty()) {
-                    ctx.closures().callAsyncNoFailover(BROADCAST,
-                        new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
+            // Send job to all data nodes.
+            ClusterGroup cluster = ctx.grid().cluster().forDataNodes(name());
+
+            if (cluster.nodes().isEmpty())
+                break;
+
+            try {
+                Collection<Long> res = ctx.grid().compute(cluster).withNoFailover().broadcast(
+                    new GlobalRemoveAllCallable<>(name(), topVer));
+
+                Long max = Collections.max(res);
+
+                if (max > 0) {
+                    assert max > topVer;
+
+                    ctx.affinity().affinityReadyFuture(max).get();
+
+                    continue;
+                }
+
+                if (res.contains(-1L)) {
+                    if (++attemptCnt > MAX_REMOVE_ALL_ATTEMPTS)
+                        throw new IgniteCheckedException("Failed to remove all entries.");
+
+                    continue;
                 }
             }
-            while (ctx.affinity().affinityTopologyVersion() > topVer);
-        }
-        catch (ClusterGroupEmptyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+            catch (ClusterGroupEmptyException ignore) {
+                if (log.isDebugEnabled())
+                    log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+
+                break;
+            }
+            catch (ClusterTopologyException e) {
+                // GlobalRemoveAllCallable was sent to node that has left.
+                if (topVer == ctx.discovery().topologyVersion()) {
+                    // Node was not left, some other error has occurs.
+                    throw e;
+                }
+            }
+
+            if (topVer == ctx.discovery().topologyVersion())
+                break;
         }
     }
 
@@ -162,44 +199,79 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
 
-        long topVer = ctx.affinity().affinityTopologyVersion();
-
-        removeAllAsync(opFut, topVer);
+        removeAllAsync(opFut, 0);
 
         return opFut;
     }
 
     /**
      * @param opFut Future.
-     * @param topVer Topology version.
+     * @param attemptCnt Attempts count.
      */
-    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final long topVer) {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
+    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final int attemptCnt) {
+        final long topVer = ctx.affinity().affinityTopologyVersion();
 
-        if (!nodes.isEmpty()) {
-            IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
+        ClusterGroup cluster = ctx.grid().cluster().forDataNodes(name());
 
-            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+        if (cluster.nodes().isEmpty())
+            opFut.onDone();
+        else {
+            IgniteCompute computeAsync = ctx.grid().compute(cluster).withNoFailover().withAsync();
+
+            computeAsync.broadcast(new GlobalRemoveAllCallable<>(name(), topVer));
+
+            ComputeTaskFuture<Collection<Long>> fut = computeAsync.future();
+
+            fut.listenAsync(new IgniteInClosure<IgniteFuture<Collection<Long>>>() {
+                @Override public void apply(IgniteFuture<Collection<Long>> fut) {
                     try {
-                        fut.get();
+                        Collection<Long> res = fut.get();
 
-                        long topVer0 = ctx.affinity().affinityTopologyVersion();
+                        Long max = Collections.max(res);
 
-                        if (topVer0 == topVer)
-                            opFut.onDone();
-                        else
-                            removeAllAsync(opFut, topVer0);
+                        if (max > 0) {
+                            assert max > topVer;
+
+                            try {
+                                ctx.affinity().affinityReadyFuture(max).get();
+
+                                removeAllAsync(opFut, attemptCnt);
+                            }
+                            catch (IgniteCheckedException e) {
+                                opFut.onDone(e);
+                            }
+
+                            return;
+                        }
+
+                        if (res.contains(-1L)) {
+                            if (attemptCnt >= MAX_REMOVE_ALL_ATTEMPTS)
+                                opFut.onDone(new IgniteCheckedException("Failed to remove all entries."));
+                            else
+                                removeAllAsync(opFut, attemptCnt + 1);
+
+                            return;
+                        }
+
+                        if (topVer != ctx.affinity().affinityTopologyVersion())
+                            removeAllAsync(opFut, attemptCnt);
                     }
-                    catch (ClusterGroupEmptyCheckedException ignore) {
+                    catch (ClusterGroupEmptyException ignore) {
                         if (log.isDebugEnabled())
                             log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
 
                         opFut.onDone();
                     }
-                    catch (IgniteCheckedException e) {
-                        opFut.onDone(e);
+                    catch (ClusterTopologyException e) {
+                        // GlobalRemoveAllCallable was sent to node that has left.
+                        if (topVer == ctx.discovery().topologyVersion()) {
+                            // Node was not left, some other error has occurs.
+                            opFut.onDone(e);
+
+                            return;
+                        }
+
+                        removeAllAsync(opFut, attemptCnt + 1);
                     }
                     catch (Error e) {
                         opFut.onDone(e);
@@ -209,8 +281,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 }
             });
         }
-        else
-            opFut.onDone();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +293,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
+    private static class GlobalRemoveAllCallable<K,V> implements IgniteCallable<Long>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -253,21 +323,22 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             this.topVer = topVer;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override public Object call() throws Exception {
+        /** {@inheritDoc} */
+        @Override public Long call() throws Exception {
             GridCacheAdapter<K, V> cacheAdapter = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
-            ctx.affinity().affinityReadyFuture(topVer).get();
+            IgniteInternalFuture<Long> topVerFut = ctx.affinity().affinityReadyFuture(topVer);
+
+            if (topVerFut != null)
+                topVerFut.get();
 
             ctx.gate().enter();
 
             try {
-                if (ctx.affinity().affinityTopologyVersion() != topVer)
-                    return null; // Ignore this remove request because remove request will be sent again.
+                if (ctx.affinity().affinityTopologyVersion() > topVer)
+                    return ctx.affinity().affinityTopologyVersion();
 
                 GridDhtCacheAdapter<K, V> dht;
 
@@ -299,13 +370,24 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                     while (it.hasNext())
                         dataLdr.removeData(it.next().getKey());
+
+                    return 0L; // 0 means remove completer successfully.
+                }
+                catch (IgniteException e) {
+                    if (e instanceof ClusterTopologyException
+                        || e.hasCause(ClusterTopologyCheckedException.class, ClusterTopologyException.class))
+                        return -1L;
+
+                    throw e;
+                }
+                catch (IllegalStateException ignored) {
+                    // Looks like node is about stop.
+                    return -1L; // -1 means request should be resend.
                 }
             }
             finally {
                 ctx.gate().leave();
             }
-
-            return null;
         }
 
         /** {@inheritDoc} */
