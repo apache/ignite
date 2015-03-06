@@ -780,7 +780,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(ctx, discoMgr);
+                startManager(discoMgr);
             }
             finally {
                 gw.writeUnlock();
