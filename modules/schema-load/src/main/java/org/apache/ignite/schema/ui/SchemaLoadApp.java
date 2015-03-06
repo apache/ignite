@@ -319,7 +319,7 @@ public class SchemaLoadApp extends Application {
                 pojosTbl.setItems(pojos);
 
                 if (!pojos.isEmpty())
-                    pojosTbl.getSelectionModel().select(pojos.get(0));
+                    pojosTbl.getSelectionModel().clearAndSelect(0);
 
                 curTbl = pojosTbl;
 
