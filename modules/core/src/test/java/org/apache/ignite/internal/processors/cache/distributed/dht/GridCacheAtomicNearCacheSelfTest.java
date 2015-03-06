@@ -702,7 +702,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         if (expectNear) {
             assertNotNull("No near entry for: " + key + ", grid: " + ignite.name(), nearEntry);
 
-            assertEquals("Unexpected value for grid: " + ignite.name(), val, nearEntry.info().value());
+            assertEquals("Unexpected value for grid: " + ignite.name(),
+                val,
+                CU.value(nearEntry.info().value(), near.context(), false));
         }
         else
             assertNull("Unexpected near entry: " + nearEntry + ", grid: " + ignite.name(), nearEntry);
@@ -723,7 +725,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (UUID reader : expReaders)
                 assertTrue(readers.contains(reader));
 
-            assertEquals("Unexpected value for grid: " + ignite.name(), val, dhtEntry.info().value());
+            assertEquals("Unexpected value for grid: " + ignite.name(),
+                val,
+                CU.value(dhtEntry.info().value(), dht.context(), false));
         }
         else
             assertNull("Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name(), dhtEntry);

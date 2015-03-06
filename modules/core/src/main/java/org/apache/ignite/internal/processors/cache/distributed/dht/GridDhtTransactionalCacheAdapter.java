@@ -1021,6 +1021,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         filterPassed = writeEntry.filtersPassed();
                                     }
 
+                                    if (ret && val == null)
+                                        val = e.valueBytes(null);
 
                                     // We include values into response since they are required for local
                                     // calls and won't be serialized. We are also including DHT version.

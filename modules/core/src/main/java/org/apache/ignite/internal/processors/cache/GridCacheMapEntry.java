@@ -800,8 +800,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             Object storeVal = readThrough(tx0, key, false, subjId, taskName);
 
-            if (storeVal != null)
-                ret = cctx.toCacheObject(storeVal);
+            ret = cctx.toCacheObject(storeVal);
 
             loadedFromStore = true;
         }
