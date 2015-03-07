@@ -84,7 +84,11 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    unmarshal(new byte[10]);
+                    byte[] arr = new byte[10];
+
+                    arr[0] = (byte)200;
+
+                    unmarshal(arr);
 
                     return null;
                 }

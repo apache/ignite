@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
@@ -35,20 +36,113 @@ import java.util.concurrent.*;
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
 class OptimizedMarshallerUtils {
-    /** Unsafe. */
+    /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** {@code Null} object reference. */
-    static final byte NULL = (byte)0x70;
+    /** */
+    static final long HASH_SET_MAP_OFF;
 
-    /** Handle reference. */
-    static final byte HANDLE = (byte)0x71;
+    /** */
+    static final byte JDK = -2;
 
-    /** Object reference. */
-    static final byte OBJECT = (byte)0x72;
+    /** */
+    static final byte HANDLE = -1;
 
-    /** Object marshalled with JDK marshaller. */
-    static final byte JDK = (byte)0x73;
+    /** */
+    static final byte NULL = 0;
+
+    /** */
+    static final byte BYTE = 1;
+
+    /** */
+    static final byte SHORT = 2;
+
+    /** */
+    static final byte INT = 3;
+
+    /** */
+    static final byte LONG = 4;
+
+    /** */
+    static final byte FLOAT = 5;
+
+    /** */
+    static final byte DOUBLE = 6;
+
+    /** */
+    static final byte CHAR = 7;
+
+    /** */
+    static final byte BOOLEAN = 8;
+
+    /** */
+    static final byte BYTE_ARR = 9;
+
+    /** */
+    static final byte SHORT_ARR = 10;
+
+    /** */
+    static final byte INT_ARR = 11;
+
+    /** */
+    static final byte LONG_ARR = 12;
+
+    /** */
+    static final byte FLOAT_ARR = 13;
+
+    /** */
+    static final byte DOUBLE_ARR = 14;
+
+    /** */
+    static final byte CHAR_ARR = 15;
+
+    /** */
+    static final byte BOOLEAN_ARR = 16;
+
+    /** */
+    static final byte OBJ_ARR = 17;
+
+    /** */
+    static final byte STR = 18;
+
+    /** */
+    static final byte UUID = 19;
+
+    /** */
+    static final byte PROPS = 20;
+
+    /** */
+    static final byte ARRAY_LIST = 21;
+
+    /** */
+    static final byte HASH_MAP = 22;
+
+    /** */
+    static final byte HASH_SET = 23;
+
+    /** */
+    static final byte LINKED_LIST = 24;
+
+    /** */
+    static final byte LINKED_HASH_MAP = 25;
+
+    /** */
+    static final byte LINKED_HASH_SET = 26;
+
+    /** */
+    static final byte DATE = 27;
+
+    /** */
+    static final byte CLS = 28;
+
+    /** */
+    static final byte ENUM = 100;
+
+    /** */
+    static final byte EXTERNALIZABLE = 101;
+
+    /** */
+    static final byte SERIALIZABLE = 102;
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -58,6 +152,15 @@ class OptimizedMarshallerUtils {
 
     /** Class descriptors by class. */
     private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>();
+
+    static {
+        try {
+            HASH_SET_MAP_OFF = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
+        }
+        catch (NoSuchFieldException e) {
+            throw new IgniteException("Initialization failure.", e);
+        }
+    }
 
     /**
      */

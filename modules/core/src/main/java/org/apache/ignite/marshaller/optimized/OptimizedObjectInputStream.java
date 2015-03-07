@@ -92,13 +92,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
-     * @return Class loader.
-     */
-    ClassLoader classLoader() {
-        return clsLdr;
-    }
-
-    /**
      * @return Input.
      */
     public GridDataInput in() {
@@ -148,15 +141,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             case HANDLE:
                 return handles.lookup(readInt());
 
-            case OBJECT:
-                int typeId = readInt();
-
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx, mapper);
-
-                curCls = desc.describedClass();
-
-                return desc.read(this);
-
             case JDK:
                 try {
                     return JDK_MARSH.unmarshal(this, clsLdr);
@@ -169,6 +153,101 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     else
                         throw new IOException("Failed to deserialize object with JDK marshaller.", e);
                 }
+
+            case BYTE:
+                return readByte();
+
+            case SHORT:
+                return readShort();
+
+            case INT:
+                return readInt();
+
+            case LONG:
+                return readLong();
+
+            case FLOAT:
+                return readFloat();
+
+            case DOUBLE:
+                return readDouble();
+
+            case CHAR:
+                return readChar();
+
+            case BOOLEAN:
+                return readBoolean();
+
+            case BYTE_ARR:
+                return readByteArray();
+
+            case SHORT_ARR:
+                return readShortArray();
+
+            case INT_ARR:
+                return readIntArray();
+
+            case LONG_ARR:
+                return readLongArray();
+
+            case FLOAT_ARR:
+                return readFloatArray();
+
+            case DOUBLE_ARR:
+                return readDoubleArray();
+
+            case CHAR_ARR:
+                return readCharArray();
+
+            case BOOLEAN_ARR:
+                return readBooleanArray();
+
+            case OBJ_ARR:
+                return readArray(Class.forName(readUTF(), false, clsLdr));
+
+            case STR:
+                return readString();
+
+            case UUID:
+                return readUuid();
+
+            case PROPS:
+                return readProperties();
+
+            case ARRAY_LIST:
+                return readArrayList();
+
+            case HASH_MAP:
+                return readHashMap(false);
+
+            case HASH_SET:
+                return readHashSet(HASH_SET_MAP_OFF);
+
+            case LINKED_LIST:
+                return readLinkedList();
+
+            case LINKED_HASH_MAP:
+                return readLinkedHashMap(false);
+
+            case LINKED_HASH_SET:
+                return readLinkedHashSet(HASH_SET_MAP_OFF);
+
+            case DATE:
+                return readDate();
+
+            case CLS:
+                return classDescriptor(in.readInt(), clsLdr, ctx, mapper).describedClass();
+
+            case ENUM:
+            case EXTERNALIZABLE:
+            case SERIALIZABLE:
+                int typeId = readInt();
+
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx, mapper);
+
+                curCls = desc.describedClass();
+
+                return desc.read(this);
 
             default:
                 SB msg = new SB("Unexpected error occurred during unmarshalling");

@@ -19,7 +19,6 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import sun.misc.*;
@@ -30,6 +29,7 @@ import java.util.*;
 
 import static java.lang.reflect.Modifier.*;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ENUM;
 
 /**
  * Class descriptor.
@@ -37,99 +37,6 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 class OptimizedClassDescriptor {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    private static final int TYPE_BYTE = 1;
-
-    /** */
-    private static final int TYPE_SHORT = 2;
-
-    /** */
-    private static final int TYPE_INT = 3;
-
-    /** */
-    private static final int TYPE_LONG = 4;
-
-    /** */
-    private static final int TYPE_FLOAT = 5;
-
-    /** */
-    private static final int TYPE_DOUBLE = 6;
-
-    /** */
-    private static final int TYPE_CHAR = 7;
-
-    /** */
-    private static final int TYPE_BOOLEAN = 8;
-
-    /** */
-    private static final int TYPE_BYTE_ARR = 9;
-
-    /** */
-    private static final int TYPE_SHORT_ARR = 10;
-
-    /** */
-    private static final int TYPE_INT_ARR = 11;
-
-    /** */
-    private static final int TYPE_LONG_ARR = 12;
-
-    /** */
-    private static final int TYPE_FLOAT_ARR = 13;
-
-    /** */
-    private static final int TYPE_DOUBLE_ARR = 14;
-
-    /** */
-    private static final int TYPE_CHAR_ARR = 15;
-
-    /** */
-    private static final int TYPE_BOOLEAN_ARR = 16;
-
-    /** */
-    private static final int TYPE_OBJ_ARR = 17;
-
-    /** */
-    private static final int TYPE_STR = 18;
-
-    /** */
-    private static final int TYPE_ENUM = 19;
-
-    /** */
-    private static final int TYPE_UUID = 20;
-
-    /** */
-    private static final int TYPE_PROPS = 21;
-
-    /** */
-    private static final int TYPE_ARRAY_LIST = 22;
-
-    /** */
-    private static final int TYPE_HASH_MAP = 23;
-
-    /** */
-    private static final int TYPE_HASH_SET = 24;
-
-    /** */
-    private static final int TYPE_LINKED_LIST = 25;
-
-    /** */
-    private static final int TYPE_LINKED_HASH_MAP = 26;
-
-    /** */
-    private static final int TYPE_LINKED_HASH_SET = 27;
-
-    /** */
-    private static final int TYPE_DATE = 28;
-
-    /** */
-    private static final int TYPE_CLS = 29;
-
-    /** */
-    private static final int TYPE_EXTERNALIZABLE = 50;
-
-    /** */
-    private static final int TYPE_SERIALIZABLE = 51;
 
     /** Class. */
     private final Class<?> cls;
@@ -194,9 +101,6 @@ class OptimizedClassDescriptor {
     /** Load factor field offset. */
     private long loadFactorFieldOff;
 
-    /** Map field offset. */
-    private long mapFieldOff;
-
     /** Access order field offset. */
     private long accessOrderFieldOff;
 
@@ -236,82 +140,82 @@ class OptimizedClassDescriptor {
             Class<?> parent;
 
             if (cls == byte.class || cls == Byte.class) {
-                type = TYPE_BYTE;
+                type = BYTE;
 
                 isPrimitive = true;
             }
             else if (cls == short.class || cls == Short.class) {
-                type = TYPE_SHORT;
+                type = SHORT;
 
                 isPrimitive = true;
             }
             else if (cls == int.class || cls == Integer.class) {
-                type = TYPE_INT;
+                type = INT;
 
                 isPrimitive = true;
             }
             else if (cls == long.class || cls == Long.class) {
-                type = TYPE_LONG;
+                type = LONG;
 
                 isPrimitive = true;
             }
             else if (cls == float.class || cls == Float.class) {
-                type = TYPE_FLOAT;
+                type = FLOAT;
 
                 isPrimitive = true;
             }
             else if (cls == double.class || cls == Double.class) {
-                type = TYPE_DOUBLE;
+                type = DOUBLE;
 
                 isPrimitive = true;
             }
             else if (cls == char.class || cls == Character.class) {
-                type = TYPE_CHAR;
+                type = CHAR;
 
                 isPrimitive = true;
             }
             else if (cls == boolean.class || cls == Boolean.class) {
-                type = TYPE_BOOLEAN;
+                type = BOOLEAN;
 
                 isPrimitive = true;
             }
             else if (cls == byte[].class)
-                type = TYPE_BYTE_ARR;
+                type = BYTE_ARR;
             else if (cls == short[].class)
-                type = TYPE_SHORT_ARR;
+                type = SHORT_ARR;
             else if (cls == int[].class)
-                type = TYPE_INT_ARR;
+                type = INT_ARR;
             else if (cls == long[].class)
-                type = TYPE_LONG_ARR;
+                type = LONG_ARR;
             else if (cls == float[].class)
-                type = TYPE_FLOAT_ARR;
+                type = FLOAT_ARR;
             else if (cls == double[].class)
-                type = TYPE_DOUBLE_ARR;
+                type = DOUBLE_ARR;
             else if (cls == char[].class)
-                type = TYPE_CHAR_ARR;
+                type = CHAR_ARR;
             else if (cls == boolean[].class)
-                type = TYPE_BOOLEAN_ARR;
+                type = BOOLEAN_ARR;
             else if (cls.isArray())
-                type = TYPE_OBJ_ARR;
+                type = OBJ_ARR;
             else if (cls == String.class)
-                type = TYPE_STR;
+                type = STR;
             else if (cls.isEnum()) {
-                type = TYPE_ENUM;
+                type = ENUM;
 
                 isEnum = true;
                 enumVals = cls.getEnumConstants();
             }
             // Support for enum constants, based on anonymous children classes.
             else if ((parent = cls.getSuperclass()) != null && parent.isEnum()) {
-                type = TYPE_ENUM;
+                type = ENUM;
 
                 isEnum = true;
                 enumVals = parent.getEnumConstants();
             }
             else if (cls == UUID.class)
-                type = TYPE_UUID;
+                type = UUID;
             else if (cls == Properties.class) {
-                type = TYPE_PROPS;
+                type = PROPS;
 
                 try {
                     dfltsFieldOff = UNSAFE.objectFieldOffset(Properties.class.getDeclaredField("defaults"));
@@ -321,9 +225,9 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == ArrayList.class)
-                type = TYPE_ARRAY_LIST;
+                type = ARRAY_LIST;
             else if (cls == HashMap.class) {
-                type = TYPE_HASH_MAP;
+                type = HASH_MAP;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
@@ -333,20 +237,19 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == HashSet.class) {
-                type = TYPE_HASH_SET;
+                type = HASH_SET;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
-                    mapFieldOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
                 }
             }
             else if (cls == LinkedList.class)
-                type = TYPE_LINKED_LIST;
+                type = LINKED_LIST;
             else if (cls == LinkedHashMap.class) {
-                type = TYPE_LINKED_HASH_MAP;
+                type = LINKED_HASH_MAP;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
@@ -357,20 +260,19 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == LinkedHashSet.class) {
-                type = TYPE_LINKED_HASH_SET;
+                type = LINKED_HASH_SET;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
-                    mapFieldOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
                 }
             }
             else if (cls == Date.class)
-                type = TYPE_DATE;
+                type = DATE;
             else if (cls == Class.class) {
-                type = TYPE_CLS;
+                type = CLS;
 
                 isCls = true;
             }
@@ -416,7 +318,7 @@ class OptimizedClassDescriptor {
                 }
 
                 if (Externalizable.class.isAssignableFrom(cls)) {
-                    type = TYPE_EXTERNALIZABLE;
+                    type = EXTERNALIZABLE;
 
                     try {
                         constructor = !Modifier.isStatic(cls.getModifiers()) && cls.getDeclaringClass() != null ?
@@ -430,7 +332,7 @@ class OptimizedClassDescriptor {
                     }
                 }
                 else {
-                    type = TYPE_SERIALIZABLE;
+                    type = SERIALIZABLE;
 
                     isSerial = Serializable.class.isAssignableFrom(cls);
 
@@ -647,167 +549,172 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
+        out.write(type);
+
         switch (type) {
-            case TYPE_BYTE:
+            case BYTE:
                 out.writeByte((Byte)obj);
 
                 break;
 
-            case TYPE_SHORT:
+            case SHORT:
                 out.writeShort((Short)obj);
 
                 break;
 
-            case TYPE_INT:
+            case INT:
                 out.writeInt((Integer)obj);
 
                 break;
 
-            case TYPE_LONG:
+            case LONG:
                 out.writeLong((Long)obj);
 
                 break;
 
-            case TYPE_FLOAT:
+            case FLOAT:
                 out.writeFloat((Float)obj);
 
                 break;
 
-            case TYPE_DOUBLE:
+            case DOUBLE:
                 out.writeDouble((Double)obj);
 
                 break;
 
-            case TYPE_CHAR:
+            case CHAR:
                 out.writeChar((Character)obj);
 
                 break;
 
-            case TYPE_BOOLEAN:
+            case BOOLEAN:
                 out.writeBoolean((Boolean)obj);
 
                 break;
 
-            case TYPE_BYTE_ARR:
+            case BYTE_ARR:
                 out.writeByteArray((byte[])obj);
 
                 break;
 
-            case TYPE_SHORT_ARR:
+            case SHORT_ARR:
                 out.writeShortArray((short[])obj);
 
                 break;
 
-            case TYPE_INT_ARR:
+            case INT_ARR:
                 out.writeIntArray((int[])obj);
 
                 break;
 
-            case TYPE_LONG_ARR:
+            case LONG_ARR:
                 out.writeLongArray((long[])obj);
 
                 break;
 
-            case TYPE_FLOAT_ARR:
+            case FLOAT_ARR:
                 out.writeFloatArray((float[])obj);
 
                 break;
 
-            case TYPE_DOUBLE_ARR:
+            case DOUBLE_ARR:
                 out.writeDoubleArray((double[])obj);
 
                 break;
 
-            case TYPE_CHAR_ARR:
+            case CHAR_ARR:
                 out.writeCharArray((char[])obj);
 
                 break;
 
-            case TYPE_BOOLEAN_ARR:
+            case BOOLEAN_ARR:
                 out.writeBooleanArray((boolean[])obj);
 
                 break;
 
-            case TYPE_OBJ_ARR:
+            case OBJ_ARR:
                 out.writeUTF(obj.getClass().getComponentType().getName());
                 out.writeArray((Object[])obj);
 
                 break;
 
-            case TYPE_STR:
+            case STR:
                 out.writeString((String)obj);
 
                 break;
 
-            case TYPE_ENUM:
-                out.writeInt(((Enum)obj).ordinal());
-
-                break;
-
-            case TYPE_UUID:
+            case UUID:
                 out.writeUuid((UUID)obj);
 
                 break;
 
-            case TYPE_PROPS:
+            case PROPS:
                 out.writeProperties((Properties)obj, dfltsFieldOff);
 
                 break;
 
-            case TYPE_ARRAY_LIST:
+            case ARRAY_LIST:
                 out.writeArrayList((ArrayList<?>)obj);
 
                 break;
 
-            case TYPE_HASH_MAP:
+            case HASH_MAP:
                 out.writeHashMap((HashMap<?, ?>)obj, loadFactorFieldOff, false);
 
                 break;
 
-            case TYPE_HASH_SET:
-                out.writeHashSet((HashSet<?>)obj, mapFieldOff, loadFactorFieldOff);
+            case HASH_SET:
+                out.writeHashSet((HashSet<?>)obj, HASH_SET_MAP_OFF, loadFactorFieldOff);
 
                 break;
 
-            case TYPE_LINKED_LIST:
+            case LINKED_LIST:
                 out.writeLinkedList((LinkedList<?>)obj);
 
                 break;
 
-            case TYPE_LINKED_HASH_MAP:
+            case LINKED_HASH_MAP:
                 out.writeLinkedHashMap((LinkedHashMap<?, ?>)obj, loadFactorFieldOff, accessOrderFieldOff, false);
 
                 break;
 
-            case TYPE_LINKED_HASH_SET:
-                out.writeLinkedHashSet((LinkedHashSet<?>)obj, mapFieldOff, loadFactorFieldOff);
+            case LINKED_HASH_SET:
+                out.writeLinkedHashSet((LinkedHashSet<?>)obj, HASH_SET_MAP_OFF, loadFactorFieldOff);
 
                 break;
 
-            case TYPE_DATE:
+            case DATE:
                 out.writeDate((Date)obj);
 
                 break;
 
-            case TYPE_CLS:
+            case CLS:
                 OptimizedClassDescriptor desc = classDescriptor((Class<?>)obj, ctx, mapper);
 
                 out.writeInt(desc.typeId());
 
                 break;
 
-            case TYPE_EXTERNALIZABLE:
+            case ENUM:
+                out.writeInt(typeId);
+                out.writeInt(((Enum)obj).ordinal());
+
+                break;
+
+            case EXTERNALIZABLE:
+                out.writeInt(typeId);
                 out.writeShort(checksum);
                 out.writeExternalizable(obj);
 
                 break;
 
-            case TYPE_SERIALIZABLE:
+            case SERIALIZABLE:
                 if (out.requireSerializable() && !isSerial)
                     throw new NotSerializableException("Must implement java.io.Serializable or " +
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
+                out.writeInt(typeId);
                 out.writeShort(checksum);
                 out.writeSerializable(obj, writeObjMtds, fields);
 
@@ -828,105 +735,23 @@ class OptimizedClassDescriptor {
      */
     Object read(OptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
         switch (type) {
-            case TYPE_BYTE:
-                return in.readByte();
-
-            case TYPE_SHORT:
-                return in.readShort();
-
-            case TYPE_INT:
-                return in.readInt();
-
-            case TYPE_LONG:
-                return in.readLong();
-
-            case TYPE_FLOAT:
-                return in.readFloat();
-
-            case TYPE_DOUBLE:
-                return in.readDouble();
-
-            case TYPE_CHAR:
-                return in.readChar();
-
-            case TYPE_BOOLEAN:
-                return in.readBoolean();
-
-            case TYPE_BYTE_ARR:
-                return in.readByteArray();
-
-            case TYPE_SHORT_ARR:
-                return in.readShortArray();
-
-            case TYPE_INT_ARR:
-                return in.readIntArray();
-
-            case TYPE_LONG_ARR:
-                return in.readLongArray();
-
-            case TYPE_FLOAT_ARR:
-                return in.readFloatArray();
-
-            case TYPE_DOUBLE_ARR:
-                return in.readDoubleArray();
-
-            case TYPE_CHAR_ARR:
-                return in.readCharArray();
-
-            case TYPE_BOOLEAN_ARR:
-                return in.readBooleanArray();
-
-            case TYPE_OBJ_ARR:
-                return in.readArray(Class.forName(in.readUTF(), false, in.classLoader()));
-
-            case TYPE_STR:
-                return in.readString();
-
-            case TYPE_ENUM:
+            case ENUM:
                 return enumVals[in.readInt()];
 
-            case TYPE_UUID:
-                return in.readUuid();
-
-            case TYPE_PROPS:
-                return in.readProperties();
-
-            case TYPE_ARRAY_LIST:
-                return in.readArrayList();
-
-            case TYPE_HASH_MAP:
-                return in.readHashMap(false);
-
-            case TYPE_HASH_SET:
-                return in.readHashSet(mapFieldOff);
-
-            case TYPE_LINKED_LIST:
-                return in.readLinkedList();
-
-            case TYPE_LINKED_HASH_MAP:
-                return in.readLinkedHashMap(false);
-
-            case TYPE_LINKED_HASH_SET:
-                return in.readLinkedHashSet(mapFieldOff);
-
-            case TYPE_DATE:
-                return in.readDate();
-
-            case TYPE_CLS:
-                return classDescriptor(in.readInt(), in.classLoader(), ctx, mapper).describedClass();
-
-            case TYPE_EXTERNALIZABLE:
+            case EXTERNALIZABLE:
                 verifyChecksum(in.readShort());
 
                 return in.readExternalizable(constructor, readResolveMtd);
 
-            case TYPE_SERIALIZABLE:
+            case SERIALIZABLE:
                 verifyChecksum(in.readShort());
 
                 return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
-                throw new IllegalStateException("Invalid class type: " + type);
+                assert false : "Unexpected type: " + type;
+
+                return null;
         }
     }
 

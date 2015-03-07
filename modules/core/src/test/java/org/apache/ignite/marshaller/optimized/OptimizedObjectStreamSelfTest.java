@@ -1082,7 +1082,8 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(0);
+            out.writeInt(0);
+            out.writeInt(200);
             out.writeObject("str");
         }
 

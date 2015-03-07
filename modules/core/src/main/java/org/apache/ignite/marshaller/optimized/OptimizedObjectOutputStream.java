@@ -200,12 +200,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     writeByte(HANDLE);
                     writeInt(handle);
                 }
-                else {
-                    writeByte(OBJECT);
-                    writeInt(desc.typeId());
-
+                else
                     desc.write(this, obj);
-                }
             }
         }
     }
