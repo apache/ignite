@@ -37,5 +37,5 @@ public interface MarshallerContext {
      * @return Class.
      * @throws ClassNotFoundException If class was not found.
      */
-    public Class className(int id, ClassLoader ldr) throws ClassNotFoundException;
+    public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException;
 }

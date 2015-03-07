@@ -208,7 +208,7 @@ class OptimizedMarshallerUtils {
      */
     static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
-        return classDescriptor(ctx.className(id, ldr), ctx, mapper);
+        return classDescriptor(ctx.getClass(id, ldr), ctx, mapper);
     }
 
     /**

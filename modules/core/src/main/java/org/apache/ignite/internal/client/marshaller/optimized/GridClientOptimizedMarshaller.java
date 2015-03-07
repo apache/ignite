@@ -101,17 +101,13 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      */
     private static class ClientMarshallerContext extends MarshallerContextAdapter {
         /** {@inheritDoc} */
-        @Override public void registerClass(int id, Class cls) {
-            // No-op.
+        @Override protected void registerClassName(int id, String clsName) {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-            String clsName = clsNameById.get(id);
-
-            assert clsName != null : id;
-
-            return Class.forName(clsName, false, ldr);
+        @Override protected String className(int id) {
+            throw new UnsupportedOperationException();
         }
     }
 }

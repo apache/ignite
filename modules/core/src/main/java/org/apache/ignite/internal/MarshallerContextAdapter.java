@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 
@@ -36,14 +37,14 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
 
     /** */
-    protected final ConcurrentMap<Integer, String> clsNameById = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
 
     /**
      * Initializes context.
      */
     public MarshallerContextAdapter() {
         try {
-            ClassLoader ldr = getClass().getClassLoader();
+            ClassLoader ldr = U.gridClassLoader();
 
             Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
 
@@ -73,8 +74,51 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
                 String clsName = line.trim();
 
-                clsNameById.put(clsName.hashCode(), clsName);
+                map.put(clsName.hashCode(), clsName);
             }
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public void registerClass(int id, Class cls) {
+        if (!map.containsKey(id)) {
+            registerClassName(id, cls.getName());
+
+            map.putIfAbsent(id, cls.getName());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException {
+        String clsName = map.get(id);
+
+        if (clsName == null) {
+            clsName = className(id);
+
+            assert clsName != null : id;
+
+            String old = map.putIfAbsent(id, clsName);
+
+            if (old != null)
+                clsName = old;
+        }
+
+        return U.forName(clsName, ldr);
+    }
+
+    /**
+     * Registers class name.
+     *
+     * @param id Type ID.
+     * @param clsName Class name.
+     */
+    protected abstract void registerClassName(int id, String clsName);
+
+    /**
+     * Gets class name by type ID.
+     *
+     * @param id Type ID.
+     * @return Class name.
+     */
+    protected abstract String className(int id);
 }

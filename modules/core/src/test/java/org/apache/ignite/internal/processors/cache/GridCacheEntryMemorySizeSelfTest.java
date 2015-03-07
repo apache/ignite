@@ -89,7 +89,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                     // No-op.
                 }
 
-                @Override public Class className(int id, ClassLoader ldr) {
+                @Override public Class getClass(int id, ClassLoader ldr) {
                     throw new UnsupportedOperationException();
                 }
             });

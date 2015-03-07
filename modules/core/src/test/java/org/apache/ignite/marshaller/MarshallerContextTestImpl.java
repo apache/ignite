@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.internal.*;
 import org.jdk8.backport.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -28,40 +27,15 @@ import java.util.concurrent.*;
  */
 public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     /** */
-    private final ConcurrentMap<Integer, Class> map = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
 
-    /**
-     */
-    public MarshallerContextTestImpl() {
-        super();
-
-        ClassLoader ldr = getClass().getClassLoader();
-
-        for (Map.Entry<Integer, String> e : clsNameById.entrySet()) {
-            try {
-                map.put(e.getKey(), Class.forName(e.getValue(), true, ldr));
-            }
-            catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                // No-op.
-            }
-        }
+    /** {@inheritDoc} */
+    @Override protected void registerClassName(int id, String clsName) {
+        map.putIfAbsent(id, clsName);
     }
 
     /** {@inheritDoc} */
-    @Override public void registerClass(int id, Class cls) {
-        Class old = map.putIfAbsent(id, cls);
-
-        if (old != null && !cls.getName().equals(old.getName()))
-            throw new IllegalStateException("Collision [id=" + id + ", cls1=" + cls.getName() +
-                ", cls2=" + old.getName() + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-        Class cls = map.get(id);
-
-        assert cls != null : id;
-
-        return cls;
+    @Override protected String className(int id) {
+        return map.get(id);
     }
 }

@@ -45,50 +45,33 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerClass(int id, Class cls) {
-        if (!clsNameById.containsKey(id)) {
-            try {
-                if (cache == null)
-                    U.awaitQuiet(latch);
+    @Override protected void registerClassName(int id, String clsName) {
+        try {
+            if (cache == null)
+                U.awaitQuiet(latch);
 
-                String old = cache.putIfAbsent(id, cls.getName());
+            String old = cache.putIfAbsent(id, clsName);
 
-                if (old != null && !old.equals(cls.getName()))
-                    throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
-                        "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + cls.getName() +
-                        "clsName2=" + old + ']');
-
-                clsNameById.putIfAbsent(id, cls.getName());
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            if (old != null && !old.equals(clsName))
+                throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
+                    "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
+                    "clsName2=" + old + ']');
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Class className(int id, ClassLoader ldr) throws ClassNotFoundException {
-        String clsName = clsNameById.get(id);
+    @Override protected String className(int id) {
+        try {
+            if (cache == null)
+                U.awaitQuiet(latch);
 
-        if (clsName == null) {
-            try {
-                if (cache == null)
-                    U.awaitQuiet(latch);
-
-                clsName = cache.get(id);
-
-                assert clsName != null : id;
-
-                String old = clsNameById.putIfAbsent(id, clsName);
-
-                if (old != null)
-                    clsName = old;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return cache.get(id);
         }
-
-        return Class.forName(clsName, false, ldr);
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }
