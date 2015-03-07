@@ -158,10 +158,8 @@ class GridResourceIoc {
         boolean injected = false;
 
         for (GridResourceField field : getFieldsWithAnnotation(dep, targetCls, annCls)) {
-            Field f = field.getField();
-
-            if (GridResourceUtils.mayRequireResources(f)) {
-                f.setAccessible(true);
+            if (field.processFieldValue()) {
+                Field f = field.getField();
 
                 try {
                     Object obj = f.get(target);
@@ -361,13 +359,18 @@ class GridResourceIoc {
         if (fields == null) {
             List<GridResourceField> fieldsList = new ArrayList<>();
 
+            boolean allowImplicitInjection = !GridNoImplicitInjection.class.isAssignableFrom(cls);
+
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
                     Annotation ann = field.getAnnotation(annCls);
 
-                    if (ann != null || GridResourceUtils.mayRequireResources(field))
-                        // Account for anonymous inner classes.
+                    if (ann != null)
                         fieldsList.add(new GridResourceField(field, ann));
+                    else if (allowImplicitInjection && GridResourceUtils.mayRequireResources(field)) {
+                        // Account for anonymous inner classes.
+                        fieldsList.add(new GridResourceField(field, null));
+                    }
                 }
             }
 
