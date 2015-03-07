@@ -26,8 +26,9 @@ public interface MarshallerContext {
      *
      * @param id Type ID.
      * @param cls Class.
+     * @return Whether class was registered.
      */
-    public void registerClass(int id, Class cls);
+    public boolean registerClass(int id, Class cls);
 
     /**
      * Gets class for provided type ID.

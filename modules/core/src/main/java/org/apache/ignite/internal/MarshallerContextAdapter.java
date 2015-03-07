@@ -80,12 +80,17 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerClass(int id, Class cls) {
-        if (!map.containsKey(id)) {
-            registerClassName(id, cls.getName());
+    @Override public boolean registerClass(int id, Class cls) {
+        boolean registered = true;
 
-            map.putIfAbsent(id, cls.getName());
+        if (!map.containsKey(id)) {
+            registered = registerClassName(id, cls.getName());
+
+            if (registered)
+                map.putIfAbsent(id, cls.getName());
         }
+
+        return registered;
     }
 
     /** {@inheritDoc} */
@@ -111,8 +116,9 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      *
      * @param id Type ID.
      * @param clsName Class name.
+     * @return Whether class name was registered.
      */
-    protected abstract void registerClassName(int id, String clsName);
+    protected abstract boolean registerClassName(int id, String clsName);
 
     /**
      * Gets class name by type ID.

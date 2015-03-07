@@ -113,26 +113,14 @@ class OptimizedClassDescriptor {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    OptimizedClassDescriptor(Class<?> cls, MarshallerContext ctx, OptimizedMarshallerIdMapper mapper)
+    OptimizedClassDescriptor(Class<?> cls, int typeId, MarshallerContext ctx, OptimizedMarshallerIdMapper mapper)
         throws IOException {
         this.cls = cls;
+        this.typeId = typeId;
         this.ctx = ctx;
         this.mapper = mapper;
 
         name = cls.getName();
-
-        int typeId;
-
-        if (mapper != null) {
-            typeId = mapper.typeId(name);
-
-            if (typeId == 0)
-                typeId = name.hashCode();
-        }
-        else
-            typeId = name.hashCode();
-
-        this.typeId = typeId;
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
@@ -493,13 +481,6 @@ class OptimizedClassDescriptor {
     }
 
     /**
-     * @return Type ID.
-     */
-    int typeId() {
-        return typeId;
-    }
-
-    /**
      * @return Primitive flag.
      */
     boolean isPrimitive() {
@@ -633,7 +614,10 @@ class OptimizedClassDescriptor {
                 break;
 
             case OBJ_ARR:
-                out.writeUTF(obj.getClass().getComponentType().getName());
+                OptimizedClassDescriptor compDesc = classDescriptor(obj.getClass().getComponentType(), ctx, mapper);
+
+                compDesc.writeTypeData(out);
+
                 out.writeArray((Object[])obj);
 
                 break;
@@ -689,20 +673,22 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor desc = classDescriptor((Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = classDescriptor((Class<?>)obj, ctx, mapper);
 
-                out.writeInt(desc.typeId());
+                clsDesc.writeTypeData(out);
 
                 break;
 
             case ENUM:
-                out.writeInt(typeId);
+                writeTypeData(out);
+
                 out.writeInt(((Enum)obj).ordinal());
 
                 break;
 
             case EXTERNALIZABLE:
-                out.writeInt(typeId);
+                writeTypeData(out);
+
                 out.writeShort(checksum);
                 out.writeExternalizable(obj);
 
@@ -714,7 +700,8 @@ class OptimizedClassDescriptor {
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
-                out.writeInt(typeId);
+                writeTypeData(out);
+
                 out.writeShort(checksum);
                 out.writeSerializable(obj, writeObjMtds, fields);
 
@@ -723,6 +710,17 @@ class OptimizedClassDescriptor {
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
         }
+    }
+
+    /**
+     * @param out Output stream.
+     * @throws IOException In case of error.
+     */
+    void writeTypeData(OptimizedObjectOutputStream out) throws IOException {
+        out.writeInt(typeId);
+
+        if (typeId == 0)
+            out.writeUTF(name);
     }
 
     /**

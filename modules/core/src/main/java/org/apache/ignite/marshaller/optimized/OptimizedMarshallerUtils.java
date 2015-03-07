@@ -183,17 +183,41 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
-            desc = new OptimizedClassDescriptor(cls, ctx, mapper);
+            int typeId = resolveTypeId(cls.getName(), mapper);
 
-            ctx.registerClass(desc.typeId(), cls);
+            boolean registered = ctx.registerClass(typeId, cls);
 
-            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, ctx, mapper);
 
-            if (old != null)
-                desc = old;
+            if (registered) {
+                OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
+
+                if (old != null)
+                    desc = old;
+            }
         }
 
         return desc;
+    }
+
+    /**
+     * @param clsName Class name.
+     * @param mapper Mapper.
+     * @return Type ID.
+     */
+    private static int resolveTypeId(String clsName, OptimizedMarshallerIdMapper mapper) {
+        int typeId;
+
+        if (mapper != null) {
+            typeId = mapper.typeId(clsName);
+
+            if (typeId == 0)
+                typeId = clsName.hashCode();
+        }
+        else
+            typeId = clsName.hashCode();
+
+        return typeId;
     }
 
     /**
@@ -209,7 +233,19 @@ class OptimizedMarshallerUtils {
      */
     static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
-        return classDescriptor(ctx.getClass(id, ldr), ctx, mapper);
+        Class cls = ctx.getClass(id, ldr);
+
+        OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
+
+        if (desc == null) {
+            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc =
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), ctx, mapper));
+
+            if (old != null)
+                desc = old;
+        }
+
+        return desc;
     }
 
     /**

@@ -203,7 +203,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 return readBooleanArray();
 
             case OBJ_ARR:
-                return readArray(Class.forName(readUTF(), false, clsLdr));
+                return readArray(readClass());
 
             case STR:
                 return readString();
@@ -236,14 +236,16 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 return readDate();
 
             case CLS:
-                return classDescriptor(in.readInt(), clsLdr, ctx, mapper).describedClass();
+                return readClass();
 
             case ENUM:
             case EXTERNALIZABLE:
             case SERIALIZABLE:
                 int typeId = readInt();
 
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(typeId, clsLdr, ctx, mapper);
+                OptimizedClassDescriptor desc = typeId == 0 ?
+                    classDescriptor(Class.forName(readUTF(), true, clsLdr), ctx, mapper):
+                    classDescriptor(typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
 
@@ -262,6 +264,18 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
                 throw new IOException(msg.toString());
         }
+    }
+
+    /**
+     * @return Class.
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IOException In case of other error.
+     */
+    private Class<?> readClass() throws ClassNotFoundException, IOException {
+        int compTypeId = readInt();
+
+        return compTypeId == 0 ? Class.forName(readUTF(), false, clsLdr) :
+            classDescriptor(compTypeId, clsLdr, ctx, mapper).describedClass();
     }
 
     /**

@@ -45,10 +45,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void registerClassName(int id, String clsName) {
+    @Override protected boolean registerClassName(int id, String clsName) {
         try {
             if (cache == null)
-                U.awaitQuiet(latch);
+                return false;
 
             String old = cache.putIfAbsent(id, clsName);
 
@@ -60,6 +60,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+
+        return true;
     }
 
     /** {@inheritDoc} */

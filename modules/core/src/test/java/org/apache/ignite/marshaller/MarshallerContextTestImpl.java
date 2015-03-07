@@ -30,8 +30,10 @@ public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected void registerClassName(int id, String clsName) {
+    @Override protected boolean registerClassName(int id, String clsName) {
         map.putIfAbsent(id, clsName);
+
+        return true;
     }
 
     /** {@inheritDoc} */

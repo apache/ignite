@@ -202,11 +202,9 @@ public class ClassesGenerator {
         if (included) {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
-            boolean isSerializable = !cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) &&
-                Serializable.class.isAssignableFrom(cls);
-
-            if (isSerializable) {
-                if (!cls.isEnum() && !cls.getSimpleName().isEmpty() && cls.getName().startsWith("org.apache.ignite")) {
+            if (Serializable.class.isAssignableFrom(cls)) {
+                if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
+                    !cls.getSimpleName().isEmpty() && cls.getName().startsWith("org.apache.ignite")) {
                     try {
                         Field field = cls.getDeclaredField("serialVersionUID");
 

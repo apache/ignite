@@ -101,7 +101,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      */
     private static class ClientMarshallerContext extends MarshallerContextAdapter {
         /** {@inheritDoc} */
-        @Override protected void registerClassName(int id, String clsName) {
+        @Override protected boolean registerClassName(int id, String clsName) {
             throw new UnsupportedOperationException();
         }
 
