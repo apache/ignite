@@ -27,6 +27,9 @@ import java.lang.reflect.*;
  * Bean contains {@link Method} and {@link Annotation} for that method.
  */
 class GridResourceMethod {
+    /** */
+    static final GridResourceMethod[] EMPTY_ARRAY = new GridResourceMethod[0];
+
     /** Method which used to inject resource. */
     private final Method mtd;
 
