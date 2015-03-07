@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite supports integration with databases 'out-of-the-box' by `org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore` class that implements `org.apache.ignite.cache.store.CacheStore` interface.
 
 Ignite provides utility that will read database metadata and generate POJO classes and XML configuration.

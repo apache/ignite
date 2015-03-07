@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite is JVM-based. Single JVM represents one or more logical Ignite nodes (most of the time, however, a single JVM runs just one Ignite node). Throughout Ignite documentation we use term Ignite runtime and Ignite node almost interchangeably. For example, when we say that you can "run 5 nodes on this host" - in most cases it technically means that you can start 5 JVMs on this host each running a single Ignite node. Ignite also supports multiple Ignite nodes in a single JVM. In fact, that is exactly how most of the internal tests run for Ignite itself.
 [block:callout]
 {

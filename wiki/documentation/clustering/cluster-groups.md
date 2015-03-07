@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 `ClusterGroup` represents a logical grouping of cluster nodes. 
 
 In Ignite all nodes are equal by design, so you don't have to start any nodes in specific order, or assign any specific roles to them. However, Ignite allows users to logically group cluster nodes for any application specific purpose. For example, you may wish to deploy a service only on remote nodes, or assign a role of "worker" to some worker nodes for job execution.

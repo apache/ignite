@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 In addition to deploying managed services by calling any of the provided `IgniteServices.deploy(...)` methods, you can also automatically deploy services on startup by setting `serviceConfiguration` property of IgniteConfiguration:
 [block:code]
 {

@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 The closures and tasks that you use for your computations may be of any custom class, including anonymous classes. In Ignite, the remote nodes will automatically become aware of those classes, and you won't need to explicitly deploy or move any .jar files to any remote nodes. 
 
 Such behavior is possible due to peer class loading (P2P class loading), a special **distributed  ClassLoader** in Ignite for inter-node byte-code exchange. With peer-class-loading enabled, you don't have to manually deploy your Java or Scala code on each node in the grid and re-deploy it each time it changes.

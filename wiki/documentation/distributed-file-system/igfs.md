@@ -15,5 +15,4 @@
   limitations under the License.
 -->
 
-
 We are currently adding documentation for the Ignite File System. In the mean time you can refer to the [javadoc](https://ignite.incubator.apache.org/releases/1.0.0/javadoc/org/apache/ignite/IgniteFs.html).

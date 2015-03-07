@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite provides three different modes of cache operation: `LOCAL`, `REPLICATED`, and `PARTITIONED`. A cache mode is configured for each cache. Cache modes are defined in `CacheMode` enumeration. 
 [block:api-header]
 {

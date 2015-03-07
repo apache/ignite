@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite compute grid allows to broadcast and load-balance any closure within the cluster or a cluster group, including plain Java `runnables` and `callables`.
 [block:api-header]
 {

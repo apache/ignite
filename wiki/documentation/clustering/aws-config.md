@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Node discovery on AWS cloud is usually proven to be more challenging. Amazon EC2, just like most of the other virtual environments, has the following limitations:
 * Multicast is disabled.
 * TCP addresses change every time a new image is started.

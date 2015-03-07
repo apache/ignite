@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite automatically groups or batches event notifications that are generated as a result of cache events occurring within the cluster.
 
 Each activity in cache can result in an event notification being generated and sent. For systems where cache activity is high, getting notified for every event could be network intensive, possibly leading to a decreased performance of cache operations in the grid.

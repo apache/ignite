@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Load balancing component balances job distribution among cluster nodes. In Ignite load balancing is achieved via `LoadBalancingSpi` which controls load on all nodes and makes sure that every node in the cluster is equally loaded. In homogeneous environments with homogeneous tasks load balancing is achieved by random or round-robin policies. However, in many other use cases, especially under uneven load, more complex adaptive load-balancing policies may be needed.
 [block:callout]
 {

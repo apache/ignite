@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite supports 2 modes for cache operation, *transactional* and *atomic*. In `transactional` mode you are able to group multiple cache operations in a transaction, while `atomic` mode supports multiple atomic operations, one at a time. `Atomic` mode is more light-weight and generally has better performance over `transactional` caches.
 
 However, regardless of which mode you use, as long as your cluster is alive, the data between different cluster nodes must remain consistent. This means that whichever node is being used to retrieve data, it will never get data that has been partially committed or that is inconsistent with other data.

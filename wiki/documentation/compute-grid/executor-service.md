@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 [IgniteCompute](doc:compute) provides a convenient API for executing computations on the cluster. However, you can also work directly with standard `ExecutorService` interface from JDK. Ignite provides a cluster-enabled implementation of `ExecutorService` and automatically executes all the computations in load-balanced fashion within the cluster. Your computations also become fault-tolerant and are guaranteed to execute as long as there is at least one node left. You can think of it as a distributed cluster-enabled thread pool. 
 [block:code]
 {

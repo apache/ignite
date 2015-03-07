@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 [block:api-header]
 {
   "type": "basic",

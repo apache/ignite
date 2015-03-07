@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 When working in distributed environments, sometimes you need to have a guarantee that you always will pick the same node, regardless of the cluster topology changes. Such nodes are usually called **leaders**. 
 
 In many systems electing cluster leaders usually has to do with data consistency and is generally handled via collecting votes from cluster members. Since in Ignite the data consistency is handled by data grid affinity function (e.g. [Rendezvous Hashing](http://en.wikipedia.org/wiki/Rendezvous_hashing)), picking leaders in traditional sense for data consistency outside of the data grid is not really needed.

@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 In Ignite, jobs are mapped to cluster nodes during initial task split or closure execution on the  client side. However, once jobs arrive to the designated nodes, then need to be ordered for execution. By default, jobs are submitted to a thread pool and are executed in random order.  However, if you need to have a fine-grained control over job ordering, you can enable `CollisionSpi`.
 [block:api-header]
 {

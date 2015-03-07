@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Checkpointing provides an ability to save an intermediate job state. It can be useful when long running jobs need to store some intermediate state to protect from node failures. Then on restart of a failed node, a job would load the saved checkpoint and continue from where it left off. The only requirement for job checkpoint state is to implement `java.io.Serializable` interface.
 
 Checkpoints are available through the following methods on `GridTaskSession` interface:

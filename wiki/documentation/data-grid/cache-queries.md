@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite supports a very elegant query API with support for
 
   * [Predicate-based Scan Queries](#scan-queries)

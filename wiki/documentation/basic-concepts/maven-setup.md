@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 If you are using Maven to manage dependencies of your project, you can import individual Ignite modules a la carte.
 [block:callout]
 {

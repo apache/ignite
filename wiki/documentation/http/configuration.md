@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 [block:api-header]
 {
   "type": "basic",
@@ -30,29 +29,21 @@
     "h-3": "Default value",
     "h-2": "Optional",
     "h-1": "Description",
-    "0-0": "**setRestSecretKey(String)**",
+    "0-0": "**setSecretKey(String)**",
     "0-1": "Defines secret key used for client authentication. When provided, client request must contain HTTP header **X-Signature** with Base64 encoded SHA1 hash of the string \"[1];[2]\", where [1] is timestamp in milliseconds and [2] is the secret key.",
     "0-3": "**null**",
     "0-2": "Yes",
-    "1-0": "**setRestPortRange(int)**",
+    "1-0": "**setPortRange(int)**",
     "1-1": "Port range for Jetty server. In case port provided in Jetty configuration or **IGNITE_JETTY_PORT** system property is already in use, Ignite will iteratively increment port by 1 and try binding once again until provided port range is exceeded.",
     "1-3": "**100**",
     "1-2": "Yes",
-    "3-0": "**setRestEnabled(Boolean)**",
-    "3-1": "Whether REST client is enabled or not.",
-    "3-3": "**true**",
-    "3-2": "Yes",
-    "4-0": "**setRestAccessibleFolders(String...)**",
-    "4-1": "Array of folders that are accessible for log reading commands. When remote client requests a log file, file path is checked against this list. If requested file is not located in any sub-folder of these folders, request is not processed. By default array consists of a single **IGNITE_HOME** folder. If **IGNITE_HOME** could not be detected and property is not specified, no restrictions applied.",
-    "4-2": "Yes",
-    "4-3": "**IGNITE_HOME**",
-    "2-0": "**setRestJettyPath(String)**",
+    "2-0": "**setJettyPath(String)**",
     "2-1": "Path to Jetty configuration file. Should be either absolute or relative to **IGNITE_HOME**. If not provided then GridGain will start Jetty server with simple HTTP connector. This connector will use **IGNITE_JETTY_HOST** and **IGNITE_JETTY_PORT** system properties as host and port respectively. In case **IGNITE_JETTY_HOST** is not provided, localhost will be used as default. In case **IGNITE_JETTY_PORT** is not provided, port 8080 will be used as default.",
     "2-3": "**null**",
     "2-2": "Yes"
   },
   "cols": 4,
-  "rows": 5
+  "rows": 3
 }
 [/block]
 

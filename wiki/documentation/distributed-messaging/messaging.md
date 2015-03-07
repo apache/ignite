@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite distributed messaging allows for topic based cluster-wide communication between all nodes. Messages with a specified message topic can be distributed to all or sub-group of nodes that have subscribed to that topic. 
 
 Ignite messaging is based on publish-subscribe paradigm where publishers and subscribers  are connected together by a common topic. When one of the nodes sends a message A for topic T, it is published on all nodes that have subscribed to T.

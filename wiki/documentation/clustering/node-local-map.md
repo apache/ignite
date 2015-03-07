@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Often it is useful to share a state between different compute jobs or different deployed services. For this purpose Ignite provides a shared concurrent **node-local-map** available on each node.
 [block:code]
 {

@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Distributed computations are performed in parallel fashion to gain **high performance**, **low latency**, and **linear scalability**. Ignite compute grid provides a set of simple APIs that allow users distribute computations and data processing across multiple computers in the cluster. Distributed parallel processing is based on the ability to take any computation and execute it on any set of cluster nodes and return the results back.
 [block:image]
 {

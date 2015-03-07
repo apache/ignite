@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 ##Apache Ignite In-Memory Data Fabric 1.0
 This is the first release of Apache Ignite project. The source code is based on the 7 year old GridGain In-Memory Data Fabric, open source edition, v. 6.6.2, which was donated to Apache Software Foundation in September 2014.
 

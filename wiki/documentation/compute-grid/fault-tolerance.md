@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite supports automatic job failover. In case of a node crash, jobs are automatically transferred to other available nodes for re-execution. However, in Ignite you can also treat any job result as a failure as well. The worker node can still be alive, but it may be running low on CPU, I/O, disk space, etc. There are many conditions that may result in a failure within your application and you can trigger a failover. Moreover, you have the ability to choose to which node a job should be failed over to, as it could be different for different applications or different computations within the same application.
 
 The `FailoverSpi` is responsible for handling the selection of a new node for the execution of a failed job. `FailoverSpi` inspects the failed job and the list of all available grid nodes on which the job execution can be retried. It ensures that the job is not re-mapped to the same node it had failed on. Failover is triggered when the method `ComputeTask.result(...)` returns the `ComputeJobResultPolicy.FAILOVER` policy. Ignite comes with a number of built-in customizable Failover SPI implementations.

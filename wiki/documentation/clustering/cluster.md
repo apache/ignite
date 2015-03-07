@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Ignite nodes can automatically discover each other. This helps to scale the cluster when needed, without having to restart the whole cluster. Developers can also leverage from Ignite’s hybrid cloud support that allows establishing connection between private cloud and public clouds such as Amazon Web Services, providing them with best of both worlds. 
 [block:image]
 {

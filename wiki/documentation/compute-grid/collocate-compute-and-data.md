@@ -15,7 +15,6 @@
   limitations under the License.
 -->
 
-
 Collocation of computations with data allow for minimizing data serialization within network and can significantly improve performance and scalability of your application. Whenever possible, you should alway make best effort to colocate your computations with the cluster nodes caching the data that needs to be processed.
 [block:api-header]
 {
