@@ -590,7 +590,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job, arg), null, false);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -614,7 +614,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job, arg), null, false);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -1528,7 +1528,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>>
+    private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<T, Collection<R>>
         implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1536,22 +1536,17 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private final IgniteClosure<T, R> job;
 
-        /** */
-        private final T arg;
-
         /**
          * @param job Job.
-         * @param arg Job argument.
          */
-        private T11(IgniteClosure<T, R> job, @Nullable T arg) {
+        private T11(IgniteClosure<T, R> job) {
             super(U.peerDeployAware(job));
 
             this.job = job;
-            this.arg = arg;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) {
             if (F.isEmpty(subgrid))
                 return Collections.emptyMap();
 
@@ -1559,7 +1554,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 JobMapper mapper = new JobMapper(subgrid.size());
 
                 for (ClusterNode n : subgrid)
-                    mapper.map(job(job, this.arg), n);
+                    mapper.map(job(job, arg), n);
 
                 return mapper.map();
             }
