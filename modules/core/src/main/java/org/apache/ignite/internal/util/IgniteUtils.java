@@ -7939,6 +7939,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Clears class cache for provided loader.
+     *
+     * @param ldr Class loader.
+     */
+    public static void clearClassCache(ClassLoader ldr) {
+        classCache.remove(ldr);
+    }
+
+    /**
+     * Completely clears class cache.
+     */
+    public static void clearClassCache() {
+        classCache.clear();
+    }
+
+    /**
      * Applies a supplemental hash function to a given hashCode, which
      * defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables,

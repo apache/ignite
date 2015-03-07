@@ -20,6 +20,7 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.jdk8.backport.*;
@@ -221,6 +222,8 @@ class OptimizedMarshallerUtils {
             if (ldr.equals(cls.getClassLoader()))
                 DESC_BY_CLS.remove(cls);
         }
+
+        U.clearClassCache(ldr);
     }
 
     /**
@@ -228,6 +231,8 @@ class OptimizedMarshallerUtils {
      */
     public static void clearCache() {
         DESC_BY_CLS.clear();
+
+        U.clearClassCache();
     }
 
     /**
