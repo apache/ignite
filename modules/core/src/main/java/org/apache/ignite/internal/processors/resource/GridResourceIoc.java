@@ -113,7 +113,7 @@ class GridResourceIoc {
 
         if (isAnnotationPresent(target, annCls, dep))
             // Use identity hash set to compare via referential equality.
-            return injectInternal(target, annCls, injector, dep, depCls, new GridIdentityHashSet<>(3));
+            return injectInternal(target, annCls, injector, dep, depCls, new GridLeanIdentitySet<>());
 
         return false;
     }
