@@ -233,16 +233,15 @@ class GridResourceIoc {
 
         GridResourceMethod[] mtds = getMethodsWithAnnotation(dep, targetCls, annCls);
 
-        if (mtds.length == 0) {
-            if (skipClss == null)
-                skipClss = F.addIfAbsent(skipCache, annCls, F.<Class<?>>newCSet());
+        if (mtds.length > 0)
+            return true;
 
-            skipClss.add(targetCls);
+        if (skipClss == null)
+            skipClss = F.addIfAbsent(skipCache, annCls, F.<Class<?>>newCSet());
 
-            return false;
-        }
+        skipClss.add(targetCls);
 
-        return true;
+        return false;
     }
 
     /**

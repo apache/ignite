@@ -414,7 +414,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5<>(node, job), null, false);
+            return ctx.task().execute(new T5(node, job), null, false);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
@@ -566,7 +566,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8<>(job, arg), null, false);
+            return ctx.task().execute(new T8(job, arg), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -589,7 +589,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+            return ctx.task().execute(new T11<>(job, arg), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -613,7 +613,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+            return ctx.task().execute(new T11<>(job, arg), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -1210,7 +1210,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T4 extends TaskNoReduceAdapter<Void> {
+    private static class T4 extends TaskNoReduceAdapter<Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1241,7 +1241,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+    private static class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1365,7 +1365,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+    private static class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1539,9 +1539,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param job Job.
          * @param arg Job argument.
-         * @param nodes Collection of nodes.
          */
-        private T11(IgniteClosure<T, R> job, @Nullable T arg, Collection<ClusterNode> nodes) {
+        private T11(IgniteClosure<T, R> job, @Nullable T arg) {
             super(U.peerDeployAware(job));
 
             this.job = job;
@@ -1648,7 +1647,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Argument.
          */
-        public C1MLA(IgniteClosure<T, R> job, T arg) {
+        private C1MLA(IgniteClosure<T, R> job, T arg) {
             super(job, arg);
         }
 
@@ -1683,7 +1682,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param c Callable.
          */
-        public C2(Callable<R> c) {
+        private C2(Callable<R> c) {
             this.c = c;
         }
 
@@ -1735,7 +1734,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param c Callable.
          */
-        public C2MLA(Callable<R> c) {
+        private C2MLA(Callable<R> c) {
             super(c);
         }
 
@@ -1769,7 +1768,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param r Runnable.
          */
-        public C4(Runnable r) {
+        private C4(Runnable r) {
             this.r = r;
         }
 
@@ -1818,7 +1817,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param r Runnable.
          */
-        public C4MLA(Runnable r) {
+        private C4MLA(Runnable r) {
             super(r);
         }
 
