@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -59,7 +60,8 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
                         valBytes = ctx.processor().marshal(ctx, val);
 
                     if (ctx.unmarshalValues()) {
-                        Object val = ctx.processor().unmarshal(ctx, valBytes, this.val.getClass().getClassLoader());
+                        Object val = ctx.processor().unmarshal(ctx, valBytes,
+                                IgniteUtils.detectClass(this.val).getClassLoader());
 
                         return new CacheObjectImpl(val, valBytes);
                     }
