@@ -240,24 +240,26 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void onUndeploy0(final ClassLoader ldr, final GridCacheContext<K, V> cacheCtx) {
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
-        Collection<KeyCacheObject> keys = new ArrayList<>();
+        Collection<K> keys = new ArrayList<>();
 
-        for (GridCacheEntryEx e : cache.entries()) {
+        for (Cache.Entry<K, V> e : cache.entrySet()) {
             boolean undeploy = cacheCtx.isNear() ?
                 undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
                 undeploy(ldr, e, cacheCtx.cache());
 
             if (undeploy)
-                keys.add(e.key());
+                keys.add(e.getKey());
         }
 
         if (log.isDebugEnabled())
             log.debug("Finished searching keys for undeploy [keysCnt=" + keys.size() + ']');
 
-        cache.clearLocally(keys, true);
+        for (K k : keys)
+            cache.clearLocally(k);
 
         if (cacheCtx.isNear())
-            cacheCtx.near().dht().clearLocally(keys, true);
+            for (K k : keys)
+                cacheCtx.near().dht().clearLocally(k);
 
         GridCacheQueryManager<K, V> qryMgr = cacheCtx.queries();
 
@@ -293,31 +295,13 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param cache Cache.
      * @return {@code True} if need to undeploy.
      */
-    private boolean undeploy(ClassLoader ldr, GridCacheEntryEx e, GridCacheAdapter cache) {
-        KeyCacheObject key = e.key();
-
-        GridCacheEntryEx entry = cache.peekEx(key);
-
-        if (entry == null)
+    private boolean undeploy(ClassLoader ldr, Cache.Entry<K, V> e, GridCacheAdapter cache) {
+        if (e == null)
             return false;
 
-        CacheObject v;
+        K key0 = e.getKey();
 
-        try {
-            v = entry.peek(GridCachePeekMode.GLOBAL, CU.empty0());
-        }
-        catch (GridCacheEntryRemovedException ignore) {
-            return false;
-        }
-        catch (IgniteException ignore) {
-            // Peek can throw runtime exception if unmarshalling failed.
-            return true;
-        }
-
-        assert key != null : "Key cannot be null for cache entry: " + e;
-
-        Object key0 = key.value(cache.context().cacheObjectContext(), false);
-        Object val0 = CU.value(v, cache.context(), false);
+        V val0 = e.getValue();
 
         ClassLoader keyLdr = U.detectObjectClassLoader(key0);
         ClassLoader valLdr = U.detectObjectClassLoader(val0);
