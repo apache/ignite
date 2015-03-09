@@ -381,50 +381,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<V> reloadAsync(K key);
 
     /**
-     * Reloads all currently cached keys form persistent storage.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @throws IgniteCheckedException If reloading failed.
-     */
-    public void reloadAll() throws IgniteCheckedException;
-
-    /**
-     * Asynchronously reloads all specified entries from underlying
-     * persistent storage.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @return Future which will complete whenever {@code reload} completes.
-     */
-    public IgniteInternalFuture<?> reloadAllAsync();
-
-    /**
-     * Reloads specified entries from underlying persistent storage.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @param keys Keys to reload.
-     * @throws IgniteCheckedException if reloading failed.
-     */
-    public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously reloads all specified entries from underlying
-     * persistent storage.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @param keys Keys to reload.
-     * @return Future which will complete whenever {@code reload} completes.
-     */
-    public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys);
-
-    /**
      * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
      * peek mode.
      * <p>

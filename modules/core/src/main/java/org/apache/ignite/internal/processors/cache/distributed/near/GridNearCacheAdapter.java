@@ -204,27 +204,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        dht().reloadAll(keys);
-
-        super.reloadAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
-        GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
-
-        fut.add(super.reloadAllAsync(keys));
-        fut.add(dht().reloadAllAsync(keys));
-
-        fut.markInitialized();
-
-        return fut;
-
-    }
-
-    /** {@inheritDoc} */
     @Override public V reload(K key)
         throws IgniteCheckedException {
         V val;
@@ -239,26 +218,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         V nearVal = super.reload(key);
 
         return val == null ? nearVal : val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reloadAll() throws IgniteCheckedException {
-        super.reloadAll();
-
-        dht().reloadAll();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public IgniteInternalFuture<?> reloadAllAsync() {
-        GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
-
-        fut.add(super.reloadAllAsync());
-        fut.add(dht().reloadAllAsync());
-
-        fut.markInitialized();
-
-        return fut;
     }
 
     /**
