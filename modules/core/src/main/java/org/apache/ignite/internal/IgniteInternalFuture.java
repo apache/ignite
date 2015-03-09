@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
