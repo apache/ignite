@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -39,11 +38,11 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K, V>>
     implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Future ID. */
     private IgniteUuid futId = IgniteUuid.randomUuid();
@@ -62,19 +61,8 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
     /** Commit flag. */
     private AtomicBoolean commit = new AtomicBoolean(false);
 
-    /** Logger. */
-    @GridToStringExclude
-    private IgniteLogger log;
-
     /** Trackable flag. */
     private boolean trackable = true;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridLocalTxFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -83,15 +71,14 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
     GridLocalTxFuture(
         GridCacheSharedContext<K, V> cctx,
         GridLocalTx<K, V> tx) {
-        super(cctx.kernalContext());
-
         assert cctx != null;
         assert tx != null;
 
         this.cctx = cctx;
         this.tx = tx;
 
-        log = U.logger(ctx, logRef,  GridLocalTxFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef,  GridLocalTxFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -126,35 +113,9 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
     }
 
     /**
-     * @return Lock version.
-     */
-    GridLocalTx<K, V> tx() {
-        return tx;
-    }
-
-    /**
-     *
-     */
-    void complete() {
-        onComplete();
-    }
-
-    /**
      * @param e Error.
      */
     void onError(Throwable e) {
-        if (err.compareAndSet(null, e)) {
-            tx.setRollbackOnly();
-
-            onComplete();
-        }
-    }
-
-    /**
-     * @param e Error.
-     */
-    @SuppressWarnings({"TypeMayBeWeakened"})
-    void onError(IgniteTxOptimisticCheckedException e) {
         if (err.compareAndSet(null, e)) {
             tx.setRollbackOnly();
 
@@ -332,16 +293,6 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K
     private void onComplete() {
         if (onDone(tx, err.get()))
             cctx.mvcc().removeFuture(this);
-    }
-
-    /**
-     * Checks for errors.
-     *
-     * @throws IgniteCheckedException If execution failed.
-     */
-    private void checkError() throws IgniteCheckedException {
-        if (err.get() != null)
-            throw U.cast(err.get());
     }
 
     /** {@inheritDoc} */

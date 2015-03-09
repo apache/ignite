@@ -30,22 +30,17 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of {@link org.apache.ignite.scheduler.SchedulerFuture} interface.
  */
-class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     /** Empty time array. */
     private static final long[] EMPTY_TIMES = new long[] {};
 
@@ -110,12 +105,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     /** Listener call count. */
     private int lastLsnrExecCnt;
 
-    /** Synchronous notification flag. */
-    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
-
-    /** Concurrent notification flag. */
-    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
-
     /** Mutex. */
     private final Object mux = new Object();
 
@@ -176,13 +165,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
             }
         }
     };
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public ScheduleFutureImpl() {
-        // No-op.
-    }
 
     /**
      * Creates descriptor for task scheduling. To start scheduling call {@link #schedule(Callable)}.
@@ -273,26 +255,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
             if (notifyLsnr)
                 notifyListeners(res, err);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean concurrentNotify() {
-        return concurNotify;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void concurrentNotify(boolean concurNotify) {
-        this.concurNotify = concurNotify;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncNotify() {
-        return syncNotify;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void syncNotify(boolean syncNotify) {
-        this.syncNotify = syncNotify;
     }
 
     /**
@@ -582,54 +544,45 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-        if (lsnr != null) {
-            Throwable err;
-            R res;
-
-            boolean notifyLsnr = false;
-
-            synchronized (mux) {
-                lsnrs.add(lsnr);
-
-                err = lastErr;
-                res = lastRes;
-
-                int cnt = stats.getExecutionCount();
-
-                if (cnt > 0 && lastLsnrExecCnt != cnt) {
-                    lastLsnrExecCnt = cnt;
-
-                    notifyLsnr = true;
-                }
-            }
-
-            // Avoid race condition in case if listener was added after
-            // first execution completed.
-            if (notifyLsnr)
-                notifyListener(lsnr, res, err, syncNotify);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+    @Override public void listen(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
         A.notNull(lsnr, "lsnr");
 
+        Throwable err;
+        R res;
+
+        boolean notifyLsnr = false;
+
         synchronized (mux) {
-            lsnrs.remove(lsnr);
+            lsnrs.add(lsnr);
+
+            err = lastErr;
+            res = lastRes;
+
+            int cnt = stats.getExecutionCount();
+
+            if (cnt > 0 && lastLsnrExecCnt != cnt) {
+                lastLsnrExecCnt = cnt;
+
+                notifyLsnr = true;
+            }
         }
+
+        // Avoid race condition in case if listener was added after
+        // first execution completed.
+        if (notifyLsnr)
+            notifyListener(lsnr, res, err);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>(ctx, syncNotify) {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }
         };
 
-        listenAsync(new CI1<IgniteFuture<R>>() {
+        listen(new CI1<IgniteFuture<R>>() {
             @Override public void apply(IgniteFuture<R> fut0) {
                 try {
                     fut.onDone(doneCb.apply(fut0));
@@ -658,30 +611,13 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
      * @param lsnr Listener to notify.
      * @param res Last execution result.
      * @param err Last execution error.
-     * @param syncNotify Synchronous notification flag.
      */
-    private void notifyListener(final IgniteInClosure<? super IgniteFuture<R>> lsnr, R res, Throwable err,
-        boolean syncNotify) {
+    private void notifyListener(final IgniteInClosure<? super IgniteFuture<R>> lsnr, R res, Throwable err) {
         assert lsnr != null;
         assert !Thread.holdsLock(mux);
         assert ctx != null;
 
-        final SchedulerFuture<R> snapshot = snapshot(res, err);
-
-        if (syncNotify)
-            lsnr.apply(snapshot);
-        else {
-            try {
-                ctx.closure().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        lsnr.apply(snapshot);
-                    }
-                }, true);
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to notify listener: " + this, e);
-            }
-        }
+        lsnr.apply(snapshot(res, err));
     }
 
     /**
@@ -697,22 +633,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
 
         final SchedulerFuture<R> snapshot = snapshot(res, err);
 
-        if (concurNotify) {
-            for (final IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
-                ctx.closure().runLocalSafe(new GPR() {
-                    @Override public void run() {
-                        lsnr.apply(snapshot);
-                    }
-                }, true);
-        }
-        else {
-            ctx.closure().runLocalSafe(new GPR() {
-                @Override public void run() {
-                    for (IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
-                        lsnr.apply(snapshot);
-                }
-            }, true);
-        }
+        for (IgniteInClosure<? super IgniteFuture<R>> lsnr : tmp)
+            lsnr.apply(snapshot);
     }
 
     /**
@@ -849,26 +771,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean concurrentNotify() {
-            return ref.concurrentNotify();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void concurrentNotify(boolean concurNotify) {
-            ref.concurrentNotify(concurNotify);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void syncNotify(boolean syncNotify) {
-            ref.syncNotify(syncNotify);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean syncNotify() {
-            return ref.syncNotify();
-        }
-
-        /** {@inheritDoc} */
         @Override public String id() {
             return ref.id();
         }
@@ -964,66 +866,13 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-            ref.listenAsync(lsnr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-            ref.stopListenAsync(lsnr);
+        @Override public void listen(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+            ref.listen(lsnr);
         }
 
         /** {@inheritDoc} */
         @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
             return ref.chain(doneCb);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean cancelled;
-        R lastRes;
-        Throwable lastErr;
-        GridScheduleStatistics stats;
-
-        synchronized (mux) {
-            cancelled = this.cancelled;
-            lastRes = this.lastRes;
-            lastErr = this.lastErr;
-            stats = this.stats;
-        }
-
-        out.writeBoolean(cancelled);
-        out.writeObject(lastRes);
-        out.writeObject(lastErr);
-        out.writeObject(stats);
-
-        out.writeBoolean(syncNotify);
-        out.writeBoolean(concurNotify);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        CountDownLatch latch = new CountDownLatch(0);
-
-        boolean cancelled = in.readBoolean();
-        R lastRes = (R)in.readObject();
-        Throwable lastErr = (Throwable)in.readObject();
-        GridScheduleStatistics stats = (GridScheduleStatistics)in.readObject();
-
-        syncNotify = in.readBoolean();
-        concurNotify = in.readBoolean();
-
-        synchronized (mux) {
-            done = true;
-
-            resLatch = latch;
-
-            this.cancelled = cancelled;
-            this.lastRes = lastRes;
-            this.lastErr = lastErr;
-            this.stats = stats;
         }
     }
 

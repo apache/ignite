@@ -94,7 +94,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 final String ip = req0.nodeIp();
 
                 if (id == null && ip == null)
-                    return new GridFinishedFuture<>(ctx, new IgniteCheckedException(
+                    return new GridFinishedFuture<>(new IgniteCheckedException(
                         "Failed to handle request (either id or ip should be specified)."));
 
                 ClusterNode node;
@@ -131,7 +131,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handled topology REST request [res=" + res + ", req=" + req + ']');
 
-        return new GridFinishedFuture<>(ctx, res);
+        return new GridFinishedFuture<>(res);
     }
 
     /**

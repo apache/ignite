@@ -354,9 +354,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    GridFutureAdapterEx<GridCommunicationClient> fut = new GridFutureAdapterEx<>();
+                    GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
 
-                    GridFutureAdapterEx<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
+                    GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(sndId, fut);
 
                     assert msg instanceof HandshakeMessage : msg;
 
@@ -545,7 +545,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 private final HandshakeMessage msg;
 
                 /** */
-                private final GridFutureAdapterEx<GridCommunicationClient> fut;
+                private final GridFutureAdapter<GridCommunicationClient> fut;
 
                 /** */
                 private final boolean createClient;
@@ -563,7 +563,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ClusterNode rmtNode,
                     HandshakeMessage msg,
                     boolean createClient,
-                    GridFutureAdapterEx<GridCommunicationClient> fut) {
+                    GridFutureAdapter<GridCommunicationClient> fut) {
                     this.ses = ses;
                     this.recoveryDesc = recoveryDesc;
                     this.rmtNode = rmtNode;
@@ -575,8 +575,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 /** {@inheritDoc} */
                 @Override public void apply(Boolean success) {
                     if (success) {
-                        IgniteInClosure<GridNioFuture<?>> lsnr = new IgniteInClosure<GridNioFuture<?>>() {
-                            @Override public void apply(GridNioFuture<?> msgFut) {
+                        IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> msgFut) {
                                 try {
                                     msgFut.get();
 
@@ -585,7 +585,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                     fut.onDone(client);
                                 }
-                                catch (IgniteCheckedException | IOException e) {
+                                catch (IgniteCheckedException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send recovery handshake " +
                                             "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
@@ -764,7 +764,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     };
 
     /** Client connect futures. */
-    private final ConcurrentMap<UUID, GridFutureAdapterEx<GridCommunicationClient>> clientFuts =
+    private final ConcurrentMap<UUID, GridFutureAdapter<GridCommunicationClient>> clientFuts =
         GridConcurrentFactory.newMap();
 
     /** */
@@ -1790,9 +1790,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     throw new IgniteSpiException("Grid is stopping.");
 
                 // Do not allow concurrent connects.
-                GridFutureAdapterEx<GridCommunicationClient> fut = new ConnectFuture();
+                GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
-                GridFutureAdapterEx<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(nodeId, fut);
+                GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(nodeId, fut);
 
                 if (oldFut == null) {
                     try {
@@ -2862,16 +2862,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
-    private static class ConnectFuture extends GridFutureAdapterEx<GridCommunicationClient> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public ConnectFuture() {
-            // No-op.
-        }
+    private static class ConnectFuture extends GridFutureAdapter<GridCommunicationClient> {
+        // No-op.
     }
 
     /**

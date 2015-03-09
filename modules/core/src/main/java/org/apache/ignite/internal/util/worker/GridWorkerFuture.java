@@ -18,34 +18,14 @@
 package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
-
-import java.io.*;
 
 /**
  * Future for locally executed closure that defines cancellation logic.
  */
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private GridWorker w;
-
-    /**
-     * @param ctx Context.
-     */
-    public GridWorkerFuture(GridKernalContext ctx) {
-        super(ctx);
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridWorkerFuture() {
-        // No-op.
-    }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {

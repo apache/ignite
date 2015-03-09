@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -46,11 +45,11 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -65,9 +64,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** Commit flag. */
     private boolean commit;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
 
@@ -76,13 +72,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** Trackable flag. */
     private boolean trackable = true;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxFinishFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -102,7 +91,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridNearTxFinishFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearTxFinishFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -414,9 +404,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Keys. */
@@ -424,18 +411,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private GridDistributedTxMapping<K, V> m;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param m Mapping.
          */
         MiniFuture(GridDistributedTxMapping<K, V> m) {
-            super(cctx.kernalContext());
-
             this.m = m;
         }
 

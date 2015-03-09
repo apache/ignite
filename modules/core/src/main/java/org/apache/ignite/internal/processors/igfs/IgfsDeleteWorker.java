@@ -277,7 +277,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     }
                 }
 
-                GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>(igfsCtx.kernalContext());
+                GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>();
 
                 // Delegate to child folders.
                 for (IgfsListingEntry entry : delListing.values()) {

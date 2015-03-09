@@ -18,19 +18,15 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
-
-import java.io.*;
 
 /**
  * Future that delegates to some other future.
  */
 public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Callback to notify that future is finished.
      * This method must delegate to {@link #onDone(GridNioFuture, Throwable)} method.
@@ -53,12 +49,12 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
 
         if (err != null)
             onDone(err);
-        else delegate.listenAsync(new IgniteInClosure<GridNioFuture<R>>() {
-            @Override public void apply(GridNioFuture<R> t) {
+        else delegate.listen(new IgniteInClosure<IgniteInternalFuture<R>>() {
+            @Override public void apply(IgniteInternalFuture<R> t) {
                 try {
                     onDone(t.get());
                 }
-                catch (IOException | IgniteCheckedException e) {
+                catch (IgniteCheckedException e) {
                     onDone(e);
                 }
             }

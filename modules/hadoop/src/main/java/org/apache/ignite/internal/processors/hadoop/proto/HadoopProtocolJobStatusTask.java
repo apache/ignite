@@ -61,7 +61,7 @@ public class HadoopProtocolJobStatusTask extends HadoopProtocolTaskAdapter<Hadoo
                 if (fut.isDone() || F.eq(jobCtx.getAttribute(ATTR_HELD), true))
                     return hadoop.status(jobId);
                 else {
-                    fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> fut0) {
                             jobCtx.callcc();
                         }

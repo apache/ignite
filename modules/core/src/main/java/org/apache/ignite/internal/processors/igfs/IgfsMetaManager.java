@@ -1686,7 +1686,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                 // Record PURGE event if needed.
                                 if (evts.isRecordable(EVT_IGFS_FILE_PURGED)) {
-                                    delFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                                    delFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> t) {
                                             try {
                                                 t.get(); // Ensure delete succeeded.

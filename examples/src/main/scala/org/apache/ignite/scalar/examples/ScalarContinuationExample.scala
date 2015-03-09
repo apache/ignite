@@ -122,9 +122,9 @@ class FibonacciClosure (
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 
                 val futVal = comp.future[BigInteger]()
-                
+
                 fut1 = store.putIfAbsent(n - 1, futVal)
-                
+
                 if (fut1 == null)
                     fut1 = futVal
             }
@@ -134,9 +134,9 @@ class FibonacciClosure (
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
 
                 val futVal = comp.future[BigInteger]()
-                
+
                 fut2 = store.putIfAbsent(n - 2, futVal)
-                
+
                 if (fut2 == null)
                     fut2 = futVal
             }
@@ -152,8 +152,8 @@ class FibonacciClosure (
                 }
 
                 // Attach the same listener to both futures.
-                fut1.listenAsync(lsnr)
-                fut2.listenAsync(lsnr)
+                fut1.listen(lsnr)
+                fut2.listen(lsnr)
 
                 // Hold (suspend) job execution.
                 // It will be resumed in listener above via 'callcc()' call

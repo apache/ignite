@@ -67,7 +67,7 @@ public class HadoopJobTracker extends HadoopComponent {
     private HadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
-    private final ConcurrentMap<HadoopJobId, GridFutureAdapterEx<HadoopJob>> jobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJob>> jobs = new ConcurrentHashMap8<>();
 
     /** Locally active jobs. */
     private final ConcurrentMap<HadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
@@ -237,7 +237,7 @@ public class HadoopJobTracker extends HadoopComponent {
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
-            return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to execute map-reduce job " +
+            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
                 "(grid is stopping): " + info));
         }
 
@@ -284,7 +284,7 @@ public class HadoopJobTracker extends HadoopComponent {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to submit job: " + jobId, e);
 
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             busyLock.readUnlock();
@@ -359,7 +359,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 if (log.isTraceEnabled())
                     log.trace("Job is complete, returning finished future: " + jobId);
 
-                return new GridFinishedFutureEx<>(jobId, meta.failCause());
+                return new GridFinishedFuture<>(jobId);
             }
 
             GridFutureAdapter<HadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
@@ -474,7 +474,7 @@ public class HadoopJobTracker extends HadoopComponent {
                     GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
 
                     cache.invokeAsync(info.jobId(), new UpdatePhaseProcessor(incrCntrs, PHASE_COMPLETE)).
-                        listenAsync(failsLog);
+                        listen(failsLog);
 
                     break;
                 }
@@ -490,7 +490,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param c Closure of operation.
      */
     private void transform(HadoopJobId jobId, EntryProcessor<HadoopJobId, HadoopJobMetadata, Void> c) {
-        jobMetaCache().invokeAsync(jobId, c).listenAsync(failsLog);
+        jobMetaCache().invokeAsync(jobId, c).listen(failsLog);
     }
 
     /**
@@ -968,9 +968,9 @@ public class HadoopJobTracker extends HadoopComponent {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public HadoopJob job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
-        GridFutureAdapterEx<HadoopJob> fut = jobs.get(jobId);
+        GridFutureAdapter<HadoopJob> fut = jobs.get(jobId);
 
-        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapterEx<HadoopJob>())) != null)
+        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJob>())) != null)
             return fut.get();
 
         fut = jobs.get(jobId);
@@ -1204,7 +1204,7 @@ public class HadoopJobTracker extends HadoopComponent {
             };
 
             if (lastMapperFinished)
-                ctx.shuffle().flush(jobId).listenAsync(cacheUpdater);
+                ctx.shuffle().flush(jobId).listen(cacheUpdater);
             else
                 cacheUpdater.apply(null);
         }
@@ -1236,7 +1236,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 // Fail the whole job.
                 transform(jobId, new RemoveMappersProcessor(prev, currMappers, status.failCause()));
             else {
-                ctx.shuffle().flush(jobId).listenAsync(new CIX1<IgniteInternalFuture<?>>() {
+                ctx.shuffle().flush(jobId).listen(new CIX1<IgniteInternalFuture<?>>() {
                     @Override public void applyx(IgniteInternalFuture<?> f) {
                         Throwable err = null;
 

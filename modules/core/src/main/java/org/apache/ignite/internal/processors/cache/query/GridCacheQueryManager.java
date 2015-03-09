@@ -102,8 +102,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     for (Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> entry : futs.entrySet()) {
                         final Object recipient = recipient(nodeId, entry.getKey());
 
-                        entry.getValue().listenAsync(new CIX1<IgniteInternalFuture<QueryResult<K, V>>>() {
-                            @Override public void applyx(IgniteInternalFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
+                        entry.getValue().listen(new CIX1<IgniteInternalFuture<QueryResult<K, V>>>() {
+                            @Override
+                            public void applyx(IgniteInternalFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
                         });
@@ -116,7 +117,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     for (Map.Entry<Long, GridFutureAdapter<FieldsResult>> entry : fieldsFuts.entrySet()) {
                         final Object recipient = recipient(nodeId, entry.getKey());
 
-                        entry.getValue().listenAsync(new CIX1<IgniteInternalFuture<FieldsResult>>() {
+                        entry.getValue().listen(new CIX1<IgniteInternalFuture<FieldsResult>>() {
                             @Override public void applyx(IgniteInternalFuture<FieldsResult> f)
                                 throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
@@ -1511,7 +1512,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             fut = futs.get(qryInfo.requestId());
 
             if (fut == null) {
-                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>(cctx.kernalContext()));
+                futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
             }
@@ -1642,7 +1643,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (fut == null) {
                 resMap.put(qryInfo.requestId(), fut =
-                    new GridFutureAdapter<>(cctx.kernalContext()));
+                    new GridFutureAdapter<>());
 
                 exec = true;
             }
