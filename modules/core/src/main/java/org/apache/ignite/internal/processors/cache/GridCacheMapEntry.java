@@ -3157,8 +3157,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (val != null)
             return val;
 
-        if (valPtr != 0)
-            return cctx.fromOffheap(valPtr, tmp);
+        if (valPtr != 0) {
+            CacheObject val0 = cctx.fromOffheap(valPtr, tmp);
+
+            val0.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+
+            return val0;
+        }
 
         return null;
     }
