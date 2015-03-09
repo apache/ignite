@@ -163,7 +163,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             new GridCacheDefaultAffinityKeyMapper(),
             ccfg != null && ccfg.isCopyOnGet(),
-            ccfg != null && ccfg.isQueryIndexEnabled());
+            ctx.config().isPeerClassLoadingEnabled() || (ccfg != null && ccfg.isQueryIndexEnabled()));
     }
 
     /** {@inheritDoc} */

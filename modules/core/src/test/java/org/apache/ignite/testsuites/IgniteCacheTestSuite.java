@@ -278,9 +278,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
         // suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO: uncomment when fix GG-2239
 
-// TODO IGNITE-51
-//        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
-//        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+        suite.addTestSuite(GridCacheDeploymentSelfTest.class);
+        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);

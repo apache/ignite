@@ -205,8 +205,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                 U.sleep(500);
             }
 
-            assert g1.jcache(null).localSize() == 0;
-            assert g2.jcache(null).localSize() == 0;
+            assertEquals(0, g1.jcache(null).localSize());
+            assertEquals(0, g2.jcache(null).localSize());
 
             startGrid(3);
         }

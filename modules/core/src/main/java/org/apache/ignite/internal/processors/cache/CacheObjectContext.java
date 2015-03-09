@@ -42,6 +42,9 @@ public class CacheObjectContext {
     /** */
     private boolean unmarshalVals;
 
+    /** */
+    private boolean p2pEnabled;
+
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
@@ -53,11 +56,19 @@ public class CacheObjectContext {
         boolean cpyOnGet,
         boolean unmarshalVals) {
         this.kernalCtx = kernalCtx;
+        this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.unmarshalVals = unmarshalVals;
 
         proc = kernalCtx.cacheObjects();
+    }
+
+    /**
+     * @return {@code True} if peer class loading is enabled.
+     */
+    public boolean p2pEnabled() {
+        return p2pEnabled;
     }
 
     /**

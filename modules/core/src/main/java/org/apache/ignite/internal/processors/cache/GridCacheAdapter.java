@@ -1221,7 +1221,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return entrySet((CacheEntryPredicate[])null);
     }
 
-
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
         return map.entriesx(filter);
