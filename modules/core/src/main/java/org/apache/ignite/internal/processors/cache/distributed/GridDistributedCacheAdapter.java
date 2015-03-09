@@ -244,17 +244,17 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             return;
                         }
 
-                        if (res.contains(-1L)) {
-                            if (attemptCnt >= MAX_REMOVE_ALL_ATTEMPTS)
-                                opFut.onDone(new IgniteCheckedException("Failed to remove all entries."));
-                            else
-                                removeAllAsync(opFut, attemptCnt + 1);
+                        if (!res.contains(-1L)) {
+                            opFut.onDone();
 
                             return;
                         }
 
-                        if (topVer != ctx.affinity().affinityTopologyVersion())
+                        if (topVer != ctx.affinity().affinityTopologyVersion()) {
                             removeAllAsync(opFut, attemptCnt);
+
+                            return;
+                        }
                     }
                     catch (ClusterGroupEmptyException ignore) {
                         if (log.isDebugEnabled())
@@ -270,14 +270,17 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                             return;
                         }
-
-                        removeAllAsync(opFut, attemptCnt + 1);
                     }
                     catch (Error e) {
                         opFut.onDone(e);
 
                         throw e;
                     }
+
+                    if (attemptCnt >= MAX_REMOVE_ALL_ATTEMPTS)
+                        opFut.onDone(new IgniteCheckedException("Failed to remove all entries."));
+                    else
+                        removeAllAsync(opFut, attemptCnt + 1);
                 }
             });
         }
@@ -348,8 +351,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
                 try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
-                    ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
-
                     dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
 
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {

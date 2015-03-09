@@ -41,6 +41,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.integration.*;
 import java.io.*;
 import java.util.*;
 import java.util.Map.*;
@@ -516,6 +517,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         }
                     }
                     catch (IgniteCheckedException e1) {
+                        CacheWriterException cwe = e1.getCause(CacheWriterException.class);
+
+                        if (cwe != null) {
+                            resFut.onDone(cwe);
+
+                            return;
+                        }
+
                         if (log.isDebugEnabled())
                             log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
@@ -759,20 +768,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         close(false);
-    }
-
-    /**
-     * @return Max remap count.
-     */
-    public int maxRemapCount() {
-        return maxRemapCnt;
-    }
-
-    /**
-     * @param maxRemapCnt New max remap count.
-     */
-    public void maxRemapCount(int maxRemapCnt) {
-        this.maxRemapCnt = maxRemapCnt;
     }
 
     /** {@inheritDoc} */
