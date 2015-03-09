@@ -82,17 +82,13 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         return endTime;
     }
 
-    /**
-     * @return Value of error.
-     */
-    protected Throwable error() {
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
         return (resFlag == ERR) ? (Throwable)res : null;
     }
 
-    /**
-     * @return Value of result.
-     */
-    protected R result() {
+    /** {@inheritDoc} */
+    @Override public R result() {
         return resFlag == RES ? (R)res : null;
     }
 

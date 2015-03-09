@@ -234,11 +234,6 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
         return parentFutId;
     }
 
-    /** {@inheritDoc} */
-    @Override public Throwable error() {
-        return super.error();
-    }
-
     /**
      * @return Map of child executions.
      */

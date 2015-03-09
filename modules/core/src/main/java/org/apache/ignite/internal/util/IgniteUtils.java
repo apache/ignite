@@ -2787,7 +2787,9 @@ public abstract class IgniteUtils {
      */
     public static void onGridStop(){
         synchronized (mux) {
-            assert gridCnt > 0 : gridCnt;
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
 
             --gridCnt;
 

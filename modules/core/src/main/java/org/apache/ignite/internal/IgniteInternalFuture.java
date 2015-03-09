@@ -120,4 +120,14 @@ public interface IgniteInternalFuture<R> {
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
+
+    /**
+     * @return Error value if future has already been completed with error.
+     */
+    public Throwable error();
+
+    /**
+     * @return Result value if future has already been completed normally.
+     */
+    public R result();
 }

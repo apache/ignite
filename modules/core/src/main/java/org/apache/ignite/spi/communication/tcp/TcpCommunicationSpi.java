@@ -575,8 +575,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 /** {@inheritDoc} */
                 @Override public void apply(Boolean success) {
                     if (success) {
-                        IgniteInClosure<GridNioFuture<?>> lsnr = new IgniteInClosure<GridNioFuture<?>>() {
-                            @Override public void apply(GridNioFuture<?> msgFut) {
+                        IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> msgFut) {
                                 try {
                                     msgFut.get();
 
@@ -585,7 +585,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                     fut.onDone(client);
                                 }
-                                catch (IgniteCheckedException | IOException e) {
+                                catch (IgniteCheckedException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send recovery handshake " +
                                             "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');

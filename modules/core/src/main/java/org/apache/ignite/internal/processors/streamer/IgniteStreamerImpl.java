@@ -1371,10 +1371,5 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             this.w = w;
         }
-
-        /** {@inheritDoc} */
-        @Override public Throwable error() {
-            return super.error();
-        }
     }
 }

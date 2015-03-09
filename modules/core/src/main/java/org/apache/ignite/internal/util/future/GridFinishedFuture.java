@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
@@ -28,11 +29,17 @@ import java.util.concurrent.*;
  * Future that is completed at creation time.
  */
 public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
-    /** Complete value. */
-    private T t;
+    /** */
+    private static final byte ERR = 1;
 
-    /** Error. */
-    private Throwable err;
+    /** */
+    private static final byte RES = 2;
+
+    /** */
+    private final byte resFlag;
+
+    /** Complete value. */
+    private final Object res;
 
     /** Start time. */
     private final long startTime = U.currentTimeMillis();
@@ -41,7 +48,8 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
      * Creates finished future with complete value.
      */
     public GridFinishedFuture() {
-        // No-op.
+        res = null;
+        resFlag = RES;
     }
 
     /**
@@ -50,28 +58,27 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
      * @param t Finished value.
      */
     public GridFinishedFuture(T t) {
-        this.t = t;
+        res = t;
+        resFlag = RES;
     }
 
     /**
      * @param err Future error.
      */
     public GridFinishedFuture(Throwable err) {
-        this.err = err;
+        res = err;
+        resFlag = ERR;
     }
 
-    /**
-     * @return Value of error.
-     */
-    protected Throwable error() {
-        return err;
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
+        return (resFlag == ERR) ? (Throwable)res : null;
     }
 
-    /**
-     * @return Value of result.
-     */
-    protected T result() {
-        return t;
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public T result() {
+        return resFlag == RES ? (T)res : null;
     }
 
     /** {@inheritDoc} */
@@ -100,11 +107,12 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public T get() throws IgniteCheckedException {
-        if (err != null)
-            throw U.cast(err);
+        if (resFlag == ERR)
+            throw U.cast((Throwable)res);
 
-        return t;
+        return (T)res;
     }
 
     /** {@inheritDoc} */
@@ -126,15 +134,15 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
 
     /** {@inheritDoc} */
     @Override public <R> IgniteInternalFuture<R> chain(final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
-        GridFutureAdapter<R> fut = new GridFutureAdapter<R>() {
-            @Override public String toString() {
-                return "ChainFuture[orig=" + GridFinishedFuture.this + ", doneCb=" + doneCb + ']';
-            }
-        };
-
-        listen(new GridFutureChainListener<>(fut, doneCb));
-
-        return fut;
+        try {
+            return new GridFinishedFuture<>(doneCb.apply(this));
+        }
+        catch (GridClosureException e) {
+            return new GridFinishedFuture<>(e.unwrap());
+        }
+        catch (RuntimeException | Error e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /** {@inheritDoc} */
