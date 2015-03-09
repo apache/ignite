@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
@@ -71,9 +70,10 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listen(@Nullable final IgniteInClosure<? super IgniteFuture<V>> lsnr) {
-        if (lsnr != null)
-            fut.listen(new InternalFutureListener(lsnr));
+    @Override public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        fut.listen(new InternalFutureListener(lsnr));
     }
 
     /** {@inheritDoc} */

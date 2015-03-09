@@ -163,32 +163,32 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void listen(@Nullable final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
-        if (lsnr0 != null) {
-            boolean done = isDone();
+    @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
+        assert lsnr0 != null;
 
-            if (!done) {
-                synchronized (this) {
-                    done = isDone(); // Double check.
+        boolean done = isDone();
 
-                    if (!done) {
-                        if (lsnr == null)
-                            lsnr = lsnr0;
-                        else if (lsnr instanceof ArrayListener)
-                            ((ArrayListener)lsnr).add(lsnr0);
-                        else {
-                            lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
-                        }
+        if (!done) {
+            synchronized (this) {
+                done = isDone(); // Double check.
 
-                        return;
+                if (!done) {
+                    if (lsnr == null)
+                        lsnr = lsnr0;
+                    else if (lsnr instanceof ArrayListener)
+                        ((ArrayListener)lsnr).add(lsnr0);
+                    else {
+                        lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
                     }
+
+                    return;
                 }
             }
-
-            assert done;
-
-            notifyListener(lsnr0);
         }
+
+        assert done;
+
+        notifyListener(lsnr0);
     }
 
     /** {@inheritDoc} */

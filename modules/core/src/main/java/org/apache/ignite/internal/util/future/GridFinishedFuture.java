@@ -118,9 +118,10 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listen(final IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
-        if (lsnr != null)
-            lsnr.apply(this);
+    @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
+        assert lsnr != null;
+
+        lsnr.apply(this);
     }
 
     /** {@inheritDoc} */

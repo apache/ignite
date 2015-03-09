@@ -544,33 +544,33 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listen(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
-        if (lsnr != null) {
-            Throwable err;
-            R res;
+    @Override public void listen(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+        A.notNull(lsnr, "lsnr");
 
-            boolean notifyLsnr = false;
+        Throwable err;
+        R res;
 
-            synchronized (mux) {
-                lsnrs.add(lsnr);
+        boolean notifyLsnr = false;
 
-                err = lastErr;
-                res = lastRes;
+        synchronized (mux) {
+            lsnrs.add(lsnr);
 
-                int cnt = stats.getExecutionCount();
+            err = lastErr;
+            res = lastRes;
 
-                if (cnt > 0 && lastLsnrExecCnt != cnt) {
-                    lastLsnrExecCnt = cnt;
+            int cnt = stats.getExecutionCount();
 
-                    notifyLsnr = true;
-                }
+            if (cnt > 0 && lastLsnrExecCnt != cnt) {
+                lastLsnrExecCnt = cnt;
+
+                notifyLsnr = true;
             }
-
-            // Avoid race condition in case if listener was added after
-            // first execution completed.
-            if (notifyLsnr)
-                notifyListener(lsnr, res, err);
         }
+
+        // Avoid race condition in case if listener was added after
+        // first execution completed.
+        if (notifyLsnr)
+            notifyListener(lsnr, res, err);
     }
 
     /** {@inheritDoc} */
@@ -866,7 +866,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         /** {@inheritDoc} */
-        @Override public void listen(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+        @Override public void listen(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
             ref.listen(lsnr);
         }
 
