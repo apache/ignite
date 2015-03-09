@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -131,9 +130,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
-
-    /** Serialization manager. */
-    private IgniteCacheSerializationManager<K, V> serMgr;
 
     /** JTA manager. */
     private CacheJtaManagerAdapter jtaMgr;
@@ -231,7 +227,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         GridCacheSwapManager swapMgr,
-        IgniteCacheSerializationManager<K, V> serMgr,
         GridCacheStoreManager storeMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
@@ -265,7 +260,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          */
         this.evtMgr = add(evtMgr);
         this.swapMgr = add(swapMgr);
-        this.serMgr = add(serMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
@@ -1691,15 +1685,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Portable processor.
      */
-    public GridPortableProcessor portable() {
-        return kernalContext().portable();
-    }
-
-    /**
-     * @return Portable enabled flag.
-     */
-    public boolean portableEnabled() {
-        return serMgr.portableEnabled();
+    public IgniteCacheObjectProcessor cacheObjects() {
+        return kernalContext().cacheObjects();
     }
 
     /**
@@ -1728,7 +1715,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (!offheapTiered())
             return (T)obj;
 
-        return (T)portable().unwrapTemporary(this, obj);
+        return (T) cacheObjects().unwrapTemporary(this, obj);
     }
 
     /**
@@ -1739,7 +1726,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return serMgr.unwrapPortablesIfNeeded(col, keepPortable);
+        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepPortable);
     }
 
     /**
@@ -1751,7 +1738,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return serMgr.unwrapPortableIfNeeded(o, keepPortable);
+        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
     }
 
     /**
@@ -1766,7 +1753,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
-        return portable().toCacheObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheObject(cacheObjCtx, obj);
     }
 
     /**
@@ -1774,7 +1761,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return portable().toCacheKeyObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj);
     }
 
     /**
@@ -1782,9 +1769,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
-        Object obj = ctx.portable().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
+        Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
-        return portable().toCacheKeyObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj);
     }
 
     /**
@@ -1803,10 +1790,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (ldr == null)
                 return null;
 
-            return ctx.portable().toCacheObject(cacheObjCtx, ctx.portable().unmarshal(cacheObjCtx, bytes, ldr));
+            return ctx.cacheObjects().toCacheObject(cacheObjCtx, ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr));
         }
 
-        return ctx.portable().toCacheObject(cacheObjCtx, type, bytes);
+        return ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes);
     }
 
     /**
@@ -1819,7 +1806,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES;
         assert valPtr != 0;
 
-        return ctx.portable().toCacheObject(this, valPtr, tmp);
+        return ctx.cacheObjects().toCacheObject(this, valPtr, tmp);
     }
 
     /**
@@ -1846,7 +1833,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             Object key0 = key.value(cacheObjCtx, false);
             Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
 
-            if (portableEnabled() && deserializePortable) {
+            if (deserializePortable) {
                 key0 = unwrapPortableIfNeeded(key0, false);
 
                 if (!skipVals)

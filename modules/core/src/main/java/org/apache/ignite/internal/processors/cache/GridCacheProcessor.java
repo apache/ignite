@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -580,7 +579,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
-            CacheObjectContext cacheObjCtx = ctx.portable().contextForCache(null, cfg.getName());
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName());
 
             // Initialize defaults.
             initialize(cfg, cacheObjCtx);
@@ -626,7 +625,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
-            IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -641,7 +639,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  */
                 evtMgr,
                 swapMgr,
-                serMgr,
                 storeMgr,
                 evictMgr,
                 qryMgr,
@@ -781,7 +778,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                      */
                     evtMgr,
                     swapMgr,
-                    serMgr,
                     storeMgr,
                     evictMgr,
                     qryMgr,
@@ -1324,7 +1320,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.portable().onCacheProcessorStarted();
+        ctx.cacheObjects().onCacheProcessorStarted();
     }
 
     /** {@inheritDoc} */

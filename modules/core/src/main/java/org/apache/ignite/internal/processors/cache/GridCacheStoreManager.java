@@ -180,7 +180,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
         }
 
-        convertPortable = !cctx.portable().keepPortableInStore(cctx.name());
+        convertPortable = !cctx.cacheObjects().keepPortableInStore(cctx.name());
     }
 
     /** {@inheritDoc} */
@@ -796,7 +796,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
-        if (cctx.portableEnabled() && e.getMessage() != null) {
+        if (e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }

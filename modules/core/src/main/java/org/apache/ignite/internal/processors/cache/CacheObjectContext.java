@@ -21,6 +21,8 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.portable.*;
 
+import java.util.*;
+
 /**
  *
  */
@@ -29,7 +31,7 @@ public class CacheObjectContext {
     private GridKernalContext kernalCtx;
 
     /** */
-    private GridPortableProcessor proc;
+    private IgniteCacheObjectProcessor proc;
 
     /** */
     private CacheAffinityKeyMapper dfltAffMapper;
@@ -55,7 +57,7 @@ public class CacheObjectContext {
         this.cpyOnGet = cpyOnGet;
         this.unmarshalVals = unmarshalVals;
 
-        proc = kernalCtx.portable();
+        proc = kernalCtx.cacheObjects();
     }
 
     /**
@@ -89,7 +91,29 @@ public class CacheObjectContext {
     /**
      * @return Processor.
      */
-    public GridPortableProcessor processor() {
+    public IgniteCacheObjectProcessor processor() {
         return proc;
+    }
+
+    /**
+     * Unwraps object.
+     *
+     * @param o Object to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped object.
+     */
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+        return o;
+    }
+
+    /**
+     * Unwraps collection.
+     *
+     * @param col Collection to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped collection.
+     */
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+        return col;
     }
 }

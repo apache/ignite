@@ -499,7 +499,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
-        return m.isEmpty() ? null : m.values().iterator().next();
+        return m.get(key);
     }
 
     /** {@inheritDoc} */

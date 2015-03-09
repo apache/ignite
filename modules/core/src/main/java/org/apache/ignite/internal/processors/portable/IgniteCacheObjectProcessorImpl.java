@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -36,7 +37,7 @@ import java.util.*;
 /**
  *
  */
-public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAdapter implements GridPortableProcessor {
+public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
     /** */
     private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -68,7 +69,7 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
     /**
      * @param ctx Context.
      */
-    public IgniteCacheObjectProcessorAdapter(GridKernalContext ctx) {
+    public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -188,6 +189,57 @@ public abstract class IgniteCacheObjectProcessorAdapter extends GridProcessorAda
 
     /** {@inheritDoc} */
     @Override public boolean keepPortableInStore(@Nullable String cacheName) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheProcessorStarted() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId(String typeName) {
+        return 0;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws IgniteException {
+        return obj;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws IgniteException {
+        return obj;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridClientMarshaller portableMarshaller() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortable(GridClientMarshaller marsh) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortableObject(Object obj) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId(Object obj) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object field(Object obj, String fieldName) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasField(Object obj, String fieldName) {
         return false;
     }
 }

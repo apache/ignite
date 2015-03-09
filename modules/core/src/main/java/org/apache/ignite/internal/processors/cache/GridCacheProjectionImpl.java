@@ -386,23 +386,16 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        if (cctx.portableEnabled()) {
-            GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
-                (CacheProjection<K1, V1>)this,
-                (GridCacheContext<K1, V1>)cctx,
-                filter,
-                flags,
-                subjId,
-                true,
-                expiryPlc);
+        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+            (CacheProjection<K1, V1>)this,
+            (GridCacheContext<K1, V1>)cctx,
+            filter,
+            flags,
+            subjId,
+            true,
+            expiryPlc);
 
-            return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
-        }
-        else
-            return new GridCacheProxyImpl<>(
-                (GridCacheContext<K1, V1>)cctx,
-                (GridCacheProjectionEx<K1, V1>)this,
-                (GridCacheProjectionImpl<K1, V1>)this);
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
 
     /** {@inheritDoc} */

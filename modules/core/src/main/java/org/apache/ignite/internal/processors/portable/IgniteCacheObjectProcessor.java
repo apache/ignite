@@ -25,14 +25,10 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
-import java.nio.*;
-
 /**
- * Portable processor.
- *
- * TODO IGNITE-51: rename.
+ * Cache objects processor.
  */
-public interface GridPortableProcessor extends GridProcessor {
+public interface IgniteCacheObjectProcessor extends GridProcessor {
     /** {@inheritDoc} */
     public void onCacheProcessorStarted();
 

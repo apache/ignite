@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -909,7 +908,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
-        if ((cctx.portableEnabled() && cctx.offheapTiered()) && (prjPred != null || filter != null)) {
+        if (cctx.offheapTiered() && (prjPred != null || filter != null)) {
             OffheapIteratorClosure c = new OffheapIteratorClosure(prjPred, filter, qry.keepPortable());
 
             return cctx.swap().rawOffHeapIterator(c);
@@ -2400,7 +2399,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override protected V unmarshalValue() throws IgniteCheckedException {
             IgniteBiTuple<byte[], Byte> t = GridCacheSwapEntryImpl.getValue(e.getValue());
 
-            CacheObject obj = cctx.portable().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
+            CacheObject obj = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
 
             return obj.value(cctx.cacheObjectContext(), false);
         }

@@ -87,7 +87,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @return Whether portable marshaller is used.
      */
     boolean portableMode(GridNioSession ses) {
-        return ctx.portable().isPortable(marshaller(ses));
+        return ctx.cacheObjects().isPortable(marshaller(ses));
     }
 
     /** {@inheritDoc} */
@@ -159,7 +159,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
-        marshMap.put((byte)0, ctx.portable().portableMarshaller());
+        marshMap.put((byte)0, ctx.cacheObjects().portableMarshaller());
 
         lsnr.marshallers(marshMap);
     }
