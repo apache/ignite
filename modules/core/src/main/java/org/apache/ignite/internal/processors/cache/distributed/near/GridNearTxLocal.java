@@ -1066,7 +1066,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    public <K> IgniteInternalFuture<GridCacheReturn<Object>> lockAllAsync(GridCacheContext cacheCtx,
+    public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
         boolean implicit,
         boolean read,
@@ -1080,7 +1080,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<Object> ret = new GridCacheReturn<>(localResult(), false);
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);
@@ -1102,8 +1102,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn<Object>>(ret, false) {
-                @Override protected GridCacheReturn<Object> postLock(GridCacheReturn<Object> ret) {
+            new PLC1<GridCacheReturn>(ret, false) {
+                @Override protected GridCacheReturn postLock(GridCacheReturn ret) {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + keys);
 

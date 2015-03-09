@@ -100,7 +100,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private volatile CachePartialUpdateCheckedException err;
 
     /** Operation result. */
-    private volatile GridCacheReturn<?> opRes;
+    private volatile GridCacheReturn opRes;
 
     /** Return value require flag. */
     private final boolean retval;
@@ -377,7 +377,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     onDone(opRes);
                 }
                 else {
-                    GridCacheReturn<?> opRes0 = opRes = ret;
+                    GridCacheReturn opRes0 = opRes = ret;
 
                     onDone(opRes0);
                 }

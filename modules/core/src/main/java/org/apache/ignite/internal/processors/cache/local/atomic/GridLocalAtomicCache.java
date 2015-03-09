@@ -260,12 +260,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         ctx.denyOnLocalRead();
 
-        return (GridCacheReturn<V>)updateAllInternal(UPDATE,
+        return (GridCacheReturn)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(newVal),
             null,
@@ -278,12 +278,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException {
+    @Override public GridCacheReturn removex(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
 
-        return (GridCacheReturn<V>)updateAllInternal(DELETE,
+        return (GridCacheReturn)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
             null,
@@ -296,7 +296,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
@@ -306,7 +306,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         ctx.denyOnLocalRead();
@@ -1034,7 +1034,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (err != null)
             throw err;
 
-        Object ret = res == null ? null : rawRetval ? new GridCacheReturn<>(ctx,  true, res.get2(), res.get1()) :
+        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, res.get2(), res.get1()) :
             (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)

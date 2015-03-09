@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Partition topology for node which does not have any local partitions.
  */
 @GridToStringExclude
-public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopology<K, V> {
+public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -44,7 +44,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     private static final boolean FULL_MAP_DEBUG = false;
 
     /** Cache shared context. */
-    private GridCacheSharedContext<K, V> cctx;
+    private GridCacheSharedContext cctx;
 
     /** Cache ID. */
     private int cacheId;
@@ -78,7 +78,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param cacheId Cache ID.
      * @param exchId Exchange ID.
      */
-    public GridClientPartitionTopology(GridCacheSharedContext<K, V> cctx, int cacheId,
+    public GridClientPartitionTopology(GridCacheSharedContext cctx, int cacheId,
         GridDhtPartitionExchangeId exchId) {
         this.cctx = cctx;
         this.cacheId = cacheId;
@@ -127,7 +127,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
 
     /** {@inheritDoc} */
     @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        GridDhtPartitionsExchangeFuture exchFut) {
         lock.writeLock().lock();
 
         try {

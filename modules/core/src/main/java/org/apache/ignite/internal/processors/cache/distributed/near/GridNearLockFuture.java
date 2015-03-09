@@ -108,7 +108,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         new AtomicReference<>();
 
     /** Map of current values. */
-    private Map<KeyCacheObject, GridTuple3<GridCacheVersion, CacheObject, byte[]>> valMap;
+    private Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -819,7 +819,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 if (tx == null && !cand.reentry())
                                     cctx.mvcc().addExplicitLock(threadId, cand, snapshot);
 
-                                GridTuple3<GridCacheVersion, CacheObject, byte[]> val = entry.versionedValue();
+                                IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 
                                 if (val == null) {
                                     GridDhtCacheEntry dhtEntry = dht().peekExx(key);
@@ -1003,7 +1003,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                     GridNearCacheEntry entry = cctx.near().entryExx(k, req.topologyVersion());
 
                                     try {
-                                        GridTuple3<GridCacheVersion, CacheObject, byte[]> oldValTup =
+                                        IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup =
                                             valMap.get(entry.key());
 
                                         boolean hasBytes = entry.hasValue();
@@ -1356,7 +1356,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                 return;
                             }
 
-                            GridTuple3<GridCacheVersion, CacheObject, byte[]> oldValTup = valMap.get(entry.key());
+                            IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(entry.key());
 
                             CacheObject oldVal = entry.rawGet();
                             boolean hasOldVal = false;

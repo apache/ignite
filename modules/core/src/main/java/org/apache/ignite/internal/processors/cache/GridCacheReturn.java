@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn<V> implements Externalizable, Message {
+public class GridCacheReturn implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,7 +109,7 @@ public class GridCacheReturn<V> implements Externalizable, Message {
      * @return Value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public V value() {
+    @Nullable public <V> V value() {
         return (V)v;
     }
 
@@ -188,7 +188,7 @@ public class GridCacheReturn<V> implements Externalizable, Message {
      * @param success Success flag.
      * @return This instance for chaining.
      */
-    public GridCacheReturn<V> success(boolean success) {
+    public GridCacheReturn success(boolean success) {
         this.success = success;
 
         return this;

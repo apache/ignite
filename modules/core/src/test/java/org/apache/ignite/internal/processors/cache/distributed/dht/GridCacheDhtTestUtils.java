@@ -64,7 +64,7 @@ public class GridCacheDhtTestUtils {
             throw new IgniteCheckedException("Failed to get cache map.", e);
         }
 
-        GridDhtPartitionTopology<Integer,String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
 
         GridCacheContext ctx = dht.context();
 
@@ -103,7 +103,7 @@ public class GridCacheDhtTestUtils {
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
 
-        GridDhtPartitionTopology<Integer, String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
 
         System.out.println("\nTopology of cache #" + idx + " (" + locNode.id() + ")" + ":");
         System.out.println("----------------------------------");
@@ -174,7 +174,7 @@ public class GridCacheDhtTestUtils {
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
 
-        GridDhtPartitionTopology<Integer,String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
 
         // Expected partitions calculated with affinity function.
         // They should be in topology in OWNING state.

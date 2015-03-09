@@ -71,13 +71,13 @@ public interface GridCachePreloader<K, V> {
      *
      * @param lastFut Last future.
      */
-    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut);
+    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut);
 
     /**
      * @param exchFut Exchange future to assign.
      * @return Assignments.
      */
-    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut);
+    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.

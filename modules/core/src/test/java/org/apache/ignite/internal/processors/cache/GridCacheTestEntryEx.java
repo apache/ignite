@@ -388,7 +388,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> boolean invalidate(@Nullable CacheEntryPredicate[] filter)
+    @Override public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false;
 
@@ -396,7 +396,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> boolean compact(@Nullable CacheEntryPredicate[] filter)
+    @Override public boolean compact(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false;
 
@@ -404,7 +404,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
+    @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) {
         assert false;
 
@@ -541,7 +541,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> boolean clear(GridCacheVersion ver, boolean readers,
+    @Override public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
@@ -614,7 +614,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate[] filter) {
+    @Override public CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate[] filter) {
         return val;
     }
 
@@ -626,7 +626,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public <K, V> CacheObject peek(Collection<GridCachePeekMode> modes,
+    @Override public CacheObject peek(Collection<GridCachePeekMode> modes,
         CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException {
         return val;

@@ -90,7 +90,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param ttl Time to live for entry. If negative, leave unchanged.
      * @return Future for put operation.
      */
-    public <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> putAllAsync(
+    public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
@@ -104,7 +104,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param invokeArgs Optional arguments for entry processor.
      * @return Transform operation future.
      */
-    public <K, V, T> IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
+    public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
@@ -117,7 +117,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param filter Filter.
      * @return Future for asynchronous remove.
      */
-    public <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> removeAllAsync(
+    public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
         GridCacheContext cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx cached,

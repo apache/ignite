@@ -213,7 +213,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -238,7 +238,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If replace operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -259,7 +259,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException;
+    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -283,7 +283,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val);
+    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
 
     /**
      * @param key Key to retrieve the value for.

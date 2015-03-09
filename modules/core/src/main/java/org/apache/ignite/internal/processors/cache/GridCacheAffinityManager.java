@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Cache affinity manager.
  */
-public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Factor for maximum number of attempts to calculate all partition affinity keys. */
     private static final int MAX_PARTITION_KEY_ATTEMPT_RATIO = 10;
 
@@ -207,7 +207,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public List<ClusterNode> nodes(K key, long topVer) {
+    public List<ClusterNode> nodes(Object key, long topVer) {
         return nodes(partition(key), topVer);
     }
 
@@ -296,10 +296,10 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Nodes for the keys.
      */
-    public Collection<ClusterNode> remoteNodes(Iterable<? extends K> keys, long topVer) {
+    public Collection<ClusterNode> remoteNodes(Iterable keys, long topVer) {
         Collection<Collection<ClusterNode>> colcol = new GridLeanSet<>();
 
-        for (K key : keys)
+        for (Object key : keys)
             colcol.add(nodes(key, topVer));
 
         return F.view(F.flatCollections(colcol), F.remoteNodes(cctx.localNodeId()));

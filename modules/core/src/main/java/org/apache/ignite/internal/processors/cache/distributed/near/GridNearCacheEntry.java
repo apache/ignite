@@ -266,7 +266,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public synchronized GridTuple3<GridCacheVersion, CacheObject, byte[]> versionedValue()
+    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue()
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -275,7 +275,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         else {
             CacheObject val0 = valueBytesUnlocked();
 
-            return F.t(ver, val0, null);
+            return F.t(ver, val0);
         }
     }
 
@@ -315,14 +315,13 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             taskName,
             true,
             null,
-            false).get().get(key.value(cctx.cacheObjectContext(), false));
+            false).get().get(keyValue(false));
     }
 
     /**
      * @param tx Transaction.
      * @param primaryNodeId Primary node ID.
      * @param val New value.
-     * @param valBytes Value bytes.
      * @param ver Version to use.
      * @param dhtVer DHT version received from remote node.
      * @param expVer Optional version to match.
@@ -339,7 +338,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     public boolean loadedValue(@Nullable IgniteInternalTx tx,
         UUID primaryNodeId,
         CacheObject val,
-        byte[] valBytes,
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
         @Nullable GridCacheVersion expVer,
@@ -373,7 +371,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                         update(val, expireTime, ttl, ver);
 
                         if (cctx.deferredDelete()) {
-                            boolean deleted = val == null && valBytes == null;
+                            boolean deleted = val == null;
 
                             if (deleted != deletedUnlocked()) {
                                 deletedUnlocked(deleted);
@@ -391,7 +389,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null || valBytes != null, old, hasVal, subjId, null, null);
+                        val, val != null, old, hasVal, subjId, null, null);
 
                 return ret;
             }

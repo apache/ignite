@@ -310,7 +310,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions()) {
                         Collection<ClusterNode> moving = top.moving(p.id());
@@ -574,7 +574,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions()) {
                         Collection<ClusterNode> moving = top.moving(p.id());

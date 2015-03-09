@@ -375,18 +375,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
-        // TODO IGNITE-51.
-        Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
-            @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
-                KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey());
-                CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue());
-
-                return new IgniteDataLoaderEntry(key, val);
-            }
-        });
-
-        return addDataInternal(entries0);
-        /*
         enterBusy();
 
         try {
@@ -402,10 +390,19 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
                 for (Map.Entry<K, V> entry : entries)
-                    keys.add(entry.getKey());
+                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey()));
             }
 
-            load0(entries, resFut, keys, 0);
+            Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
+                @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
+                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey());
+                    CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue());
+
+                    return new IgniteDataLoaderEntry(key, val);
+                }
+            });
+
+            load0(entries0, resFut, keys, 0);
 
             return new IgniteFutureImpl<>(resFut);
         }
@@ -415,7 +412,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         finally {
             leaveBusy();
         }
-        */
     }
 
     /**

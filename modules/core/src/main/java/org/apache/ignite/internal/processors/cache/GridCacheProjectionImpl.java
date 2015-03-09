@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -188,19 +189,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         if (k == null || v == null)
             return false;
 
-        // TODO IGNITE-51.
-        IgniteBiPredicate<K, V> p = null;
+        if (filter != null) {
+            GridLocalCacheEntry e = new GridLocalCacheEntry(cctx,
+                    cctx.toCacheKeyObject(k),
+                    k.hashCode(),
+                    cctx.toCacheObject(v),
+                    null,
+                    0,
+                    0);
 
-        if (p != null) {
-            CacheFlag[] f = cctx.forceLocalRead();
-
-            try {
-                if (!p.apply(k, v))
-                    return false;
-            }
-            finally {
-                cctx.forceFlags(f);
-            }
+            if (!filter.apply(e))
+                return false;
         }
 
         return true;
@@ -964,30 +963,30 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         // Check k-v predicate first.
         if (!isAll(key, newVal))
-            return new GridFinishedFuture<>(cctx.kernalContext(), new GridCacheReturn<V>(true, false));
+            return new GridFinishedFuture<>(cctx.kernalContext(), new GridCacheReturn(true, false));
 
         return cache.replacexAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
         return replacexAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException {
+    @Override public GridCacheReturn removex(K key, V val) throws IgniteCheckedException {
         return removexAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val) {
         return !isAll(key, val) ? new GridFinishedFuture<>(cctx.kernalContext(),
-            new GridCacheReturn<V>(true, false)) : cache.removexAsync(key, val);
+            new GridCacheReturn(true, false)) : cache.removexAsync(key, val);
     }
 
     /** {@inheritDoc} */

@@ -316,7 +316,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
 
-    /** */
+    /** Copy on get flag. */
     private boolean cpOnGet = DFLT_COPY_ON_GET;
 
     /** Empty constructor (all values are initialized to their defaults). */

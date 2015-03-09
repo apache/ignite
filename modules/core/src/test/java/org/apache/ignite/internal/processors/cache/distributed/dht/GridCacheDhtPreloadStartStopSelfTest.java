@@ -214,7 +214,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
                     for (GridDhtLocalPartition p : top.localPartitions())
                         assertEquals("Invalid partition state for partition: " + p, OWNING, p.state());

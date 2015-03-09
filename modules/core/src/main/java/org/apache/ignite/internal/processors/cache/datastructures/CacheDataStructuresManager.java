@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.*;
 /**
  *
  */
-public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
@@ -182,8 +182,8 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
             if (queueQryGuard.compareAndSet(false, true)) {
                 queueQryId = cctx.continuousQueries().executeInternalQuery(
-                    new CacheEntryUpdatedListener<K, V>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
+                    new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
                             if (!busyLock.enterBusy())
                                 return;
 
