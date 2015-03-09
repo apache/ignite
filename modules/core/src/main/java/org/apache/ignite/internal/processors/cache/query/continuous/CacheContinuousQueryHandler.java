@@ -290,7 +290,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param ctx Kernal context.
      * @return Continuous query manager.
      */
-    private CacheContinuousQueryManager<K, V> manager(GridKernalContext ctx) {
+    private CacheContinuousQueryManager manager(GridKernalContext ctx) {
         return cacheContext(ctx).continuousQueries();
     }
 

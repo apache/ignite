@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Partition topology.
  */
 @GridToStringExclude
-class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, V> {
+class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -150,7 +150,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
 
     /** {@inheritDoc} */
     @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        GridDhtPartitionsExchangeFuture exchFut) {
         lock.writeLock().lock();
 
         try {

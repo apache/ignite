@@ -306,14 +306,14 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized GridTuple3<GridCacheVersion, CacheObject, byte[]> versionedValue(long topVer)
+    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(long topVer)
         throws GridCacheEntryRemovedException {
         if (isNew() || !valid(-1) || deletedUnlocked())
             return null;
         else {
             CacheObject val0 = valueBytesUnlocked();
 
-            return F.t(ver, val0, null);
+            return F.t(ver, val0);
         }
     }
 

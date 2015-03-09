@@ -153,7 +153,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Return value.
      */
-    public GridCacheReturn<?> returnValue() {
+    public GridCacheReturn returnValue() {
         return ret;
     }
 

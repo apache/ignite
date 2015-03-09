@@ -211,7 +211,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If swap could not be released.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> boolean invalidate(@Nullable CacheEntryPredicate[] filter)
+    public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -222,7 +222,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If operation failed.
      * @return {@code true} if entry was not being used and could be removed.
      */
-    public <K, V> boolean compact(@Nullable CacheEntryPredicate[] filter)
+    public boolean compact(@Nullable CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -232,7 +232,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry could be evicted.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K, V> boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
+    public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
@@ -505,7 +505,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed to remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
-    public <K, V> boolean clear(GridCacheVersion ver, boolean readers,
+    public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
@@ -577,7 +577,7 @@ public interface GridCacheEntryEx {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public <K, V> CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate... filter)
+    @Nullable public CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate... filter)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -607,7 +607,7 @@ public interface GridCacheEntryEx {
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public <K, V> CacheObject peek(Collection<GridCachePeekMode> modes,
+    @Nullable public CacheObject peek(Collection<GridCachePeekMode> modes,
         CacheEntryPredicate... filter) throws GridCacheEntryRemovedException;
 
     /**

@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
-public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<ClusterNode>>> {
+public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
 
     /** Cache context. */
-    private final GridCacheContext<K, V> ctx;
+    private final GridCacheContext ctx;
 
     /** List of available nodes this future can fetch data from. */
     private Queue<ClusterNode> availableNodes;
@@ -57,7 +57,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param ctx Cache context.
      * @param availableNodes Available nodes.
      */
-    public GridDhtAssignmentFetchFuture(GridCacheContext<K, V> ctx, long topVer, Collection<ClusterNode> availableNodes) {
+    public GridDhtAssignmentFetchFuture(GridCacheContext ctx, long topVer, Collection<ClusterNode> availableNodes) {
         super(ctx.kernalContext());
 
         this.ctx = ctx;
@@ -75,7 +75,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * Initializes fetch future.
      */
     public void init() {
-        ((GridDhtPreloader<K, V>)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
+        ((GridDhtPreloader)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
 
         requestFromNextNode();
     }
@@ -122,7 +122,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable List<List<ClusterNode>> res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
-            ((GridDhtPreloader<K, V>)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
+            ((GridDhtPreloader)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
 
             return true;
         }

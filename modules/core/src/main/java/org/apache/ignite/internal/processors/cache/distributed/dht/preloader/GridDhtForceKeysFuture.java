@@ -59,7 +59,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private GridCacheContext<K, V> cctx;
 
     /** Topology. */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** Logger. */
     private IgniteLogger log;

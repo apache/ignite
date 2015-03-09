@@ -500,7 +500,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    IgniteInternalFuture<GridCacheReturn<Object>> lockAllAsync(
+    IgniteInternalFuture<GridCacheReturn> lockAllAsync(
         GridCacheContext cacheCtx,
         List<GridCacheEntryEx> entries,
         boolean onePhaseCommit,
@@ -515,7 +515,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<Object> ret = new GridCacheReturn<>(localResult(), false);
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(entries))
             return new GridFinishedFuture<>(cctx.kernalContext(), ret);
@@ -606,9 +606,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param filter Entry write filter.
      * @return Future for lock acquisition.
      */
-    private IgniteInternalFuture<GridCacheReturn<Object>> obtainLockAsync(
+    private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
         final GridCacheContext cacheCtx,
-        GridCacheReturn<Object> ret,
+        GridCacheReturn ret,
         final Collection<KeyCacheObject> passedKeys,
         final boolean read,
         final Set<KeyCacheObject> skipped,
@@ -635,8 +635,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn<Object>>(ret) {
-                @Override protected GridCacheReturn<Object> postLock(GridCacheReturn<Object> ret) throws IgniteCheckedException {
+            new PLC1<GridCacheReturn>(ret) {
+                @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + passedKeys);
 

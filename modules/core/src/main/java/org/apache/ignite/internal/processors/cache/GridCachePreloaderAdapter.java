@@ -125,12 +125,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
         // No-op.
     }
 
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
 

@@ -765,7 +765,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (log.isDebugEnabled())
                 log.debug("Performing colocated lock [tx=" + tx + ", keys=" + keys + ']');
 
-            IgniteInternalFuture<GridCacheReturn<Object>> txFut = tx.lockAllAsync(cacheCtx,
+            IgniteInternalFuture<GridCacheReturn> txFut = tx.lockAllAsync(cacheCtx,
                 keys,
                 tx.implicit(),
                 txRead,
@@ -774,8 +774,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             return new GridDhtEmbeddedFuture<>(
                 ctx.kernalContext(),
                 txFut,
-                new C2<GridCacheReturn<Object>, Exception, Exception>() {
-                    @Override public Exception apply(GridCacheReturn<Object> ret,
+                new C2<GridCacheReturn, Exception, Exception>() {
+                    @Override public Exception apply(GridCacheReturn ret,
                         Exception e) {
                         if (e != null)
                             e = U.unwrap(e);

@@ -92,7 +92,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
     /** Last exchange future. */
-    private volatile GridDhtPartitionsExchangeFuture<K, V> lastExchangeFut;
+    private volatile GridDhtPartitionsExchangeFuture lastExchangeFut;
 
     /**
      * @param cctx Cache context.
@@ -202,7 +202,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (obj != null)
             cctx.time().removeTimeoutObject(obj);
 
-        final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
+        final GridDhtPartitionsExchangeFuture exchFut = lastExchangeFut;
 
         if (exchFut != null) {
             if (log.isDebugEnabled())
@@ -351,7 +351,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (obj != null)
                 cctx.time().removeTimeoutObject(obj);
 
-            final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
+            final GridDhtPartitionsExchangeFuture exchFut = lastExchangeFut;
 
             assert exchFut != null : "Delaying preload process without topology event.";
 
@@ -569,8 +569,8 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage d,
-            GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, IgniteCheckedException {
-            GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+            GridDhtPartitionsExchangeFuture exchFut) throws InterruptedException, IgniteCheckedException {
+            GridDhtPartitionTopology top = cctx.dht().topology();
 
             cntr++;
 
@@ -834,7 +834,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     }
                 }
 
-                GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
+                GridDhtPartitionsExchangeFuture exchFut = null;
 
                 boolean stopEvtFired = false;
 
@@ -959,7 +959,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      * @param lastFut Last future to set.
      */
-    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         lastExchangeFut = lastFut;
     }
 
@@ -967,9 +967,9 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param exchFut Exchange future.
      * @return Assignments of partitions to nodes.
      */
-    GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         // No assignments for disabled preloader.
-        GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+        GridDhtPartitionTopology top = cctx.dht().topology();
 
         if (!cctx.preloadEnabled())
             return new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());

@@ -54,7 +54,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final ReadWriteLock busyLock;
 
     /** */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** */
     private final Collection<SupplyWorker> workers = new LinkedList<>();

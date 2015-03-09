@@ -113,7 +113,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private boolean retVal;
 
     /** Return value. */
-    private GridCacheReturn<Object> ret;
+    private GridCacheReturn ret;
 
     /** Keys that did not pass the filter. */
     private Collection<IgniteTxKey> filterFailedKeys;
@@ -272,7 +272,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn<>(null, tx.localResult(), null, true);
+        ret = new GridCacheReturn(null, tx.localResult(), null, true);
 
         for (IgniteTxEntry txEntry : tx.optimisticLockEntries()) {
             GridCacheContext cacheCtx = txEntry.context();

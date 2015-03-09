@@ -102,7 +102,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridUnsafeMemory unsafeMemory;
 
     /** Affinity manager. */
-    private GridCacheAffinityManager<K, V> affMgr;
+    private GridCacheAffinityManager affMgr;
 
     /** Event manager. */
     private GridCacheEventManager evtMgr;
@@ -111,7 +111,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheQueryManager<K, V> qryMgr;
 
     /** Continuous query manager. */
-    private CacheContinuousQueryManager<K, V> contQryMgr;
+    private CacheContinuousQueryManager contQryMgr;
 
     /** Swap manager. */
     private GridCacheSwapManager swapMgr;
@@ -120,7 +120,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheEvictionManager<K, V> evictMgr;
 
     /** Data structures manager. */
-    private CacheDataStructuresManager<K, V> dataStructuresMgr;
+    private CacheDataStructuresManager dataStructuresMgr;
 
     /** Eager TTL manager. */
     private GridCacheTtlManager ttlMgr;
@@ -230,9 +230,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheStoreManager storeMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
-        CacheContinuousQueryManager<K, V> contQryMgr,
-        GridCacheAffinityManager<K, V> affMgr,
-        CacheDataStructuresManager<K, V> dataStructuresMgr,
+        CacheContinuousQueryManager contQryMgr,
+        GridCacheAffinityManager affMgr,
+        CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr) {
@@ -691,7 +691,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Partition topology.
      */
-    public GridDhtPartitionTopology<K, V> topology() {
+    public GridDhtPartitionTopology topology() {
         assert isNear() || isDht() || isColocated() || isDhtAtomic();
 
         return isNear() ? near().dht().topology() : dht().topology();
@@ -854,7 +854,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache affinity manager.
      */
-    public GridCacheAffinityManager<K, V> affinity() {
+    public GridCacheAffinityManager affinity() {
         return affMgr;
     }
 
@@ -868,7 +868,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Continuous query manager, {@code null} if disabled.
      */
-    public CacheContinuousQueryManager<K, V> continuousQueries() {
+    public CacheContinuousQueryManager continuousQueries() {
         return contQryMgr;
     }
 
@@ -917,7 +917,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Data structures manager.
      */
-    public CacheDataStructuresManager<K, V> dataStructures() {
+    public CacheDataStructuresManager dataStructures() {
         return dataStructuresMgr;
     }
 

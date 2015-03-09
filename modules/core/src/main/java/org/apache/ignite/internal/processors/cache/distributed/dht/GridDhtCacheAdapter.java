@@ -53,7 +53,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     private static final long serialVersionUID = 0L;
 
     /** Topology. */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** Preloader. */
     protected GridCachePreloader<K, V> preldr;
@@ -156,7 +156,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @return Partition topology.
      */
-    public GridDhtPartitionTopology<K, V> topology() {
+    public GridDhtPartitionTopology topology() {
         return top;
     }
 
@@ -301,8 +301,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
     @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch)
-        throws GridDhtInvalidPartitionException
-    {
+        throws GridDhtInvalidPartitionException {
         return super.entryEx(key, touch);
     }
 

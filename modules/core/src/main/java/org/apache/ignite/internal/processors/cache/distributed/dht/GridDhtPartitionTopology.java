@@ -29,7 +29,7 @@ import java.util.*;
  * DHT partition topology.
  */
 @GridToStringExclude
-public interface GridDhtPartitionTopology<K, V> {
+public interface GridDhtPartitionTopology {
     /**
      * Locks the topology, usually during mapping on locks or transactions.
      */
@@ -46,7 +46,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */
-    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture<K, V> exchFut);
+    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Topology version.

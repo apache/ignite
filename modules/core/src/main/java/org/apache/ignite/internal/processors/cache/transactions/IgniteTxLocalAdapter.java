@@ -1866,7 +1866,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> putAllAsync(
+    @Override public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
@@ -1874,7 +1874,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         long ttl,
         CacheEntryPredicate[] filter
     ) {
-        return (IgniteInternalFuture<GridCacheReturn<CacheObject>>)putAllAsync0(cacheCtx,
+        return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
             map,
             null,
             null,
@@ -1901,12 +1901,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V, T> IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
+    @Override public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs
     ) {
-        return (IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)putAllAsync0(cacheCtx,
+        return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
             null,
             map,
             invokeArgs,
@@ -1969,7 +1969,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean retval,
         boolean lockOnly,
         CacheEntryPredicate[] filter,
-        final GridCacheReturn<CacheObject> ret,
+        final GridCacheReturn ret,
         Collection<KeyCacheObject> enlisted,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap
@@ -2559,7 +2559,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         init();
 
-        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
             if (implicit())
@@ -2616,8 +2616,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     -1L,
                     CU.empty0());
 
-                PLC1<GridCacheReturn<CacheObject>> plc1 = new PLC1<GridCacheReturn<CacheObject>>(ret) {
-                    @Override public GridCacheReturn<CacheObject> postLock(GridCacheReturn<CacheObject> ret)
+                PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                    @Override public GridCacheReturn postLock(GridCacheReturn ret)
                         throws IgniteCheckedException
                     {
                         if (log.isDebugEnabled())
@@ -2670,11 +2670,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         loadFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFutureEx<>(new GridCacheReturn<V>(localResult()), e);
+                        return new GridFinishedFutureEx<>(new GridCacheReturn(localResult()), e);
                     }
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<Object>>() {
-                        @Override public GridCacheReturn<Object> applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
@@ -2682,8 +2682,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     });
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn<CacheObject>>() {
-                        @Override public GridCacheReturn<CacheObject> applyx(IgniteInternalFuture<Set<KeyCacheObject>> f) throws IgniteCheckedException {
+                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f) throws IgniteCheckedException {
                             f.get();
 
                             return ret;
@@ -2699,7 +2699,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> removeAllAsync(
+    @Override public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
         GridCacheContext cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx cached,
@@ -2719,7 +2719,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @return Future for asynchronous remove.
      */
     @SuppressWarnings("unchecked")
-    private <K, V> IgniteInternalFuture<GridCacheReturn<CacheObject>> removeAllAsync0(
+    private <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync0(
         final GridCacheContext cacheCtx,
         @Nullable final Collection<? extends K> keys,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drMap,
@@ -2755,7 +2755,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        final GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(keys0)) {
             if (implicit()) {
@@ -2826,8 +2826,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     -1L,
                     CU.empty0());
 
-                PLC1<GridCacheReturn<CacheObject>> plc1 = new PLC1<GridCacheReturn<CacheObject>>(ret) {
-                    @Override protected GridCacheReturn<CacheObject> postLock(GridCacheReturn<CacheObject> ret)
+                PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                    @Override protected GridCacheReturn postLock(GridCacheReturn ret)
                         throws IgniteCheckedException
                     {
                         if (log.isDebugEnabled())
@@ -2876,8 +2876,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     // with prepare response, if required.
                     assert loadFut.isDone();
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn<CacheObject>>() {
-                        @Override public GridCacheReturn<CacheObject> applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
                             throws IgniteCheckedException
                         {
                             txFut.get();
@@ -2887,8 +2887,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     });
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn<CacheObject>>() {
-                        @Override public GridCacheReturn<CacheObject> applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
+                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
                             throws IgniteCheckedException
                         {
                             f.get();
@@ -2974,7 +2974,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         try {
             init();
 
-            GridCacheReturn<CacheObject> ret = new GridCacheReturn<>(localResult(), false);
+            GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 

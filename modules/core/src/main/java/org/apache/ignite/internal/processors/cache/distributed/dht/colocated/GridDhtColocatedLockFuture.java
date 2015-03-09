@@ -106,7 +106,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         new AtomicReference<>();
 
     /** Map of current values. */
-    private Map<KeyCacheObject, GridTuple3<GridCacheVersion, CacheObject, byte[]>> valMap;
+    private Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
@@ -590,78 +590,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     }
 
     /**
-     * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
-     * remote primary node.
-     *
-     * @param mappings Queue of mappings.
-     * @throws IgniteCheckedException If mapping can not be completed.
-     */
-    private void proceedMapping(final Deque<GridNearLockMapping> mappings)
-        throws IgniteCheckedException {
-        GridNearLockMapping map = mappings.poll();
-
-        // If there are no more mappings to process, complete the future.
-        if (map == null)
-            return;
-
-        final GridNearLockRequest req = map.request();
-        final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
-        final ClusterNode node = map.node();
-
-        if (filter != null && filter.length != 0)
-            req.filter(filter, cctx);
-
-        if (node.isLocal())
-            lockLocally(mappedKeys, req.topologyVersion(), mappings);
-        else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys, mappings);
-
-            req.miniId(fut.futureId());
-
-            add(fut); // Append new future.
-
-            IgniteInternalFuture<?> txSync = null;
-
-            if (inTx())
-                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
-
-            if (txSync == null || txSync.isDone()) {
-                try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                    cctx.io().send(node, req, cctx.ioPolicy());
-                }
-                catch (ClusterTopologyCheckedException ex) {
-                    assert fut != null;
-
-                    fut.onResult(ex);
-                }
-            }
-            else {
-                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> t) {
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
-
-                            cctx.io().send(node, req, cctx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException ex) {
-                            assert fut != null;
-
-                            fut.onResult(ex);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onError(e);
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    /**
      * Maps keys to nodes. Note that we can not simply group keys by nodes and send lock request as
      * such approach does not preserve order of lock acquisition. Instead, keys are split in continuous
      * groups belonging to one primary node and locks for these groups are acquired sequentially.
@@ -759,7 +687,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             GridCacheMvccCandidate cand = addEntry(entry);
 
                             // Will either return value from dht cache or null if this is a miss.
-                            GridTuple3<GridCacheVersion, CacheObject, byte[]> val = entry.detached() ? null :
+                            IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.detached() ? null :
                                 ((GridDhtCacheEntry)entry).versionedValue(topVer);
 
                             GridCacheVersion dhtVer = null;
@@ -859,6 +787,78 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         }
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
+        }
+    }
+
+    /**
+     * Gets next near lock mapping and either acquires dht locks locally or sends near lock request to
+     * remote primary node.
+     *
+     * @param mappings Queue of mappings.
+     * @throws IgniteCheckedException If mapping can not be completed.
+     */
+    private void proceedMapping(final Deque<GridNearLockMapping> mappings)
+        throws IgniteCheckedException {
+        GridNearLockMapping map = mappings.poll();
+
+        // If there are no more mappings to process, complete the future.
+        if (map == null)
+            return;
+
+        final GridNearLockRequest req = map.request();
+        final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
+        final ClusterNode node = map.node();
+
+        if (filter != null && filter.length != 0)
+            req.filter(filter, cctx);
+
+        if (node.isLocal())
+            lockLocally(mappedKeys, req.topologyVersion(), mappings);
+        else {
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, mappings);
+
+            req.miniId(fut.futureId());
+
+            add(fut); // Append new future.
+
+            IgniteInternalFuture<?> txSync = null;
+
+            if (inTx())
+                txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
+
+            if (txSync == null || txSync.isDone()) {
+                try {
+                    if (log.isDebugEnabled())
+                        log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
+
+                    cctx.io().send(node, req, cctx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException ex) {
+                    assert fut != null;
+
+                    fut.onResult(ex);
+                }
+            }
+            else {
+                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
+                        try {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
+
+                            cctx.io().send(node, req, cctx.ioPolicy());
+                        }
+                        catch (ClusterTopologyCheckedException ex) {
+                            assert fut != null;
+
+                            fut.onResult(ex);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onError(e);
+                        }
+                    }
+                });
+            }
         }
     }
 
@@ -1208,7 +1208,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 int i = 0;
 
                 for (KeyCacheObject k : keys) {
-                    GridTuple3<GridCacheVersion, CacheObject, byte[]> oldValTup = valMap.get(k);
+                    IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
 
                     CacheObject newVal = res.value(i);
 

@@ -825,7 +825,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (log.isDebugEnabled())
                                 log.debug("Performing DHT lock [tx=" + tx + ", entries=" + entries + ']');
 
-                            IgniteInternalFuture<GridCacheReturn<Object>> txFut = tx.lockAllAsync(
+                            IgniteInternalFuture<GridCacheReturn> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
                                 req.onePhaseCommit(),
@@ -837,9 +837,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             return new GridDhtEmbeddedFuture(
                                 txFut,
-                                new C2<GridCacheReturn<V>, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
+                                new C2<GridCacheReturn, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
                                     @Override public IgniteInternalFuture<GridNearLockResponse> apply(
-                                        GridCacheReturn<V> o, Exception e) {
+                                        GridCacheReturn o, Exception e) {
                                         if (e != null)
                                             e = U.unwrap(e);
 

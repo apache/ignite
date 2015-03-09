@@ -49,7 +49,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
     /** */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** Topology version. */
     private final GridAtomicLong topVer = new GridAtomicLong();
@@ -70,7 +70,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
     /** Pending affinity assignment futures. */
-    private ConcurrentMap<Long, GridDhtAssignmentFetchFuture<K, V>> pendingAssignmentFetchFuts =
+    private ConcurrentMap<Long, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
         new ConcurrentHashMap8<>();
 
     /** Discovery listener. */
@@ -102,7 +102,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     e.topologyVersion() + ", curVer=" + topVer.get() + ']';
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
-                    for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+                    for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                         fut.onNodeLeft(e.eventNode().id());
                 }
             }
@@ -246,12 +246,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         demandPool.updateLastExchangeFuture(lastFut);
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         return demandPool.assign(exchFut);
     }
 
@@ -276,8 +276,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to add.
      */
-    public void addDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
-        GridDhtAssignmentFetchFuture<K, V> old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
+    public void addDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture fut) {
+        GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
 
         assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
     }
@@ -286,7 +286,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to remove.
      */
-    public void removeDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
+    public void removeDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture fut) {
         boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
 
         assert rmv : "Failed to remove assignment fetch future: " + topVer;
@@ -455,7 +455,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
 
-        for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+        for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
             fut.onResponse(node, res);
     }
 

@@ -370,7 +370,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
 
-                    GridDhtPartitionTopology<?, ?> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
                     for (int p = 0; p < aff.partitions(); p++) {
                         long start = 0;

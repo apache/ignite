@@ -74,7 +74,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
-    private GridCacheReturn<Object> retVal;
+    private GridCacheReturn retVal;
 
     /** Filter failed keys. */
     @GridDirectCollection(IgniteTxKey.class)
@@ -102,7 +102,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         IgniteUuid miniId,
         GridCacheVersion dhtVer,
         Collection<Integer> invalidParts,
-        GridCacheReturn<Object> retVal,
+        GridCacheReturn retVal,
         Throwable err
     ) {
         super(xid, err);
@@ -188,7 +188,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return Return value.
      */
-    public GridCacheReturn<Object> returnValue() {
+    public GridCacheReturn returnValue() {
         return retVal;
     }
 

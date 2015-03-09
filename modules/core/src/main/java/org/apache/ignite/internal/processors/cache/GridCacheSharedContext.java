@@ -108,8 +108,8 @@ public class GridCacheSharedContext<K, V> {
      *
      * @return Collection of all cache contexts.
      */
-    public Collection<GridCacheContext<K, V>> cacheContexts() {
-        return ctxMap.values();
+    public Collection<GridCacheContext> cacheContexts() {
+        return (Collection)ctxMap.values();
     }
 
     /**

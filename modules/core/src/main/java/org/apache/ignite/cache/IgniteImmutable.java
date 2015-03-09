@@ -20,7 +20,7 @@ package org.apache.ignite.cache;
 import java.lang.annotation.*;
 
 /**
- * Annotation for ignite immutable objects.
+ * Annotation for immutable objects.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

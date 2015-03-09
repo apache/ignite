@@ -338,7 +338,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (txFut != null)
             txFut.markInitialized();
 
-        IgniteInternalFuture<Map<KeyCacheObject, CacheObject>> fut = null;
+        IgniteInternalFuture<Map<KeyCacheObject, CacheObject>> fut;
 
         if (txFut == null || txFut.isDone()) {
             if (reload && cctx.readThrough() && cctx.store().configured()) {
@@ -361,9 +361,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     fut = tx.getAllAsync(cctx,
                         keys.keySet(),
                         null,
-                        false,
+                        /*deserialize portable*/false,
                         skipVals,
-                        true);
+                        /*keep cache objects*/true);
                 }
             }
         }
@@ -397,9 +397,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                 return tx.getAllAsync(cctx,
                                     keys.keySet(),
                                     null,
-                                    false,
+                                    /*deserialize portable*/false,
                                     skipVals,
-                                    true);
+                                    /*keep cache objects*/true);
                             }
                         }
                     }
