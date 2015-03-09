@@ -70,10 +70,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
      */
     public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (ctx.deploymentEnabled())
-//            prepareObject(key, ctx);
-
         if (nearKeys == null)
             nearKeys = new ArrayList<>();
 

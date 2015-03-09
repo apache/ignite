@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.internal.processors.portable.os.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -238,7 +236,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridPortableProcessor portableProc;
+    private IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
     @GridToStringExclude
@@ -461,8 +459,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
             hadoopProc = (HadoopProcessorAdapter)comp;
-        else if (comp instanceof GridPortableProcessor)
-            portableProc = (GridPortableProcessor)comp;
+        else if (comp instanceof IgniteCacheObjectProcessor)
+            cacheObjProc = (IgniteCacheObjectProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
@@ -693,8 +691,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableProcessor portable() {
-        return portableProc;
+    @Override public IgniteCacheObjectProcessor cacheObjects() {
+        return cacheObjProc;
     }
 
     /** {@inheritDoc} */
@@ -785,10 +783,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
-        else if (cls.equals(GridPortableProcessor.class))
-            return (T)new GridOsPortableProcessor(this);
-        else if (cls.equals(IgniteCacheSerializationManager.class))
-            return (T)new IgniteCacheOsSerializationManager();
+        else if (cls.equals(IgniteCacheObjectProcessor.class))
+            return (T)new IgniteCacheObjectProcessorImpl(this);
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

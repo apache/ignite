@@ -98,7 +98,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private final GridKernalContext ctx;
 
     /** */
-    private final GridPortableProcessor cacheObjProc;
+    private final IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
     private final CacheObjectContext cacheObjCtx;
@@ -169,14 +169,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         assert ctx != null;
 
         this.ctx = ctx;
-        this.cacheObjProc = ctx.portable();
+        this.cacheObjProc = ctx.cacheObjects();
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        this.cacheObjCtx = ctx.portable().contextForCache(node, cacheName);
+        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName);
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 

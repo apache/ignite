@@ -1704,9 +1704,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Undeploy count.
      */
     public int onUndeploy(ClassLoader ldr) {
-        if (cctx.portableEnabled())
-            return 0;
-
         IgniteUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
 
         assert ldrId != null;
@@ -1736,7 +1733,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                                     swapEntry.value() == null &&
                                     swapEntry.type() != CacheObjectAdapter.TYPE_BYTE_ARR) {
                                     // We need value here only for classloading purposes.
-                                    Object val =  cctx.portable().unmarshal(cctx.cacheObjectContext(),
+                                    Object val =  cctx.cacheObjects().unmarshal(cctx.cacheObjectContext(),
                                         swapEntry.valueBytes(),
                                         cctx.deploy().globalLoader());
 

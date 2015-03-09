@@ -181,22 +181,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      */
     public void addValue(CacheObject val) {
         vals.add(val);
-// TODO IGNITE-51.
-//        if (ctx.deploymentEnabled())
-//            prepareObject(val, ctx.shared());
-//
-//        GridCacheValueBytes vb = null;
-//
-//        if (val != null) {
-//            vb = val instanceof byte[] ? GridCacheValueBytes.plain(val) : valBytes != null ?
-//                GridCacheValueBytes.marshaled(valBytes) : null;
-//        }
-//        else if (valBytes != null)
-//            vb = GridCacheValueBytes.marshaled(valBytes);
-//
-//        this.valBytes.add(vb);
-//
-//        vals.add(val);
     }
 
     /**
@@ -214,16 +198,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         if (!F.isEmpty(vals))
             return vals.get(idx);
 
-        // If there was no value in values collection, then it could be in value bytes collection in case of byte[].
-// TODO IGNITE-51.
-//        if (!F.isEmpty(valBytes)) {
-//            GridCacheValueBytes res = valBytes.get(idx);
-//
-//            if (res != null && res.isPlain())
-//                return (V)res.get();
-//        }
-
-        // Value is not found in both value and value bytes collections.
         return null;
     }
 

@@ -201,10 +201,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      */
     public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (ctx.deploymentEnabled())
-//            prepareObject(key, ctx);
-
         nearKeys.add(key);
     }
 
@@ -257,7 +253,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * Sets owner and its mapped version.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param ownerMapped Owner mapped version.
      */
     public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {

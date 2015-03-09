@@ -431,7 +431,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             null,
             null,
             null,
-            ctx.portableEnabled(),
+            true,
             null
         );
     }
@@ -449,7 +449,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             null,
             null,
             null,
-            ctx.portableEnabled(),
+            false,
             plc);
     }
 
@@ -828,8 +828,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             Object val = CU.value(cacheVal, ctx, true);
 
-            if (ctx.portableEnabled())
-                val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
+            val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
 
             return (V)val;
         }
@@ -920,8 +919,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                     Object val0 = CU.value(v, ctx, true);
 
-                    if (ctx.portableEnabled())
-                        val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
+                    val0 = ctx.unwrapPortableIfNeeded(val0, ctx.keepPortable());
 
                     return F.t((V)val0);
                 }
@@ -935,10 +933,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (peek != null) {
                     CacheObject v = peek.get();
 
-                    Object val0 = v.value(ctx.cacheObjectContext(), true);
+                    Object val0 = CU.value(v, ctx, true);
 
-                    if (ctx.portableEnabled())
-                        val0 = ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
+                    val0 = ctx.unwrapPortableIfNeeded(val0, ctx.keepPortable());
 
                     return F.t((V) val0);
                 }
@@ -1126,7 +1123,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Entry key.
      * @return Entry or <tt>null</tt>.
      */
-    // TODO IGNITE-51 (added for tests).
     @Nullable public GridCacheEntryEx peekEx(Object key) {
         return entry0(ctx.toCacheKeyObject(key), ctx.affinity().affinityTopologyVersion(), false, false);
     }
@@ -1135,7 +1131,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Entry key.
      * @return Entry (never {@code null}).
      */
-    // TODO IGNITE-51 (added for tests).
     public GridCacheEntryEx entryEx(Object key) {
         return entryEx(ctx.toCacheKeyObject(key), false);
     }
@@ -4050,18 +4045,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         ExpiryPolicy plc = prj != null ? prj.expiry() : null;
 
-        final Collection<? extends K> keys0;
-
-        if (ctx.portableEnabled() && !ctx.store().convertPortable()) {
-            keys0 = F.viewReadOnly(keys, new C1<K, K>() {
-                @Override public K apply(K k) {
-                    return (K)ctx.marshalToPortable(k);
-                }
-            });
-        }
-        else
-            keys0 = keys;
-
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
@@ -4070,14 +4053,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     return new GridFinishedFuture<>(ctx.kernalContext());
 
                 return ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new LoadKeysCallable<>(ctx.name(), keys0, true, plc),
+                    new LoadKeysCallable<>(ctx.name(), keys, true, plc),
                     nodes,
                     true);
             }
             else {
                 return ctx.closures().callLocalSafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        localLoadAndUpdate(keys0);
+                        localLoadAndUpdate(keys);
 
                         return null;
                     }
@@ -4102,26 +4085,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
-        try (final IgniteDataLoader<KeyCacheObject, CacheObject> ldr =
+        try (final IgniteDataLoaderImpl<KeyCacheObject, CacheObject> ldr =
                  ctx.kernalContext().<KeyCacheObject, CacheObject>dataLoad().dataLoader(ctx.namex())) {
             ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
-            final Collection<Map.Entry<KeyCacheObject, CacheObject>> col = new ArrayList<>(ldr.perNodeBufferSize());
+            final Collection<IgniteDataLoaderEntry> col = new ArrayList<>(ldr.perNodeBufferSize());
 
-            // TODO IGNITE-51.
-            Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-                @Override public KeyCacheObject apply(K key) {
-                    return ctx.toCacheKeyObject(key);
-                }
-            });
+            Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
             ctx.store().loadAllFromStore(null, keys0, new CIX2<KeyCacheObject, Object>() {
                 @Override public void applyx(KeyCacheObject key, Object val) {
-                    col.add(new GridMapEntry<>(key, ctx.toCacheObject(val)));
+                    col.add(new IgniteDataLoaderEntry(key, ctx.toCacheObject(val)));
 
                     if (col.size() == ldr.perNodeBufferSize()) {
-                        ldr.addData(col);
+                        ldr.addDataInternal(col);
 
                         col.clear();
                     }
@@ -4147,12 +4125,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
-        // TODO IGNITE-51.
-        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-            @Override public KeyCacheObject apply(K key) {
-                return ctx.toCacheKeyObject(key);
-            }
-        });
+        Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
         if (ctx.store().isLocalStore()) {
             IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
@@ -4422,10 +4395,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         Object val0 = val != null ? val.value(ctx.cacheObjectContext(), true) : null;
 
-        if (ctx.portableEnabled())
-            return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
-        else
-            return (V)ctx.cloneOnFlag(val0);
+        return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
     }
 
     /** {@inheritDoc} */
@@ -5160,10 +5130,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         assert map.isEmpty() || map.size() == 1 : map.size();
 
-        if (ctx.portableEnabled())
-            return map.isEmpty() ? null : map.values().iterator().next();
-        else
-            return map.get(key);
+        return map.get(key);
     }
 
     /**
@@ -5188,10 +5155,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                     assert map.isEmpty() || map.size() == 1 : map.size();
 
-                    if (ctx.portableEnabled())
-                        return map.isEmpty() ? null : map.values().iterator().next();
-                    else
-                        return map.get(key);
+                    return map.get(key);
                 }
             });
     }
@@ -5462,7 +5426,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             Object key0 = key.value(ctx.cacheObjectContext(), true);
             Object val0 = val.value(ctx.cacheObjectContext(), true);
 
-            if (deserializePortable && ctx.portableEnabled()) {
+            if (deserializePortable) {
                 key0 = ctx.unwrapPortableIfNeeded(key0, true);
                 val0 = ctx.unwrapPortableIfNeeded(val0, true);
             }

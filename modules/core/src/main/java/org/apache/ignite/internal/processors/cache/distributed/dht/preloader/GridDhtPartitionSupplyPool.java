@@ -247,8 +247,6 @@ class GridDhtPartitionSupplyPool<K, V> {
 
             boolean ack = false;
 
-            boolean convertPortable = cctx.portableEnabled() && cctx.offheapTiered();
-
             try {
                 // Partition map exchange is finished which means that all near transactions with given
                 // topology version are committed. We can wait for local locks here as it will not take

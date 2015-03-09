@@ -70,12 +70,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @throws IgniteCheckedException If failed.
      */
     public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        boolean depEnabled = ctx.deploymentEnabled();
-//
-//        if (depEnabled)
-//            prepareObject(key.value(ctx, false), ctx.shared());
-
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 

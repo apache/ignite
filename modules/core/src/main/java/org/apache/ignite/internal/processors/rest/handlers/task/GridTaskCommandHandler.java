@@ -257,7 +257,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                     try {
                                         taskRestRes.setFinished(true);
                                         taskRestRes.setResult(req.portableMode() ?
-                                            ctx.portable().marshalToPortable(desc.result()) : desc.result());
+                                            ctx.cacheObjects().marshalToPortable(desc.result()) : desc.result());
 
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);

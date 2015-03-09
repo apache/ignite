@@ -180,13 +180,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
         }
 
-        boolean convertPortable = !cctx.keepPortableInStore();
-
-        if (cctx.portableEnabled())
-            this.convertPortable = convertPortable;
-        else if (convertPortable)
-            U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +
-                "be ignored because portable mode is not enabled for cache: " + cctx.namex());
+        convertPortable = !cctx.cacheObjects().keepPortableInStore(cctx.name());
     }
 
     /** {@inheritDoc} */
@@ -301,7 +295,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (convert) {
                 val = convert(val);
 
-                return cctx.portableEnabled() ? cctx.marshalToPortable(val) : val;
+                return val;
             }
             else
                 return val;
@@ -434,12 +428,6 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                     @Override public void apply(Object k, Object val) {
                         if (convert) {
                             Object v = convert(val);
-
-// TODO IGNITE-51
-//                            if (cctx.portableEnabled()) {
-//                                k = (K)cctx.marshalToPortable(k);
-//                                v = (V)cctx.marshalToPortable(v);
-//                            }
 
                             vis.apply(cctx.toCacheKeyObject(k), v);
                         }
@@ -808,7 +796,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
-        if (cctx.portableEnabled() && e.getMessage() != null) {
+        if (e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
@@ -1166,10 +1154,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
          * @return {@code True} if original map contains entry.
          */
         private boolean mapContains(Cache.Entry<?, ?> e) {
-            Object key = convertPortable ? cctx.marshalToPortable(e.getKey()) : e.getKey();
-
-            return map.containsKey(key);
-
+            return map.containsKey(e.getKey());
         }
 
         /** {@inheritDoc} */

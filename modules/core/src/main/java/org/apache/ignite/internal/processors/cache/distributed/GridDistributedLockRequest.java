@@ -246,10 +246,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         @Nullable Collection<GridCacheMvccCandidate> cands,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
-// TODO IGNITE-51.
-//        if (ctx.deploymentEnabled())
-//            prepareObject(key, ctx.shared());
-
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
