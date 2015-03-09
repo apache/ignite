@@ -64,6 +64,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** Projection. */
     private GridCacheProjectionImpl<K, V> prj;
 
+    /** */
+    private CacheManager cacheMgr;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -1224,31 +1227,27 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public javax.cache.CacheManager getCacheManager() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        CachingProvider provider = (CachingProvider)Caching.getCachingProvider(
-            CachingProvider.class.getName(),
-            CachingProvider.class.getClassLoader());
+    @Override public CacheManager getCacheManager() {
+        return cacheMgr;
+    }
 
-        if (provider == null)
-            return null;
-
-        return provider.findManager(this);
+    /**
+     * @param cacheMgr Cache manager.
+     */
+    public void setCacheManager(CacheManager cacheMgr) {
+        this.cacheMgr = cacheMgr;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        CacheManager cacheMgr = getCacheManager();
-
-        if (cacheMgr != null) // cacheMgr == null means cache is closed.
-            cacheMgr.destroyCache(getName());
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        return getCacheManager() == null;
+        return cacheMgr != null && cacheMgr.isClosed();
     }
 
     /** {@inheritDoc} */
