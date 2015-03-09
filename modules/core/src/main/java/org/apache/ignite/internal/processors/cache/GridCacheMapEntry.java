@@ -1632,6 +1632,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long newTtl;
         long newExpireTime;
 
+        Object key0 = null;
+        Object updated0 = null;
+
         synchronized (this) {
             boolean needVal = intercept || retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
 
@@ -1655,8 +1658,35 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (op == GridCacheOperation.TRANSFORM) {
                         transformClo = writeObj;
 
-                        // TODO IGNITE-51
-                        writeObj0 = ((IgniteClosure)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
+                        EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
+
+                        oldVal = rawGetOrUnmarshalUnlocked(true);
+
+                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal);
+
+                        try {
+                            Object computed = entryProcessor.process(entry, invokeArgs);
+
+                            if (entry.modified()) {
+                                writeObj0 = cctx.unwrapTemporary(entry.getValue());
+                                writeObj = cctx.toCacheObject(updated0);
+                            }
+                            else {
+                                writeObj = oldVal;
+                                writeObj0 = CU.value(oldVal, cctx, false);
+                            }
+
+                            key0 = entry.key();
+
+                            if (computed != null)
+                                invokeRes = new IgniteBiTuple(cctx.unwrapTemporary(computed), null);
+                        }
+                        catch (Exception e) {
+                            invokeRes = new IgniteBiTuple(null, e);
+
+                            writeObj = oldVal;
+                            writeObj0 = CU.value(oldVal, cctx, false);
+                        }
                     }
                     else
                         writeObj0 = CU.value((CacheObject)writeObj, cctx, false);
@@ -1780,7 +1810,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             boolean readThrough = false;
 
             Object old0 = null;
-            Object updated0 = null;
 
             if (needVal && oldVal == null && (cctx.readThrough() &&
                 (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
@@ -1845,8 +1874,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         false);
                 }
             }
-
-            Object key0 = null;
 
             // Calculate new value in case we met transform.
             if (op == GridCacheOperation.TRANSFORM) {

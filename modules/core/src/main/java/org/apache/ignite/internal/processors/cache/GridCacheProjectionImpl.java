@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -188,19 +189,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         if (k == null || v == null)
             return false;
 
-        // TODO IGNITE-51.
-        IgniteBiPredicate<K, V> p = null;
+        if (filter != null) {
+            GridLocalCacheEntry e = new GridLocalCacheEntry(cctx,
+                    cctx.toCacheKeyObject(k),
+                    k.hashCode(),
+                    cctx.toCacheObject(v),
+                    null,
+                    0,
+                    0);
 
-        if (p != null) {
-            CacheFlag[] f = cctx.forceLocalRead();
-
-            try {
-                if (!p.apply(k, v))
-                    return false;
-            }
-            finally {
-                cctx.forceFlags(f);
-            }
+            if (!filter.apply(e))
+                return false;
         }
 
         return true;

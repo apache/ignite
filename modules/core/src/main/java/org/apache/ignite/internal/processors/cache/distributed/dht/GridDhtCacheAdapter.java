@@ -378,12 +378,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
-        // TODO IGNITE-51.
-        Collection<KeyCacheObject> keys0 = F.viewReadOnly(keys, new C1<K, KeyCacheObject>() {
-            @Override public KeyCacheObject apply(K key) {
-                return ctx.toCacheKeyObject(key);
-            }
-        });
+        Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
         ctx.store().loadAllFromStore(null, keys0, new CI2<KeyCacheObject, Object>() {
             @Override public void apply(KeyCacheObject key, Object val) {
