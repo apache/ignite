@@ -22,6 +22,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -316,12 +317,12 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException {
         return send(msg, null, 0, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPlainFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff,
+    @Override public <T> IgniteInternalFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff,
         int outLen) throws IgniteCheckedException {
         assert outBuf == null || msg.command() == IgfsIpcCommand.READ_BLOCK;
 

@@ -417,7 +417,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
 
         // Register per-routine notifications listener if ordered messaging is used.
@@ -456,7 +456,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             // Stop with exception if projection is empty.
             if (nodes.isEmpty() && !locIncluded) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new ClusterTopologyCheckedException("Failed to register remote continuous listener (projection is empty)."));
             }
 
@@ -551,7 +551,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     hnd.onListenerRegistered(routineId, ctx);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to register handler locally: " + hnd, e));
             }
         }
@@ -1615,6 +1615,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Consume ID. */
         private UUID routineId;
 
@@ -1639,7 +1642,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param routineId Consume ID.
          */
         StartFuture(GridKernalContext ctx, UUID routineId) {
-            super(ctx);
+            this.ctx = ctx;
 
             this.routineId = routineId;
         }
@@ -1693,24 +1696,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for stop routine.
      */
     private static class StopFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public StopFuture() {
-            // No-op.
-        }
+        /** */
+        private GridKernalContext ctx;
 
         /**
          * @param ctx Kernal context.
          */
         StopFuture(GridKernalContext ctx) {
-            super(ctx);
+            this.ctx = ctx;
         }
 
         /**
@@ -1743,25 +1739,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private UUID nodeId;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public SyncMessageAckFuture() {
-            // No-op.
-        }
 
         /**
          * @param ctx Kernal context.
          * @param nodeId Master node ID.
          */
         SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
-            super(ctx);
-
             this.nodeId = nodeId;
         }
 

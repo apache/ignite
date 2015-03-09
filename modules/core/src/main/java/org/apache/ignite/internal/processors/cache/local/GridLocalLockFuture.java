@@ -30,7 +30,6 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -39,11 +38,11 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -77,10 +76,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** Lock timeout. */
     private long timeout;
 
-    /** Logger. */
-    @GridToStringExclude
-    private IgniteLogger log;
-
     /** Filter. */
     private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
@@ -89,13 +84,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
     /** Trackable flag. */
     private boolean trackable = true;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridLocalLockFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Registry.
@@ -112,8 +100,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         GridLocalCache<K, V> cache,
         long timeout,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        super(cctx.kernalContext());
-
         assert keys != null;
         assert cache != null;
 
@@ -131,7 +117,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
         entries = new ArrayList<>(keys.size());
 
-        log = U.logger(ctx, logRef, GridLocalLockFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();

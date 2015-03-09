@@ -74,7 +74,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
 
             ComputeTaskFuture<Object> f = comp.future();
 
-            f.listenAsync(lsnr);
+            f.listen(lsnr);
 
             txCnt.increment();
         }

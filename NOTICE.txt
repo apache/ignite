@@ -19,3 +19,23 @@ http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7C
 This software has a dependency on Persistent Collections library,
 licensed under MIT license.
 https://github.com/blackdrag/pcollections
+
+
+DISCLAIMER
+----------
+
+Apache Ignite is an effort undergoing incubation at the Apache Software
+Foundation (ASF), sponsored by the Apache Incubator PMC.
+
+Incubation is required of all newly accepted projects until a further review
+indicates that the infrastructure, communications, and decision making process
+have stabilized in a manner consistent with other successful ASF projects.
+
+While incubation status is not necessarily a reflection of the completeness
+or stability of the code, it does indicate that the project has yet to be
+fully endorsed by the ASF.
+
+For more information about the incubation status of the Apache Ignite project
+you can go to the following page:
+
+http://ignite.incubator.apache.org/

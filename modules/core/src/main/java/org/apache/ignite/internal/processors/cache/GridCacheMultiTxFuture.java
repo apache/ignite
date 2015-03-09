@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -33,76 +32,48 @@ import java.util.concurrent.atomic.*;
  * Future which waits for completion of one or more transactions.
  */
 public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolean> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
-    /** Transactions to wait for. */
-    private final Set<IgniteInternalTx<K, V>> txs = new GridLeanSet<>();
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** */
     private Set<IgniteInternalTx<K, V>> remainingTxs;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /**
      * @param cctx Cache context.
      */
     public GridCacheMultiTxFuture(GridCacheContext<K, V> cctx) {
-        super(cctx.kernalContext());
-
-        log = U.logger(ctx,  logRef, GridCacheMultiTxFuture.class);
-
-        // Notify listeners in different threads.
-        concurrentNotify(true);
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridCacheMultiTxFuture() {
-        // No-op.
-    }
-
-    /**
-     * @return Transactions to wait for.
-     */
-    public Set<IgniteInternalTx<K, V>> txs() {
-        return txs;
-    }
-
-    /**
-     * @return Remaining transactions.
-     */
-    public Set<IgniteInternalTx<K, V>> remainingTxs() {
-        return remainingTxs;
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMultiTxFuture.class);
     }
 
     /**
      * @param tx Transaction to add.
      */
     public void addTx(IgniteInternalTx<K, V> tx) {
-        txs.add(tx);
+        if (remainingTxs == null)
+            remainingTxs = new GridConcurrentHashSet<>();
+
+        remainingTxs.add(tx);
     }
 
     /**
      * Initializes this future.
      */
     public void init() {
-        if (F.isEmpty(txs)) {
+        if (remainingTxs == null) {
             remainingTxs = Collections.emptySet();
 
             onDone(true);
         }
         else {
-            remainingTxs = new GridConcurrentHashSet<>(txs);
+            assert !remainingTxs.isEmpty();
 
-            for (final IgniteInternalTx<K, V> tx : txs) {
+            for (final IgniteInternalTx<K, V> tx : remainingTxs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> t) {
                             remainingTxs.remove(tx);
 
@@ -137,7 +108,6 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheMultiTxFuture.class, this,
-            "txs", F.viewReadOnly(txs, CU.<K, V>tx2xidVersion()),
             "remaining", F.viewReadOnly(remainingTxs, CU.<K, V>tx2xidVersion()),
             "super", super.toString()
         );

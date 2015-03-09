@@ -768,7 +768,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debug(Object msg) {
-        X.println(debugPrefix() + msg);
+        X.error(debugPrefix() + msg);
     }
 
     /**
@@ -2793,7 +2793,9 @@ public abstract class IgniteUtils {
      */
     public static void onGridStop(){
         synchronized (mux) {
-            assert gridCnt > 0 : gridCnt;
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
 
             --gridCnt;
 
@@ -7167,7 +7169,7 @@ public abstract class IgniteUtils {
      */
     public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            f.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();

@@ -138,9 +138,9 @@ public final class ComputeFibonacciContinuationExample {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 1);
 
                     ComputeTaskFuture<BigInteger> futVal = compute.future();
-                    
+
                     fut1 = locMap.putIfAbsent(n - 1, futVal);
-                    
+
                     if (fut1 == null)
                         fut1 = futVal;
                 }
@@ -150,9 +150,9 @@ public final class ComputeFibonacciContinuationExample {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 2);
 
                     ComputeTaskFuture<BigInteger> futVal = compute.<BigInteger>future();
-                    
+
                     fut2 = locMap.putIfAbsent(n - 2, futVal);
-                    
+
                     if (fut2 == null)
                         fut2 = futVal;
                 }
@@ -178,8 +178,8 @@ public final class ComputeFibonacciContinuationExample {
                     jobCtx.holdcc();
 
                     // Attach the same listener to both futures.
-                    fut1.listenAsync(lsnr);
-                    fut2.listenAsync(lsnr);
+                    fut1.listen(lsnr);
+                    fut2.listen(lsnr);
 
                     return null;
                 }

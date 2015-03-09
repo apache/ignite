@@ -295,7 +295,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * @param res Result to convert to finished future.
      */
     private void save(Object res) {
-        asyncRes = new IgniteFinishedFutureImplEx<>(res);
+        asyncRes = new IgniteFinishedFutureImpl<>(res);
     }
 
     /** {@inheritDoc} */

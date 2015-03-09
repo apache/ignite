@@ -586,7 +586,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     private <T> Future<T> addFuture(IgniteInternalFuture<T> fut) {
         synchronized (mux) {
             if (!fut.isDone()) {
-                fut.listenAsync(lsnr);
+                fut.listen(lsnr);
 
                 futs.add(fut);
             }

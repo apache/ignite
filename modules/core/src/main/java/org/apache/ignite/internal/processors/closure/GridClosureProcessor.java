@@ -472,10 +472,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (job == null)
-                return new GridFinishedFuture<>(ctx);
+                return new GridFinishedFuture<>();
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return new GridFinishedFuture<>(U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
@@ -504,10 +504,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (F.isEmpty(jobs))
-                return new GridFinishedFuture<>(ctx);
+                return new GridFinishedFuture<>();
 
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return new GridFinishedFuture<>(U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
@@ -585,7 +585,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return new GridFinishedFuture<>(U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -608,7 +608,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return new GridFinishedFuture<>(U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
@@ -731,7 +731,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, GridClosurePolicy plc) throws IgniteCheckedException {
         if (c == null)
-            return new GridFinishedFuture(ctx);
+            return new GridFinishedFuture();
 
         busyLock.readLock();
 
@@ -742,7 +742,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture fut = new GridWorkerFuture(ctx);
+            final GridWorkerFuture fut = new GridWorkerFuture();
 
             GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
                 @Override protected void body() {
@@ -829,18 +829,18 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 try {
                     c.run();
 
-                    return new GridFinishedFuture(ctx);
+                    return new GridFinishedFuture();
                 }
                 catch (Throwable t) {
                     if (t instanceof Error)
                         U.error(log, "Closure execution failed with error.", t);
 
-                    return new GridFinishedFuture(ctx, U.cast(t));
+                    return new GridFinishedFuture(U.cast(t));
                 }
             }
             // If failed for other reasons - return error future.
             else
-                return new GridFinishedFuture(ctx, U.cast(e));
+                return new GridFinishedFuture(U.cast(e));
         }
     }
 
@@ -863,7 +863,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, GridClosurePolicy plc) throws IgniteCheckedException {
         if (c == null)
-            return new GridFinishedFuture<>(ctx);
+            return new GridFinishedFuture<>();
 
         busyLock.readLock();
 
@@ -874,7 +874,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
-            final GridWorkerFuture<R> fut = new GridWorkerFuture<>(ctx);
+            final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
             GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
                 @Override protected void body() {
@@ -954,16 +954,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     ", closure=" + c + ']');
 
                 try {
-                    return new GridFinishedFuture<>(ctx, c.call());
+                    return new GridFinishedFuture<>(c.call());
                 }
                 // If failed again locally - return error future.
                 catch (Exception e2) {
-                    return new GridFinishedFuture<>(ctx, U.cast(e2));
+                    return new GridFinishedFuture<>(U.cast(e2));
                 }
             }
             // If failed for other reasons - return error future.
             else
-                return new GridFinishedFuture<>(ctx, U.cast(e));
+                return new GridFinishedFuture<>(U.cast(e));
         }
     }
 
@@ -1643,7 +1643,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C1MLA() {
-            super();
+            // No-op.
         }
 
         /**
@@ -1731,7 +1731,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C2MLA() {
-            super();
+            // No-op.
         }
 
         /**
@@ -1814,7 +1814,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          *
          */
         public C4MLA() {
-            super();
+            // No-op.
         }
 
         /**

@@ -150,26 +150,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
 
     /**
-     * Name of the system property or environment variable to activate synchronous
-     * listener notification for future objects implemented in Ignite. I.e.
-     * closure passed into method {@link org.apache.ignite.internal.IgniteInternalFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
-     * be evaluated in the same thread that will end the future.
-     *
-     * @see org.apache.ignite.internal.IgniteInternalFuture#syncNotify()
-     */
-    public static final String IGNITE_FUT_SYNC_NOTIFICATION = "IGNITE_FUTURE_SYNC_NOTIFICATION";
-
-    /**
-     * Name of the system property or environment variable to activate concurrent
-     * listener notification for future objects implemented in Ignite. I.e.
-     * upon future completion every listener will be notified concurrently in a
-     * separate thread.
-     *
-     * @see org.apache.ignite.internal.IgniteInternalFuture#concurrentNotify()
-     */
-    public static final String IGNITE_FUT_CONCURRENT_NOTIFICATION = "IGNITE_FUTURE_CONCURRENT_NOTIFICATION";
-
-    /**
      * System property to override deployment mode configuration parameter.
      * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
      *

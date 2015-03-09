@@ -100,7 +100,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
             jobCtx.holdcc();
 
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             return true;
         }

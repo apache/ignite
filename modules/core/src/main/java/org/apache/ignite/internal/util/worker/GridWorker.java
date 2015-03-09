@@ -19,11 +19,9 @@ package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -55,9 +53,6 @@ public abstract class GridWorker implements Runnable {
     /** Parent thread. */
     private final Thread parent;
 
-    /** Inherited thread locals. */
-    private final Map<GridThreadLocalEx<?>, ?> inherited;
-
     /** */
     private final Object mux = new Object();
 
@@ -87,8 +82,6 @@ public abstract class GridWorker implements Runnable {
                     GridWorker.log = log.getLogger(GridWorker.class);
             }
         }
-
-        inherited = GridThreadLocalEx.inherit();
     }
 
     /**
@@ -104,29 +97,11 @@ public abstract class GridWorker implements Runnable {
         this(gridName, name, log, null);
     }
 
-    /**
-     * Enter thread locals.
-     */
-    private void enterThreadLocals() {
-        GridThreadLocal.enter();
-        GridThreadLocalEx.enter(inherited);
-    }
-
-    /**
-     * Leave thread locals.
-     */
-    private void leaveThreadLocals() {
-        GridThreadLocalEx.leave();
-        GridThreadLocal.leave();
-    }
-
     /** {@inheritDoc} */
     @Override public final void run() {
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
-
-        enterThreadLocals();
 
         IgniteLogger log = GridWorker.log;
 
@@ -178,8 +153,6 @@ public abstract class GridWorker implements Runnable {
                     log.debug("Grid runnable finished due to interruption without cancellation: " + name);
                 else
                     log.debug("Grid runnable finished normally: " + name);
-
-            leaveThreadLocals();
 
             // Need to set runner to null, to make sure that
             // further operations on this runnable won't

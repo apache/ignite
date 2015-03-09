@@ -1605,9 +1605,9 @@ public final class IgfsImpl implements IgfsEx {
             IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
             if (id == null)
-                return new GridFinishedFuture<Object>(igfsCtx.kernalContext());
+                return new GridFinishedFuture<Object>();
             else {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
                 GridFutureAdapter<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1626,7 +1626,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<Object>(igfsCtx.kernalContext(), e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
@@ -1638,10 +1638,10 @@ public final class IgfsImpl implements IgfsEx {
             if (log.isDebugEnabled())
                 log.debug("Constructing delete future for trash entries: " + ids);
 
-            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>(igfsCtx.kernalContext());
+            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>();
 
             for (IgniteUuid id : ids) {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
                 IgniteInternalFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1663,7 +1663,7 @@ public final class IgfsImpl implements IgfsEx {
             return resFut;
         }
         else
-            return new GridFinishedFuture<>(igfsCtx.kernalContext());
+            return new GridFinishedFuture<>();
     }
 
     /**

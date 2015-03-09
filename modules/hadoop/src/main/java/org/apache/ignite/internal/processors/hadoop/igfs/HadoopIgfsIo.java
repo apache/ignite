@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -34,7 +34,7 @@ public interface HadoopIgfsIo {
      * @return Future that will be completed.
      * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
-    public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException;
+    public IgniteInternalFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException;
 
     /**
      * Sends given IGFS client message and asynchronously awaits for response. When IO detects response
@@ -48,7 +48,7 @@ public interface HadoopIgfsIo {
      * @return Future that will be completed when response is returned from closure.
      * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
-    public <T> GridPlainFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff, int outLen)
+    public <T> IgniteInternalFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff, int outLen)
         throws IgniteCheckedException;
 
     /**
