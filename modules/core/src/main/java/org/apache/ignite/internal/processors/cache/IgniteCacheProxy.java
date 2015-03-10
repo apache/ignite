@@ -1251,12 +1251,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return getCacheManager() == null;
     }
 
+    /**
+     *
+     */
+    public GridCacheProjectionEx delegate() {
+        return delegate;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.isAssignableFrom(IgniteCache.class))
+        if (clazz.isAssignableFrom(getClass()))
             return (T)this;
-        else if (clazz.isAssignableFrom(Ignite.class))
+        else if (clazz.isAssignableFrom(IgniteEx.class))
             return (T)ctx.grid();
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
@@ -1457,7 +1464,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      * Closeable iterator.
      */
-    private static abstract class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
+    private abstract static class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
         /** */
         private X cur;
 

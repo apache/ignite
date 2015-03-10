@@ -40,6 +40,7 @@ import javax.cache.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.ref.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.attribute.*;
@@ -1432,6 +1433,30 @@ public final class GridTestUtils {
             res.add(PosixFilePermission.OTHERS_EXECUTE);
 
         return res;
+    }
+
+    /**
+     * Prompt to execute garbage collector.
+     * {@code System.gc();} is not guaranteed to gerbade collection, this method try to fill memory to crowd out dead
+     * objects.
+     */
+    public static void runGC() {
+        System.gc();
+
+        ReferenceQueue queue = new ReferenceQueue();
+
+        List<SoftReference> refs = new ArrayList<>();
+
+        while (true) {
+            byte[] bytes = new byte[128 * 1024];
+
+            refs.add(new SoftReference<>(bytes, queue));
+
+            if (queue.poll() != null)
+                break;
+        }
+
+        System.gc();
     }
 
     /**
