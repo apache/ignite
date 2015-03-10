@@ -878,7 +878,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsFileNotFoundException.class, "File not found: " + FILE);
+        }, IgfsPathNotFoundException.class, "File not found: " + FILE);
     }
 
     /**

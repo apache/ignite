@@ -74,7 +74,7 @@ public interface IgfsSecondaryFileSystem {
      * @param dest Destination file path. If destination path is a directory, then source file will be placed
      *     into destination directory with original name.
      * @throws IgniteException In case of error.
-     * @throws IgfsFileNotFoundException If source file doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If source file doesn't exist.
      */
     public void rename(IgfsPath src, IgfsPath dest) throws IgniteException;
 
@@ -111,7 +111,7 @@ public interface IgfsSecondaryFileSystem {
      * @param path Path to list files under.
      * @return List of files under the specified path.
      * @throws IgniteException In case of error.
-     * @throws IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist.
      */
     public Collection<IgfsPath> listPaths(IgfsPath path) throws IgniteException;
 
@@ -121,7 +121,7 @@ public interface IgfsSecondaryFileSystem {
      * @param path Path to list files under.
      * @return List of files under the specified path.
      * @throws IgniteException In case of error.
-     * @throws IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist.
      */
     public Collection<IgfsFile> listFiles(IgfsPath path) throws IgniteException;
 
@@ -132,7 +132,7 @@ public interface IgfsSecondaryFileSystem {
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
      * @throws IgniteException In case of error.
-     * @throws IgfsFileNotFoundException If path doesn't exist.
+     * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist.
      */
     public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize) throws IgniteException;
 
@@ -170,7 +170,7 @@ public interface IgfsSecondaryFileSystem {
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
      * @throws IgniteException In case of error.
-     * @throws IgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
+     * @throws org.apache.ignite.igfs.IgfsPathNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public OutputStream append(IgfsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
         throws IgniteException;

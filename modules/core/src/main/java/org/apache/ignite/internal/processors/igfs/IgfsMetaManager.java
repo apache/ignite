@@ -500,7 +500,7 @@ public class IgfsMetaManager extends IgfsManager {
                     IgfsFileInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
-                        throw fsException(new IgfsFileNotFoundException("Failed to unlock file (file not found): " + fileId));
+                        throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not found): " + fileId));
 
                     if (!info.lockId().equals(oldInfo.lockId()))
                         throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
@@ -739,7 +739,7 @@ public class IgfsMetaManager extends IgfsManager {
         assert validTxState(true);
 
         if (parentInfo == null)
-            throw fsException(new IgfsFileNotFoundException("Failed to lock parent directory (not found): " + parentId));
+            throw fsException(new IgfsPathNotFoundException("Failed to lock parent directory (not found): " + parentId));
 
         if (!parentInfo.isDirectory())
             throw fsException(new IgfsInvalidPathException("Parent file is not a directory: " + parentInfo));
@@ -839,7 +839,7 @@ public class IgfsMetaManager extends IgfsManager {
         IgfsFileInfo srcInfo = infoMap.get(srcParentId);
 
         if (srcInfo == null)
-            throw fsException(new IgfsFileNotFoundException("Failed to lock source directory (not found?)" +
+            throw fsException(new IgfsPathNotFoundException("Failed to lock source directory (not found?)" +
                 " [srcParentId=" + srcParentId + ']'));
 
         if (!srcInfo.isDirectory())
@@ -848,7 +848,7 @@ public class IgfsMetaManager extends IgfsManager {
         IgfsFileInfo destInfo = infoMap.get(destParentId);
 
         if (destInfo == null)
-            throw fsException(new IgfsFileNotFoundException("Failed to lock destination directory (not found?)" +
+            throw fsException(new IgfsPathNotFoundException("Failed to lock destination directory (not found?)" +
                 " [destParentId=" + destParentId + ']'));
 
         if (!destInfo.isDirectory())
@@ -857,7 +857,7 @@ public class IgfsMetaManager extends IgfsManager {
         IgfsFileInfo fileInfo = infoMap.get(fileId);
 
         if (fileInfo == null)
-            throw fsException(new IgfsFileNotFoundException("Failed to lock target file (not found?) [fileId=" +
+            throw fsException(new IgfsPathNotFoundException("Failed to lock target file (not found?) [fileId=" +
                 fileId + ']'));
 
         IgfsListingEntry srcEntry = srcInfo.listing().get(srcFileName);
@@ -865,7 +865,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // If source file does not exist or was re-created.
         if (srcEntry == null || !srcEntry.fileId().equals(fileId))
-            throw fsException(new IgfsFileNotFoundException("Failed to remove file name from the source directory" +
+            throw fsException(new IgfsPathNotFoundException("Failed to remove file name from the source directory" +
                 " (file not found) [fileId=" + fileId + ", srcFileName=" + srcFileName +
                 ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']'));
 
@@ -1859,7 +1859,7 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsFileInfo info = infos.get(path);
 
                             if (info == null)
-                                throw fsException(new IgfsFileNotFoundException("File not found: " + path));
+                                throw fsException(new IgfsPathNotFoundException("File not found: " + path));
                             if (!info.isFile())
                                 throw fsException(new IgfsInvalidPathException("Failed to open file (not a file): " + path));
 
@@ -2049,11 +2049,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                         // Source path and destination (or destination parent) must exist.
                         if (srcInfo == null)
-                            throw fsException(new IgfsFileNotFoundException("Failed to rename " +
+                            throw fsException(new IgfsPathNotFoundException("Failed to rename " +
                                     "(source path not found): " + src));
 
                         if (destInfo == null && destParentInfo == null)
-                            throw fsException(new IgfsFileNotFoundException("Failed to rename " +
+                            throw fsException(new IgfsPathNotFoundException("Failed to rename " +
                                 "(destination path not found): " + dest));
 
                         // Delegate to the secondary file system.
@@ -2610,7 +2610,7 @@ public class IgfsMetaManager extends IgfsManager {
                     IgfsFileInfo fileInfo = infoMap.get(fileId);
 
                     if (fileInfo == null)
-                        throw fsException(new IgfsFileNotFoundException("Failed to update times " +
+                        throw fsException(new IgfsPathNotFoundException("Failed to update times " +
                                 "(path was not found): " + fileName));
 
                     IgfsFileInfo parentInfo = infoMap.get(parentId);
