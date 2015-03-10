@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
@@ -218,7 +217,7 @@ public class IgfsServer {
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
         protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
-            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, IgfsServer.this.log);
 
             this.endpoint = endpoint;
 
@@ -385,7 +384,7 @@ public class IgfsServer {
          * Creates accept worker.
          */
         protected AcceptWorker() {
-            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", IgfsServer.this.log);
         }
 
         /** {@inheritDoc} */

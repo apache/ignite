@@ -1235,7 +1235,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             StreamerStageWrapper stageWrapper,
             StreamerMetricsHolder streamerHolder
         ) {
-            super(ctx.gridName(), "streamer-batch-worker-" + batch.stageName(), log);
+            super(ctx.gridName(), "streamer-batch-worker-" + batch.stageName(), IgniteStreamerImpl.this.log);
 
             assert stageWrapper != null;
 

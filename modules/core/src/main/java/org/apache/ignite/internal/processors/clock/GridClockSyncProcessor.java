@@ -34,8 +34,8 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -328,7 +328,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
          * @param evt Discovery event on which this node became a coordinator.
          */
         protected TimeCoordinator(DiscoveryEvent evt) {
-            super(ctx.gridName(), "grid-time-coordinator", log);
+            super(ctx.gridName(), "grid-time-coordinator", GridClockSyncProcessor.this.log);
 
             lastSnapshot = new GridDiscoveryTopologySnapshot(evt.topologyVersion(), evt.topologyNodes());
         }

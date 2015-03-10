@@ -2434,7 +2434,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", log);
+            super(gridName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
 
             this.srv = srv;
         }
@@ -2478,7 +2478,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint) {
-            super(gridName, "shmem-worker", log);
+            super(gridName, "shmem-worker", TcpCommunicationSpi.this.log);
 
             this.endpoint = endpoint;
         }

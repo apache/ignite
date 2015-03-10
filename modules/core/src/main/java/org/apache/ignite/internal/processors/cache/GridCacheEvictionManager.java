@@ -1386,7 +1386,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          *
          */
         private BackupWorker() {
-            super(cctx.gridName(), "cache-eviction-backup-worker", log);
+            super(cctx.gridName(), "cache-eviction-backup-worker", GridCacheEvictionManager.this.log);
 
             assert plcEnabled;
         }
