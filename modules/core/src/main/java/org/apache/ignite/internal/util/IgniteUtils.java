@@ -3171,14 +3171,7 @@ public abstract class IgniteUtils {
         if (file.exists())
             return file;
 
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
+        return null;
     }
 
     /**
@@ -3215,9 +3208,6 @@ public abstract class IgniteUtils {
     @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
-
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
 
         if (f != null) {
             try {
