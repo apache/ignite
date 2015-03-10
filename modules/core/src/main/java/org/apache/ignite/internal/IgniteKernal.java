@@ -1118,7 +1118,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : systemPropertiesSnapshot().entrySet()) {
+            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, key, true) ||
@@ -1908,7 +1908,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isDebugEnabled())
-            for (Map.Entry<Object, Object> entry : systemPropertiesSnapshot().entrySet())
+            for (Map.Entry<Object, Object> entry : snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
 
