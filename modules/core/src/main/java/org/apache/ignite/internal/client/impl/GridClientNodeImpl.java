@@ -53,9 +53,6 @@ public class GridClientNodeImpl implements GridClientNode {
     /** Node caches. */
     private Map<String, GridClientCacheMode> caches = Collections.emptyMap();
 
-    /** Replica count for partitioned cache. */
-    private int replicaCnt;
-
     /** Connectable property. */
     private boolean connectable;
 
@@ -95,7 +92,6 @@ public class GridClientNodeImpl implements GridClientNode {
             .tcpAddresses(from.tcpAddresses())
             .tcpPort(from.tcpPort())
             .caches(from.caches())
-            .replicaCount(from.replicaCount())
             .connectable(from.connectable());
 
         if (!skipAttrs)
@@ -151,11 +147,6 @@ public class GridClientNodeImpl implements GridClientNode {
     /** {@inheritDoc} */
     @Override public Map<String, GridClientCacheMode> caches() {
         return caches;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int replicaCount() {
-        return replicaCnt;
     }
 
     /** {@inheritDoc} */
@@ -364,19 +355,6 @@ public class GridClientNodeImpl implements GridClientNode {
          */
         public Builder caches(Map<String, GridClientCacheMode> caches) {
             impl.caches = U.sealMap(caches);
-
-            return this;
-        }
-
-
-        /**
-         * Sets replica count for node on consistent hash ring.
-         *
-         * @param replicaCnt Replica count.
-         * @return This for chaining.
-         */
-        public Builder replicaCount(int replicaCnt) {
-            impl.replicaCnt = replicaCnt;
 
             return this;
         }

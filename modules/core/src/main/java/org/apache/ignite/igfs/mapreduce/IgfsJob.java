@@ -26,7 +26,7 @@ import java.io.*;
  * Defines executable unit for {@link IgfsTask}. Before this job is executed, it is assigned one of the
  * ranges provided by the {@link IgfsRecordResolver} passed to one of the {@code IgniteFs.execute(...)} methods.
  * <p>
- * {@link #execute(org.apache.ignite.IgniteFs, IgfsFileRange, org.apache.ignite.igfs.IgfsInputStream)} method is given {@link IgfsFileRange} this
+ * {@link #execute(org.apache.ignite.IgniteFileSystem, IgfsFileRange, org.apache.ignite.igfs.IgfsInputStream)} method is given {@link IgfsFileRange} this
  * job is expected to operate on, and already opened {@link org.apache.ignite.igfs.IgfsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not
@@ -52,7 +52,7 @@ public interface IgfsJob {
      * @throws IgniteException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in) throws IgniteException,
+    public Object execute(IgniteFileSystem igfs, IgfsFileRange range, IgfsInputStream in) throws IgniteException,
         IOException;
 
     /**

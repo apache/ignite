@@ -927,7 +927,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }
@@ -1554,7 +1554,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean invalidate,
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        return new GridFinishedFutureEx<>(new UnsupportedOperationException("Locks are not supported for " +
+        return new GridFinishedFuture<>(new UnsupportedOperationException("Locks are not supported for " +
             "CacheAtomicityMode.ATOMIC mode (use CacheAtomicityMode.TRANSACTIONAL instead)"));
     }
 
@@ -1563,7 +1563,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        return new GridFinishedFutureEx<>(new UnsupportedOperationException("Locks are not supported for " +
+        return new GridFinishedFuture<>(new UnsupportedOperationException("Locks are not supported for " +
             "CacheAtomicityMode.ATOMIC mode (use CacheAtomicityMode.TRANSACTIONAL instead)"));
     }
 
@@ -1613,7 +1613,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         @Override public IgniteInternalFuture apply(Object t, Exception e) {
                             return ctx.closures().callLocalSafe(op);
                         }
-                    }, ctx.kernalContext());
+                    });
 
                 saveFuture(holder, f);
 

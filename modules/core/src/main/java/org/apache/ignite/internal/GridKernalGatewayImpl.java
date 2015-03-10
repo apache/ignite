@@ -82,14 +82,10 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
             throw illegalState();
         }
-
-        enterThreadLocals();
     }
 
     /** {@inheritDoc} */
     @Override public void readUnlock() {
-        leaveThreadLocals();
-
         rwLock.readUnlock();
     }
 
@@ -98,8 +94,6 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     @Override public void writeLock() {
         if (stackTrace == null)
             stackTrace = stackTrace();
-
-        enterThreadLocals();
 
         boolean interrupted = false;
 
@@ -128,8 +122,6 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         if (acquired) {
             if (stackTrace == null)
                 stackTrace = stackTrace();
-
-            enterThreadLocals();
 
             return true;
         }
@@ -161,27 +153,9 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             ", state=" + state + ']');
     }
 
-    /**
-     * Enter thread locals.
-     */
-    private void enterThreadLocals() {
-        GridThreadLocal.enter();
-        GridThreadLocalEx.enter();
-    }
-
-    /**
-     * Leave thread locals.
-     */
-    private void leaveThreadLocals() {
-        GridThreadLocalEx.leave();
-        GridThreadLocal.leave();
-    }
-
     /** {@inheritDoc} */
     @Override public void writeUnlock() {
         rwLock.writeUnlock();
-
-        leaveThreadLocals();
     }
 
     /** {@inheritDoc} */

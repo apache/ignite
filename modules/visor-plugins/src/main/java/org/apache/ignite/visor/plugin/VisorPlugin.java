@@ -24,7 +24,7 @@ import ro.fortsoft.pf4j.*;
  */
 public abstract class VisorPlugin extends Plugin {
     /** {@inheritDoc} */
-    public VisorPlugin(PluginWrapper wrapper) {
+    protected VisorPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 

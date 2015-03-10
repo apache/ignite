@@ -280,7 +280,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
             });
 
         if (cacheMetrics)
-            fut.listenAsync(new GridClientFutureListener<GridClientDataMetrics>() {
+            fut.listen(new GridClientFutureListener<GridClientDataMetrics>() {
                 @Override public void onDone(GridClientFuture<GridClientDataMetrics> fut) {
                     try {
                         metrics = fut.get();

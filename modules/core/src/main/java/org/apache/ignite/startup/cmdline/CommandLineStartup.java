@@ -90,7 +90,7 @@ public final class CommandLineStartup {
 
             Object osxApp = appCls.getDeclaredMethod("getApplication").invoke(null);
 
-            String icoPath = "ggcube_node_128x128.png";
+            String icoPath = "logo_ignite_128x128.png";
 
             URL url = CommandLineStartup.class.getResource(icoPath);
 
@@ -103,7 +103,7 @@ public final class CommandLineStartup {
             // Setting Up about dialog
             Class<?> aboutHndCls = Class.forName("com.apple.eawt.AboutHandler");
 
-            final URL bannerUrl = CommandLineStartup.class.getResource("ggcube_node_48x48.png");
+            final URL bannerUrl = CommandLineStartup.class.getResource("logo_ignite_48x48.png");
 
             Object aboutHndProxy = Proxy.newProxyInstance(
                 appCls.getClassLoader(),

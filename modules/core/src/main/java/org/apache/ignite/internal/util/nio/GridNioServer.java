@@ -408,7 +408,7 @@ public class GridNioServer<T> {
      */
     public GridNioFuture<?> sendSystem(GridNioSession ses,
         Message msg,
-        @Nullable IgniteInClosure<? super GridNioFuture<?>> lsnr) {
+        @Nullable IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
@@ -417,7 +417,7 @@ public class GridNioServer<T> {
             skipRecoveryPred.apply(msg));
 
         if (lsnr != null) {
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             assert !fut.isDone();
         }
@@ -1766,9 +1766,6 @@ public class GridNioServer<T> {
      * Class for requesting write and session close operations.
      */
     private static class NioOperationFuture<R> extends GridNioFutureImpl<R> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Socket channel in register request. */
         @GridToStringExclude
         private SocketChannel sockCh;

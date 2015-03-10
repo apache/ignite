@@ -87,13 +87,6 @@ public abstract class GridCacheMessage<K, V> implements Message {
     }
 
     /**
-     * @return If this is a transactional message.
-     */
-    public boolean transactional() {
-        return false;
-    }
-
-    /**
      * @return {@code True} if class loading errors should be ignored, false otherwise.
      */
     public boolean ignoreClassErrors() {

@@ -122,7 +122,7 @@ public class GridFilenameUtils {
      * Instances should NOT be constructed in standard programming.
      */
     private GridFilenameUtils() {
-        super();
+        // No-op.
     }
 
     //-----------------------------------------------------------------------

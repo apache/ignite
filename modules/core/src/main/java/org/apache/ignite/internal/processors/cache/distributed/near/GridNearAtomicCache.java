@@ -374,7 +374,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 

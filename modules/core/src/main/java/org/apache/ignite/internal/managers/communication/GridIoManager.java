@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -111,14 +110,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Lock to sync maps access. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-    /** Message cache. */
-    private ThreadLocal<IgniteBiTuple<Object, byte[]>> cacheMsg =
-        new GridThreadLocal<IgniteBiTuple<Object, byte[]>>() {
-            @Nullable @Override protected IgniteBiTuple<Object, byte[]> initialValue() {
-                return null;
-            }
-        };
 
     /** Fully started flag. When set to true, can send and receive messages. */
     private volatile boolean started;
@@ -416,9 +407,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
-        // Clear cache.
-        cacheMsg.set(null);
-
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }
@@ -560,8 +548,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) {
         workersCnt.increment();
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -612,8 +600,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) {
         workersCnt.increment();
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -811,8 +799,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         final GridCommunicationMessageSet msgSet0 = set;
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -1329,16 +1317,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     workersCnt.increment();
 
-                    pool(msgSet.policy()).execute(new GridWorker(ctx.gridName(), "msg-worker", log) {
-                        @Override protected void body() {
-                            try {
-                                unwindMessageSet(msgSet, lsnrs0);
+                    pool(msgSet.policy()).execute(
+                        new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    unwindMessageSet(msgSet, lsnrs0);
+                                }
+                                finally {
+                                    workersCnt.decrement();
+                                }
                             }
-                            finally {
-                                workersCnt.decrement();
-                            }
-                        }
-                    });
+                        });
 
                     success = true;
                 }

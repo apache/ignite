@@ -20,7 +20,6 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
@@ -311,7 +310,7 @@ public class IgniteConfiguration {
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
-    private Collection<? extends PluginConfiguration> pluginCfgs;
+    private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
     private boolean cacheSanityCheckEnabled = DFLT_CACHE_SANITY_CHECK_ENABLED;
@@ -345,7 +344,7 @@ public class IgniteConfiguration {
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** IGFS configuration. */
-    private IgfsConfiguration[] igfsCfg;
+    private FileSystemConfiguration[] igfsCfg;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
@@ -354,7 +353,7 @@ public class IgniteConfiguration {
     private ServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
-    private GridHadoopConfiguration hadoopCfg;
+    private HadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
@@ -418,7 +417,7 @@ public class IgniteConfiguration {
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
-        igfsCfg = cfg.getIgfsConfiguration();
+        igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
@@ -1728,20 +1727,20 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets IGFS configurations.
+     * Gets IGFS (Ignite In-Memory File System) configurations.
      *
      * @return IGFS configurations.
      */
-    public IgfsConfiguration[] getIgfsConfiguration() {
+    public FileSystemConfiguration[] getFileSystemConfiguration() {
         return igfsCfg;
     }
 
     /**
-     * Sets IGFS configurations.
+     * Sets IGFS (Ignite In-Memory File System) configurations.
      *
      * @param igfsCfg IGFS configurations.
      */
-    public void setIgfsConfiguration(IgfsConfiguration... igfsCfg) {
+    public void setFileSystemConfiguration(FileSystemConfiguration... igfsCfg) {
         this.igfsCfg = igfsCfg;
     }
 
@@ -1768,7 +1767,7 @@ public class IgniteConfiguration {
      *
      * @return Hadoop configuration.
      */
-    public GridHadoopConfiguration getHadoopConfiguration() {
+    public HadoopConfiguration getHadoopConfiguration() {
         return hadoopCfg;
     }
 
@@ -1777,7 +1776,7 @@ public class IgniteConfiguration {
      *
      * @param hadoopCfg Hadoop configuration.
      */
-    public void setHadoopConfiguration(GridHadoopConfiguration hadoopCfg) {
+    public void setHadoopConfiguration(HadoopConfiguration hadoopCfg) {
         this.hadoopCfg = hadoopCfg;
     }
 
@@ -1875,14 +1874,14 @@ public class IgniteConfiguration {
     /**
      * @return Plugin configurations.
      */
-    public Collection<? extends PluginConfiguration> getPluginConfigurations() {
+    public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
      * @param pluginCfgs Plugin configurations.
      */
-    public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
+    public void setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
     }
 

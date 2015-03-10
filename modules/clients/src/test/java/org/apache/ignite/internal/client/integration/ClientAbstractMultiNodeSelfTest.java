@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -194,6 +195,8 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         cfg.setName(cacheName);
 
         cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
+
+        cfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         return cfg;
     }
@@ -400,52 +403,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             if (affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals("zzz", cache.localPeek(key, CachePeekMode.ONHEAP));
-            else
-                assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientAffinity() throws Exception {
-        GridClientData partitioned = client.data(PARTITIONED_CACHE_NAME);
-
-        Collection<Object> keys = new ArrayList<>();
-
-        keys.addAll(Arrays.asList(
-            Boolean.TRUE,
-            Boolean.FALSE,
-            1,
-            Integer.MAX_VALUE
-        ));
-
-        Random rnd = new Random();
-        StringBuilder sb = new StringBuilder();
-
-        // Generate some random strings.
-        for (int i = 0; i < 100; i++) {
-            sb.setLength(0);
-
-            for (int j = 0; j < 255; j++)
-                // Only printable ASCII symbols for test.
-                sb.append((char)(rnd.nextInt(0x7f - 0x20) + 0x20));
-
-            keys.add(sb.toString());
-        }
-
-        // Generate some more keys to achieve better coverage.
-        for (int i = 0; i < 100; i++)
-            keys.add(UUID.randomUUID());
-
-        for (Object key : keys) {
-            UUID nodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
-
-            UUID clientNodeId = partitioned.affinity(key);
-
-            assertEquals("Invalid affinity mapping for REST response for key: " + key, nodeId, clientNodeId);
-        }
-    }
 
     /**
      * @throws Exception If failed.
@@ -582,18 +542,12 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             UUID primaryNodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
 
-            assertEquals("Affinity mismatch for key: " + key, primaryNodeId, partitioned.affinity(key));
-
-            assertEquals(primaryNodeId, partitioned.affinity(key));
-
-            // Must go to primary node only. Since backup count is 0, value must present on
-            // primary node only.
             partitioned.put(key, "val" + key);
 
             for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
                 Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP);
 
-                if (primaryNodeId.equals(entry.getKey()))
+                if (primaryNodeId.equals(entry.getKey()) || partitioned.affinity(key).equals(entry.getKey()))
                     assertEquals("val" + key, val);
                 else
                     assertNull(val);

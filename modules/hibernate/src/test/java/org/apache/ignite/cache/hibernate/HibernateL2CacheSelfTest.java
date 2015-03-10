@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -45,8 +45,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
-
-import org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.Entity;
 
 /**
  *
@@ -425,7 +423,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
+        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
 
         return cfg;
     }
@@ -447,7 +445,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
+        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
 
         return cfg;
     }

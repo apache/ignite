@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
@@ -54,14 +53,6 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConsistentHashBackups() throws Exception {
-        for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new CacheConsistentHashAffinityFunction());
     }
 
     /**

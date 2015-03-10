@@ -266,7 +266,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
             if (multiFut.topologyVersion() <= topVer) {
                 if (fut == null)
-                    fut = new GridCompoundFuture<>(ctx.kernalContext());
+                    fut = new GridCompoundFuture<>();
 
                 fut.add(multiFut);
             }
@@ -632,7 +632,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues());
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
                 GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
                     req.futureId(),
@@ -1077,9 +1077,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * Multi update future.
      */
     private static class MultiUpdateFuture extends GridFutureAdapter<IgniteUuid> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. */
         private long topVer;
 
@@ -1095,8 +1092,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
          * @param topVer Topology version.
          */
         private MultiUpdateFuture(GridKernalContext ctx, long topVer) {
-            super(ctx);
-
             this.topVer = topVer;
         }
 

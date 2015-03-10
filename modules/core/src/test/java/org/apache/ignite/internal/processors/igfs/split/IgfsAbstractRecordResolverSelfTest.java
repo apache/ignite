@@ -46,11 +46,11 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** IGFS. */
-    protected static IgniteFs igfs;
+    protected static IgniteFileSystem igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
         igfsCfg.setMetaCacheName("metaCache");
@@ -87,7 +87,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         Ignite g = G.start(cfg);
 

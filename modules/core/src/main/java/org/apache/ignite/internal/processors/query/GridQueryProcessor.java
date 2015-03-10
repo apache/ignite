@@ -193,10 +193,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
-            return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
         if (desc == null || !desc.registered())
-            return new GridFinishedFuture<Void>(ctx);
+            return new GridFinishedFuture<Void>();
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
@@ -236,7 +236,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
         try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
+            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
                 fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));

@@ -23,15 +23,10 @@ import org.apache.ignite.cache.*;
  * Test affinity mapper.
  */
 public class GridCacheTxUsersAffinityMapperSelfTest extends GridCacheAbstractUsersAffinityMapperSelfTest {
-    /** */
-    public GridCacheTxUsersAffinityMapperSelfTest() {
-        super();
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode getDistributionMode() {
         return CacheDistributionMode.PARTITIONED_ONLY;
-    };
+    }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode getAtomicMode() {

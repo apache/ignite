@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.IgniteFs}.
+ * Data transfer object for {@link org.apache.ignite.IgniteFileSystem}.
  */
 public class VisorIgfs implements Serializable {
     /** */
@@ -66,7 +66,7 @@ public class VisorIgfs implements Serializable {
      * @param igfs Source IGFS.
      * @return Data transfer object for given IGFS.
      */
-    public static VisorIgfs from(IgniteFs igfs) {
+    public static VisorIgfs from(IgniteFileSystem igfs) {
         assert igfs != null;
 
         return new VisorIgfs(
