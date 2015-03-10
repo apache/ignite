@@ -103,8 +103,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             Integer.class, Object.class
         );
 
-        if (offheapEnabled() && evictsEnabled())
-            cacheCfg.setOffHeapMaxMemory(1000); // Small offheap for evictions.
+        if (offheapEnabled())
+            cacheCfg.setOffHeapMaxMemory(evictsEnabled() ? 1000 : 0); // Small offheap for evictions.
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -138,7 +138,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
     /** @return {@code true} If evictions enabled. */
     protected boolean evictsEnabled() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
