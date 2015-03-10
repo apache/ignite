@@ -1622,14 +1622,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         EntryProcessor<K, V, ?> entryProcessor = (EntryProcessor<K, V, ?>) writeObj;
 
-                        Object computed = entryProcessor.process(entry, invokeArgs);
+                        try {
+                            Object computed = entryProcessor.process(entry, invokeArgs);
 
-                        writeObj = cctx.unwrapTemporary(entry.getValue());
+                            writeObj = cctx.unwrapTemporary(entry.getValue());
 
-                        if (computed != null)
-                            invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+                            if (computed != null)
+                                invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
 
-                        valBytes = null;
+                            valBytes = null;
+                        }
+                        catch (Exception e) {
+                            invokeRes = new CacheInvokeResult<>(e);
+
+                            writeObj = oldVal;
+
+                            valBytes = null;
+                        }
                     }
 
                     GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc, explicitTtl,
