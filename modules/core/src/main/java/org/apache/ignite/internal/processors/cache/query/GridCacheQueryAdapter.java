@@ -29,7 +29,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;

@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
-
-import java.nio.*;
 
 /**
  *

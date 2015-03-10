@@ -27,9 +27,9 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.

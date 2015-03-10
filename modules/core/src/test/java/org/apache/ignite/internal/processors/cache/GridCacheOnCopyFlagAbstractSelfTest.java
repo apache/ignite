@@ -78,9 +78,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        noInterceptor = true;
-
-        interceptor.delegate(null);
+        interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
 
         for (int i = 0; i < gridCount(); i++)
             cache(i, null).clearLocally();
@@ -401,6 +399,54 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetKnownImmutable() throws Exception {
+        noInterceptor = true;
+
+        IgniteCache<String, Long> cache = grid(0).jcache(null);
+
+        Map<String, Long> map = new HashMap<>();
+
+        for (int i = 0; i < ITER_CNT; i++) {
+            String key = String.valueOf(i);
+            Long val = (long)i;
+
+            cache.put(key, val);
+
+            map.put(key, val);
+        }
+
+        GridCacheAdapter cache0 = internalCache(cache);
+
+        GridCacheContext cctx = cache0.context();
+
+        for (Map.Entry<String, Long> e : map.entrySet()) {
+            GridCacheEntryEx entry = cache0.peekEx(e.getKey());
+
+            assertNotNull("No entry for key: " + e.getKey(), entry);
+
+            String key0 = entry.key().value(cctx.cacheObjectContext(), false);
+
+            assertSame(key0, e.getKey());
+
+            String key1 = entry.key().value(cctx.cacheObjectContext(), true);
+
+            assertSame(key0, key1);
+
+            Long val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
+
+            assertSame(val0, e.getValue());
+
+            Long val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
+
+            assertSame(val0, val1);
+
+            assertSame(e.getValue(), cache.get(e.getKey()));
+        }
+    }
+
+    /**
      *
      */
     public static class TestKey implements Externalizable {
@@ -553,20 +599,20 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor<TestKey, Object> {
+    private class Interceptor implements CacheInterceptor<Object, Object> {
         /** */
         CacheInterceptor<TestKey, TestValue> delegate = new CacheInterceptorAdapter<>();
 
         /** {@inheritDoc} */
-        @Override public Object onGet(TestKey key, @Nullable Object val) {
+        @Override public Object onGet(Object key, @Nullable Object val) {
             if (!noInterceptor)
-                return delegate.onGet(key, (TestValue)val);
+                return delegate.onGet((TestKey)key, (TestValue)val);
 
             return val;
         }
 
         /** {@inheritDoc} */
-        @Override public Object onBeforePut(Cache.Entry<TestKey, Object> entry, Object newVal) {
+        @Override public Object onBeforePut(Cache.Entry<Object, Object> entry, Object newVal) {
             if (!noInterceptor)
                 return delegate.onBeforePut((Cache.Entry)entry, (TestValue)newVal);
 
@@ -574,13 +620,13 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterPut(Cache.Entry<TestKey, Object> entry) {
+        @Override public void onAfterPut(Cache.Entry<Object, Object> entry) {
             if (!noInterceptor)
                 delegate.onAfterPut((Cache.Entry)entry);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<TestKey, Object> entry) {
+        @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<Object, Object> entry) {
             if (!noInterceptor)
                 return (IgniteBiTuple)delegate.onBeforeRemove((Cache.Entry)entry);
 
@@ -588,7 +634,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterRemove(Cache.Entry<TestKey, Object> entry) {
+        @Override public void onAfterRemove(Cache.Entry<Object, Object> entry) {
             if (!noInterceptor)
                 delegate.onAfterRemove((Cache.Entry)entry);
         }

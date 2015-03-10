@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 

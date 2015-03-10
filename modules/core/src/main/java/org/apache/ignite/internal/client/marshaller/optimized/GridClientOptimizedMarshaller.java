@@ -19,8 +19,8 @@ package org.apache.ignite.internal.client.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.nio.*;

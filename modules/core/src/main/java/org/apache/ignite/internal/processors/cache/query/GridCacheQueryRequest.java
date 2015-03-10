@@ -26,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
