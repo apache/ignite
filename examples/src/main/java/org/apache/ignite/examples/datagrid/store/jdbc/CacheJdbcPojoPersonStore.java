@@ -34,6 +34,9 @@ import java.sql.*;
  * transaction with cache transactions and maps {@link Long} to {@link Person}.
  */
 public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
+    /** H2 database TCP server. */
+    private Server srv;
+
     /**
      * Constructor.
      *
@@ -47,8 +50,8 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
     }
 
     /**
-     * Prepares database for example execution. This method will create a
-     * table called "PERSONS" so it can be used by store implementation.
+     * Prepares database for example execution. This method will create a table called "PERSONS"
+     * so it can be used by store implementation.
      *
      * @throws IgniteException If failed.
      */
@@ -61,6 +64,9 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
 
         try {
             RunScript.execute(dataSrc.getConnection(), new FileReader(script));
+
+            // Start H2 database TCP server in order to access sample in-memory database from other processes.
+            srv = Server.createTcpServer().start();
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to initialize database", e);
@@ -79,5 +85,13 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
         final int entryCnt = (Integer)args[0];
 
         super.loadCache(clo, "java.lang.Long", "select * from PERSONS limit " + entryCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        if (srv != null)
+            srv.stop();
+
+        super.stop();
     }
 }

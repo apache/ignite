@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -485,8 +484,15 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             entryMappings = U.newHashMap(types.size());
 
-            for (CacheTypeMetadata type : types)
+            for (CacheTypeMetadata type : types) {
+                Object keyTypeId = keyTypeId(type.getKeyType());
+
+                if (entryMappings.containsKey(keyTypeId))
+                    throw new CacheException("Key type must be unique in type metadata [cache name=" + cacheName +
+                        ", key type=" + type.getKeyType() + "]");
+
                 entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(cacheName, dialect, type));
+            }
 
             Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
 

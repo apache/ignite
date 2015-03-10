@@ -132,8 +132,6 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         throws CacheException {
         Map<String, PojoMethodsCache> typeMethods = U.newHashMap(types.size() * 2);
 
-        // TODO Check for diff type of key
-
         for (CacheTypeMetadata type : types) {
             String keyType = type.getKeyType();
             typeMethods.put(keyType, new PojoMethodsCache(keyType, type.getKeyFields()));

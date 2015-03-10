@@ -85,8 +85,8 @@ public class CacheNodeWithStoreStartup {
         // store = new CacheHibernatePersonStore();
 
         // Uncomment two lines for try CacheJdbcPojoStore.
-//        store = new CacheJdbcPojoPersonStore();
-//        cacheCfg.setTypeMetadata(typeMetadata());
+        store = new CacheJdbcPojoPersonStore();
+        cacheCfg.setTypeMetadata(typeMetadata());
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
