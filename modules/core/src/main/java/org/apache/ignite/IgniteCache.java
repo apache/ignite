@@ -458,7 +458,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         IgniteEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Forces this cache node to re-balance its partitions. This method is usually used when
+     * This cache node to re-balance its partitions. This method is usually used when
      * {@link CacheConfiguration#getRebalancePartitionedDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
      * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
@@ -477,7 +477,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * @return Future that will be completed when rebalancing is finished.
      */
-    public IgniteFuture<?> forceRebalancing();
+    public IgniteFuture<?> rebalance();
 
     /**
      * Gets snapshot metrics (statistics) for this cache.
