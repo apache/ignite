@@ -617,8 +617,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                         if (qryMgr != null) {
                             qryMgr.onUnswap(key.value(cctx.cacheObjectContext(), false),
-                                    v.value(cctx.cacheObjectContext(), false),
-                                    valBytes);
+                                v.value(cctx.cacheObjectContext(), false),
+                                valBytes);
                         }
                     }
                     catch (IgniteCheckedException e) {

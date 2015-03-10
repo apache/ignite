@@ -1123,7 +1123,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        assertTrue(val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$16"));
+        assertTrue("Unexpected name: " + val.getClass().getName(),
+            val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$14"));
 
         assertTrue(cache.putx(1, val));
 
@@ -1136,7 +1137,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(1, res.size());
 
         CacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
-            "select field1 from GridCacheAbstractQuerySelfTest_16");
+            "select field1 from GridCacheAbstractQuerySelfTest_14");
 
         fieldsQry.enableDedup(true);
 
