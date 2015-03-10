@@ -1059,8 +1059,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                             c.job = marsh.unmarshal(closureBytes, null);
                         else
                             c.job = marsh.unmarshal(marsh.marshal(c.job), null);
-
-                        c.arg = marsh.unmarshal(marsh.marshal(c.arg), null);
                     }
                     else
                         job = marsh.unmarshal(marsh.marshal(job), null);
