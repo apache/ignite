@@ -29,9 +29,6 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Context. */
-    private final GridKernalContext ctx;
-
     /** Target future. */
     private final GridFutureAdapter<R> fut;
 
@@ -40,14 +37,13 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
 
     /**
      * Constructs chain listener.
-     *
-     * @param ctx Kernal context.
-     * @param fut Target future.
+     *  @param fut Target future.
      * @param doneCb Done callback.
      */
-    public GridFutureChainListener(GridKernalContext ctx, GridFutureAdapter<R> fut,
-        IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
-        this.ctx = ctx;
+    public GridFutureChainListener(
+        GridFutureAdapter<R> fut,
+        IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb
+    ) {
         this.fut = fut;
         this.doneCb = doneCb;
     }
@@ -61,8 +57,8 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
             fut.onDone(e.unwrap());
         }
         catch (RuntimeException | Error e) {
-            U.warn(null, "Failed to notify chained future (is grid stopped?) [grid=" + ctx.gridName() +
-                ", doneCb=" + doneCb + ", err=" + e.getMessage() + ']');
+            U.warn(null, "Failed to notify chained future (is grid stopped?) [doneCb=" + doneCb +
+                ", err=" + e.getMessage() + ']');
 
             fut.onDone(e);
 

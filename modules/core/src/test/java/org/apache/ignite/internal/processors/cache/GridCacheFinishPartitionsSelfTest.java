@@ -134,7 +134,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 IgniteInternalFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
 
-                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> e) {
                         latch.countDown();
                     }
@@ -235,7 +235,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         assert fut != null;
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        fut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> e) {
                 end.set(System.currentTimeMillis());
 
@@ -295,7 +295,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             assert fut != null;
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> e) {
                     end.set(System.currentTimeMillis());
 

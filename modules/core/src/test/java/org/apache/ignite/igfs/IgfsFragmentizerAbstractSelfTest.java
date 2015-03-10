@@ -133,13 +133,13 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
-            throw new IgfsFileNotFoundException("File not found: " + path);
+            throw new IgfsPathNotFoundException("File not found: " + path);
 
         IgfsFileInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)
-                throw new IgfsFileNotFoundException("File not found: " + path);
+                throw new IgfsPathNotFoundException("File not found: " + path);
 
             if (fileInfo.fileMap().ranges().isEmpty())
                 return;

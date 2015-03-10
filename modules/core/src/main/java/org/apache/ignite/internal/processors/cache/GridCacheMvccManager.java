@@ -36,7 +36,6 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -52,8 +51,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     private static final int MAX_REMOVED_LOCKS = 10240;
 
     /** Pending locks per thread. */
-    private final GridThreadLocal<Queue<GridCacheMvccCandidate<K>>> pending =
-        new GridThreadLocal<Queue<GridCacheMvccCandidate<K>>>() {
+    private final ThreadLocal<Queue<GridCacheMvccCandidate<K>>> pending =
+        new ThreadLocal<Queue<GridCacheMvccCandidate<K>>>() {
             @Override protected Queue<GridCacheMvccCandidate<K>> initialValue() {
                 return new LinkedList<>();
             }
@@ -726,6 +725,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     }
 
     /**
+     * Reset MVCC context.
+     */
+    public void contextReset() {
+        pending.set(new LinkedList<GridCacheMvccCandidate<K>>());
+    }
+
+    /**
      * Adds candidate to the list of near local candidates.
      *
      * @param threadId Thread ID.
@@ -932,7 +938,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Explicit locks release future.
      */
     public IgniteInternalFuture<?> finishExplicitLocks(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         for (GridCacheExplicitLockSpan<K> span : pendingExplicit.values()) {
             GridDiscoveryTopologySnapshot snapshot = span.topologySnapshot();
@@ -952,7 +958,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Finish update future.
      */
     public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
@@ -994,7 +1000,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         assert topVer != 0;
 
         if (topVer < 0)
-            return new GridFinishedFuture(context().kernalContext());
+            return new GridFinishedFuture();
 
         final FinishLockFuture finishFut = new FinishLockFuture(
             keyFilter == null ?
@@ -1010,7 +1016,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         finishFuts.add(finishFut);
 
-        finishFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 
@@ -1040,9 +1046,6 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      *
      */
     private class FinishLockFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
         private final long topVer;
@@ -1053,21 +1056,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
             new ConcurrentHashMap8<>();
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public FinishLockFuture() {
-            assert false;
-
-            topVer = 0;
-        }
-
-        /**
          * @param topVer Topology version.
          * @param entries Entries.
          */
         FinishLockFuture(Iterable<GridDistributedCacheEntry<K, V>> entries, long topVer) {
-            super(cctx.kernalContext(), true);
-
             assert topVer > 0;
 
             this.topVer = topVer;

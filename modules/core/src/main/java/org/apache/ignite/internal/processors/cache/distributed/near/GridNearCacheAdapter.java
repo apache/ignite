@@ -207,7 +207,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
-        GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
+        GridCompoundFuture fut = new GridCompoundFuture();
 
         fut.add(super.reloadAllAsync(keys));
         fut.add(dht().reloadAllAsync(keys));
@@ -245,7 +245,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public IgniteInternalFuture<?> reloadAllAsync() {
-        GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
+        GridCompoundFuture fut = new GridCompoundFuture();
 
         fut.add(super.reloadAllAsync());
         fut.add(dht().reloadAllAsync());
@@ -277,7 +277,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         boolean skipVal
     ) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);

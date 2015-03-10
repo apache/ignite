@@ -167,7 +167,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
@@ -232,7 +232,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals
     ) {
         if (keys == null || keys.isEmpty())
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -308,7 +308,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         break; // While.
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                     finally {
                         if (entry != null)
@@ -325,7 +325,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (success) {
                 sendTtlUpdateRequest(expiryPlc);
 
-                return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+                return ctx.wrapCloneMap(new GridFinishedFuture<>(locVals));
             }
         }
 
@@ -625,15 +625,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     filter);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                return new GridFinishedFuture<>(e);
             }
         }
         else {
-            return new GridEmbeddedFuture<>(true, keyFut,
+            return new GridEmbeddedFuture<>(keyFut,
                 new C2<Object, Exception, IgniteInternalFuture<Exception>>() {
                     @Override public IgniteInternalFuture<Exception> apply(Object o, Exception exx) {
                         if (exx != null)
-                            return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
+                            return new GridDhtFinishedFuture<>(exx);
 
                         return lockAllAsync0(cacheCtx,
                             tx,
@@ -646,8 +646,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             filter);
                     }
-                },
-                ctx.kernalContext());
+                }
+            );
         }
     }
 
@@ -722,7 +722,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         fut.onError(e);
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridDhtFinishedFuture<>(e);
                     }
                 }
             }
@@ -731,8 +731,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             fut.map();
 
             return new GridDhtEmbeddedFuture<>(
-                ctx.kernalContext(),
-                fut,
                 new C2<Boolean, Exception, Exception>() {
                     @Override public Exception apply(Boolean b, Exception e) {
                         if (e != null)
@@ -742,7 +740,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         return e;
                     }
-                });
+                },
+                fut);
         }
         else {
             // Handle implicit locks for pessimistic transactions.
@@ -758,8 +757,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl);
 
             return new GridDhtEmbeddedFuture<>(
-                ctx.kernalContext(),
-                txFut,
                 new C2<GridCacheReturn<V>, Exception, Exception>() {
                     @Override public Exception apply(GridCacheReturn<V> ret,
                         Exception e) {
@@ -770,7 +767,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         return e;
                     }
-                });
+                },
+                txFut);
         }
     }
 

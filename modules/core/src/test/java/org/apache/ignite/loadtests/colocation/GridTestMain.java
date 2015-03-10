@@ -97,7 +97,7 @@ public class GridTestMain {
 
             q.put(f);
 
-            f.listenAsync(new CI1<IgniteFuture<?>>() {
+            f.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> o) {
                     q.poll();
                 }

@@ -71,6 +71,9 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
 
@@ -97,9 +100,6 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     @GridToStringInclude
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;
 
@@ -112,10 +112,10 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     /** */
     private byte[] topicBytes;
 
-    /** {@code True} if data streamer has been cancelled. */
+    /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
-    /** Active futures of this data streamer. */
+    /** Active futures of this data loader. */
     @GridToStringInclude
     private final Collection<IgniteInternalFuture<?>> activeFuts = new GridConcurrentHashSet<>();
 
@@ -182,7 +182,8 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         this.flushQ = flushQ;
         this.compact = compact;
 
-        log = U.logger(ctx, logRef, IgniteDataStreamerImpl.class);
+        if (log == null)
+            log = U.logger(ctx, logRef, IgniteDataStreamerImpl.class);
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
@@ -393,9 +394,9 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         enterBusy();
 
         try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
 
-            resFut.listenAsync(rmvActiveFut);
+            resFut.listen(rmvActiveFut);
 
             activeFuts.add(resFut);
 
@@ -413,7 +414,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
-            return new IgniteFinishedFutureImpl<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(e);
         }
         finally {
             leaveBusy();
@@ -865,8 +866,8 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             isLocNode = node.equals(ctx.discovery().localNode());
 
             entries = newEntries();
-            curFut = new GridFutureAdapter<>(ctx);
-            curFut.listenAsync(signalC);
+            curFut = new GridFutureAdapter<>();
+            curFut.listen(signalC);
 
             sem = new Semaphore(parallelOps);
         }
@@ -885,7 +886,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             synchronized (this) {
                 curFut0 = curFut;
 
-                curFut0.listenAsync(lsnr);
+                curFut0.listen(lsnr);
 
                 for (Map.Entry<K, V> entry : newEntries)
                     entries.add(entry);
@@ -894,8 +895,8 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     entries0 = entries;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
-                    curFut.listenAsync(signalC);
+                    curFut = new GridFutureAdapter<>();
+                    curFut.listen(signalC);
                 }
             }
 
@@ -931,8 +932,8 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     curFut0 = curFut;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
-                    curFut.listenAsync(signalC);
+                    curFut = new GridFutureAdapter<>();
+                    curFut.listen(signalC);
                 }
             }
 
@@ -944,14 +945,14 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
             for (IgniteInternalFuture<Object> f : locFuts) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }
 
             for (IgniteInternalFuture<Object> f : reqs.values()) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }
@@ -1001,7 +1002,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);

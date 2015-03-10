@@ -555,7 +555,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgniteUuid fileId = meta.fileId(path);
 
                 if (fileId == null)
-                    throw new IgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
 
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
@@ -685,7 +685,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (mode == PRIMARY)
                         checkConflictWithPrimary(src);
 
-                    throw new IgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                    throw new IgfsPathNotFoundException("Failed to rename (source path not found): " + src);
                 }
 
                 String srcFileName = src.name();
@@ -705,7 +705,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     // Destination directory doesn't exist.
                     if (destDesc == null)
-                        throw new IgfsFileNotFoundException("Failed to rename (destination directory does not " +
+                        throw new IgfsPathNotFoundException("Failed to rename (destination directory does not " +
                             "exist): " + dest);
 
                     destFileName = dest.name();
@@ -974,7 +974,7 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
@@ -1048,7 +1048,7 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return files;
@@ -1116,7 +1116,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (info == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("File not found: " + path);
+                    throw new IgfsPathNotFoundException("File not found: " + path);
                 }
 
                 if (!info.isFile())
@@ -1333,7 +1333,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (!create) {
                         checkConflictWithPrimary(path);
 
-                        throw new IgfsFileNotFoundException("File not found: " + path);
+                        throw new IgfsPathNotFoundException("File not found: " + path);
                     }
 
                     if (parentId == null)
@@ -1388,7 +1388,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (desc == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to update times (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
                 }
 
                 // Cannot update times for root.
@@ -1457,7 +1457,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 if (info == null)
-                    throw new IgfsFileNotFoundException("File not found: " + path);
+                    throw new IgfsPathNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
                     throw new IgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
@@ -1605,9 +1605,9 @@ public final class IgfsImpl implements IgfsEx {
             IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
             if (id == null)
-                return new GridFinishedFuture<Object>(igfsCtx.kernalContext());
+                return new GridFinishedFuture<Object>();
             else {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
                 GridFutureAdapter<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1626,7 +1626,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<Object>(igfsCtx.kernalContext(), e);
+            return new GridFinishedFuture<Object>(e);
         }
     }
 
@@ -1638,10 +1638,10 @@ public final class IgfsImpl implements IgfsEx {
             if (log.isDebugEnabled())
                 log.debug("Constructing delete future for trash entries: " + ids);
 
-            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>(igfsCtx.kernalContext());
+            GridCompoundFuture<Object, Object> resFut = new GridCompoundFuture<>();
 
             for (IgniteUuid id : ids) {
-                GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
                 IgniteInternalFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
@@ -1663,7 +1663,7 @@ public final class IgfsImpl implements IgfsEx {
             return resFut;
         }
         else
-            return new GridFinishedFuture<>(igfsCtx.kernalContext());
+            return new GridFinishedFuture<>();
     }
 
     /**

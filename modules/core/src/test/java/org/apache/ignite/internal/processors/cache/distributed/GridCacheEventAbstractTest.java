@@ -31,7 +31,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -832,7 +831,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 return;
 
             // Create future that aggregates all required event types.
-            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>(ctx);
+            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>();
 
             for (IgniteBiTuple<Integer, Integer> t : evtCnts) {
                 Integer evtType = t.get1();
@@ -840,7 +839,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert expCnt != null && expCnt > 0;
 
-                EventTypeFuture fut = new EventTypeFuture(ctx, evtType, expCnt, partitioned);
+                EventTypeFuture fut = new EventTypeFuture(evtType, expCnt, partitioned);
 
                 futs.add(fut);
 
@@ -881,21 +880,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         private boolean partitioned;
 
         /**
-         * For {@link Externalizable}.
-         */
-        public EventTypeFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
          * @param evtType Event type.
          * @param expCnt Expected count.
          * @param partitioned Partitioned flag.
          */
-        EventTypeFuture(GridKernalContext ctx, int evtType, int expCnt, boolean partitioned) {
-            super(ctx);
-
+        EventTypeFuture(int evtType, int expCnt, boolean partitioned) {
             assert expCnt > 0;
 
             this.evtType = evtType;

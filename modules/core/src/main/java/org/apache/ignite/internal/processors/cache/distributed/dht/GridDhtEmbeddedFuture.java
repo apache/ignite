@@ -23,34 +23,25 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Embedded DHT future.
  */
 public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implements GridDhtFuture<A> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Retries. */
     @GridToStringInclude
     private Collection<Integer> invalidParts;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtEmbeddedFuture() {
-        // No-op.
-    }
-
-    /**
-     * @param ctx Context.
-     * @param embedded Embedded.
      * @param c Closure.
+     * @param embedded Embedded.
      */
-    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, A> c) {
-        super(ctx, embedded, c);
+    public GridDhtEmbeddedFuture(
+        IgniteBiClosure<B, Exception, A> c,
+        IgniteInternalFuture<B> embedded
+    ) {
+        super(c, embedded);
 
         invalidParts = Collections.emptyList();
     }
@@ -58,26 +49,14 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
     /**
      * @param embedded Future to embed.
      * @param c Embedding closure.
-     * @param ctx Kernal context.
      */
-    public GridDhtEmbeddedFuture(IgniteInternalFuture<B> embedded,
-        IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c, GridKernalContext ctx) {
-        super(embedded, c, ctx);
+    public GridDhtEmbeddedFuture(
+        IgniteInternalFuture<B> embedded,
+        IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c
+    ) {
+        super(embedded, c);
 
         invalidParts = Collections.emptyList();
-    }
-
-    /**
-     * @param ctx Context.
-     * @param embedded Embedded.
-     * @param c Closure.
-     * @param invalidParts Retries.
-     */
-    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, A> c,
-        Collection<Integer> invalidParts) {
-        super(ctx, embedded, c);
-
-        this.invalidParts = invalidParts;
     }
 
     /** {@inheritDoc} */

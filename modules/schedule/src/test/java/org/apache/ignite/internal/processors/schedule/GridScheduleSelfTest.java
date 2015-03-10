@@ -113,7 +113,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+            fut.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }
@@ -171,7 +171,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
+            fut.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }

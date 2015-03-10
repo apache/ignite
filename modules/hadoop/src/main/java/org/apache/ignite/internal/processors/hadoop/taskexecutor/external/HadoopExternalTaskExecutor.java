@@ -156,8 +156,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                         "[jobId=" + meta.jobId() + ", meta=" + meta + ']');
             }
             else {
-                proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
+                proc.initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+                    @Override
+                    public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                         try {
                             f.get();
 
@@ -223,7 +224,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
             final HadoopProcess proc0 = proc;
 
-            proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+            proc.initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
                 @Override public void apply(
                     IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                     if (!busyLock.tryReadLock())
@@ -330,7 +331,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         HadoopJobId jobId = job.id();
 
-        final HadoopProcessFuture fut = new HadoopProcessFuture(childProcId, jobId, ctx.kernalContext());
+        final HadoopProcessFuture fut = new HadoopProcessFuture(childProcId, jobId);
 
         final HadoopProcess proc = new HadoopProcess(jobId, fut, plan.reducers(ctx.localNodeId()));
 
@@ -404,7 +405,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             }
         }, true);
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
             @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                 try {
                     // Make sure there were no exceptions.
@@ -789,7 +790,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 terminated = true;
 
                 if (!initFut.isDone())
-                    initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
+                    initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
                         @Override public void apply(
                             IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                             proc.destroy();
@@ -853,9 +854,6 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      */
     private class HadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, HadoopProcessDescriptor>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Child process ID. */
         private UUID childProcId;
 
@@ -878,18 +876,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         private final IgniteLogger log = HadoopExternalTaskExecutor.this.log;
 
         /**
-         * Empty constructor.
          */
-        public HadoopProcessFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         */
-        private HadoopProcessFuture(UUID childProcId, HadoopJobId jobId, GridKernalContext ctx) {
-            super(ctx);
-
+        private HadoopProcessFuture(UUID childProcId, HadoopJobId jobId) {
             this.childProcId = childProcId;
             this.jobId = jobId;
         }

@@ -535,6 +535,7 @@
                                         <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
                                         <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/config/start-nodes.ini</exclude><!---->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
@@ -1120,6 +1121,38 @@
                                 <phase>package</phase>
                                 <configuration>
                                     <target>
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
+                                            <substitution expression='pushd "%~dp0"/..'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <substitution expression=""/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.bat"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
+                                            <fileset dir="${basedir}/target/release-package/bin">
+                                                <include name="**/*.sh"/>
+                                            </fileset>
+                                        </replaceregexp>
+
                                         <replaceregexp byline="true">
                                             <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
                                             <substitution expression=""/>

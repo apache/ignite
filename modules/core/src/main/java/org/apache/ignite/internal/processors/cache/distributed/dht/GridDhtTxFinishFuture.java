@@ -26,14 +26,13 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -44,11 +43,11 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -63,9 +62,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** Commit flag. */
     private boolean commit;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Error. */
     @GridToStringExclude
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
@@ -78,13 +74,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** Trackable flag. */
     private boolean trackable = true;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxFinishFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -103,7 +92,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridDhtTxFinishFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -416,9 +406,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** DHT mapping. */
@@ -430,19 +417,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         private GridDistributedTxMapping<K, V> nearMapping;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
         MiniFuture(GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
-            super(cctx.kernalContext());
-
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 
             this.dhtMapping = dhtMapping;

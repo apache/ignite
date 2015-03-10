@@ -108,7 +108,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
 
         IgniteInternalFuture<Long> fut = aff.readyFuture(topVer);
 
-        return fut != null ? fut : new GridFinishedFutureEx<>(topVer);
+        return fut != null ? fut : new GridFinishedFuture<>(topVer);
     }
 
     /**

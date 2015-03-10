@@ -447,12 +447,16 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             if (!txFut.isDone()) {
                 final ReaderId<K, V> reader0 = reader;
 
-                txFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                txFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
-                        synchronized (this) {
-                            // Release memory.
-                            reader0.resetTxFuture();
-                        }
+                        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                            @Override public void run() {
+                                synchronized (this) {
+                                    // Release memory.
+                                    reader0.resetTxFuture();
+                                }
+                            }
+                        });
                     }
                 });
             }

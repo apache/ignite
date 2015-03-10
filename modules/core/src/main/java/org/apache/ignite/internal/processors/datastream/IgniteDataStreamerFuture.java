@@ -23,16 +23,11 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Data streamer future.
  */
 class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Data streamer. */
+    /** Data loader. */
     @GridToStringExclude
     private IgniteDataStreamerImpl dataLdr;
 
@@ -47,9 +42,7 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
      * @param ctx Context.
      * @param dataLdr Data streamer.
      */
-    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
-        super(ctx);
-
+    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;
@@ -57,8 +50,6 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        checkValid();
-
         if (onCancelled()) {
             dataLdr.closeEx(true);
 

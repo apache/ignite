@@ -135,8 +135,8 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                     @Override public IgniteInternalFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
-                },
-                ctx);
+                }
+            );
         }
 
         if (f != null)
@@ -166,7 +166,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
         IgniteInternalFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
 
-        f.listenAsync(new CIX1<IgniteInternalFuture<GridRestResponse>>() {
+        f.listen(new CIX1<IgniteInternalFuture<GridRestResponse>>() {
             @Override public void applyx(IgniteInternalFuture<GridRestResponse> f) throws IgniteCheckedException {
                 GridRestResponse restRes = f.get();
 
