@@ -411,7 +411,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         //Kill the same job again.
         killRes = hadoop.kill(jobId);
 
-        assertTrue(killRes);
+        assertFalse(killRes);
     }
 
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
