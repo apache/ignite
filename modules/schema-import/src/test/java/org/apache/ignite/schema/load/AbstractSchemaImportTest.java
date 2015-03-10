@@ -32,7 +32,7 @@ import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 /**
  * Base functional for ignite-schema-loader tests.
  */
-public abstract class AbstractSchemaLoaderTest extends TestCase {
+public abstract class AbstractSchemaImportTest extends TestCase {
     /** DB connection URL. */
     private static final String CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 

@@ -24,7 +24,7 @@ import org.apache.ignite.schema.load.parser.*;
 /**
  * Ignite Schema Load Utility Tests.
  */
-public class IgniteSchemaLoadTestSuite {
+public class IgniteSchemaImportTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
