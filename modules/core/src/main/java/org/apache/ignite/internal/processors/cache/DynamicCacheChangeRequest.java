@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Cache start/stop request.
@@ -34,29 +34,28 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Stop cache name. */
     @GridToStringExclude
-    private final String stopName;
+    private String stopName;
 
     /** Cache start configuration. */
-    private final CacheConfiguration startCfg;
+    private CacheConfiguration startCfg;
 
-    /** Cache start node filter. */
-    private final IgnitePredicate<ClusterNode> startNodeFltr;
+    /** Near node ID in case if near cache is being started. */
+    private UUID nearNodeId;
+
+    /** Near cache configuration. */
+    private NearCacheConfiguration nearCacheCfg;
 
     /**
      * Constructor creates cache start request.
      *
      * @param startCfg Start cache configuration.
-     * @param startNodeFltr Start node filter.
      */
     public DynamicCacheChangeRequest(
-        CacheConfiguration startCfg,
-        IgnitePredicate<ClusterNode> startNodeFltr
+        CacheConfiguration startCfg
     ) {
         this.startCfg = startCfg;
-        this.startNodeFltr = startNodeFltr;
 
         deploymentId = IgniteUuid.randomUuid();
-        stopName = null;
     }
 
     /**
@@ -66,9 +65,17 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public DynamicCacheChangeRequest(String stopName) {
         this.stopName = stopName;
+    }
 
-        startCfg = null;
-        startNodeFltr = null;
+    /**
+     * Constructor creates near cache start request.
+     *
+     * @param nearNodeId Near node ID.
+     * @param nearCacheCfg Near cache configuration.
+     */
+    public DynamicCacheChangeRequest(UUID nearNodeId, NearCacheConfiguration nearCacheCfg) {
+        this.nearNodeId = nearNodeId;
+        this.nearCacheCfg = nearCacheCfg;
     }
 
     /**
@@ -93,6 +100,13 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * @return If this is a near cache start request.
+     */
+    public boolean isNearStart() {
+        return nearNodeId != null;
+    }
+
+    /**
      * @return Cache name.
      */
     public String cacheName() {
@@ -100,17 +114,24 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * @return Near node ID.
+     */
+    public UUID nearNodeId() {
+        return nearNodeId;
+    }
+
+    /**
+     * @return Near cache configuration.
+     */
+    public NearCacheConfiguration nearCacheCfg() {
+        return nearCacheCfg;
+    }
+
+    /**
      * @return Cache configuration.
      */
     public CacheConfiguration startCacheConfiguration() {
         return startCfg;
-    }
-
-    /**
-     * @return Node filter.
-     */
-    public IgnitePredicate<ClusterNode> startNodeFilter() {
-        return startNodeFltr;
     }
 
     /** {@inheritDoc} */

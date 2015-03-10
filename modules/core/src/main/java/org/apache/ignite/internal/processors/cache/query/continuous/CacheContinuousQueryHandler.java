@@ -25,7 +25,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -210,19 +209,20 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         try {
                             ClusterNode node = ctx.discovery().node(nodeId);
 
-                            if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
-                                U.hasCache(node, cacheName)) {
-                                evt.entry().p2pMarshal(ctx.config().getMarshaller());
+                            if (node != null) {
+                                if (ctx.config().isPeerClassLoadingEnabled()) {
+                                    evt.entry().p2pMarshal(ctx.config().getMarshaller());
 
-                                evt.entry().cacheName(cacheName);
+                                    evt.entry().cacheName(cacheName);
 
-                                GridCacheDeploymentManager depMgr =
-                                    ctx.cache().internalCache(cacheName).context().deploy();
+                                    GridCacheDeploymentManager depMgr =
+                                        ctx.cache().internalCache(cacheName).context().deploy();
 
-                                depMgr.prepare(evt.entry());
+                                    depMgr.prepare(evt.entry());
+                                }
+
+                                ctx.continuous().addNotification(nodeId, routineId, evt, topic, sync);
                             }
-
-                            ctx.continuous().addNotification(nodeId, routineId, evt, topic, sync);
                         }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);

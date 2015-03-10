@@ -23,8 +23,12 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -162,6 +166,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
+
+    /** Filter that accepts only server nodes. */
+    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            return attr != null && !attr;
+        }
+    };
+
+    /** Filter that accepts all nodes. */
+    public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
 
     /** Cache name. */
     private String name;
@@ -322,6 +338,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
 
+    /** Node filter specifying nodes on which this cache should be deployed. */
+    private IgnitePredicate<ClusterNode> nodeFilter;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -379,6 +398,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
+        nodeFilter = cc.getNodeFilter();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
         preloadDelay = cc.getPreloadPartitionedDelay();
@@ -539,6 +559,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setNearEvictionPolicy(@Nullable CacheEvictionPolicy nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
+    }
+
+    /**
+     * Gets filter which determines on what nodes the cache should be started.
+     *
+     * @return Predicate specifying on which nodes the cache should be started.
+     */
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /**
+     * Sets filter which determines on what nodes the cache should be started.
+     *
+     * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     */
+    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
     }
 
     /**

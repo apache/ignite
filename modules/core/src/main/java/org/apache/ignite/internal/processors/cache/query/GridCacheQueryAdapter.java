@@ -491,9 +491,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                CacheDistributionMode mode = U.distributionMode(n, cctx.name());
-
-                return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
+                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null);
             }
         });

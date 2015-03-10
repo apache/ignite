@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
@@ -168,7 +168,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private GridPlainInClosure<Serializable> customEvtLsnr;
 
     /** Map of dynamic cache filters. */
-    private Map<String, IgnitePredicate<ClusterNode>> dynamicCacheFilters = new HashMap<>();
+    private Map<String, CachePredicate> dynamicCacheFilters = new HashMap<>();
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -208,9 +208,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      * @param filter Cache filter.
+     * @param loc {@code True} if cache is local.
      */
-    public void addDynamicCacheFilter(String cacheName, IgnitePredicate<ClusterNode> filter) {
-        dynamicCacheFilters.put(cacheName, filter);
+    public void addDynamicCacheFilter(
+        String cacheName,
+        IgnitePredicate<ClusterNode> filter,
+        boolean nearEnabled,
+        boolean loc
+    ) {
+        dynamicCacheFilters.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
     }
 
     /**
@@ -1118,6 +1124,41 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Checks if node is a data node for the given cache.
+     *
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return {@code True} if node is a cache data node.
+     */
+    public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
+        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+
+        return predicate != null && predicate.dataNode(node);
+    }
+
+    /**
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return {@code True} if node has near cache enabled.
+     */
+    public boolean cacheNearNode(ClusterNode node, String cacheName) {
+        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+
+        return predicate != null && predicate.nearNode(node);
+    }
+
+    /**
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return If cache with the given name is accessible on the given node.
+     */
+    public boolean cacheNode(ClusterNode node, String cacheName) {
+        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+
+        return predicate != null && predicate.cacheNode(node);
+    }
+
+    /**
      * Checks if cache with given name has at least one node with near cache enabled.
      *
      * @param cacheName Cache name.
@@ -1197,7 +1238,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets first grid node start time, see {@link org.apache.ignite.spi.discovery.DiscoverySpi#getGridStartTime()}.
+     * Gets first grid node start time, see {@link DiscoverySpi#getGridStartTime()}.
      *
      * @return Start time of the first grid node.
      */
@@ -1330,7 +1371,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /**
          * Method is called when any discovery event occurs.
          *
-         * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
+         * @param type Discovery event type. See {@link DiscoveryEvent} for more details.
          * @param topVer Topology version.
          * @param node Remote node this event is connected with.
          * @param topSnapshot Topology snapshot.
@@ -1853,52 +1894,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (node.order() > maxOrder0)
                     maxOrder0 = node.order();
 
-                GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
-
                 boolean hasCaches = false;
 
-                if (caches != null) {
-                    nodesWithCaches.add(node);
-
-                    if (!loc.id().equals(node.id()))
-                        rmtNodesWithCaches.add(node);
-
-                    for (GridCacheAttributes attrs : caches) {
-                        addToMap(cacheMap, attrs.cacheName(), node);
-
-                        if (alive(node.id()))
-                            addToMap(aliveCacheNodes, maskNull(attrs.cacheName()), node);
-
-                        if (attrs.isAffinityNode())
-                            addToMap(dhtNodesMap, attrs.cacheName(), node);
-
-                        if (attrs.nearCacheEnabled())
-                            nearEnabledSet.add(attrs.cacheName());
-
-                        if (!loc.id().equals(node.id())) {
-                            addToMap(rmtCacheMap, attrs.cacheName(), node);
-
-                            if (alive(node.id()))
-                                addToMap(aliveRmtCacheNodes, maskNull(attrs.cacheName()), node);
-                        }
-                    }
-
-                    hasCaches = true;
-                }
-
-                for (Map.Entry<String, IgnitePredicate<ClusterNode>> entry : dynamicCacheFilters.entrySet()) {
+                for (Map.Entry<String, CachePredicate> entry : dynamicCacheFilters.entrySet()) {
                     String cacheName = entry.getKey();
-                    IgnitePredicate<ClusterNode> filter = entry.getValue();
 
-                    if (filter.apply(node)) {
+                    CachePredicate filter = entry.getValue();
+
+                    if (filter.cacheNode(node)) {
+                        nodesWithCaches.add(node);
+
+                        if (!loc.id().equals(node.id()))
+                            rmtNodesWithCaches.add(node);
+
                         addToMap(cacheMap, cacheName, node);
 
                         if (alive(node.id()))
                             addToMap(aliveCacheNodes, maskNull(cacheName), node);
 
-                        addToMap(dhtNodesMap, cacheName, node);
+                        if (filter.dataNode(node))
+                            addToMap(dhtNodesMap, cacheName, node);
 
-                        // TODO IGNITE-45 client and near caches.
+                        if (filter.nearNode(node))
+                            nearEnabledSet.add(cacheName);
 
                         if (!loc.id().equals(node.id())) {
                             addToMap(rmtCacheMap, cacheName, node);
@@ -2159,7 +2177,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param exclNode Node to exclude.
          */
         private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
-            for (String cacheName : U.cacheNames(exclNode)) {
+            for (String cacheName : dynamicCacheFilters.keySet()) {
                 String maskedName = maskNull(cacheName);
 
                 while (true) {
@@ -2224,6 +2242,75 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DiscoCache.class, this, "allNodesWithDaemons", U.toShortString(allNodes));
+        }
+    }
+
+    /**
+     * Cache predicate.
+     */
+    private static class CachePredicate {
+        /** Cache filter. */
+        private IgnitePredicate<ClusterNode> cacheFilter;
+
+        /** If near cache is enabled on data nodes. */
+        private boolean nearEnabled;
+
+        /** Flag indicating if cache is local. */
+        private boolean loc;
+
+        /** Collection of client near nodes. */
+        private Collection<UUID> nearNodes;
+
+        /**
+         * @param cacheFilter Cache filter.
+         * @param nearEnabled Near enabled flag.
+         */
+        private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, boolean loc) {
+            assert cacheFilter != null;
+
+            this.cacheFilter = cacheFilter;
+            this.nearEnabled = nearEnabled;
+            this.loc = loc;
+
+            nearNodes = new GridConcurrentHashSet<>();
+        }
+
+        /**
+         * @param nodeId Near node ID to add.
+         */
+        public void addNearNode(UUID nodeId) {
+            nearNodes.add(nodeId);
+        }
+
+        /**
+         * @param nodeId Near node ID to remove.
+         */
+        public void removeNearNode(UUID nodeId) {
+            nearNodes.remove(nodeId);
+        }
+
+        /**
+         * @param node Node to check.
+         * @return {@code True} if this node is a data node for given cache.
+         */
+        public boolean dataNode(ClusterNode node) {
+            return cacheFilter.apply(node);
+        }
+
+        /**
+         * @param node Node to check.
+         * @return {@code True} if cache is accessible on the given node.
+         */
+        public boolean cacheNode(ClusterNode node) {
+            return !loc || cacheFilter.apply(node);
+        }
+
+        /**
+         * @param node Node to check.
+         * @return {@code True} if near cache is present on the given nodes.
+         */
+        public boolean nearNode(ClusterNode node) {
+            return (nearEnabled && cacheFilter.apply(node)) || nearNodes.contains(node.id());
         }
     }
 }

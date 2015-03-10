@@ -544,7 +544,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
             if (log.isDebugEnabled())
                 log.debug("Initialized future: " + this);
 
-            if (!U.hasCaches(discoEvt.node()))
+            if (canSkipExchange())
                 onDone(exchId.topologyVersion());
             else {
                 // If this node is not oldest.
@@ -564,6 +564,13 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         }
         else
             assert false : "Skipped init future: " + this;
+    }
+
+    /**
+     * @return {@code True} if no distributed exchange is needed.
+     */
+    private boolean canSkipExchange() {
+        return false; // TODO ignite-45;
     }
 
     /**

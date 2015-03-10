@@ -117,7 +117,18 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
-    private static volatile boolean daemon;
+    private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
+
+    /** */
+    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return null;
+        }
+    };
 
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
@@ -156,7 +167,7 @@ public class IgnitionEx {
      * @param daemon Daemon flag to set.
      */
     public static void setDaemon(boolean daemon) {
-        IgnitionEx.daemon = daemon;
+        IgnitionEx.daemon.set(daemon);
     }
 
     /**
@@ -170,7 +181,25 @@ public class IgnitionEx {
      * @return Daemon flag.
      */
     public static boolean isDaemon() {
-        return daemon;
+        return daemon.get();
+    }
+
+    /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public static void setClientMode(boolean clientMode) {
+        IgnitionEx.clientMode.set(clientMode);
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public static boolean isClientMode() {
+        return clientMode.get();
     }
 
     /**
@@ -1539,8 +1568,17 @@ public class IgnitionEx {
             myCfg.setLocalHost(F.isEmpty(locHost) ? myCfg.getLocalHost() : locHost);
 
             // Override daemon flag if it was set on the factory.
-            if (daemon)
+            if (daemon.get())
                 myCfg.setDaemon(true);
+
+            if (myCfg.isClientMode() == null) {
+                Boolean threadClient = clientMode.get();
+
+                if (threadClient == null)
+                    myCfg.setClientMode(IgniteSystemProperties.getBoolean(IGNITE_CACHE_CLIENT, false));
+                else
+                    myCfg.setClientMode(threadClient);
+            }
 
             // Check for deployment mode override.
             String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
@@ -1872,6 +1910,7 @@ public class IgnitionEx {
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
             if (client)
                 cache.setDistributionMode(CLIENT_ONLY);
@@ -1896,6 +1935,7 @@ public class IgnitionEx {
             ccfg.setPreloadMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
+            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
 
             if (cfg.getCacheMode() == PARTITIONED) {
                 ccfg.setBackups(cfg.getBackups());

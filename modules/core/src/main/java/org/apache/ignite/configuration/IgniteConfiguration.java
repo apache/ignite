@@ -321,7 +321,10 @@ public class IgniteConfiguration {
     private CacheConfiguration[] cacheCfg;
 
     /** Client cache configurations. */
-    private ClientCacheConfiguration[] clientCacheCfg;
+    private NearCacheConfiguration[] nearCacheCfg;
+
+    /** Client mode flag. */
+    private Boolean clientMode;
 
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
@@ -1569,17 +1572,40 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets configuration (descriptors) for all client caches.
+     * Gets configuration (descriptors) for all near caches.
      *
      * @return Client cache configurations.
      */
-    public ClientCacheConfiguration[] getClientCacheConfiguration() {
-        return clientCacheCfg;
+    public NearCacheConfiguration[] getNearCacheConfiguration() {
+        return nearCacheCfg;
     }
 
+    /**
+     * Sets configuration for all near caches.
+     *
+     * @param nearCacheCfg Near cache configurations.
+     */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
-    public void setClientCacheConfiguration(ClientCacheConfiguration... clientCacheCfg) {
-        this.clientCacheCfg = clientCacheCfg == null ? new ClientCacheConfiguration[0] : clientCacheCfg;
+    public void setNearCacheConfiguration(NearCacheConfiguration... nearCacheCfg) {
+        this.nearCacheCfg = nearCacheCfg == null ? new NearCacheConfiguration[0] : nearCacheCfg;
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public Boolean isClientMode() {
+        return clientMode;
+    }
+
+    /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public void setClientMode(boolean clientMode) {
+        this.clientMode = clientMode;
     }
 
     /**

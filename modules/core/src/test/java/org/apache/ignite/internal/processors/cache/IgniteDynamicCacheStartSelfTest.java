@@ -45,9 +45,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     private static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
 
     /** */
-    private boolean cache = true;
-
-    /** */
     public static final IgnitePredicate<ClusterNode> NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
@@ -73,13 +70,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
-        if (cache) {
-            CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
-            cacheCfg.setName(STATIC_CACHE_NAME);
+        cacheCfg.setName(STATIC_CACHE_NAME);
 
-            cfg.setCacheConfiguration(cacheCfg);
-        }
+        cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
@@ -110,7 +105,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 ccfg.setName(DYNAMIC_CACHE_NAME);
 
-                futs.add(kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()));
+                futs.add(kernal.context().cache().dynamicStartCache(ccfg));
 
                 return null;
             }
@@ -169,7 +164,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 IgniteKernal kernal = (IgniteKernal)grid(ThreadLocalRandom.current().nextInt(nodeCount()));
 
-                futs.add(kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()));
+                futs.add(kernal.context().cache().dynamicStartCache(ccfg));
 
                 return null;
             }
@@ -240,13 +235,15 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName(DYNAMIC_CACHE_NAME);
 
-        kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()).get();
+        kernal.context().cache().dynamicStartCache(ccfg).get();
 
         for (int g = 0; g < nodeCount(); g++) {
             IgniteKernal kernal0 = (IgniteKernal)grid(g);
 
             for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
                 f.get();
+
+            info("Getting cache for node: " + g);
 
             assertNotNull(grid(g).jcache(DYNAMIC_CACHE_NAME));
         }
@@ -297,7 +294,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName(DYNAMIC_CACHE_NAME);
 
-        kernal.context().cache().dynamicStartCache(ccfg, F.<ClusterNode>alwaysTrue()).get();
+        kernal.context().cache().dynamicStartCache(ccfg).get();
+
+        info(">>>>>>> Deployed dynamic cache");
 
         startGrid(nodeCount());
 
@@ -354,7 +353,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             ccfg.setName(DYNAMIC_CACHE_NAME);
 
-            kernal.context().cache().dynamicStartCache(ccfg, NODE_FILTER).get();
+            ccfg.setNodeFilter(NODE_FILTER);
+
+            kernal.context().cache().dynamicStartCache(ccfg).get();
 
             startGrid(nodeCount() + 1);
 
@@ -406,7 +407,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testFailWhenStaticCacheExists() throws Exception {
+    public void testFailWhenConfiguredCacheExists() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 final IgniteKernal kernal = (IgniteKernal)grid(0);
@@ -417,36 +418,10 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 // Cache is already configured, should fail.
                 ccfg.setName(STATIC_CACHE_NAME);
 
-                return kernal.context().cache().dynamicStartCache(ccfg, NODE_FILTER).get();
+                ccfg.setNodeFilter(NODE_FILTER);
+
+                return kernal.context().cache().dynamicStartCache(ccfg).get();
             }
         }, IgniteCheckedException.class, null);
-    }
-
-    /**
-     * @throws Exception If failed. TODO Ignite-45.
-     */
-    public void _testFailWhenStaticCacheExistsOnOtherNode() throws Exception {
-        cache = false;
-
-        startGrid(nodeCount());
-
-        try {
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    final IgniteKernal kernal = (IgniteKernal)grid(nodeCount());
-
-                    CacheConfiguration ccfg = new CacheConfiguration();
-                    ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-                    // Cache is already configured, should fail.
-                    ccfg.setName(STATIC_CACHE_NAME);
-
-                    return kernal.context().cache().dynamicStartCache(ccfg, NODE_FILTER).get();
-                }
-            }, IgniteCheckedException.class, null);
-        }
-        finally {
-            stopGrid(nodeCount());
-        }
     }
 }

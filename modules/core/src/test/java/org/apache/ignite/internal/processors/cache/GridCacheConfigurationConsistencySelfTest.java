@@ -138,7 +138,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         final GridStringLogger strLog = new GridStringLogger(false, log);
 
-        CU.checkAttributeMismatch(strLog, "cache", node, "cacheMode", "Cache mode", LOCAL, PARTITIONED, false);
+        CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", LOCAL, PARTITIONED, false);
 
         assertTrue("No expected message in log: " + strLog.toString(),
             strLog.toString().contains("Cache mode mismatch"));
@@ -148,7 +148,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             /** {@inheritDoc} */
             @Override public Void call() throws Exception {
-                CU.checkAttributeMismatch(strLog, "cache", node, "cacheMode", "Cache mode", LOCAL, PARTITIONED, true);
+                CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", LOCAL, PARTITIONED, true);
                 return null;
             }
         }, IgniteCheckedException.class, "Cache mode mismatch");
@@ -161,7 +161,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         cfg2.setCacheMode(PARTITIONED);
 
-        CU.checkAttributeMismatch(strLog, cfg1, cfg2, node, new T2<>("cacheMode", "Cache mode"), false);
+        CU.checkAttributeMismatch(strLog, cfg1, cfg2, node.id(), new T2<>("cacheMode", "Cache mode"), false);
 
         assertTrue("No expected message in log: " + strLog.toString(),
             strLog.toString().contains("Cache mode mismatch"));
@@ -169,7 +169,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             /** {@inheritDoc} */
             @Override public Void call() throws Exception {
-                CU.checkAttributeMismatch(strLog, cfg1, cfg2, node, new T2<>("cacheMode", "Cache mode"), true);
+                CU.checkAttributeMismatch(strLog, cfg1, cfg2, node.id(), new T2<>("cacheMode", "Cache mode"), true);
                 return null;
             }
         }, IgniteCheckedException.class, "Cache mode mismatch");

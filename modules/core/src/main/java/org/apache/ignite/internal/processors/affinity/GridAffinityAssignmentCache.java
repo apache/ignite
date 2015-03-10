@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
@@ -34,8 +33,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Affinity cached function.
@@ -170,10 +167,9 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> assignment;
 
         if (prevAssignment != null && discoEvt != null) {
-            CacheDistributionMode distroMode = U.distributionMode(discoEvt.eventNode(), ctx.name());
+            boolean affNode = ctx.discovery().cacheAffinityNode(discoEvt.eventNode(), ctx.name());
 
-            if (distroMode == null || // no cache on node.
-                distroMode == CLIENT_ONLY || distroMode == NEAR_ONLY)
+            if (!affNode)
                 assignment = prevAssignment;
             else
                 assignment = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment,

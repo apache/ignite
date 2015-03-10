@@ -157,7 +157,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
+     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection.
      * This essentially
      * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
      * replacement for local thread pools.
@@ -185,6 +185,25 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of scheduler.
      */
     public IgniteScheduler scheduler();
+
+    /**
+     * Dynamically starts new cache with the given cache configuration.
+     *
+     * @param cacheCfg Cache configuration to use.
+     */
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
+
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        @Nullable NearCacheConfiguration<K, V> nearCfg);
+
+    public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Stops dynamically started cache.
+     *
+     * @param cacheName Cache name to stop.
+     */
+    public void destroyCache(String cacheName);
 
     /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible

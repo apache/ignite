@@ -28,7 +28,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.*;
 /**
  * Client cache configuration.
  */
-public class ClientCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
@@ -47,14 +47,14 @@ public class ClientCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Empty constructor.
      */
-    public ClientCacheConfiguration() {
+    public NearCacheConfiguration() {
         // No-op.
     }
 
     /**
      * @param cfg Configuration to copy.
      */
-    public ClientCacheConfiguration(CompleteConfiguration<K, V> cfg) {
+    public NearCacheConfiguration(CompleteConfiguration<K, V> cfg) {
         super(cfg);
 
         // Preserve alphabetic order.
@@ -67,8 +67,8 @@ public class ClientCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             nearEvictPlc = ccfg.getNearEvictionPolicy();
             nearStartSize = ccfg.getNearStartSize();
         }
-        else if (cfg instanceof ClientCacheConfiguration) {
-            ClientCacheConfiguration ccfg = (ClientCacheConfiguration)cfg;
+        else if (cfg instanceof NearCacheConfiguration) {
+            NearCacheConfiguration ccfg = (NearCacheConfiguration)cfg;
 
             evictNearSync = ccfg.isEvictNearSynchronized();
             name = ccfg.getName();

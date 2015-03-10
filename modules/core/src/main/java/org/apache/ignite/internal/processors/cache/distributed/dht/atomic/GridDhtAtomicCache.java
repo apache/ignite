@@ -1085,7 +1085,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         checkClearForceTransformBackups(req, locked);
 
-                        boolean hasNear = U.hasNearCache(node, name());
+                        boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
 
