@@ -694,11 +694,19 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 return secondaryFs.rename(toSecondary(src), toSecondary(dst));
             }
             else {
-                // Will throw exception if failed.
-                rmtClient.rename(srcPath, dstPath);
-
                 if (clientLog.isLogEnabled())
                     clientLog.logRename(srcPath, mode, dstPath);
+
+                try {
+                    rmtClient.rename(srcPath, dstPath);
+                }
+                catch (IOException ioe) {
+                    // Log the exception before rethrowing since it may be ignored:
+                    LOG.warn("Failed to rename [srcPath=" + srcPath + ", dstPath=" + dstPath + ", mode=" + mode + ']',
+                        ioe);
+
+                    throw ioe;
+                }
 
                 return true;
             }

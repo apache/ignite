@@ -20,11 +20,9 @@ package org.apache.ignite.igfs;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code IGFS} exception that is thrown when it detected out-of-space condition.
- * It is thrown when number of writes written to a {@code IGFS} data nodes exceeds
- * its maximum value (that is configured per-node).
+ * Exception indicating that path is not directory.
  */
-public class IgfsOutOfSpaceException extends IgfsException {
+public class IgfsPathIsNotDirectoryException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +31,7 @@ public class IgfsOutOfSpaceException extends IgfsException {
      *
      * @param msg Message.
      */
-    public IgfsOutOfSpaceException(String msg) {
+    public IgfsPathIsNotDirectoryException(String msg) {
         super(msg);
     }
 
@@ -42,17 +40,17 @@ public class IgfsOutOfSpaceException extends IgfsException {
      *
      * @param cause Cause.
      */
-    public IgfsOutOfSpaceException(Throwable cause) {
+    public IgfsPathIsNotDirectoryException(Throwable cause) {
         super(cause);
     }
 
     /**
      * Constructor.
      *
-     * @param msg Message.
+     * @param msg   Message.
      * @param cause Cause.
      */
-    public IgfsOutOfSpaceException(@Nullable String msg, @Nullable Throwable cause) {
+    public IgfsPathIsNotDirectoryException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

@@ -39,6 +39,9 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {
+    /** */         
+    private static final long serialVersionUID = 0L;
+    
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -315,6 +318,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      *
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mini future ID. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

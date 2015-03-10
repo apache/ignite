@@ -38,6 +38,9 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K, V>>
     implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

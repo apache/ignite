@@ -806,18 +806,7 @@ public final class GridTestUtils {
      * @see #getIgniteHome()
      */
     @Nullable public static File resolveIgnitePath(String path) {
-        return resolveIgnitePath(null, path);
-    }
-
-    /**
-     * @param igniteHome Optional ignite home path.
-     * @param path Path to resolve.
-     * @return Resolved path, or {@code null} if file cannot be resolved.
-     */
-    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
-        File file = resolvePath(igniteHome, path);
-
-        return file != null ? file : resolvePath(igniteHome, "os/" + path);
+        return resolvePath(null, path);
     }
 
     /**

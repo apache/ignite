@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * Extras where obsolete version and TTL are set.
  */
@@ -52,7 +54,7 @@ public class GridCacheObsoleteTtlEntryExtras<K> extends GridCacheEntryExtrasAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<UUID, Object> attrData) {
         return attrData != null ? new GridCacheAttributesObsoleteTtlEntryExtras<K>(attrData, obsoleteVer, ttl,
             expireTime) : this;
     }

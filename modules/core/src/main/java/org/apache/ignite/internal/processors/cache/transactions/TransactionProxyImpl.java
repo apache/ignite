@@ -299,19 +299,19 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public <V1> V1 addMeta(String name, V1 val) {
+    @Override public <V1> V1 addMeta(UUID name, V1 val) {
         return tx.addMeta(name, val);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 meta(String name) {
+    @Override public <V1> V1 meta(UUID name) {
         return tx.<V1>meta(name);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 removeMeta(String name) {
+    @Override public <V1> V1 removeMeta(UUID name) {
         return tx.<V1>removeMeta(name);
     }
 
