@@ -871,7 +871,7 @@ object VisorCacheCommand {
 
         val sqlFxs = queryCfg.sqlFunctionClasses()
 
-        if (sqlFxs.isEmpty) {
+        if (sqlFxs.isEmpty)
             cacheT +=("Query SQL functions", NA)
 
         val indexedTypes = queryCfg.indexedTypes()
