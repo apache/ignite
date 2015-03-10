@@ -21,6 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,7 +32,9 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -89,6 +94,8 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
     public void testQuery() throws Exception {
         final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
 
+        cache.clear();
+
         for (int i = 0; i < 2000; i++)
             cache.put(i, new Person(i));
 
@@ -112,11 +119,65 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
     }
 
     /**
+     * Test put and parallel query.
+     * @throws Exception If failed.
+     */
+    public void testQueryPut() throws Exception {
+        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
+
+        cache.clear();
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Random rnd = new GridRandom();
+
+                while (!stop.get()) {
+                    List<List<?>> res = cache.queryFields(
+                        new SqlFieldsQuery("select avg(age) from Person where age > 0")).getAll();
+
+                    assertEquals(1, res.size());
+
+                    if (res.get(0).get(0) == null)
+                        continue;
+
+                    int avgAge = ((Number)res.get(0).get(0)).intValue();
+
+                    if (rnd.nextInt(300) == 0)
+                        X.println("__ " + avgAge);
+                }
+
+                return null;
+            }
+        }, 20);
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Random rnd = new GridRandom();
+                Random age = new GridRandom();
+
+                while (!stop.get())
+                    cache.put(rnd.nextInt(2000), new Person(age.nextInt(3000) - 1000));
+
+                return null;
+            }
+        }, 20);
+
+        Thread.sleep(30 * 1000);
+
+        stop.set(true);
+
+        fut2.get(10 * 1000);
+        fut1.get(10 * 1000);
+    }
+
+    /**
      *
      */
     private static class Person implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private int age;
 
         /**
