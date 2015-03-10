@@ -32,7 +32,7 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
     private IgniteDataStreamerImpl dataLdr;
 
     /**
-     * Default constructor for {@link Externalizable} support.
+     * Default constructor for {@link java.io.Externalizable} support.
      */
     public IgniteDataStreamerFuture() {
         // No-op.
@@ -42,7 +42,7 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
      * @param ctx Context.
      * @param dataLdr Data streamer.
      */
-    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
+    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;
