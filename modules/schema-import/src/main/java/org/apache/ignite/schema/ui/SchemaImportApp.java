@@ -45,7 +45,7 @@ import static org.apache.ignite.schema.ui.Controls.*;
  * Schema load application.
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
-public class SchemaLoadApp extends Application {
+public class SchemaImportApp extends Application {
     /** Presets for database settings. */
     private static class Preset {
         /** Name in preferences. */

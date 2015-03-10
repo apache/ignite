@@ -1,4 +1,4 @@
-Apache Ignite Schema-loading Module
+Apache Ignite Schema Import Module
 ------------------------------
 
 Apache Ignite Schema-loading module provides a simple utility that automatically reads the database schema,

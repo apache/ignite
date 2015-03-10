@@ -33,7 +33,7 @@
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>ignite-schema-load</artifactId>
+    <artifactId>ignite-schema-import</artifactId>
 
     <dependencies>
         <dependency>
@@ -76,7 +76,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.apache.ignite.schema.ui.SchemaLoadApp</mainClass>
+                            <mainClass>org.apache.ignite.schema.ui.SchemaImportApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
