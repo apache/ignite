@@ -75,23 +75,13 @@ import static org.h2.result.SortOrder.*;
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
  * fulltext indexing can be performed using Lucene. For each registered space
  * the SPI will create respective schema, for default space (where space name is null) schema
- * with name {@code PUBLIC} will be used. To avoid name conflicts user should not explicitly name
- * a schema {@code PUBLIC}.
+ * with name {@code ""} will be used. To avoid name conflicts user should not explicitly name
+ * a schema {@code ""}.
  * <p>
  * For each registered {@link GridQueryTypeDescriptor} this SPI will create respective SQL table with
  * {@code '_key'} and {@code '_val'} fields for key and value, and fields from
  * {@link GridQueryTypeDescriptor#fields()}.
  * For each table it will create indexes declared in {@link GridQueryTypeDescriptor#indexes()}.
- * <h1 class="header">Some important defaults.</h1>
- * <ul>
- *     <li>All the data will be kept in memory</li>
- *     <li>Primitive types will not be indexed (e.g. java types which can be directly converted to SQL types)</li>
- *     <li>
- *         Key types will be converted to SQL types, so it is impossible to store one value type with
- *         different key types
- *     </li>
- * </ul>
- * @see IndexingSpi
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
@@ -431,7 +421,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connectionForThread(null);
+        Connection c = connectionForThread(tbl.schema());
 
         Statement stmt = null;
 
@@ -638,7 +628,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeQuery(String space, String qry, @Nullable Collection<Object> params,
         TableDescriptor tbl) throws IgniteCheckedException {
-        Connection conn = connectionForThread(tbl != null ? tbl.schema() : "PUBLIC");
+        Connection conn = connectionForThread(tbl.schema());
 
         String sql = generateQuery(qry, tbl);
 
@@ -807,12 +797,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!validateTypeDescriptor(spaceName, type))
             return false;
 
-        Schema schema = schemas.get(schema(spaceName));
+        String schemaName = schema(spaceName);
+
+        Schema schema = schemas.get(schemaName);
 
         TableDescriptor tbl = new TableDescriptor(schema, type);
 
         try {
-            Connection conn = connectionForThread(null);
+            Connection conn = connectionForThread(schemaName);
 
             createTable(schema, tbl, conn);
 
@@ -1044,7 +1036,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Utils.serializer = h2Serializer(ctx != null && ctx.deploy().enabled());
 
-        String dbName = UUID.randomUUID().toString();
+        String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
@@ -1218,8 +1210,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO
 
-        Connection conn = connectionForThread(null);
-
         for (Schema schema : schemas.values()) {
             for (TableDescriptor desc : schema.tbls.values()) {
                 desc.tbl.close();
@@ -1229,22 +1219,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        if (conn != null) {
-            Statement stmt = null;
-
-            try {
-                stmt = conn.createStatement();
-
-                stmt.execute("DROP ALL OBJECTS DELETE FILES");
-                stmt.execute("SHUTDOWN");
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Failed to shutdown database.", e);
-            }
-            finally {
-                U.close(stmt, log);
-            }
-        }
+        executeStatement("INFORMATION_SCHEMA", "SHUTDOWN");
 
         for (Connection c : conns)
             U.close(c, log);
