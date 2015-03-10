@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs;
 
+import org.jetbrains.annotations.*;
+
 /**
  * Exception thrown when Ignite detects that remote HDFS version differs from version of HDFS libraries
  * in Ignite classpath.
@@ -26,17 +28,30 @@ public class IgfsInvalidHdfsVersionException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Error message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
     public IgfsInvalidHdfsVersionException(String msg) {
         super(msg);
     }
 
     /**
-     * @param msg Error message.
-     * @param cause Error cause.
+     * Constructor.
+     *
+     * @param cause Cause.
      */
-    public IgfsInvalidHdfsVersionException(String msg, Throwable cause) {
+    public IgfsInvalidHdfsVersionException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    public IgfsInvalidHdfsVersionException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
