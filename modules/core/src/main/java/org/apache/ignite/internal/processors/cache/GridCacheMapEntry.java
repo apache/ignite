@@ -1616,7 +1616,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (op == GridCacheOperation.TRANSFORM) {
                         transformClo = writeObj;
 
-                        writeObj = ((IgniteClosure<V, V>)writeObj).apply(rawGetOrUnmarshalUnlocked(true));
+                        oldVal = rawGetOrUnmarshalUnlocked(true);
+
+                        CacheInvokeEntry<K, V> entry = new CacheInvokeEntry(cctx, key, oldVal);
+
+                        EntryProcessor<K, V, ?> entryProcessor = (EntryProcessor<K, V, ?>) writeObj;
+
+                        Object computed = entryProcessor.process(entry, invokeArgs);
+
+                        writeObj = cctx.unwrapTemporary(entry.getValue());
+
+                        if (computed != null)
+                            invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+
                         valBytes = null;
                     }
 
