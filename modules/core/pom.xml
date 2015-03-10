@@ -163,11 +163,11 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <excludes>
-                        <exclude>**/ClassesGenerator*</exclude>
-                    </excludes>
-                </configuration>
+                <!--<configuration>-->
+                    <!--<excludes>-->
+                        <!--<exclude>**/ClassesGenerator*</exclude>-->
+                    <!--</excludes>-->
+                <!--</configuration>-->
             </plugin>
 
             <plugin>
