@@ -22,29 +22,35 @@ import org.jetbrains.annotations.*;
 /**
  * Exception thrown when parent supposed to be a directory is a file.
  */
-public class IgfsParentNotDirectoryException extends IgfsInvalidPathException {
+public class IgfsParentNotDirectoryException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Error message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
     public IgfsParentNotDirectoryException(String msg) {
         super(msg);
     }
 
     /**
-     * @param cause Exception cause.
+     * Constructor.
+     *
+     * @param cause Cause.
      */
     public IgfsParentNotDirectoryException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param msg Error message.
-     * @param cause Exception cause.
+     * Constructor.
+     *
+     * @param msg   Message.
+     * @param cause Cause.
      */
-    public IgfsParentNotDirectoryException(String msg, @Nullable Throwable cause) {
+    public IgfsParentNotDirectoryException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

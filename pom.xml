@@ -1367,7 +1367,7 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>process-resources</phase>
+                                <phase>process-classes</phase>
                                 <configuration>
                                     <target>
                                         <java
