@@ -17,10 +17,25 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.configuration.*;
+
 import java.lang.annotation.*;
 
 /**
- * Annotation for immutable objects.
+ * If cache configuration flag {@link CacheConfiguration#isCopyOnGet()} is set
+ * then for each operation implying return value copy of the value stored in cache is created.
+ * Also if this flag is set copies are created for values passed to {@link CacheInterceptor} and
+ * to {@link org.apache.ignite.cache.IgniteEntryProcessor}.
+ * <p>
+ * Copies are not created for types marked with {@link IgniteImmutable} annotation and for known
+ * immutable types:
+ * <ul>
+ *     <li>Boxed primitives ({@link Integer}, {@link Long}, ...)</li>
+ *     <li>{@link String}</li>
+ *     <li>{@link java.util.UUID}</li>
+ *     <li>{@link java.math.BigDecimal}</li>
+ *     <li>{@link org.apache.ignite.lang.IgniteUuid}</li>
+ * </ul>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -1600,14 +1600,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets flag indicating whether copy of of the value stored in cache should be created
+     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * passed to {@link CacheInterceptor} and to {@link org.apache.ignite.cache.IgniteEntryProcessor}.
+     * <p>
+     * Copies are not created for immutable types, see {@link IgniteImmutable}.
+     *
      * @return Copy on get flag.
+     * @see IgniteImmutable
      */
     public boolean isCopyOnGet() {
         return cpOnGet;
     }
 
     /**
+     * Set copy on get flag.
+     *
      * @param cpOnGet Copy on get flag.
+     * @see #isCopyOnGet
      */
     public void setCopyOnGet(boolean cpOnGet) {
         this.cpOnGet = cpOnGet;
