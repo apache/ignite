@@ -42,7 +42,7 @@ import static javafx.embed.swing.SwingFXUtils.*;
 import static org.apache.ignite.schema.ui.Controls.*;
 
 /**
- * Schema load application.
+ * Schema Import utility application.
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaImportApp extends Application {
@@ -213,7 +213,7 @@ public class SchemaImportApp extends Application {
     private final Properties prefs = new Properties();
 
     /** File path for storing on local file system. */
-    private final File prefsFile = new File(System.getProperty("user.home"), ".ignite-schema-load");
+    private final File prefsFile = new File(System.getProperty("user.home"), ".ignite-schema-import");
 
     /** Empty POJO fields model. */
     private static final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
@@ -221,7 +221,7 @@ public class SchemaImportApp extends Application {
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
         @Override public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, "ignite-schema-load-worker");
+            Thread t = new Thread(r, "ignite-schema-import-worker");
 
             t.setDaemon(true);
 
@@ -1269,7 +1269,7 @@ public class SchemaImportApp extends Application {
             preset.user = getStringProp(key + "user", preset.user);
         }
 
-        primaryStage.setTitle("Apache Ignite Auto Schema Load Utility");
+        primaryStage.setTitle("Apache Ignite Auto Schema Import Utility");
 
         primaryStage.getIcons().addAll(
             image("ignite", 16),
@@ -1324,11 +1324,11 @@ public class SchemaImportApp extends Application {
         rdbmsCb.getSelectionModel().select(getIntProp("jdbc.db.preset", 0));
         jdbcDrvJarTf.setText(getStringProp("jdbc.driver.jar", "h2.jar"));
         jdbcDrvClsTf.setText(getStringProp("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(getStringProp("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
+        jdbcUrlTf.setText(getStringProp("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
         userTf.setText(getStringProp("jdbc.user", "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(getStringProp("out.folder", userHome + "/ignite-schema-load/out"));
+        outFolderTf.setText(getStringProp("out.folder", userHome + "/ignite-schema-import/out"));
 
         pkgTf.setText(getStringProp("pojo.package", "org.apache.ignite"));
         pojoIncludeKeysCh.setSelected(getBoolProp("pojo.include", true));
@@ -1370,7 +1370,7 @@ public class SchemaImportApp extends Application {
      */
     private void savePreferences() {
         try (FileOutputStream out = new FileOutputStream(prefsFile)) {
-            prefs.store(out, "Apache Ignite Schema Load Utility");
+            prefs.store(out, "Apache Ignite Schema Import Utility");
         }
         catch (IOException e) {
             MessageBox.errorDialog(owner, "Failed to save preferences!", e);
@@ -1408,7 +1408,7 @@ public class SchemaImportApp extends Application {
     }
 
     /**
-     * Schema load utility launcher.
+     * Schema Import utility launcher.
      *
      * @param args Command line arguments passed to the application.
      */

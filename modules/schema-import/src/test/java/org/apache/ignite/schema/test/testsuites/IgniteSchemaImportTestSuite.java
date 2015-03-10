@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.load.testsuites;
+package org.apache.ignite.schema.test.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.schema.load.generator.*;
-import org.apache.ignite.schema.load.parser.*;
+import org.apache.ignite.schema.test.generator.*;
+import org.apache.ignite.schema.test.parser.*;
 
 /**
- * Ignite Schema Load Utility Tests.
+ * Ignite Schema Import Utility Tests.
  */
 public class IgniteSchemaImportTestSuite {
     /**
@@ -30,7 +30,7 @@ public class IgniteSchemaImportTestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Apache Schema Load Utility Test Suite");
+        TestSuite suite = new TestSuite("Ignite Apache Schema Import Utility Test Suite");
 
         suite.addTestSuite(PojoGeneratorTest.class);
         suite.addTestSuite(XmlGeneratorTest.class);

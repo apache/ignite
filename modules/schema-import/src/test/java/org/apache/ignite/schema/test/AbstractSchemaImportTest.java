@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.load;
+package org.apache.ignite.schema.test;
 
 import junit.framework.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -30,14 +30,14 @@ import java.util.List;
 import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 
 /**
- * Base functional for ignite-schema-loader tests.
+ * Base functional for Ignite Schema Import utility tests.
  */
 public abstract class AbstractSchemaImportTest extends TestCase {
     /** DB connection URL. */
     private static final String CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Path to temp folder where generated POJOs will be saved. */
-    protected static final String OUT_DIR_PATH = System.getProperty("java.io.tmpdir") + "/ignite-schema-loader/out";
+    protected static final String OUT_DIR_PATH = System.getProperty("java.io.tmpdir") + "/ignite-schema-import/out";
 
     /** Auto confirmation of file conflicts. */
     protected ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {

@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.load.parser;
+package org.apache.ignite.schema.test.parser;
 
-import org.apache.ignite.schema.load.*;
+import org.apache.ignite.schema.test.*;
 import org.apache.ignite.schema.model.*;
 
 import java.math.*;
@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Tests for metadata parsing.
  */
-public class DbMetadataParserTest extends AbstractSchemaLoaderTest {
+public class DbMetadataParserTest extends AbstractSchemaImportTest {
     /**
      * Check that field is correspond to expected.
      *
