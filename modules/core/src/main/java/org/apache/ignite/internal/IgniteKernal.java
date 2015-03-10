@@ -1118,22 +1118,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : F.view(System.getProperties(), new P1<Object>() {
-                @Override public boolean apply(Object o) {
-                    String name = (String)o;
-
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorRequiredProperty(name);
-                }
-            }).entrySet()) {
+            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
-                Object val = ctx.nodeAttribute(key);
+                if (incProps == null || U.containsStringArray(incProps, key, true) ||
+                    U.isVisorRequiredProperty(key)) {
+                    Object val = ctx.nodeAttribute(key);
 
-                if (val != null && !val.equals(e.getValue()))
-                    U.warn(log, "System property will override environment variable with the same name: " + key);
+                    if (val != null && !val.equals(e.getValue()))
+                        U.warn(log, "System property will override environment variable with the same name: " + key);
 
-                ctx.addNodeAttribute(key, e.getValue());
+                    ctx.addNodeAttribute(key, e.getValue());
+                }
             }
 
             if (log.isDebugEnabled())
@@ -1912,8 +1908,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isDebugEnabled())
-            for (Object key : U.asIterable(System.getProperties().keys()))
-                log.debug("System property [" + key + '=' + System.getProperty((String) key) + ']');
+            for (Map.Entry<Object, Object> entry : snapshot().entrySet())
+                log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
 
     /**
