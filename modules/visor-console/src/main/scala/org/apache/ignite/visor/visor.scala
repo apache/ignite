@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
+import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
@@ -48,13 +48,12 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
+import org.apache.ignite.visor.commands.VisorConsole.consoleReader
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
-import scala.io.StdIn
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.reflect.ClassTag
 import scala.util.control.Breaks._
 
 /**
@@ -996,7 +995,7 @@ object visor extends VisorTag {
      * @param a Parameter.
      * @param dflt Value to return if `a` is `null`.
      */
-    def safe(@Nullable a: Any, dflt: Any = NA): String = {
+    def safe(@Nullable a: Any, dflt: Any = NA) = {
         assert(dflt != null)
 
         if (a != null) a.toString else dflt.toString
@@ -1009,9 +1008,8 @@ object visor extends VisorTag {
      * @param dflt Value to return if `arr` is `null` or empty.
      * @return String.
      */
-    def arr2Str[T: ClassTag](arr: Array[T], dflt: Any = NA): String = {
+    def arr2Str[T](arr: Array[T], dflt: Any = NA) =
         if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
-    }
 
     /**
      * Converts `Boolean` to 'on'/'off' string.
@@ -1019,9 +1017,7 @@ object visor extends VisorTag {
      * @param bool Boolean value.
      * @return String.
      */
-    def bool2Str(bool: Boolean): String = {
-        if (bool) "on" else "off"
-    }
+    def bool2Str(bool: Boolean) = if (bool) "on" else "off"
 
     /**
      * Reconstructs string presentation for given argument.
@@ -2057,14 +2053,12 @@ object visor extends VisorTag {
      * @param prompt User prompt.
      * @param mask Mask character (if `None`, no masking will be applied).
      */
-    private def readLineOpt(prompt: String, mask: Option[Char]): Option[String] =
+    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] =
         try {
-            val reader = new scala.tools.jline.console.ConsoleReader()
-
             val s = if (mask.isDefined)
-                reader.readLine(prompt, mask.get)
+                consoleReader().readLine(prompt, mask.get)
             else
-                reader.readLine(prompt)
+                consoleReader().readLine(prompt)
 
             Option(s)
         }
@@ -2084,11 +2078,15 @@ object visor extends VisorTag {
 
         (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
 
-        println("\nC: Cancel")
+        nl()
 
-        StdIn.readLine("\nChoose node: ") match {
-            case "c" | "C" => None
-            case idx =>
+        println("C: Cancel")
+
+        nl()
+
+        readLineOpt("Choose node: ") match {
+            case Some("c") | Some("C") | None => None
+            case Some(idx) =>
                 try
                     Some(ids(idx.toInt - 1))
                 catch {

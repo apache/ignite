@@ -102,7 +102,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
         log = U.logger(cctx.kernalContext(), logRef, this);
 
-        rent = new GridFutureAdapter<Object>(cctx.kernalContext()) {
+        rent = new GridFutureAdapter<Object>() {
             @Override public String toString() {
                 return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ", map=" + map + ']';
             }
@@ -437,7 +437,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
             clearDeferredDeletes();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
         }
 
         return cctx.closures().callLocalSafe(new GPC<Boolean>() {

@@ -305,7 +305,6 @@ public class CacheManager implements javax.cache.CacheManager {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
         ensureNotClosed();

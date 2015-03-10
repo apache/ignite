@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -763,7 +762,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         IgniteInternalFuture<IgniteInternalTx> prepareFut = prepFut.get();
 
-        prepareFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+        prepareFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
             @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                 GridNearTxFinishFuture fut0 = commitFut.get();
 
@@ -832,7 +831,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             }
         }
         else {
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                     try {
                         // Check for errors in prepare future.
@@ -885,12 +884,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     ) {
         if (state() != PREPARING) {
             if (timedOut())
-                return new GridFinishedFuture<>(cctx.kernalContext(),
+                return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(),
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
@@ -966,7 +965,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             if (prep != null)
                 return (IgniteInternalFuture<IgniteInternalTx>)(IgniteInternalFuture)prep;
 
-            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
@@ -995,7 +994,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             }
         }
         else
-            prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            prep.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
@@ -1048,7 +1047,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             fut.finish();
         }
         else
-            prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            prep.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
@@ -1077,13 +1076,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
@@ -1109,8 +1108,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
@@ -1228,65 +1227,5 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxLocal.class, this, "mappings", mappings.keySet(), "super", super.toString());
-    }
-
-    /**
-     *
-     */
-    private static class PessimisticPrepareFuture<K, V> extends GridFutureAdapter<IgniteInternalTx> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Transaction. */
-        @GridToStringExclude
-        private IgniteInternalTx tx;
-
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public PessimisticPrepareFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         * @param tx Transaction.
-         */
-        private PessimisticPrepareFuture(GridKernalContext ctx, IgniteInternalTx tx) {
-            super(ctx);
-            this.tx = tx;
-        }
-
-        /**
-         * @param e Exception.
-         */
-        void onError(Throwable e) {
-            boolean marked = tx.setRollbackOnly();
-
-            if (e instanceof IgniteTxRollbackCheckedException) {
-                if (marked) {
-                    try {
-                        tx.rollback();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                    }
-                }
-            }
-
-            onDone(tx, e);
-        }
-
-        /**
-         * Completes future.
-         */
-        void complete() {
-            onDone(tx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "PessimisticPrepareFuture[xidVer=" + tx.xidVersion() + ", done=" + isDone() + ']';
-        }
     }
 }

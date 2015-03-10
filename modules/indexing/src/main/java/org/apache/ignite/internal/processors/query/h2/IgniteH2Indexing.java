@@ -765,7 +765,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             c = connectionForSpace(space);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
 
         return queryTwoStep(space, GridSqlQuerySplitter.split(c, sqlQry, params));

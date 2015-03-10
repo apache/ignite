@@ -173,7 +173,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 final GridRestRequest req = createRestRequest(ses, msg);
 
                 if (req != null)
-                    hnd.handleAsync(req).listenAsync(new CI1<IgniteInternalFuture<GridRestResponse>>() {
+                    hnd.handleAsync(req).listen(new CI1<IgniteInternalFuture<GridRestResponse>>() {
                         @Override public void apply(IgniteInternalFuture<GridRestResponse> fut) {
                             GridClientResponse res = new GridClientResponse();
 
@@ -213,8 +213,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                     U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']',
                                         e);
                                 }
-                    }
-            });
+                        }
+                    });
                 else
                     U.error(log, "Failed to process client request (unknown packet type) [ses=" + ses +
                         ", msg=" + msg + ']');

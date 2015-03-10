@@ -39,20 +39,17 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
     implements CacheQueryFuture<R>, GridTimeoutObject {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    protected static IgniteLogger log;
 
     /** */
     private static final Object NULL = new Object();
 
     /** Cache context. */
     protected GridCacheContext<K, V> cctx;
-
-    /** Logger. */
-    protected IgniteLogger log;
 
     /** */
     protected final GridCacheQueryBean qry;
@@ -101,13 +98,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param loc Local query or not.
      */
     protected GridCacheQueryFutureAdapter(GridCacheContext<K, V> cctx, GridCacheQueryBean qry, boolean loc) {
-        super(cctx.kernalContext());
-
         this.cctx = cctx;
         this.qry = qry;
         this.loc = loc;
 
-        log = U.logger(ctx, logRef, GridCacheQueryFutureAdapter.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
 

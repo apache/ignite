@@ -70,6 +70,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** Log reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Cache name ({@code null} for default cache). */
     private final String cacheName;
 
@@ -87,9 +90,6 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** Mapping. */
     @GridToStringInclude
     private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;
@@ -170,6 +170,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
         this.ctx = ctx;
         this.cacheObjProc = ctx.cacheObjects();
+
+        if (log == null)
+            log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
@@ -378,9 +381,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         enterBusy();
 
         try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
 
-            resFut.listenAsync(rmvActiveFut);
+            resFut.listen(rmvActiveFut);
 
             activeFuts.add(resFut);
 
@@ -464,7 +467,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             if (e instanceof Error)
                 throw e;
 
-            return new IgniteFinishedFutureImpl<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(e);
         }
         finally {
             leaveBusy();
@@ -921,8 +924,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             isLocNode = node.equals(ctx.discovery().localNode());
 
             entries = newEntries();
-            curFut = new GridFutureAdapter<>(ctx);
-            curFut.listenAsync(signalC);
+            curFut = new GridFutureAdapter<>();
+            curFut.listen(signalC);
 
             sem = new Semaphore(parallelOps);
         }
@@ -941,7 +944,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             synchronized (this) {
                 curFut0 = curFut;
 
-                curFut0.listenAsync(lsnr);
+                curFut0.listen(lsnr);
 
                 for (IgniteDataLoaderEntry entry : newEntries)
                     entries.add(entry);
@@ -950,8 +953,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     entries0 = entries;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
-                    curFut.listenAsync(signalC);
+                    curFut = new GridFutureAdapter<>();
+                    curFut.listen(signalC);
                 }
             }
 
@@ -987,8 +990,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     curFut0 = curFut;
 
                     entries = newEntries();
-                    curFut = new GridFutureAdapter<>(ctx);
-                    curFut.listenAsync(signalC);
+                    curFut = new GridFutureAdapter<>();
+                    curFut.listen(signalC);
                 }
             }
 
@@ -1000,14 +1003,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             for (IgniteInternalFuture<Object> f : locFuts) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }
 
             for (IgniteInternalFuture<Object> f : reqs.values()) {
                 if (res == null)
-                    res = new GridCompoundFuture<>(ctx);
+                    res = new GridCompoundFuture<>();
 
                 res.add(f);
             }
@@ -1057,7 +1060,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);

@@ -63,7 +63,8 @@ public final class GridCacheMvcc {
 
         this.cctx = cctx;
 
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheMvcc.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMvcc.class);
     }
 
     /**

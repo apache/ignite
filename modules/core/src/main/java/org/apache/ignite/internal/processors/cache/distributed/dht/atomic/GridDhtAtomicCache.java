@@ -601,7 +601,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         @Override public IgniteInternalFuture<T> apply(T t, Exception e) {
                             return op.apply();
                         }
-                    }, ctx.kernalContext());
+                    });
 
                 saveFuture(holder, f);
 
@@ -865,7 +865,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash);
 
         if (statsEnabled)
-            updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            updateFut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
@@ -962,7 +962,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         break; // While.
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                     finally {
                         if (entry != null)
@@ -979,7 +979,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (success) {
                 sendTtlUpdateRequest(expiry);
 
-                return new GridFinishedFuture<>(ctx.kernalContext(), locVals);
+                return new GridFinishedFuture<>(locVals);
             }
         }
 
@@ -1021,7 +1021,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (forceFut.isDone())
             updateAllAsyncInternal0(nodeId, req, completionCb);
         else {
-            forceFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     updateAllAsyncInternal0(nodeId, req, completionCb);
                 }
@@ -2048,7 +2048,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                     assert f == null : f;
                                 }
-                            } else if (readers.contains(node.id())) // Reader became primary or backup.
+                            }
+                            else if (readers.contains(node.id())) // Reader became primary or backup.
                                 entry.removeReader(node.id(), req.messageId());
                             else
                                 res.addSkippedIndex(firstEntryIdx + i);
@@ -2775,7 +2776,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      *
      */
-    private static class FinishedLockFuture extends GridFinishedFutureEx<Boolean> implements GridDhtFuture<Boolean> {
+    private static class FinishedLockFuture extends GridFinishedFuture<Boolean> implements GridDhtFuture<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 

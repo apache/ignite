@@ -93,11 +93,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
 
         try {
-            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>();
 
             workersCnt.increment();
 
@@ -106,7 +106,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
+                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
                             @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());
@@ -159,7 +159,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Failed to handle request " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
                     "(protocol handler was interrupted when awaiting grid start).", e));
             }
         }
@@ -183,10 +183,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 updateSession(req, subjCtx);
                 res.sessionTokenBytes(ZERO_BYTES);
 
-                return new GridFinishedFuture<>(ctx, res);
+                return new GridFinishedFuture<>(res);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
             }
         }
 
@@ -197,7 +197,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
 
         if (res == null)
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
         final SecurityContext subjCtx0 = subjCtx;

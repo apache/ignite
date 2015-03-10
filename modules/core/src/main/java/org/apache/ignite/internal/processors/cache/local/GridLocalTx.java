@@ -113,10 +113,10 @@ class GridLocalTx extends IgniteTxLocalAdapter {
         try {
             prepare();
 
-            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -155,7 +155,7 @@ class GridLocalTx extends IgniteTxLocalAdapter {
         catch (IgniteCheckedException e) {
             state(UNKNOWN);
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         GridLocalTxFuture fut = this.fut.get();
@@ -187,10 +187,10 @@ class GridLocalTx extends IgniteTxLocalAdapter {
 
             state(ROLLED_BACK);
 
-            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

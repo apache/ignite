@@ -38,8 +38,8 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -52,10 +52,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  * DHT atomic cache near update future.
  */
-public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implements GridCacheAtomicFuture<Object> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
+    implements GridCacheAtomicFuture<Object>{
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -145,28 +143,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private volatile long mapTime;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridNearAtomicUpdateFuture() {
-        cctx = null;
-        mappings = null;
-        futVer = null;
-        retval = false;
-        fastMap = false;
-        expiryPlc = null;
-        filter = null;
-        syncMode = null;
-        op = null;
-        nearEnabled = false;
-        subjId = null;
-        taskNameHash = 0;
-    }
-
-    /**
      * @param cctx Cache context.
      * @param cache Cache instance.
-     * @param op Update operation.
      * @param syncMode Write synchronization mode.
+     * @param op Update operation.
      * @param keys Keys to update.
      * @param vals Values or transform closure.
      * @param invokeArgs Optional arguments for entry processor.
@@ -196,8 +176,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         UUID subjId,
         int taskNameHash
     ) {
-        super(cctx.kernalContext());
-
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
@@ -220,7 +198,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
-        log = U.logger(ctx, logRef, GridFutureAdapter.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
 
         mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
 
@@ -448,7 +427,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
@@ -786,7 +765,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         singleNodeId = nodeId;
         singleReq = req;
 
-        if (ctx.localNodeId().equals(nodeId)) {
+        if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicUpdateRequest req,

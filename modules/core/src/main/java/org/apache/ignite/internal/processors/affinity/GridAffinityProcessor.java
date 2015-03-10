@@ -307,7 +307,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
                 cctx.cacheObjectContext());
 
-            IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(ctx, info));
+            IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(info));
 
             if (old != null)
                 info = old.get();

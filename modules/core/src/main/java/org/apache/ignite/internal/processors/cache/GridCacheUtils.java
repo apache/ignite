@@ -1264,7 +1264,7 @@ public class GridCacheUtils {
         assert ctx != null;
         assert prj != null;
 
-        ctx.tm().txContextReset();
+        ctx.tm().resetContext();
 
         return prj.txStartEx(concurrency, isolation);
     }
@@ -1281,15 +1281,6 @@ public class GridCacheUtils {
             ", isolation=" + tx.isolation() + ", state=" + tx.state() + ", invalidate=" + tx.isInvalidate() +
             ", rollbackOnly=" + tx.isRollbackOnly() + ", nodeId=" + tx.nodeId() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
-    }
-
-    /**
-     * @param ctx Cache context.
-     */
-    public static void resetTxContext(GridCacheSharedContext ctx) {
-        assert ctx != null;
-
-        ctx.tm().txContextReset();
     }
 
     /**

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -35,11 +36,14 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Nodes order comparator. */
     private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
+
+    /** Logger reference. */
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Cache context. */
     private final GridCacheContext ctx;
@@ -57,11 +61,12 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
      * @param ctx Cache context.
      * @param availableNodes Available nodes.
      */
-    public GridDhtAssignmentFetchFuture(GridCacheContext ctx, long topVer, Collection<ClusterNode> availableNodes) {
-        super(ctx.kernalContext());
-
+    public GridDhtAssignmentFetchFuture(
+        GridCacheContext ctx,
+        long topVer,
+        Collection<ClusterNode> availableNodes
+    ) {
         this.ctx = ctx;
-
         this.topVer = topVer;
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
@@ -69,6 +74,9 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
         Collections.sort(tmp, CMP);
 
         this.availableNodes = tmp;
+
+        if (log == null)
+            log = U.logger(ctx.kernalContext(), logRef, GridDhtAssignmentFetchFuture.class);
     }
 
     /**

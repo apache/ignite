@@ -136,7 +136,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable IgniteTxLocalEx tx,
         CacheEntryPredicate[] filter) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
 
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 

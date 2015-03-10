@@ -33,7 +33,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -43,10 +42,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * DHT atomic cache backup update future.
  */
-public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implements GridCacheAtomicFuture<Void> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
+    implements GridCacheAtomicFuture<Void> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -89,13 +86,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     private volatile long mapTime;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridDhtAtomicUpdateFuture() {
-        // No-op.
-    }
-
-    /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
      * @param writeVer Write version.
@@ -110,8 +100,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx.kernalContext());
-
         this.cctx = cctx;
         this.writeVer = writeVer;
 
@@ -122,7 +110,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
 
         forceTransformBackups = updateReq.forceTransformBackups();
 
-        log = U.logger(ctx, logRef, GridDhtAtomicUpdateFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 
         keys = new ArrayList<>(updateReq.keys().size());
     }
@@ -232,7 +221,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
         for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
 
-            if (!nodeId.equals(ctx.localNodeId())) {
+            if (!nodeId.equals(cctx.localNodeId())) {
                 GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
@@ -285,7 +274,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
             GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
-                ClusterNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = cctx.discovery().node(nodeId);
 
                 // Node left the grid.
                 if (node == null)

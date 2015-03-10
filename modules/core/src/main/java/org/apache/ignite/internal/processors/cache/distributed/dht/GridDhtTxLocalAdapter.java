@@ -486,7 +486,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(cacheCtx, ex.partition());
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
         }
     }
 
@@ -512,13 +512,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(entries))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
@@ -592,7 +592,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -619,7 +619,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 skipped + ']');
 
         if (passedKeys.isEmpty())
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         GridDhtTransactionalCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
@@ -653,8 +653,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
@@ -817,7 +817,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             rollbackAsync().get();
         }
         finally {
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
         }
     }
 

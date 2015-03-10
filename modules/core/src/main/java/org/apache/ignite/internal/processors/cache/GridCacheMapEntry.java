@@ -151,7 +151,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long ttl,
         int hdrId)
     {
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         key = (KeyCacheObject)cctx.kernalContext().cacheObjects().prepareForCache(key, cctx);
 

@@ -28,7 +28,6 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -36,9 +35,6 @@ import java.util.concurrent.atomic.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Futures. */
     private final ConcurrentLinkedDeque8<IgniteInternalFuture<T>> futs = new ConcurrentLinkedDeque8<>();
 
@@ -68,38 +64,27 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     private AtomicReference<Throwable> err = new AtomicReference<>();
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     *
      */
     public GridCompoundFuture() {
         // No-op.
     }
 
     /**
-     * @param ctx Context.
-     */
-    public GridCompoundFuture(GridKernalContext ctx) {
-        super(ctx);
-    }
-
-    /**
-     * @param ctx Context.
      * @param rdc Reducer.
      */
-    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc) {
-        super(ctx);
-
+    public GridCompoundFuture(@Nullable IgniteReducer<T, R> rdc) {
         this.rdc = rdc;
     }
 
     /**
-     * @param ctx Context.
      * @param rdc Reducer to add.
      * @param futs Futures to add.
      */
-    public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Iterable<IgniteInternalFuture<T>> futs) {
-        super(ctx);
-
+    public GridCompoundFuture(
+        @Nullable IgniteReducer<T, R> rdc,
+        @Nullable Iterable<IgniteInternalFuture<T>> futs
+    ) {
         this.rdc = rdc;
 
         addAll(futs);
@@ -174,7 +159,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
         pending.add(fut);
         futs.add(fut);
 
-        fut.listenAsync(new Listener());
+        fut.listen(new Listener());
 
         if (isCancelled())
             try {
@@ -248,14 +233,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     res.compareAndSet(null, rdc.reduce(), false, true);
             }
             catch (RuntimeException e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
                 return;
             }
             catch (AssertionError e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
@@ -320,13 +305,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                         res.compareAndSet(null, rdc.reduce(), false, true);
                 }
                 catch (RuntimeException e) {
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                     // Exception in reducer is a bug, so we bypass checkComplete here.
                     onDone(e);
                 }
                 catch (AssertionError e) {
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                     // Bypass checkComplete because need to rethrow.
                     onDone(e);
@@ -335,36 +320,27 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                 }
             }
             catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
-
                 err.compareAndSet(null, e);
             }
             catch (ClusterTopologyCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Topology exception [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
-
                 err.compareAndSet(null, e);
             }
             catch (IgniteFutureCancelledCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to execute compound future reducer [lsnr=" + this + ", e=" + e + ']');
-
                 err.compareAndSet(null, e);
             }
             catch (IgniteCheckedException e) {
                 if (!ignoreFailure(e))
-                    U.error(log, "Failed to execute compound future reducer: " + this, e);
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 err.compareAndSet(null, e);
             }
             catch (RuntimeException e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 err.compareAndSet(null, e);
             }
             catch (AssertionError e) {
-                U.error(log, "Failed to execute compound future reducer: " + this, e);
+                U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Bypass checkComplete because need to rethrow.
                 onDone(e);

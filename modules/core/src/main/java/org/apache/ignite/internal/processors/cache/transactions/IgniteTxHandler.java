@@ -173,10 +173,9 @@ public class IgniteTxHandler {
         final IgniteInClosure<GridNearTxPrepareResponse> completeCb
     ) {
 
-        IgniteInternalFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+        IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
-            ctx.kernalContext(),
             fut,
             new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception ex) {
@@ -240,7 +239,7 @@ public class IgniteTxHandler {
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         GridDhtTxLocal tx;
@@ -326,7 +325,7 @@ public class IgniteTxHandler {
 
             final GridDhtTxLocal tx0 = tx;
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            fut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> txFut) {
                     try {
                         txFut.get();
@@ -343,7 +342,7 @@ public class IgniteTxHandler {
             return fut;
         }
         else
-            return new GridFinishedFuture<>(ctx.kernalContext(), (IgniteInternalTx)null);
+            return new GridFinishedFuture<>((IgniteInternalTx)null);
     }
 
     /**
@@ -443,7 +442,7 @@ public class IgniteTxHandler {
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
-            return new GridFinishedFutureEx<IgniteInternalTx>(locTx);
+            return new GridFinishedFuture<IgniteInternalTx>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
@@ -459,7 +458,7 @@ public class IgniteTxHandler {
             nearFinishFut = finishDhtLocal(nodeId, locTx, req);
 
         if (colocatedFinishFut != null && nearFinishFut != null) {
-            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>(ctx.kernalContext());
+            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>();
 
             res.add(colocatedFinishFut);
             res.add(nearFinishFut);
@@ -574,7 +573,7 @@ public class IgniteTxHandler {
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
-                commitFut.listenAsync(CU.errorLogger(log));
+                commitFut.listen(CU.errorLogger(log));
 
                 return commitFut;
             }
@@ -590,7 +589,7 @@ public class IgniteTxHandler {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
@@ -602,12 +601,12 @@ public class IgniteTxHandler {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -637,7 +636,7 @@ public class IgniteTxHandler {
             if (tx != null)
                 return tx.rollbackAsync();
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -757,7 +756,7 @@ public class IgniteTxHandler {
             finish(nodeId, nearTx, req);
 
         if (dhtTx != null && !dhtTx.done()) {
-            dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            dhtTx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
                     sendReply(nodeId, req);
                 }

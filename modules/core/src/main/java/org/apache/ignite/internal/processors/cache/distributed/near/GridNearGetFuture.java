@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -47,14 +46,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Map<K, V>>
     implements GridCacheFuture<Map<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Default max remap count value. */
     public static final int DFLT_MAX_REMAP_CNT = 3;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Maximum number of attempts to remap key to the same primary node. */
     private static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
@@ -83,9 +82,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Transaction. */
     private IgniteTxLocalEx tx;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /** Trackable flag. */
     private boolean trackable;
 
@@ -106,13 +102,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearGetFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -161,7 +150,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
 
-        log = U.logger(ctx, logRef, GridNearGetFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearGetFuture.class);
     }
 
     /**
@@ -330,7 +320,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                             remapKeys.add(key);
                     }
 
-                    long updTopVer = ctx.discovery().topologyVersion();
+                    long updTopVer = cctx.discovery().topologyVersion();
 
                     assert updTopVer > topVer : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -496,7 +486,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     val0 = (V)cctx.unwrapPortableIfNeeded(val0, !deserializePortable);
                     key0 = (K)cctx.unwrapPortableIfNeeded(key0, !deserializePortable);
 
-                    add(new GridFinishedFuture<>(cctx.kernalContext(), Collections.singletonMap(key0, val0)));
+                    add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                 }
                 else {
                     if (primary == null)
@@ -651,9 +641,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
@@ -670,13 +657,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         private long topVer;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param node Node.
          * @param keys Keys.
          * @param savedVers Saved entry versions.
@@ -686,8 +666,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             LinkedHashMap<KeyCacheObject, Boolean> keys,
             Map<KeyCacheObject, GridCacheVersion> savedVers,
             long topVer) {
-            super(cctx.kernalContext());
-
             this.node = node;
             this.keys = keys;
             this.savedVers = savedVers;
@@ -733,7 +711,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            long updTopVer = ctx.discovery().topologyVersion();
+            long updTopVer = cctx.discovery().topologyVersion();
 
             if (updTopVer > topVer) {
                 // Remap.
@@ -742,12 +720,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                final RemapTimeoutObject timeout = new RemapTimeoutObject(ctx.config().getNetworkTimeout(), topVer, e);
+                final RemapTimeoutObject timeout = new RemapTimeoutObject(
+                    cctx.kernalContext().config().getNetworkTimeout(), topVer, e);
 
-                ctx.discovery().topologyFuture(topVer + 1).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                cctx.discovery().topologyFuture(topVer + 1).listen(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> longIgniteFuture) {
                         if (timeout.finish()) {
-                            ctx.timeout().removeTimeoutObject(timeout);
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
                             // Remap.
                             map(keys.keySet(), F.t(node, keys), cctx.affinity().affinityTopologyVersion());
@@ -757,7 +736,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     }
                 });
 
-                ctx.timeout().addTimeoutObject(timeout);
+                cctx.kernalContext().timeout().addTimeoutObject(timeout);
             }
         }
 
@@ -794,9 +773,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
+                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
                         long readyTopVer = fut.get();
 

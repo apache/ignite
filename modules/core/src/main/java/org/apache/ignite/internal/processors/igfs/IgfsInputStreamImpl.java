@@ -494,7 +494,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
                 if (!evictFut.isDone()) {
                     pendingFuts.add(evictFut);
 
-                    evictFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
+                    evictFut.listen(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
                         @Override public void apply(IgniteInternalFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 

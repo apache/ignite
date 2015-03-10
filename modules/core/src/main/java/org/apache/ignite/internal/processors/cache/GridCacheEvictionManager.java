@@ -1062,7 +1062,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             EvictionFuture fut = curEvictFut.get();
 
             if (fut == null) {
-                curEvictFut.compareAndSet(null, new EvictionFuture(cctx.kernalContext()));
+                curEvictFut.compareAndSet(null, new EvictionFuture());
 
                 continue;
             }
@@ -1082,7 +1082,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         // Thread that prepares future should remove it and install listener.
                         curEvictFut.compareAndSet(fut, null);
 
-                        fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> f) {
                                 if (!busyLock.enterBusy()) {
                                     if (log.isDebugEnabled())
@@ -1113,11 +1113,11 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 }
                 else
                     // Infos were not added, create another future for next iteration.
-                    curEvictFut.compareAndSet(fut, new EvictionFuture(cctx.kernalContext()));
+                    curEvictFut.compareAndSet(fut, new EvictionFuture());
             }
             else
                 // Future has not been locked, create another future for next iteration.
-                curEvictFut.compareAndSet(fut, new EvictionFuture(cctx.kernalContext()));
+                curEvictFut.compareAndSet(fut, new EvictionFuture());
         }
     }
 
@@ -1518,10 +1518,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * Future for synchronized eviction. Result is a tuple: {evicted entries, rejected entries}.
      */
     private class EvictionFuture extends GridFutureAdapter<IgniteBiTuple<Collection<EvictionInfo>,
-                Collection<EvictionInfo>>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+        Collection<EvictionInfo>>> {
         /** */
         private final long id = idGen.incrementAndGet();
 
@@ -1569,20 +1566,6 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         /** Topology version future is processed on. */
         private long topVer;
-
-        /**
-         * @param ctx Context.
-         */
-        EvictionFuture(GridKernalContext ctx) {
-            super(ctx);
-        }
-
-        /**
-         * Required by {@code Externalizable}.
-         */
-        public EvictionFuture() {
-            assert false : "This should never happen.";
-        }
 
         /**
          * @return {@code True} if prepare lock was acquired.

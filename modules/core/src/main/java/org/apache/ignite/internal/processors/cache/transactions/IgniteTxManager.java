@@ -65,7 +65,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Committing transactions. */
-    private final ThreadLocal<IgniteInternalTx> threadCtx = new GridThreadLocalEx<>();
+    private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
@@ -393,7 +393,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
         // Start clean.
-        txContextReset();
+        resetContext();
 
         if (isCompleted(tx)) {
             if (log.isDebugEnabled())
@@ -498,7 +498,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
-            new GridCompoundFuture<>(context().kernalContext(),
+            new GridCompoundFuture<>(
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
                     @Override public boolean collect(IgniteInternalTx e) {
                         return true;
@@ -1233,7 +1233,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
 
             // 14. Clear context.
-            txContextReset();
+            resetContext();
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1308,7 +1308,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 10. Clear context.
-            txContextReset();
+            resetContext();
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1372,7 +1372,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 8. Clear context.
-            txContextReset();
+            resetContext();
 
             if (log.isDebugEnabled())
                 log.debug("Uncommitted from TM: " + tx);
@@ -1717,7 +1717,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * Commit ended.
      */
-    public void txContextReset() {
+    public void resetContext() {
         threadCtx.set(null);
     }
 
@@ -1867,7 +1867,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         if (commit)
-            tx.commitAsync().listenAsync(new CommitListener(tx));
+            tx.commitAsync().listen(new CommitListener(tx));
         else
             tx.rollbackAsync();
     }
@@ -1924,7 +1924,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         tx.writeMap().put(entry.txKey(), entry);
                 }
 
-                tx.commitAsync().listenAsync(new CommitListener(tx));
+                tx.commitAsync().listen(new CommitListener(tx));
             }
             else
                 tx.rollbackAsync();

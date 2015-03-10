@@ -36,8 +36,6 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -53,8 +51,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private static final int MAX_REMOVED_LOCKS = 10240;
 
     /** Pending locks per thread. */
-    private final GridThreadLocal<Queue<GridCacheMvccCandidate>> pending =
-        new GridThreadLocal<Queue<GridCacheMvccCandidate>>() {
+    private final ThreadLocal<Queue<GridCacheMvccCandidate>> pending =
+        new ThreadLocal<Queue<GridCacheMvccCandidate>>() {
             @Override protected Queue<GridCacheMvccCandidate> initialValue() {
                 return new LinkedList<>();
             }
@@ -727,6 +725,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Reset MVCC context.
+     */
+    public void contextReset() {
+        pending.set(new LinkedList<GridCacheMvccCandidate<K>>());
+    }
+
+    /**
      * Adds candidate to the list of near local candidates.
      *
      * @param threadId Thread ID.
@@ -936,7 +941,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Explicit locks release future.
      */
     public IgniteInternalFuture<?> finishExplicitLocks(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             GridDiscoveryTopologySnapshot snapshot = span.topologySnapshot();
@@ -956,7 +961,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Finish update future.
      */
     public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
+        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
@@ -998,7 +1003,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         assert topVer != 0;
 
         if (topVer < 0)
-            return new GridFinishedFuture(context().kernalContext());
+            return new GridFinishedFuture();
 
         final FinishLockFuture finishFut = new FinishLockFuture(
             keyFilter == null ?
@@ -1014,8 +1019,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         finishFuts.add(finishFut);
 
-        finishFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> e) {
+        finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override
+            public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 
                 // This call is required to make sure that the concurrent queue
@@ -1044,9 +1050,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      */
     private class FinishLockFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
         private final long topVer;
@@ -1057,21 +1060,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             new ConcurrentHashMap8<>();
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public FinishLockFuture() {
-            assert false;
-
-            topVer = 0;
-        }
-
-        /**
          * @param topVer Topology version.
          * @param entries Entries.
          */
         FinishLockFuture(Iterable<GridDistributedCacheEntry> entries, long topVer) {
-            super(cctx.kernalContext(), true);
-
             assert topVer > 0;
 
             this.topVer = topVer;

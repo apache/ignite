@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -120,7 +121,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         top = cctx.dht().topology();
 
-        startFut = new GridFutureAdapter<>(cctx.kernalContext(), false);
+        startFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -228,7 +229,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (cctx.config().getPreloadPartitionedDelay() >= 0) {
                 U.log(log, "Starting preloading in " + cctx.config().getPreloadMode() + " mode: " + cctx.name());
 
-                demandPool.syncFuture().listenAsync(new CI1<Object>() {
+                demandPool.syncFuture().listen(new CI1<Object>() {
                     @Override public void apply(Object t) {
                         U.log(log, "Completed preloading in " + cctx.config().getPreloadMode() + " mode " +
                             "[cache=" + cctx.name() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
@@ -322,7 +323,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (fut.isDone())
             processForceKeysRequest0(node, msg);
         else
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> t) {
                     processForceKeysRequest0(node, msg);
                 }
@@ -428,7 +429,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<Long>>() {
             @Override public void apply(IgniteInternalFuture<Long> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
@@ -497,20 +498,25 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             fut.init();
         else {
             if (topReadyFut == null)
-                startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                startFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
-                        fut.init();
+                        cctx.kernalContext().closure().runLocalSafe(
+                            new GridPlainRunnable() {
+                                @Override public void run() {
+                                    fut.init();
+                                }
+                            });
                     }
                 });
             else {
-                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
+                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>();
 
                 compound.add((IgniteInternalFuture<Object>)startFut);
                 compound.add((IgniteInternalFuture<Object>)topReadyFut);
 
                 compound.markInitialized();
 
-                compound.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                compound.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
                         fut.init();
                     }
