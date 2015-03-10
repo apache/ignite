@@ -23,31 +23,33 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Extras where attributes are set.
  */
 public class GridCacheAttributesEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
     /** Attributes data. */
-    private GridLeanMap<String, Object> attrData;
+    private GridLeanMap<UUID, Object> attrData;
 
     /**
      * Constructor.
      *
      * @param attrData Attributes data.
      */
-    public GridCacheAttributesEntryExtras(GridLeanMap<String, Object> attrData) {
+    public GridCacheAttributesEntryExtras(GridLeanMap<UUID, Object> attrData) {
         assert attrData != null;
 
         this.attrData = attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridLeanMap<String, Object> attributesData() {
+    @Override public GridLeanMap<UUID, Object> attributesData() {
         return attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 

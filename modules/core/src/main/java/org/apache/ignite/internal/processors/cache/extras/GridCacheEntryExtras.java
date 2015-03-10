@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Cache extras.
  */
@@ -29,13 +31,13 @@ public interface GridCacheEntryExtras<K> {
     /**
      * @return Attributes data.
      */
-    @Nullable public GridLeanMap<String, Object> attributesData();
+    @Nullable public GridLeanMap<UUID, Object> attributesData();
 
     /**
      * @param attrData Attributes data.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData);
+    public GridCacheEntryExtras<K> attributesData(GridLeanMap<UUID, Object> attrData);
 
     /**
      * @return MVCC.

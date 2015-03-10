@@ -15,30 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.igfs;
 
-import org.apache.ignite.igfs.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Exception indicating that directory can not be deleted because it is not empty.
+ * {@code IGFS} exception indicating that target resource is not found.
  */
-public class IgfsDirectoryNotEmptyException extends IgfsException {
+public class IgfsPathNotFoundException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Exception message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
-    public IgfsDirectoryNotEmptyException(String msg) {
+    public IgfsPathNotFoundException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of IGFS exception caused by nested exception.
+     * Constructor.
      *
-     * @param cause Exception cause.
+     * @param cause Cause.
      */
-    public IgfsDirectoryNotEmptyException(Throwable cause) {
+    public IgfsPathNotFoundException(Throwable cause) {
         super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg   Message.
+     * @param cause Cause.
+     */
+    public IgfsPathNotFoundException(@Nullable String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

@@ -15,34 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.igfs;
+package org.apache.ignite.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Node startup for IGFS performance benchmark.
+ * Exception indicating that path is directory, while it is expected to be a file.
  */
-public class IgfsNodeStartup {
+public class IgfsPathIsDirectoryException extends IgfsException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Start up an empty node with specified cache configuration.
+     * Constructor.
      *
-     * @param args Command line arguments, none required.
+     * @param msg Message.
      */
-    public static void main(String[] args) {
-        try (Ignite ignored = G.start("config/hadoop/default-config.xml")) {
-            // Wait until Ok is pressed.
-            JOptionPane.showMessageDialog(
-                null,
-                new JComponent[] {
-                    new JLabel("Ignite started."),
-                    new JLabel("Press OK to stop Ignite.")
-                },
-                "Ignite",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        }
+    public IgfsPathIsDirectoryException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cause Cause.
+     */
+    public IgfsPathIsDirectoryException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg   Message.
+     * @param cause Cause.
+     */
+    public IgfsPathIsDirectoryException(@Nullable String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

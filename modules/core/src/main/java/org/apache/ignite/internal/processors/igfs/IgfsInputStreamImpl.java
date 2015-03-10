@@ -397,7 +397,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
                     // File was deleted.
                     if (newInfo == null)
-                        throw new IgfsFileNotFoundException("Failed to read file block (file was concurrently " +
+                        throw new IgfsPathNotFoundException("Failed to read file block (file was concurrently " +
                                 "deleted) [path=" + path + ", blockIdx=" + blockIdx + ']');
 
                     fileInfo = newInfo;
@@ -495,15 +495,15 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
                     pendingFuts.add(evictFut);
 
                     evictFut.listen(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
-                        @Override public void apply(IgniteInternalFuture<byte[]> t) {
+                        @Override
+                        public void apply(IgniteInternalFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 
                             pendingFutsLock.lock();
 
                             try {
                                 pendingFutsCond.signalAll();
-                            }
-                            finally {
+                            } finally {
                                 pendingFutsLock.unlock();
                             }
                         }

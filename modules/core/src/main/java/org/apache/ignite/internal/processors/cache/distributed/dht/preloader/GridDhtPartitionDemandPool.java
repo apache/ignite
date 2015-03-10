@@ -1060,6 +1060,9 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      */
     private class SyncFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Remaining workers. */
         private Collection<DemandWorker> remaining;
 

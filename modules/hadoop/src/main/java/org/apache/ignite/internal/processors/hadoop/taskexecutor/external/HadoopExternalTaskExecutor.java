@@ -854,6 +854,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      */
     private class HadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, HadoopProcessDescriptor>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Child process ID. */
         private UUID childProcId;
 

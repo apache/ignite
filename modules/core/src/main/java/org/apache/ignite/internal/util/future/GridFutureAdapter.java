@@ -32,6 +32,9 @@ import java.util.concurrent.locks.*;
  * Future adapter.
  */
 public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Initial state. */
     private static final int INIT = 0;
 
@@ -421,6 +424,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      *
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private GridFutureAdapter<R> fut;
 

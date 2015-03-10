@@ -28,30 +28,30 @@ public class IgfsInvalidPathException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with given error message.
+     * Constructor.
      *
-     * @param msg Error message.
+     * @param msg Message.
      */
     public IgfsInvalidPathException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates exception with given exception cause.
+     * Constructor.
      *
-     * @param cause Exception cause.
+     * @param cause Cause.
      */
     public IgfsInvalidPathException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates exception with given error message and exception cause.
+     * Constructor.
      *
-     * @param msg Error message.
-     * @param cause Error cause.
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public IgfsInvalidPathException(String msg, @Nullable Throwable cause) {
+    public IgfsInvalidPathException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
