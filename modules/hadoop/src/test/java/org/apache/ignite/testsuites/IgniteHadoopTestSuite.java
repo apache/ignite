@@ -106,11 +106,11 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
-
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
 
+        // TODO: IGNITE-404: Uncomment when fixed.
+        //suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
+        //suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopGroupingTest.class.getName())));
