@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
-
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+package org.apache.ignite.tools.classgen;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.locks.*;
 import java.util.jar.*;
 
 /**
@@ -35,33 +32,8 @@ public class ClassesGenerator {
     private static final String FILE_PATH = "META-INF/classnames.properties";
 
     /** */
-    private static final String DFLT_BASE_PATH = U.getIgniteHome() + "/modules/core/src/main/resources";
-
-    /** */
-    private static final String HEADER =
-        "#\n" +
-        "# Licensed to the Apache Software Foundation (ASF) under one or more\n" +
-        "# contributor license agreements.  See the NOTICE file distributed with\n" +
-        "# this work for additional information regarding copyright ownership.\n" +
-        "# The ASF licenses this file to You under the Apache License, Version 2.0\n" +
-        "# (the \"License\"); you may not use this file except in compliance with\n" +
-        "# the License.  You may obtain a copy of the License at\n" +
-        "#\n" +
-        "#      http://www.apache.org/licenses/LICENSE-2.0\n" +
-        "#\n" +
-        "# Unless required by applicable law or agreed to in writing, software\n" +
-        "# distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
-        "# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
-        "# See the License for the specific language governing permissions and\n" +
-        "# limitations under the License.\n" +
-        "#";
-
-    /** */
-    private static final String[] PACKAGES = {
-        "org.apache.ignite",
-        "org.jdk8.backport",
-        "org.pcollections",
-        "com.romix.scala"
+    private static final String[] EXCLUDED_PACKAGES = {
+        "org.apache.ignite.tools"
     };
 
     /**
@@ -69,9 +41,13 @@ public class ClassesGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        String basePath = args.length > 0 ? args[0] : DFLT_BASE_PATH;
+        assert args.length >= 3;
 
-        ClassesGenerator gen = new ClassesGenerator(basePath, HEADER, PACKAGES);
+        String basePath = args[0];
+        String header = args[1];
+        String[] packages = args[2].split(":");
+
+        ClassesGenerator gen = new ClassesGenerator(basePath, header, packages);
 
         gen.generate();
     }
@@ -103,7 +79,7 @@ public class ClassesGenerator {
      * @param header Header.
      * @param packages Included packages.
      */
-    public ClassesGenerator(String basePath, String header, String[] packages) {
+    private ClassesGenerator(String basePath, String header, String[] packages) {
         this.basePath = basePath;
         this.header = header;
         this.packages = packages;
@@ -112,7 +88,7 @@ public class ClassesGenerator {
     /**
      * @throws Exception In case of error.
      */
-    public void generate() throws Exception {
+    private void generate() throws Exception {
         System.out.println("Generating classnames.properties...");
 
         for (URL url : ldr.getURLs())
@@ -191,6 +167,11 @@ public class ClassesGenerator {
         throws Exception {
         String clsName = path.substring(prefixLen, path.length() - 6).replace(File.separatorChar, '.');
 
+        for (String pkg : EXCLUDED_PACKAGES) {
+            if (clsName.startsWith(pkg))
+                return;
+        }
+
         boolean included = false;
 
         for (String pkg : packages) {
@@ -204,8 +185,7 @@ public class ClassesGenerator {
         if (included) {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
-            if (Serializable.class.isAssignableFrom(cls) && !IgniteFuture.class.isAssignableFrom(cls) &&
-                !IgniteInternalFuture.class.isAssignableFrom(cls) && !GridClientFuture.class.isAssignableFrom(cls)) {
+            if (Serializable.class.isAssignableFrom(cls) && !AbstractQueuedSynchronizer.class.isAssignableFrom(cls)) {
                 if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
                     !cls.getSimpleName().isEmpty() && cls.getName().startsWith("org.apache.ignite")) {
                     try {
