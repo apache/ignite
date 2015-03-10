@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.lang.reflect.*;
@@ -202,7 +204,8 @@ public class ClassesGenerator {
         if (included) {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
-            if (Serializable.class.isAssignableFrom(cls)) {
+            if (Serializable.class.isAssignableFrom(cls) && !IgniteFuture.class.isAssignableFrom(cls) &&
+                !IgniteInternalFuture.class.isAssignableFrom(cls) && !GridClientFuture.class.isAssignableFrom(cls)) {
                 if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
                     !cls.getSimpleName().isEmpty() && cls.getName().startsWith("org.apache.ignite")) {
                     try {
