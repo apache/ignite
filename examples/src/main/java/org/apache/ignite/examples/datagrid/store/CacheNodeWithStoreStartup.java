@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
-import org.apache.ignite.examples.datagrid.store.jdbc.*;
 import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -85,8 +84,8 @@ public class CacheNodeWithStoreStartup {
         // store = new CacheHibernatePersonStore();
 
         // Uncomment two lines for try CacheJdbcPojoStore.
-        store = new CacheJdbcPojoPersonStore();
-        cacheCfg.setTypeMetadata(typeMetadata());
+        // store = new CacheJdbcPojoPersonStore();
+        // cacheCfg.setTypeMetadata(typeMetadata());
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
@@ -99,7 +98,7 @@ public class CacheNodeWithStoreStartup {
     }
 
     /**
-     *
+     * @return Type mapping description.
      */
     private static Collection<CacheTypeMetadata> typeMetadata() {
         CacheTypeMetadata tm = new CacheTypeMetadata();
