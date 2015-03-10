@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.lang.management.*;
+import java.util.*;
 
 /**
  * Contains constants for all system properties and environmental variables in Ignite. These
@@ -473,5 +474,12 @@ public final class IgniteSystemProperties {
         }
 
         return res;
+    }
+
+    /**
+     * @return Thread safe copy of system properties.
+     */
+    public static Properties systemPropertiesSnapshot() {
+        return (Properties)System.getProperties().clone();
     }
 }

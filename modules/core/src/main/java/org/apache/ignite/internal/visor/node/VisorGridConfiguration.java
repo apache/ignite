@@ -27,6 +27,7 @@ import java.io.*;
 import java.util.*;
 
 import static java.lang.System.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
@@ -117,7 +118,7 @@ public class VisorGridConfiguration implements Serializable {
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
         env = new HashMap<>(getenv());
-        sysProps = getProperties();
+        sysProps = systemPropertiesSnapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
         txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
         qryCfg = VisorQueryConfiguration.from(c.getQueryConfiguration());
