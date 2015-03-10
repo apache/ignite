@@ -75,7 +75,7 @@ public class GridFutureListenPerformanceTest {
                             futs.add(fut);
 
                             for (int k = 1; k < rnd.nextInt(3); k++) {
-                                fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                                fut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                                     @Override public void apply(IgniteInternalFuture<Object> t) {
                                         try {
                                             t.get();

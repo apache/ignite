@@ -20,7 +20,6 @@ package org.apache.ignite.igfs.mapreduce.records;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -78,7 +77,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgfsInputStream stream,
+    @Override public IgfsFileRange resolveRecords(IgniteFileSystem fs, IgfsInputStream stream,
         IgfsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();

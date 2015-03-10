@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.future.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,18 +31,8 @@ import java.util.*;
 public class GridCacheLocalFieldsQueryFuture
     extends GridCacheLocalQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Meta data future. */
     private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheLocalFieldsQueryFuture() {
-        metaFut = null;
-    }
 
     /**
      * @param ctx Cache context.
@@ -52,7 +41,7 @@ public class GridCacheLocalFieldsQueryFuture
     public GridCacheLocalFieldsQueryFuture(GridCacheContext<?, ?> ctx, GridCacheQueryBean qry) {
         super((GridCacheContext<Object, Object>)ctx, qry);
 
-        metaFut = new GridFutureAdapter<>(ctx.kernalContext());
+        metaFut = new GridFutureAdapter<>();
 
         if (!qry.query().includeMetadata())
             metaFut.onDone();

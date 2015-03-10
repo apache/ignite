@@ -309,7 +309,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         validate(cfg);
 
-        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(ctx, cfg);
+        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
 
         GridServiceDeploymentFuture old = depFuts.putIfAbsent(cfg.getName(), fut);
 
@@ -386,7 +386,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 U.error(log, "Failed to deploy service: " + cfg.getName(), e);
 
-                return new GridFinishedFuture<>(ctx, e);
+                return new GridFinishedFuture<>(e);
             }
         }
     }
@@ -398,7 +398,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> cancel(String name) {
         while (true) {
             try {
-                GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
+                GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
                 GridFutureAdapter<?> old;
 
@@ -424,7 +424,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             catch (IgniteCheckedException e) {
                 log.error("Failed to undeploy service: " + name, e);
 
-                return new GridFinishedFuture<>(ctx, e);
+                return new GridFinishedFuture<>(e);
             }
         }
     }
@@ -446,7 +446,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             futs.add(cancel(dep.configuration().getName()));
         }
 
-        return futs.isEmpty() ? new GridFinishedFuture<>(ctx) : new GridCompoundFuture(ctx, null, futs);
+        return futs.isEmpty() ? new GridFinishedFuture<>() : new GridCompoundFuture(null, futs);
     }
 
     /**
