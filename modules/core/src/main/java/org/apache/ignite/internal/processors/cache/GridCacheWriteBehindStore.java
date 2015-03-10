@@ -433,7 +433,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             updateCache(entry.getKey(), entry, StoreOperation.PUT);
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw new CacheWriterException(e);
+            throw new CacheWriterException(U.convertExceptionNoWrap(e));
         }
     }
 
@@ -453,7 +453,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             updateCache((K)key, null, StoreOperation.RMV);
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw new CacheWriterException(e);
+            throw new CacheWriterException(U.convertExceptionNoWrap(e));
         }
     }
 

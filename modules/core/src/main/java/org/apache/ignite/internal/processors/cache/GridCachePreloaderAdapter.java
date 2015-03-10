@@ -57,7 +57,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
         log = cctx.logger(getClass());
         aff = cctx.config().getAffinity();
 
-        finFut = new GridFinishedFuture(cctx.kernalContext());
+        finFut = new GridFinishedFuture();
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Object> request(Collection<? extends K> keys, long topVer) {
-        return new GridFinishedFuture<>(cctx.kernalContext());
+        return new GridFinishedFuture<>();
     }
 
     /** {@inheritDoc} */

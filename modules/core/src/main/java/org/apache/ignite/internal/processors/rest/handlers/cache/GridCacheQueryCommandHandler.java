@@ -92,7 +92,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             }
 
             default:
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Unsupported query command: " + req.command()));
+                return new GridFinishedFuture<>(new IgniteCheckedException("Unsupported query command: " + req.command()));
         }
     }
 
@@ -124,7 +124,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             return ctx.closure().callLocalSafe(c, false);
         else {
             if (ctx.discovery().node(destId) == null)
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Destination node ID has left the grid " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Destination node ID has left the grid " +
                     "(retry the query): " + destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);

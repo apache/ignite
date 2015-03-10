@@ -37,7 +37,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -49,11 +48,11 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  */
 public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -102,10 +101,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** Lock timeout. */
     private long timeout;
 
-    /** Logger. */
-    @GridToStringExclude
-    private IgniteLogger log;
-
     /** Filter. */
     private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
@@ -129,13 +124,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
     /** TTL for read operation. */
     private long accessTtl;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridDhtLockFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Cache context.
@@ -198,7 +186,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         entries = new ArrayList<>(cnt);
 
-        log = U.logger(ctx, logRef, GridDhtLockFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -797,7 +786,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 int cnt = F.size(dhtMapping);
 
                 if (cnt > 0) {
-                    assert !n.id().equals(ctx.localNodeId());
+                    assert !n.id().equals(cctx.localNodeId());
 
                     MiniFuture fut = new MiniFuture(n, dhtMapping);
 
@@ -966,9 +955,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node. */
@@ -980,19 +966,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         private List<GridDhtCacheEntry<K, V>> dhtMapping;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param node Node.
          * @param dhtMapping Mapping.
          */
         MiniFuture(ClusterNode node, List<GridDhtCacheEntry<K, V>> dhtMapping) {
-            super(cctx.kernalContext());
-
             assert node != null;
 
             this.node = node;

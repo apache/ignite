@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
@@ -1391,7 +1391,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1406,7 +1406,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1447,7 +1447,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1462,7 +1462,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1499,7 +1499,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1514,7 +1514,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1559,7 +1559,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1574,7 +1574,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 

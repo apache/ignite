@@ -86,7 +86,7 @@ public class CacheApiExample {
         IgniteFuture<String> fut = asyncCache.future();
 
         //Asynchronously wait for result.
-        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+        fut.listen(new IgniteInClosure<IgniteFuture<String>>() {
             @Override
             public void apply(IgniteFuture<String> fut) {
                 try {
