@@ -364,7 +364,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
-                catch (IgfsFileNotFoundException ignore) {
+                catch (IgfsPathNotFoundException ignore) {
                     data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
                     throw new IOException("File was concurrently deleted: " + path);
@@ -405,7 +405,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
-        if (!Boolean.parseBoolean(fileInfo.properties().get(IgniteFs.PROP_PREFER_LOCAL_WRITES)))
+        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsEx.PROP_PREFER_LOCAL_WRITES)))
             return null;
 
         int blockSize = fileInfo.blockSize();

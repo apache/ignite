@@ -65,7 +65,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Committing transactions. */
-    private final ThreadLocal<IgniteInternalTx> threadCtx = new GridThreadLocalEx<>();
+    private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx<K, V>> threadMap = newMap();
@@ -393,7 +393,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx<K, V>> txIdMap = transactionMap(tx);
 
         // Start clean.
-        txContextReset();
+        resetContext();
 
         if (isCompleted(tx)) {
             if (log.isDebugEnabled())
@@ -498,7 +498,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      */
     public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
-            new GridCompoundFuture<>(context().kernalContext(),
+            new GridCompoundFuture<>(
                 new IgniteReducer<IgniteInternalTx, Boolean>() {
                     @Override public boolean collect(IgniteInternalTx e) {
                         return true;
@@ -1233,7 +1233,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             }
 
             // 14. Clear context.
-            txContextReset();
+            resetContext();
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1243,7 +1243,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
                     if (cacheCtx.cache().configuration().isStatisticsEnabled())
-                        cacheCtx.cache().metrics0().onTxCommit(System.nanoTime() - tx.startTime());
+                        // Convert start time from ms to ns.
+                        cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);
                 }
             }
 
@@ -1307,7 +1308,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 10. Clear context.
-            txContextReset();
+            resetContext();
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
@@ -1316,7 +1317,9 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    cacheCtx.cache().metrics0().onTxRollback(System.nanoTime() - tx.startTime());
+                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
+                        // Convert start time from ms to ns.
+                        cacheCtx.cache().metrics0().onTxRollback((U.currentTimeMillis() - tx.startTime()) * 1000);
                 }
             }
 
@@ -1369,7 +1372,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
 
             // 8. Clear context.
-            txContextReset();
+            resetContext();
 
             if (log.isDebugEnabled())
                 log.debug("Uncommitted from TM: " + tx);
@@ -1714,7 +1717,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * Commit ended.
      */
-    public void txContextReset() {
+    public void resetContext() {
         threadCtx.set(null);
     }
 
@@ -1864,7 +1867,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         }
 
         if (commit)
-            tx.commitAsync().listenAsync(new CommitListener(tx));
+            tx.commitAsync().listen(new CommitListener(tx));
         else
             tx.rollbackAsync();
     }
@@ -1919,7 +1922,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                         tx.writeMap().put(entry.txKey(), entry);
                 }
 
-                tx.commitAsync().listenAsync(new CommitListener(tx));
+                tx.commitAsync().listen(new CommitListener(tx));
             }
             else
                 tx.rollbackAsync();

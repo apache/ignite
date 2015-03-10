@@ -102,7 +102,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
 
         log = U.logger(cctx.kernalContext(), logRef, this);
 
-        rent = new GridFutureAdapter<Object>(cctx.kernalContext()) {
+        rent = new GridFutureAdapter<Object>() {
             @Override public String toString() {
                 return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ", map=" + map + ']';
             }
@@ -437,7 +437,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
 
             clearDeferredDeletes();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
         }
 
         return cctx.closures().callLocalSafe(new GPC<Boolean>() {
@@ -488,6 +488,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> it = cctx.swap().iterator(id, false);
 
+            boolean isLocStore = cctx.store().isLocalStore();
+
             if (it != null) {
                 // We can safely remove these values because no entries will be created for evicted partition.
                 while (it.hasNext()) {
@@ -498,6 +500,9 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                     K key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
 
                     cctx.swap().remove(key, keyBytes);
+
+                    if (isLocStore)
+                        cctx.store().removeFromStore(null, key);
                 }
             }
         }

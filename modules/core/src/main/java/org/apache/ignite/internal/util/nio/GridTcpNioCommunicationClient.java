@@ -92,14 +92,8 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
         GridNioFuture<?> fut = ses.send(data);
 
-        if (fut.isDone()) {
-            try {
-                fut.get();
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
-            }
-        }
+        if (fut.isDone())
+            fut.get();
     }
 
     /** {@inheritDoc} */
@@ -114,15 +108,9 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
             try {
                 fut.get();
             }
-            catch (IOException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
-
-                return true;
-            }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
-                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
+                    log.debug("Failed to send message [client=" + this + ", err=" + e + ']');
 
                 if (e.getCause() instanceof IOException)
                     return true;

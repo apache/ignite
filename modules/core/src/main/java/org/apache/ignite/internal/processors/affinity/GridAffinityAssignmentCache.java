@@ -263,7 +263,7 @@ public class GridAffinityAssignmentCache {
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
-            new AffinityReadyFuture(ctx.kernalContext(), topVer));
+            new AffinityReadyFuture(topVer));
 
         aff = head.get();
 
@@ -305,7 +305,18 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        return aff.partition(affMapper.affinityKey(key));
+        return aff.partition(affinityKey(key));
+    }
+
+    /**
+     * If Key is {@link GridCacheInternal GridCacheInternal} entry when won't passed into user's mapper and
+     * will use {@link GridCacheDefaultAffinityKeyMapper default}.
+     *
+     * @param key Key.
+     * @return Affinity key.
+     */
+    private Object affinityKey(Object key) {
+        return (key instanceof GridCacheInternal ? ctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
     /**
@@ -419,24 +430,11 @@ public class GridAffinityAssignmentCache {
      */
     private class AffinityReadyFuture extends GridFutureAdapter<Long> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private long reqTopVer;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
          */
-        public AffinityReadyFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         */
-        private AffinityReadyFuture(GridKernalContext ctx, long reqTopVer) {
-            super(ctx);
-
+        private AffinityReadyFuture(long reqTopVer) {
             this.reqTopVer = reqTopVer;
         }
 

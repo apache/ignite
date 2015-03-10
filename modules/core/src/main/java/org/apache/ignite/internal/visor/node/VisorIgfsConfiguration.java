@@ -19,8 +19,10 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,12 +33,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  * Data transfer object for IGFS configuration properties.
  */
 public class VisorIgfsConfiguration implements Serializable {
-    /** Property name for path to Hadoop configuration. */
-    public static final String SECONDARY_FS_CONFIG_PATH = "SECONDARY_FS_CONFIG_PATH";
-
-    /** Property name for URI of file system. */
-    public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -125,47 +121,47 @@ public class VisorIgfsConfiguration implements Serializable {
      * @param igfs IGFS configuration.
      * @return Data transfer object for IGFS configuration properties.
      */
-    public static VisorIgfsConfiguration from(IgfsConfiguration igfs) {
+    public static VisorIgfsConfiguration from(FileSystemConfiguration igfs) {
         VisorIgfsConfiguration cfg = new VisorIgfsConfiguration();
 
-        cfg.name(igfs.getName());
-        cfg.metaCacheName(igfs.getMetaCacheName());
-        cfg.dataCacheName(igfs.getDataCacheName());
-        cfg.blockSize(igfs.getBlockSize());
-        cfg.prefetchBlocks(igfs.getPrefetchBlocks());
-        cfg.streamBufferSize(igfs.getStreamBufferSize());
-        cfg.perNodeBatchSize(igfs.getPerNodeBatchSize());
-        cfg.perNodeParallelBatchCount(igfs.getPerNodeParallelBatchCount());
+        cfg.name = igfs.getName();
+        cfg.metaCacheName = igfs.getMetaCacheName();
+        cfg.dataCacheName = igfs.getDataCacheName();
+        cfg.blockSize = igfs.getBlockSize();
+        cfg.prefetchBlocks = igfs.getPrefetchBlocks();
+        cfg.streamBufSize = igfs.getStreamBufferSize();
+        cfg.perNodeBatchSize = igfs.getPerNodeBatchSize();
+        cfg.perNodeParallelBatchCnt = igfs.getPerNodeParallelBatchCount();
 
-        Igfs secFs = igfs.getSecondaryFileSystem();
+        IgfsSecondaryFileSystem secFs = igfs.getSecondaryFileSystem();
 
         if (secFs != null) {
             Map<String, String> props = secFs.properties();
 
-            cfg.secondaryHadoopFileSystemUri(props.get(SECONDARY_FS_URI));
-            cfg.secondaryHadoopFileSystemConfigPath(props.get(SECONDARY_FS_CONFIG_PATH));
+            cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
+            cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
         }
 
-        cfg.defaultMode(igfs.getDefaultMode());
-        cfg.pathModes(igfs.getPathModes());
-        cfg.dualModePutExecutorService(compactClass(igfs.getDualModePutExecutorService()));
-        cfg.dualModePutExecutorServiceShutdown(igfs.getDualModePutExecutorServiceShutdown());
-        cfg.dualModeMaxPendingPutsSize(igfs.getDualModeMaxPendingPutsSize());
-        cfg.maxTaskRangeLength(igfs.getMaximumTaskRangeLength());
-        cfg.fragmentizerConcurrentFiles(igfs.getFragmentizerConcurrentFiles());
-        cfg.fragmentizerLocalWritesRatio(igfs.getFragmentizerLocalWritesRatio());
-        cfg.fragmentizerEnabled(igfs.isFragmentizerEnabled());
-        cfg.fragmentizerThrottlingBlockLength(igfs.getFragmentizerThrottlingBlockLength());
-        cfg.fragmentizerThrottlingDelay(igfs.getFragmentizerThrottlingDelay());
+        cfg.dfltMode = igfs.getDefaultMode();
+        cfg.pathModes = igfs.getPathModes();
+        cfg.dualModePutExecutorSrvc = compactClass(igfs.getDualModePutExecutorService());
+        cfg.dualModePutExecutorSrvcShutdown = igfs.getDualModePutExecutorServiceShutdown();
+        cfg.dualModeMaxPendingPutsSize = igfs.getDualModeMaxPendingPutsSize();
+        cfg.maxTaskRangeLen = igfs.getMaximumTaskRangeLength();
+        cfg.fragmentizerConcurrentFiles = igfs.getFragmentizerConcurrentFiles();
+        cfg.fragmentizerLocWritesRatio = igfs.getFragmentizerLocalWritesRatio();
+        cfg.fragmentizerEnabled = igfs.isFragmentizerEnabled();
+        cfg.fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
+        cfg.fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
 
         Map<String, String> endpointCfg = igfs.getIpcEndpointConfiguration();
-        cfg.ipcEndpointConfiguration(endpointCfg != null ? endpointCfg.toString() : null);
+        cfg.ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
-        cfg.ipcEndpointEnabled(igfs.isIpcEndpointEnabled());
-        cfg.maxSpace(igfs.getMaxSpaceSize());
-        cfg.managementPort(igfs.getManagementPort());
-        cfg.sequenceReadsBeforePrefetch(igfs.getSequentialReadsBeforePrefetch());
-        cfg.trashPurgeTimeout(igfs.getTrashPurgeTimeout());
+        cfg.ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
+        cfg.maxSpace = igfs.getMaxSpaceSize();
+        cfg.mgmtPort = igfs.getManagementPort();
+        cfg.seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
+        cfg.trashPurgeTimeout = igfs.getTrashPurgeTimeout();
 
         return cfg;
     }
@@ -176,13 +172,13 @@ public class VisorIgfsConfiguration implements Serializable {
      * @param igfss Igfs configurations.
      * @return igfs configurations properties.
      */
-    public static Iterable<VisorIgfsConfiguration> list(IgfsConfiguration[] igfss) {
+    public static Iterable<VisorIgfsConfiguration> list(FileSystemConfiguration[] igfss) {
         if (igfss == null)
             return Collections.emptyList();
 
         final Collection<VisorIgfsConfiguration> cfgs = new ArrayList<>(igfss.length);
 
-        for (IgfsConfiguration igfs : igfss)
+        for (FileSystemConfiguration igfs : igfss)
             cfgs.add(from(igfs));
 
         return cfgs;
@@ -196,24 +192,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param name New IGFS instance name.
-     */
-    public void name(@Nullable String name) {
-        this.name = name;
-    }
-
-    /**
      * @return Cache name to store IGFS meta information.
      */
     @Nullable public String metaCacheName() {
         return metaCacheName;
-    }
-
-    /**
-     * @param metaCacheName New cache name to store IGFS meta information.
-     */
-    public void metaCacheName(@Nullable String metaCacheName) {
-        this.metaCacheName = metaCacheName;
     }
 
     /**
@@ -224,24 +206,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param dataCacheName New cache name to store IGFS data.
-     */
-    public void dataCacheName(@Nullable String dataCacheName) {
-        this.dataCacheName = dataCacheName;
-    }
-
-    /**
      * @return File's data block size.
      */
     public int blockSize() {
         return blockSize;
-    }
-
-    /**
-     * @param blockSize New file's data block size.
-     */
-    public void blockSize(int blockSize) {
-        this.blockSize = blockSize;
     }
 
     /**
@@ -252,24 +220,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param prefetchBlocks New number of pre-fetched blocks if specific file's chunk is requested.
-     */
-    public void prefetchBlocks(int prefetchBlocks) {
-        this.prefetchBlocks = prefetchBlocks;
-    }
-
-    /**
      * @return Read/write buffer size for IGFS stream operations in bytes.
      */
     public int streamBufferSize() {
         return streamBufSize;
-    }
-
-    /**
-     * @param streamBufSize New read/write buffer size for IGFS stream operations in bytes.
-     */
-    public void streamBufferSize(int streamBufSize) {
-        this.streamBufSize = streamBufSize;
     }
 
     /**
@@ -280,24 +234,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param perNodeBatchSize New number of file blocks buffered on local node before sending batch to remote node.
-     */
-    public void perNodeBatchSize(int perNodeBatchSize) {
-        this.perNodeBatchSize = perNodeBatchSize;
-    }
-
-    /**
      * @return Number of batches that can be concurrently sent to remote node.
      */
     public int perNodeParallelBatchCount() {
         return perNodeParallelBatchCnt;
-    }
-
-    /**
-     * @param perNodeParallelBatchCnt New number of batches that can be concurrently sent to remote node.
-     */
-    public void perNodeParallelBatchCount(int perNodeParallelBatchCnt) {
-        this.perNodeParallelBatchCnt = perNodeParallelBatchCnt;
     }
 
     /**
@@ -308,24 +248,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param secondaryHadoopFileSysUri New URI of the secondary Hadoop file system.
-     */
-    public void secondaryHadoopFileSystemUri(@Nullable String secondaryHadoopFileSysUri) {
-        this.secondaryHadoopFileSysUri = secondaryHadoopFileSysUri;
-    }
-
-    /**
      * @return Path for the secondary hadoop file system config.
      */
     @Nullable public String secondaryHadoopFileSystemConfigPath() {
         return secondaryHadoopFileSysCfgPath;
-    }
-
-    /**
-     * @param secondaryHadoopFileSysCfgPath New path for the secondary hadoop file system config.
-     */
-    public void secondaryHadoopFileSystemConfigPath(@Nullable String secondaryHadoopFileSysCfgPath) {
-        this.secondaryHadoopFileSysCfgPath = secondaryHadoopFileSysCfgPath;
     }
 
     /**
@@ -336,24 +262,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param dfltMode New IGFS instance mode.
-     */
-    public void defaultMode(IgfsMode dfltMode) {
-        this.dfltMode = dfltMode;
-    }
-
-    /**
      * @return Map of paths to IGFS modes.
      */
     @Nullable public Map<String, IgfsMode> pathModes() {
         return pathModes;
-    }
-
-    /**
-     * @param pathModes New map of paths to IGFS modes.
-     */
-    public void pathModes(@Nullable Map<String, IgfsMode> pathModes) {
-        this.pathModes = pathModes;
     }
 
     /**
@@ -364,24 +276,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param dualModePutExecutorSrvc New dual mode PUT operations executor service.
-     */
-    public void dualModePutExecutorService(String dualModePutExecutorSrvc) {
-        this.dualModePutExecutorSrvc = dualModePutExecutorSrvc;
-    }
-
-    /**
      * @return Dual mode PUT operations executor service shutdown flag.
      */
     public boolean dualModePutExecutorServiceShutdown() {
         return dualModePutExecutorSrvcShutdown;
-    }
-
-    /**
-     * @param dualModePutExecutorSrvcShutdown New dual mode PUT operations executor service shutdown flag.
-     */
-    public void dualModePutExecutorServiceShutdown(boolean dualModePutExecutorSrvcShutdown) {
-        this.dualModePutExecutorSrvcShutdown = dualModePutExecutorSrvcShutdown;
     }
 
     /**
@@ -392,24 +290,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param dualModeMaxPendingPutsSize New maximum amount of data in pending puts.
-     */
-    public void dualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
-        this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
-    }
-
-    /**
      * @return Maximum range length.
      */
     public long maxTaskRangeLength() {
         return maxTaskRangeLen;
-    }
-
-    /**
-     * @param maxTaskRangeLen New maximum range length.
-     */
-    public void maxTaskRangeLength(long maxTaskRangeLen) {
-        this.maxTaskRangeLen = maxTaskRangeLen;
     }
 
     /**
@@ -420,24 +304,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param fragmentizerConcurrentFiles New fragmentizer concurrent files.
-     */
-    public void fragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
-        this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
-    }
-
-    /**
      * @return Fragmentizer local writes ratio.
      */
     public float fragmentizerLocalWritesRatio() {
         return fragmentizerLocWritesRatio;
-    }
-
-    /**
-     * @param fragmentizerLocWritesRatio New fragmentizer local writes ratio.
-     */
-    public void fragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
-        this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
     }
 
     /**
@@ -448,24 +318,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param fragmentizerEnabled New fragmentizer enabled flag.
-     */
-    public void fragmentizerEnabled(boolean fragmentizerEnabled) {
-        this.fragmentizerEnabled = fragmentizerEnabled;
-    }
-
-    /**
      * @return Fragmentizer throttling block length.
      */
     public long fragmentizerThrottlingBlockLength() {
         return fragmentizerThrottlingBlockLen;
-    }
-
-    /**
-     * @param fragmentizerThrottlingBlockLen New fragmentizer throttling block length.
-     */
-    public void fragmentizerThrottlingBlockLength(long fragmentizerThrottlingBlockLen) {
-        this.fragmentizerThrottlingBlockLen = fragmentizerThrottlingBlockLen;
     }
 
     /**
@@ -476,24 +332,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param fragmentizerThrottlingDelay New fragmentizer throttling delay.
-     */
-    public void fragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
-        this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
-    }
-
-    /**
      * @return IPC endpoint config (in JSON format) to publish IGFS over.
      */
     @Nullable public String ipcEndpointConfiguration() {
         return ipcEndpointCfg;
-    }
-
-    /**
-     * @param ipcEndpointCfg New IPC endpoint config (in JSON format) to publish IGFS over.
-     */
-    public void ipcEndpointConfiguration(@Nullable String ipcEndpointCfg) {
-        this.ipcEndpointCfg = ipcEndpointCfg;
     }
 
     /**
@@ -504,24 +346,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param ipcEndpointEnabled New iPC endpoint enabled flag.
-     */
-    public void ipcEndpointEnabled(boolean ipcEndpointEnabled) {
-        this.ipcEndpointEnabled = ipcEndpointEnabled;
-    }
-
-    /**
      * @return Maximum space.
      */
     public long maxSpace() {
         return maxSpace;
-    }
-
-    /**
-     * @param maxSpace New maximum space.
-     */
-    public void maxSpace(long maxSpace) {
-        this.maxSpace = maxSpace;
     }
 
     /**
@@ -532,24 +360,10 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @param mgmtPort New management port.
-     */
-    public void managementPort(int mgmtPort) {
-        this.mgmtPort = mgmtPort;
-    }
-
-    /**
      * @return Amount of sequential block reads before prefetch is triggered.
      */
     public int sequenceReadsBeforePrefetch() {
         return seqReadsBeforePrefetch;
-    }
-
-    /**
-     * @param seqReadsBeforePrefetch New amount of sequential block reads before prefetch is triggered.
-     */
-    public void sequenceReadsBeforePrefetch(int seqReadsBeforePrefetch) {
-        this.seqReadsBeforePrefetch = seqReadsBeforePrefetch;
     }
 
     /**
@@ -559,16 +373,8 @@ public class VisorIgfsConfiguration implements Serializable {
         return trashPurgeTimeout;
     }
 
-    /**
-     * @param trashPurgeTimeout New trash purge await timeout.
-     */
-    public void trashPurgeTimeout(long trashPurgeTimeout) {
-        this.trashPurgeTimeout = trashPurgeTimeout;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorIgfsConfiguration.class, this);
     }
-
 }

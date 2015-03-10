@@ -160,7 +160,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -180,7 +180,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
                     new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
 
-            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
                         fut.get();
@@ -277,6 +277,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
                 try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
+
                     dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
 
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {

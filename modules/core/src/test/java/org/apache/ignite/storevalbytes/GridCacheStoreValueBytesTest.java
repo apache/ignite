@@ -18,8 +18,6 @@
 package org.apache.ignite.storevalbytes;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -238,7 +236,7 @@ public class GridCacheStoreValueBytesTest {
 
                                 IgniteFuture<Object> f = asyncCache.future();
 
-                                f.listenAsync(lsnr);
+                                f.listen(lsnr);
 
                                 cntr.incrementAndGet();
 

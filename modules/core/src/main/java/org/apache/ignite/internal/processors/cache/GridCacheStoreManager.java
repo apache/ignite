@@ -36,7 +36,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -617,6 +616,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     handleClassCastException(e);
                 }
                 catch (Exception e) {
+                    if (!(e instanceof CacheWriterException))
+                        e = new CacheWriterException(e);
+
                     if (!entries.isEmpty()) {
                         List<Object> keys = new ArrayList<>(entries.size());
 
@@ -625,9 +627,6 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                         throw new CacheStorePartialUpdateException(keys, e);
                     }
-
-                    if (!(e instanceof CacheWriterException))
-                        e = new CacheWriterException(e);
 
                     throw new IgniteCheckedException(e);
                 }
@@ -726,11 +725,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 handleClassCastException(e);
             }
             catch (Exception e) {
-                if (!keys0.isEmpty())
-                    throw new CacheStorePartialUpdateException(keys0, e);
-
                 if (!(e instanceof CacheWriterException))
                     e = new CacheWriterException(e);
+
+                if (!keys0.isEmpty())
+                    throw new CacheStorePartialUpdateException(keys0, e);
 
                 throw new IgniteCheckedException(e);
             }
@@ -910,6 +909,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.transaction() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWithinTransaction() {
+            return transaction() != null;
         }
 
         /** {@inheritDoc} */

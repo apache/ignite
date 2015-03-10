@@ -100,7 +100,7 @@ final class GridResourceUtils {
 
         // Need to inspect anonymous classes, callable and runnable instances.
         return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
-                Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
-                IgniteClosure.class.isAssignableFrom(f.getType());
+            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
+            IgniteClosure.class.isAssignableFrom(f.getType());
     }
 }

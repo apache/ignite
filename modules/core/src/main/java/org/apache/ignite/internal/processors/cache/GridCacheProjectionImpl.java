@@ -776,7 +776,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         // Check k-v predicate first.
         if (!isAll(key, val, true))
-            return new GridFinishedFuture<>(cctx.kernalContext());
+            return new GridFinishedFuture<>();
 
         return cache.putAsync(key, val, entry, ttl, and(filter, false));
     }
@@ -858,7 +858,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         // Check k-v predicate first.
         if (!isAll(key, val, true))
-            return new GridFinishedFuture<>(cctx.kernalContext(), false);
+            return new GridFinishedFuture<>(false);
 
         return cache.putxAsync(key, val, entry, ttl, and(filter, false));
     }
@@ -927,7 +927,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         m = isAll(m, true);
 
         if (F.isEmpty(m))
-            return new GridFinishedFuture<>(cctx.kernalContext());
+            return new GridFinishedFuture<>();
 
         return cache.putAllAsync(m, and(filter, false));
     }
@@ -1169,7 +1169,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         // Check k-v predicate first.
         if (!isAll(key, newVal, true))
-            return new GridFinishedFuture<>(cctx.kernalContext(), new GridCacheReturn<V>(false));
+            return new GridFinishedFuture<>(new GridCacheReturn<V>(false));
 
         return cache.replacexAsync(key, oldVal, newVal);
     }
@@ -1186,7 +1186,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
-        return !isAll(key, val, true) ? new GridFinishedFuture<>(cctx.kernalContext(),
+        return !isAll(key, val, true) ? new GridFinishedFuture<>(
             new GridCacheReturn<V>(false)) : cache.removexAsync(key, val);
     }
 
@@ -1197,7 +1197,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return !isAll(key, val, true) ? new GridFinishedFuture<>(cctx.kernalContext(), false) :
+        return !isAll(key, val, true) ? new GridFinishedFuture<>(false) :
             cache.removeAsync(key, val);
     }
 

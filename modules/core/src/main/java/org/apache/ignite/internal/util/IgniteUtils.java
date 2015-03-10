@@ -30,10 +30,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -41,6 +37,10 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -297,6 +297,9 @@ public abstract class IgniteUtils {
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
+
+    /** */
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
     /**
      * Initializes enterprise check.
@@ -610,6 +613,25 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
+    }
+
+    /**
      * @param e Ignite checked exception.
      * @return Ignite runtime exception.
      */
@@ -740,7 +762,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debug(Object msg) {
-        X.println(debugPrefix() + msg);
+        X.error(debugPrefix() + msg);
     }
 
     /**
@@ -1432,6 +1454,58 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param addrs Addresses.
+     */
+    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
+        final int reachTimeout = 2000;
+
+        if (addrs.isEmpty())
+            return Collections.emptyList();
+
+        if (addrs.size() == 1) {
+            if (reachable(addrs.get(1), reachTimeout))
+                return Collections.singletonList(addrs.get(1));
+
+            return Collections.emptyList();
+        }
+
+        final List<InetAddress> res = new ArrayList<>(addrs.size());
+
+        Collection<Future<?>> futs = new ArrayList<>(addrs.size());
+
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+
+        for (final InetAddress addr : addrs) {
+            futs.add(executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    if (reachable(addr, reachTimeout)) {
+                        synchronized (res) {
+                            res.add(addr);
+                        }
+                    }
+                }
+            }));
+        }
+
+        for (Future<?> fut : futs) {
+            try {
+                fut.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException("Thread has been interrupted.", e);
+            } catch (ExecutionException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        executor.shutdown();
+
+        return res;
+    }
+
+    /**
      * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
      * a common address this method returns single host name, and when a wildcard address passed
      * this method tries to collect addresses of all available interfaces.
@@ -1449,22 +1523,35 @@ public abstract class IgniteUtils {
         Collection<String> hostNames = new ArrayList<>();
 
         if (locAddr.isAnyLocalAddress()) {
-            // It should not take longer than 2 seconds to reach
-            // local address on any network.
-            int reachTimeout = 2000;
+            IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
-                for (InetAddress addr : asIterable(itf.getInetAddresses())) {
-                    if (!addr.isLinkLocalAddress() && reachable(itf, addr, reachTimeout))
-                        addresses(addr, addrs, hostNames);
+            if (res == null) {
+                List<InetAddress> localAddrs = new ArrayList<>();
+
+                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                    for (InetAddress addr : asIterable(itf.getInetAddresses())) {
+                        if (!addr.isLinkLocalAddress())
+                            localAddrs.add(addr);
+                    }
                 }
+
+                localAddrs = filterReachable(localAddrs);
+
+                for (InetAddress addr : localAddrs)
+                    addresses(addr, addrs, hostNames);
+
+                if (F.isEmpty(addrs))
+                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+
+                res = F.t(addrs, hostNames);
+
+                cachedLocalAddr = res;
             }
 
-            if (F.isEmpty(addrs))
-                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+            return res;
         }
-        else
-            addresses(locAddr, addrs, hostNames);
+
+        addresses(locAddr, addrs, hostNames);
 
         return F.t(addrs, hostNames);
     }
@@ -2700,7 +2787,9 @@ public abstract class IgniteUtils {
      */
     public static void onGridStop(){
         synchronized (mux) {
-            assert gridCnt > 0 : gridCnt;
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
 
             --gridCnt;
 
@@ -2957,8 +3046,9 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "libs").isDirectory() ||
-                !new File(cur, "config").isDirectory())
+                !new File(cur, "modules").isDirectory() ||
+                !new File(cur, "config").isDirectory() ||
+                !new File(cur, "license").isDirectory())
                 continue;
 
             return cur.getPath();
@@ -3081,14 +3171,7 @@ public abstract class IgniteUtils {
         if (file.exists())
             return file;
 
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
+        return null;
     }
 
     /**
@@ -3126,9 +3209,6 @@ public abstract class IgniteUtils {
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
 
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
-
         if (f != null) {
             try {
                 // Note: we use that method's chain instead of File.getURL() with due
@@ -3140,9 +3220,15 @@ public abstract class IgniteUtils {
             }
         }
 
-        String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
 
-        return Thread.currentThread().getContextClassLoader().getResource(locPath);
+        if (clsLdr != null) {
+            String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+
+            return clsLdr.getResource(locPath);
+        }
+        else
+            return null;
     }
 
     /**
@@ -4084,8 +4170,7 @@ public abstract class IgniteUtils {
      * @return Empty projection exception.
      */
     public static ClusterGroupEmptyCheckedException emptyTopologyException() {
-        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
-            "cluster group can be empty from call to call.");
+        return new ClusterGroupEmptyCheckedException("Cluster group is empty.");
     }
 
     /**
@@ -4476,8 +4561,8 @@ public abstract class IgniteUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                out.writeUTF(e.getKey());
-                out.writeUTF(e.getValue());
+                writeUTFStringNullable(out, e.getKey());
+                writeUTFStringNullable(out, e.getValue());
             }
         }
         else
@@ -4500,10 +4585,38 @@ public abstract class IgniteUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(in.readUTF(), in.readUTF());
+                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
 
             return map;
         }
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeUTF(val);
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTFStringNullable(DataInput in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
     }
 
     /**
@@ -7040,7 +7153,7 @@ public abstract class IgniteUtils {
      */
     public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            f.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();
@@ -7363,6 +7476,66 @@ public abstract class IgniteUtils {
      * @param cls Object.
      * @param obj Object.
      * @param mtdName Field name.
+     * @param params Parameters.
+     * @return Field value.
+     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     */
+    public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
+        Object... params) throws IgniteCheckedException {
+        assert cls != null || obj != null;
+        assert mtdName != null;
+
+        try {
+            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+                Method[] mtds = c.getDeclaredMethods();
+
+                Method mtd = null;
+
+                for (Method declaredMtd : c.getDeclaredMethods()) {
+                    if (declaredMtd.getName().equals(mtdName)) {
+                        if (mtd == null)
+                            mtd = declaredMtd;
+                        else
+                            throw new IgniteCheckedException("Failed to invoke (ambigous method name) [mtdName=" +
+                                mtdName + ", cls=" + cls + ']');
+                    }
+                }
+
+                if (mtd == null)
+                    continue;
+
+                boolean accessible = mtd.isAccessible();
+
+                T res;
+
+                try {
+                    mtd.setAccessible(true);
+
+                    res = (T)mtd.invoke(obj, params);
+                }
+                finally {
+                    if (!accessible)
+                        mtd.setAccessible(false);
+                }
+
+                return res;
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to invoke [mtdName=" + mtdName + ", cls=" + cls + ']',
+                e);
+        }
+
+        throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
+            ", cls=" + cls + ']');
+    }
+
+    /**
+     * Invokes method.
+     *
+     * @param cls Object.
+     * @param obj Object.
+     * @param mtdName Field name.
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
@@ -7409,7 +7582,6 @@ public abstract class IgniteUtils {
         throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
             ", cls=" + cls + ']');
     }
-
 
     /**
      * Gets property value.
@@ -8705,7 +8877,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.arrayList(c, c.size(), p);
     }
 
     /**

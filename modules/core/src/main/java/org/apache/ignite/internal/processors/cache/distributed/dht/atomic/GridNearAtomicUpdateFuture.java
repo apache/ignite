@@ -38,8 +38,8 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -54,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  */
 public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<K, Object>{
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -106,9 +103,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Return value require flag. */
     private final boolean retval;
 
-    /** Cached entry if keys size is 1. */
-    private GridCacheEntryEx<K, V> cached;
-
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
@@ -149,28 +143,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private volatile long mapTime;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridNearAtomicUpdateFuture() {
-        cctx = null;
-        mappings = null;
-        futVer = null;
-        retval = false;
-        fastMap = false;
-        expiryPlc = null;
-        filter = null;
-        syncMode = null;
-        op = null;
-        nearEnabled = false;
-        subjId = null;
-        taskNameHash = 0;
-    }
-
-    /**
      * @param cctx Cache context.
      * @param cache Cache instance.
-     * @param op Update operation.
      * @param syncMode Write synchronization mode.
+     * @param op Update operation.
      * @param keys Keys to update.
      * @param vals Values or transform closure.
      * @param invokeArgs Optional arguments for entry processor.
@@ -178,7 +154,6 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param conflictRmvVals Conflict remove values (optional).
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
-     * @param cached Cached entry if keys size is 1.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param subjId Subject ID.
@@ -196,20 +171,16 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        final IgnitePredicate<Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {
-        super(cctx.kernalContext());
-
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
         assert conflictRmvVals == null || conflictRmvVals.size() == keys.size();
-        assert cached == null || keys.size() == 1;
         assert subjId != null;
 
         this.cctx = cctx;
@@ -222,13 +193,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.conflictPutVals = conflictPutVals;
         this.conflictRmvVals = conflictRmvVals;
         this.retval = retval;
-        this.cached = cached;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
-        log = U.logger(ctx, logRef, GridFutureAdapter.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
 
         mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
 
@@ -444,7 +415,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                fut.listen(new CI1<IgniteInternalFuture<Long>>() {
                     @Override public void apply(IgniteInternalFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
@@ -781,7 +752,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         singleNodeId = nodeId;
         singleReq = req;
 
-        if (ctx.localNodeId().equals(nodeId)) {
+        if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>>() {
                     @Override public void apply(GridNearAtomicUpdateRequest<K, V> req,

@@ -29,7 +29,7 @@ import org.apache.ignite.thread.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.configuration.IgfsConfiguration.*;
+import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 
 /**
  * IGFS server manager.
@@ -49,7 +49,7 @@ public class IgfsServerManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        IgfsConfiguration igfsCfg = igfsCtx.configuration();
+        FileSystemConfiguration igfsCfg = igfsCtx.configuration();
         Map<String,String> cfg = igfsCfg.getIpcEndpointConfiguration();
 
         if (F.isEmpty(cfg)) {

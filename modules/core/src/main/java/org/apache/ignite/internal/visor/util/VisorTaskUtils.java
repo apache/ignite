@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.*;
 import java.util.zip.*;
 
 import static java.lang.System.*;
-import static org.apache.ignite.configuration.IgfsConfiguration.*;
+import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -229,7 +229,7 @@ public class VisorTaskUtils {
      * @param obj Object for compact.
      * @return Compacted string.
      */
-    @Nullable public static String compactClass(Object obj) {
+    @Nullable public static String compactClass(@Nullable Object obj) {
         if (obj == null)
             return null;
 
@@ -592,7 +592,7 @@ public class VisorTaskUtils {
      * @return {@link Path} to log dir or {@code null} if not found.
      * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveIgfsProfilerLogsDir(IgniteFs igfs) throws IgniteCheckedException {
+    public static Path resolveIgfsProfilerLogsDir(IgniteFileSystem igfs) throws IgniteCheckedException {
         String logsDir;
 
         if (igfs instanceof IgfsEx)
@@ -613,7 +613,7 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(CacheEvictionPolicy plc) {
+    public static Integer evictionPolicyMaxSize(@Nullable CacheEvictionPolicy plc) {
         if (plc instanceof CacheLruEvictionPolicyMBean)
             return ((CacheLruEvictionPolicyMBean)plc).getMaxSize();
 

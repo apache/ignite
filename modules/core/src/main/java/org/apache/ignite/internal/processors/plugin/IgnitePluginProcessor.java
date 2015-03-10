@@ -159,6 +159,11 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        ackPluginsInfo();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.PLUGIN;
     }
@@ -193,6 +198,25 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                     provider.receiveDiscoveryData(nodeId, e.getValue());
                 else
                     U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
+            }
+        }
+    }
+
+    /**
+     * Print plugin information.
+     */
+    private void ackPluginsInfo() {
+        U.quietAndInfo(log, "Configured plugins:");
+
+        if (plugins.isEmpty()) {
+            U.quietAndInfo(log, "  ^-- None");
+            U.quietAndInfo(log, "");
+        }
+        else {
+            for (PluginProvider plugin : plugins.values()) {
+                U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version());
+                U.quietAndInfo(log, "  ^-- " + plugin.copyright());
+                U.quietAndInfo(log, "");
             }
         }
     }

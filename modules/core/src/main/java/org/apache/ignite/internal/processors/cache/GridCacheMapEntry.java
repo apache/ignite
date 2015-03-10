@@ -153,9 +153,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    protected GridCacheMapEntry(GridCacheContext<K, V> cctx, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
+    protected GridCacheMapEntry(
+        GridCacheContext<K, V> cctx,
+        K key,
+        int hash,
+        V val,
+        GridCacheMapEntry<K, V> next,
+        long ttl,
+        int hdrId
+    ) {
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         if (cctx.portableEnabled())
             key = (K)cctx.kernalContext().portable().detachPortable(key);
@@ -3190,6 +3198,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             preload);
 
                     cctx.dataStructures().onEntryUpdated(key, false);
+                }
+
+                if (cctx.store().isLocalStore()) {
+                    if (val != null || valBytes != null) {
+                        if (val == null)
+                            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
+
+                        cctx.store().putToStore(null, key, val, ver);
+                    }
                 }
 
                 return true;

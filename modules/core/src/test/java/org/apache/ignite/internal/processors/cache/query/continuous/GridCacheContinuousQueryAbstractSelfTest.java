@@ -160,7 +160,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0, ((IgniteKernal)grid(i)).cache(null).size());
+            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0,
+                ((IgniteKernal)grid(i)).cache(null).size());
+
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
@@ -614,12 +616,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicate() throws Exception {
+    public void testInitialQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }
@@ -659,12 +661,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicateAndUpdates() throws Exception {
+    public void testInitialQueryAndUpdates() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }

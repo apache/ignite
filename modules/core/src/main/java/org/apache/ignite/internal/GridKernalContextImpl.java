@@ -36,11 +36,12 @@ import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -229,7 +230,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private IgniteHadoopProcessorAdapter hadoopProc;
+    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -242,6 +243,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteSpringProcessor spring;
+
+    /** */
+    @GridToStringExclude
+    private ClusterProcessor cluster;
 
     /** */
     @GridToStringExclude
@@ -275,6 +280,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     protected ExecutorService restExecSvc;
 
+    /** */
+    @GridToStringExclude
+    private Map<String, Object> attrs = new HashMap<>();
 
     /** */
     private IgniteEx grid;
@@ -451,8 +459,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof IgniteHadoopProcessorAdapter)
-            hadoopProc = (IgniteHadoopProcessorAdapter)comp;
+        else if (comp instanceof HadoopProcessorAdapter)
+            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -461,6 +469,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             qryProc = (GridQueryProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
+        else if (comp instanceof ClusterProcessor)
+            cluster = (ClusterProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -673,7 +683,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteHadoopProcessorAdapter hadoop() {
+    @Override public HadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 
@@ -851,6 +861,31 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
         return registry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object nodeAttribute(String key) {
+        return attrs.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNodeAttribute(String key) {
+        return attrs.containsKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object addNodeAttribute(String key, Object val) {
+        return attrs.put(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return attrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterProcessor cluster() {
+        return cluster;
     }
 
     /** {@inheritDoc} */

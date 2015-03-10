@@ -92,26 +92,13 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-3", log) {
-                @Override public void body()  {
-                    String jdkStrLow = U.jdkString().toLowerCase();
-
-                    if (jdkStrLow.contains("jrockit") && jdkStrLow.contains("1.5.")) {
-                        U.warn(log, "BEA JRockit VM ver. 1.5.x has shown problems with NIO functionality in our " +
-                            "tests that were not reproducible in other VMs. We recommend using Sun VM. Should you " +
-                            "have further questions please contact us at support@gridgain.com",
-                            "BEA JRockit VM ver. 1.5.x is not supported.");
-                    }
-                }
-            });
-
             exec.execute(new GridWorker(gridName, "grid-diagnostic-4", log) {
                 @Override public void body() {
                     // Sufficiently tested OS.
                     if (!U.isSufficientlyTestedOs()) {
                         U.warn(log, "This operating system has been tested less rigorously: " + U.osString() +
                             ". Our team will appreciate the feedback if you experience any problems running " +
-                            "ignite in this environment. You can always send your feedback to support@gridgain.com",
+                            "ignite in this environment.",
                             "This OS is tested less rigorously: " + U.osString());
                     }
                 }

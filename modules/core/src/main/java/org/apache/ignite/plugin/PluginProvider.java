@@ -41,6 +41,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String version();
 
     /**
+     * @return Copyright.
+     */
+    public String copyright();
+
+    /**
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
@@ -62,10 +67,9 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * Starts grid component.
      *
      * @param ctx Plugin context.
-     * @param attrs Attributes.
      * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start(PluginContext ctx, Map<String, Object> attrs) throws IgniteCheckedException;
+    public void start(PluginContext ctx) throws IgniteCheckedException;
 
     /**
      * Stops grid component.

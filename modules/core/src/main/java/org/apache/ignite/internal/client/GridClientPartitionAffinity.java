@@ -274,7 +274,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         nodeInfo = new NodeInfo(nodeId, hashIdRslvr == null ? nodeId : hashIdRslvr.getHashId(n));
 
         addedNodes.put(nodeId, nodeInfo);
-        nodeHash.addNode(nodeInfo, n.replicaCount());
+        nodeHash.addNode(nodeInfo, 1);
 
         return nodeInfo;
     }
