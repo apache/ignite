@@ -442,7 +442,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (stopping) {
                 if (log.isDebugEnabled())
                     log.debug("Received communication message while stopping (will ignore) [nodeId=" +
-                        nodeId + ", msg=" + cacheMsg + ']');
+                        nodeId + ", msg=" + msg + ']');
 
                 return;
             }

@@ -928,7 +928,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
         }
 
-        marshallerCache().context().preloader().syncFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
                 ctx.marshallerContext().onMarshallerCacheReady(ctx);
             }
