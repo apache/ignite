@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -158,7 +157,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         if (ctx.kernalContext().config().isPeerClassLoadingEnabled() &&
             ctx.offheapTiered() &&
-            type != CacheObjectAdapter.TYPE_BYTE_ARR) {
+            type != CacheObject.TYPE_BYTE_ARR) {
             IgniteUuid valClsLdrId = U.readGridUuid(valPtr + 5 + size);
 
             ClassLoader ldr =
@@ -173,10 +172,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
-            case CacheObjectAdapter.TYPE_BYTE_ARR:
+            case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);
 
-            case CacheObjectAdapter.TYPE_REGULAR:
+            case CacheObject.TYPE_REGULAR:
                 return new CacheObjectImpl(null, bytes);
         }
 

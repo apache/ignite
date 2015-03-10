@@ -1104,7 +1104,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             cctx.deploy().globalLoader());
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_SWAPPED))
-            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
+            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid) null, null,
                 EVT_CACHE_OBJECT_SWAPPED, null, false, null, true, null, null, null);
     }
 
@@ -1731,7 +1731,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                             else {
                                 if (valLdrId == null &&
                                     swapEntry.value() == null &&
-                                    swapEntry.type() != CacheObjectAdapter.TYPE_BYTE_ARR) {
+                                    swapEntry.type() != CacheObject.TYPE_BYTE_ARR) {
                                     // We need value here only for classloading purposes.
                                     Object val =  cctx.cacheObjects().unmarshal(cctx.cacheObjectContext(),
                                         swapEntry.valueBytes(),

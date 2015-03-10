@@ -30,12 +30,6 @@ import java.nio.*;
  */
 public abstract class CacheObjectAdapter implements CacheObject, Externalizable {
     /** */
-    public static final byte TYPE_REGULAR = 1;
-
-    /** */
-    public static final byte TYPE_BYTE_ARR = 2;
-
-    /** */
     @GridToStringInclude
     @GridDirectTransient
     protected Object val;

@@ -25,6 +25,12 @@ import org.jetbrains.annotations.*;
  *
  */
 public interface CacheObject extends Message {
+    /** */
+    public static final byte TYPE_REGULAR = 1;
+
+    /** */
+    public static final byte TYPE_BYTE_ARR = 2;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.

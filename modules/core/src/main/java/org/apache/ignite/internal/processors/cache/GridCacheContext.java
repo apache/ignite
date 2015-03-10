@@ -1785,7 +1785,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
         throws IgniteCheckedException
     {
-        if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObjectAdapter.TYPE_BYTE_ARR) {
+        if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
             ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
 
             if (ldr == null)

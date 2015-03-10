@@ -212,7 +212,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
                     Object val0 = null;
 
-                    if (val != null && val.type() != CacheObjectAdapter.TYPE_BYTE_ARR) {
+                    if (val != null && val.type() != CacheObject.TYPE_BYTE_ARR) {
                         val0 = cctx.cacheObjects().unmarshal(cctx.cacheObjectContext(),
                             val.valueBytes(cctx.cacheObjectContext()), cctx.deploy().globalLoader());
 
@@ -265,7 +265,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (valBytes == null)
             return 0;
 
-        return valBytes.get1().length - (((valBytes.get2() == CacheObjectAdapter.TYPE_BYTE_ARR) ? 0 : 6));
+        return valBytes.get1().length - (((valBytes.get2() == CacheObject.TYPE_BYTE_ARR) ? 0 : 6));
     }
 
     /**
