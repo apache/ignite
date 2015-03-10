@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -69,7 +68,7 @@ public class GridReduceQueryExecutor {
     private final ConcurrentMap<Long, QueryRun> runs = new ConcurrentHashMap8<>();
 
     /** */
-    private static ThreadLocal<GridMergeTable> curFunTbl = new GridThreadLocal<>();
+    private static ThreadLocal<GridMergeTable> curFunTbl = new ThreadLocal<>();
 
     /** */
     private static final Constructor<JdbcResultSet> CONSTRUCTOR;
