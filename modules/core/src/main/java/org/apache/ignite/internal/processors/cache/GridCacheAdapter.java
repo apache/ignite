@@ -1599,7 +1599,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
         }
         else
-            return new GridFinishedFuture<>(ctx.kernalContext());
+            return new GridFinishedFuture<>();
     }
 
     /** {@inheritDoc} */
@@ -1915,7 +1915,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
         }
 
-        return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+        return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
     }
 
     /**
@@ -1978,7 +1978,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2020,7 +2020,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         return fut;
     }
@@ -2114,7 +2114,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         assert ctx.portableEnabled() || cached == null || F.first(keys).equals(cached.key());
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -2126,7 +2126,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 checkJta();
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                return new GridFinishedFuture<>(e);
             }
 
             tx = ctx.tm().threadLocalTx();
@@ -2196,7 +2196,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                                 if (keys.size() == 1)
                                     // Safe to return because no locks are required in READ_COMMITTED mode.
-                                    return new GridFinishedFuture<>(ctx.kernalContext(), map);
+                                    return new GridFinishedFuture<>(map);
                             }
 
                             break;
@@ -2225,7 +2225,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     final Collection<K> loaded = new HashSet<>();
 
                     return new GridEmbeddedFuture<>(
-                        ctx.kernalContext(),
                         ctx.closures().callLocalSafe(ctx.projectSafe(new GPC<Map<K, V>>() {
                             @Override public Map<K, V> call() throws Exception {
                                 ctx.store().loadAllFromStore(null/*tx*/, loadKeys.keySet(), new CI2<K, V>() {
@@ -2304,7 +2303,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         new C2<Map<K, V>, Exception, IgniteInternalFuture<Map<K, V>>>() {
                             @Override public IgniteInternalFuture<Map<K, V>> apply(Map<K, V> map, Exception e) {
                                 if (e != null)
-                                    return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                                    return new GridFinishedFuture<>(e);
 
                                 if (tx0 == null || (!tx0.implicit() && tx0.isolation() == READ_COMMITTED)) {
                                     Collection<K> notFound = new HashSet<>(loadKeys.keySet());
@@ -2321,7 +2320,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                 }
 
                                 // There were no misses.
-                                return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K,
+                                return new GridFinishedFuture<>(Collections.<K,
                                     V>emptyMap());
                             }
                         },
@@ -2347,10 +2346,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     }
                 }
 
-                return new GridFinishedFuture<>(ctx.kernalContext(), map);
+                return new GridFinishedFuture<>(map);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                return new GridFinishedFuture<>(e);
             }
         }
         else {
@@ -2437,7 +2436,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<V> fut = putAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2525,7 +2524,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<?> putAllConflictAsync(final Map<? extends K, GridCacheDrInfo<V>> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
+            return new GridFinishedFuture<Object>();
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -2766,7 +2765,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<Boolean> fut = putxAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2845,7 +2844,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if(statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2908,7 +2907,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2962,7 +2961,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3071,7 +3070,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         ctx.deploy().registerClass(oldVal);
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                 }
 
@@ -3090,7 +3089,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdatePutAndGetTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3130,7 +3129,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m,
         @Nullable final IgnitePredicate<Cache.Entry<K, V>>... filter) {
         if (F.isEmpty(m))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
+            return new GridFinishedFuture<Object>();
 
         if (keyCheck)
             validateCacheKeys(m.keySet());
@@ -3200,7 +3199,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<V> fut = removeAsync(key, null, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3232,7 +3231,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3287,7 +3286,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
+            return new GridFinishedFuture<Object>();
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -3305,7 +3304,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }
@@ -3388,7 +3387,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3445,7 +3444,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(drMap))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
+            return new GridFinishedFuture<Object>();
 
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
@@ -3501,7 +3500,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         ctx.deploy().registerClass(val);
                 }
                 catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true,
@@ -3531,7 +3530,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         ctx.deploy().registerClass(oldVal);
                 }
                 catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                    return new GridFinishedFuture<>(e);
                 }
 
                 return tx.putAllAsync(ctx, F.t(key, newVal), true, null, -1, ctx.equalsPeekArray(oldVal));
@@ -3610,7 +3609,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         ctx.deploy().registerClass(val);
                     }
                     catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                 }
 
@@ -3623,7 +3622,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         val0 = (V)ctx.marshalToPortable(val);
                     }
                     catch (IgniteException e) {
-                        return new GridFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridFinishedFuture<>(e);
                     }
                 }
 
@@ -3638,7 +3637,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
+            fut.listen(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3992,7 +3991,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             A.notNull(key, "key");
 
         if (!ctx.store().configured())
-            return new GridFinishedFuture<>(ctx.kernalContext());
+            return new GridFinishedFuture<>();
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -4015,7 +4014,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (nodes.isEmpty())
-                    return new GridFinishedFuture<>(ctx.kernalContext());
+                    return new GridFinishedFuture<>();
 
                 return ctx.closures().callAsyncNoFailover(BROADCAST,
                     new LoadKeysCallable<>(ctx.name(), keys0, true, plc),
@@ -4036,7 +4035,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
             if (nodes.isEmpty())
-                return new GridFinishedFuture<>(ctx.kernalContext());
+                return new GridFinishedFuture<>();
 
             return ctx.closures().callAsyncNoFailover(BROADCAST,
                 new LoadKeysCallable<>(ctx.name(), keys, false, plc),
@@ -4183,7 +4182,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         Collection<ClusterNode> nodes = grp.nodes();
 
         if (nodes.isEmpty())
-            return new GridFinishedFuture<>(ctx.kernalContext(), 0);
+            return new GridFinishedFuture<>(0);
 
         IgniteInternalFuture<Collection<Integer>> fut =
             ctx.closures().broadcastNoFailover(new SizeCallable(ctx.name(), peekModes), null, nodes);
@@ -4457,7 +4456,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
                             return tx.commitAsync();
                         }
-                    }, ctx.kernalContext());
+                    });
 
                 saveFuture(holder, f);
 
@@ -4468,7 +4467,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             saveFuture(holder, f);
 
-            ctx.tm().txContextReset();
+            ctx.tm().resetContext();
 
             return f;
         }
@@ -4603,10 +4602,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 throw e;
             }
             finally {
-                ctx.tm().txContextReset();
+                ctx.tm().resetContext();
 
                 if (ctx.isNear())
-                    ctx.near().dht().context().tm().txContextReset();
+                    ctx.near().dht().context().tm().resetContext();
             }
         }
         else
@@ -4624,7 +4623,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             checkJta();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         if (log.isDebugEnabled())
@@ -4692,7 +4691,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                                 }
                             });
                         }
-                    }, ctx.kernalContext());
+                    });
 
                 saveFuture(holder, f);
 
@@ -4715,7 +4714,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             saveFuture(holder, f);
 
             if (tx.implicit())
-                ctx.tm().txContextReset();
+                ctx.tm().resetContext();
 
             return f;
         }
@@ -4744,7 +4743,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             asyncOpRelease();
         }
         else {
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     asyncOpRelease();
 
@@ -4778,7 +4777,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            return new GridFinishedFutureEx<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
+            return new GridFinishedFuture<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
                 "operation permit (thread got interrupted).", e));
         }
     }
@@ -5121,7 +5120,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             checkJta();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         return getAllAsync(Collections.singletonList(key), deserializePortable).chain(

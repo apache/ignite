@@ -21,10 +21,11 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.lang.management.*;
+import java.util.*;
 
 /**
- * Contains constants for all system properties and environmental variables in Ignite. These
- * properties and variables can be used to affect the behavior of Ignite.
+ * Contains constants for all system properties and environmental variables in Ignite.
+ * These properties and variables can be used to affect the behavior of Ignite.
  */
 public final class IgniteSystemProperties {
     /**
@@ -148,26 +149,6 @@ public final class IgniteSystemProperties {
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
-
-    /**
-     * Name of the system property or environment variable to activate synchronous
-     * listener notification for future objects implemented in Ignite. I.e.
-     * closure passed into method {@link org.apache.ignite.internal.IgniteInternalFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
-     * be evaluated in the same thread that will end the future.
-     *
-     * @see org.apache.ignite.internal.IgniteInternalFuture#syncNotify()
-     */
-    public static final String IGNITE_FUT_SYNC_NOTIFICATION = "IGNITE_FUTURE_SYNC_NOTIFICATION";
-
-    /**
-     * Name of the system property or environment variable to activate concurrent
-     * listener notification for future objects implemented in Ignite. I.e.
-     * upon future completion every listener will be notified concurrently in a
-     * separate thread.
-     *
-     * @see org.apache.ignite.internal.IgniteInternalFuture#concurrentNotify()
-     */
-    public static final String IGNITE_FUT_CONCURRENT_NOTIFICATION = "IGNITE_FUTURE_CONCURRENT_NOTIFICATION";
 
     /**
      * System property to override deployment mode configuration parameter.
@@ -493,5 +474,15 @@ public final class IgniteSystemProperties {
         }
 
         return res;
+    }
+
+    /**
+     * Gets snapshot of system properties.
+     * Snapshot could be used for thread safe iteration over system properties.
+     *
+     * @return Snapshot of system properties.
+     */
+    public static Properties snapshot() {
+        return (Properties)System.getProperties().clone();
     }
 }

@@ -17,16 +17,18 @@
 
 package org.apache.ignite.visor.commands
 
-import java.awt.Image
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util
-import javax.swing.ImageIcon
-
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
+
+import javax.swing.ImageIcon
+import java._
+import java.awt.Image
+import java.io._
+import java.text.SimpleDateFormat
+
+import scala.io._
 
 // Built-in commands.
 // Note the importing of implicit conversions.
@@ -46,6 +48,7 @@ import org.apache.ignite.visor.commands.tasks.VisorTasksCommand
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand
 import org.apache.ignite.visor.commands.vvm.VisorVvmCommand
 import org.apache.ignite.visor.visor
+import org.apache.ignite.visor.visor._
 
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer.Completer
@@ -100,7 +103,47 @@ object VisorConsole extends App {
 
     private val buf = new StringBuilder
 
-    private val reader = new ConsoleReader()
+    line = args.mkString(" ")
+
+    val argLst = parseArgs(args.mkString(" "))
+
+    val batchFile = argValue("b", argLst)
+    val batchCommand = argValue("e", argLst)
+
+    if (batchFile.isDefined && batchCommand.isDefined) {
+        visor.warn(
+            "Illegal options can't contains both command file and commands",
+            "Usage: ignitevisorcmd {-b=<batch commands file path>} {-e=command1;command2}"
+        )
+
+        visor.quit()
+    }
+
+    var batchStream: Option[String] = None
+
+    batchFile.foreach(name => {
+        val f = U.resolveIgnitePath(name)
+
+        if (f == null) {
+            visor.warn(
+                "Can't find batch commands file: " + name,
+                "Usage: ignitevisorcmd {-b=<batch command file path>} {-e=command1;command2}"
+            )
+
+            visor.quit()
+        }
+
+        batchStream = Some(Source.fromFile(f).getLines().mkString("\n"))
+    })
+
+    batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
+
+    val inputStream = batchStream match {
+        case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
+        case None => new FileInputStream(FileDescriptor.in)
+    }
+
+    private val reader = new ConsoleReader(inputStream, System.out, null, null)
 
     reader.addCompleter(new VisorCommandCompleter(visor.commands))
     reader.addCompleter(new VisorFileNameCompleter())
@@ -145,13 +188,15 @@ object VisorConsole extends App {
                         case _ => adviseToHelp(line)
                     }
                 } catch {
-                    case ignore: Exception => ignore.printStackTrace()
+                    case ignore: Exception => adviseToHelp(line)
                 }
             }
         }
     }
 
     def terminalWidth() = reader.getTerminal.getWidth
+
+    def consoleReader() = reader
 
     /**
      * Prints standard 'Invalid command' error message.

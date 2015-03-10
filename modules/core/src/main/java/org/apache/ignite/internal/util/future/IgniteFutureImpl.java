@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
@@ -61,26 +60,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void syncNotify(boolean syncNotify) {
-        fut.syncNotify(syncNotify);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncNotify() {
-        return fut.syncNotify();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void concurrentNotify(boolean concurNotify) {
-        fut.concurrentNotify(concurNotify);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean concurrentNotify() {
-        return fut.concurrentNotify();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isCancelled() {
         return fut.isCancelled();
     }
@@ -91,16 +70,10 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable final IgniteInClosure<? super IgniteFuture<V>> lsnr) {
-        if (lsnr != null)
-            fut.listenAsync(new InternalFutureListener(lsnr));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
+    @Override public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        fut.stopListenAsync(new InternalFutureListener(lsnr));
+        fut.listen(new InternalFutureListener(lsnr));
     }
 
     /** {@inheritDoc} */

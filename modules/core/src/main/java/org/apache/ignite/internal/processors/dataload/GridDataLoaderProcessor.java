@@ -151,7 +151,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
-            ldr.internalFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            ldr.internalFuture().listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 

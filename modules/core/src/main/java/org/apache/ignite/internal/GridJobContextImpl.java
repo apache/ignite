@@ -41,6 +41,9 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     /** */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Kernal context ({@code null} for job result context). */
     private GridKernalContext ctx;
 
@@ -49,9 +52,6 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
 
     /** Job worker. */
     private GridJobWorker job;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Attributes mux. Do not use this as object is exposed to user. */
     private final Object mux = new Object();

@@ -153,9 +153,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    protected GridCacheMapEntry(GridCacheContext<K, V> cctx, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
+    protected GridCacheMapEntry(
+        GridCacheContext<K, V> cctx,
+        K key,
+        int hash,
+        V val,
+        GridCacheMapEntry<K, V> next,
+        long ttl,
+        int hdrId
+    ) {
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         if (cctx.portableEnabled())
             key = (K)cctx.kernalContext().portable().detachPortable(key);

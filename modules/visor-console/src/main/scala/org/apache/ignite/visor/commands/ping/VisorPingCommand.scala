@@ -141,7 +141,7 @@ class VisorPingCommand {
                     else {
                         val ns = nodeById8(id8._2)
 
-                        if (ns.size() != 1)
+                        if (ns.size != 1)
                             scold("Unknown ID8: " + argName(id8))
                         else
                             pings +:= Pinger(ns.head, res)

@@ -383,7 +383,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(long topVer) {
-        GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
+        GridCompoundFuture f = new GridCompoundFuture();
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));

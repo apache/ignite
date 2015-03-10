@@ -136,7 +136,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute task command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             if (log.isDebugEnabled())
@@ -159,7 +159,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestTaskRequest req0 = (GridRestTaskRequest) req;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>(ctx);
+        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
         final GridRestResponse res = new GridRestResponse();
 
@@ -224,7 +224,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                taskFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> taskFut) {
                         try {
                             TaskDescriptor desc;

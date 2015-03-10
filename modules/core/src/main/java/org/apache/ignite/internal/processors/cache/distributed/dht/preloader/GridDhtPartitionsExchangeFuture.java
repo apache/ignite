@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -49,9 +48,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Dummy flag. */
     private final boolean dummy;
 
@@ -150,9 +146,12 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, DiscoveryEvent discoEvt,
-        GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
+    public GridDhtPartitionsExchangeFuture(
+        GridCacheSharedContext<K, V> cctx,
+        boolean reassign,
+        DiscoveryEvent discoEvt,
+        GridDhtPartitionExchangeId exchId
+    ) {
         dummy = true;
         forcePreload = false;
 
@@ -160,8 +159,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         this.reassign = reassign;
         this.discoEvt = discoEvt;
         this.cctx = cctx;
-
-        syncNotify(true);
 
         onDone(exchId.topologyVersion());
     }
@@ -176,7 +173,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
         dummy = false;
         forcePreload = true;
 
@@ -185,8 +181,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         this.cctx = cctx;
 
         reassign = true;
-
-        syncNotify(true);
 
         onDone(exchId.topologyVersion());
     }
@@ -198,10 +192,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      */
     public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId) {
-        super(cctx.kernalContext());
-
-        syncNotify(true);
-
         assert busyLock != null;
         assert exchId != null;
 
@@ -220,25 +210,11 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert oldestNode.get() != null;
 
-        initFut = new GridFutureAdapter<>(ctx, true);
+        initFut = new GridFutureAdapter<>();
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() +
                 ", fut=" + this + ']');
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtPartitionsExchangeFuture() {
-        assert false;
-
-        dummy = true;
-        forcePreload = false;
-        reassign = false;
-
-        exchId = null;
-        cctx = null;
     }
 
     /** {@inheritDoc} */
@@ -731,7 +707,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             }
         }
         else {
-            initFut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
+            initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> t) {
                     try {
                         if (!t.get()) // Just to check if there was an error.
@@ -805,7 +781,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 log.debug("Received full partition map from unexpected node [oldest=" + curOldest.id() +
                     ", unexpectedNodeId=" + nodeId + ']');
 
-            ClusterNode sender = ctx.discovery().node(nodeId);
+            ClusterNode sender = cctx.discovery().node(nodeId);
 
             if (sender == null) {
                 if (log.isDebugEnabled())
@@ -829,7 +805,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         assert exchId.topologyVersion() == msg.topologyVersion();
 
-        initFut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
+        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> t) {
                 assert msg.lastVersion() != null;
 
@@ -889,7 +865,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
         try {
             // Wait for initialization part of this future to complete.
-            initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     if (isDone())
                         return;
@@ -969,7 +945,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                             assert rmtNodes != null;
 
-                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext();)
+                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext(); )
                                 if (it.next().id().equals(nodeId))
                                     it.remove();
 
