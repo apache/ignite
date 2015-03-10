@@ -1937,7 +1937,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     continue;
                 }
 
-                if (storeErr != null && storeErr.failedKeys().contains(entry.key()))
+                if (storeErr != null &&
+                    storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false)))
                     continue;
 
                 try {

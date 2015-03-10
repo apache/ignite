@@ -1414,7 +1414,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             assert Thread.holdsLock(entry);
 
-            if (entry.obsolete() || (storeErr != null && storeErr.failedKeys().contains(entry.key())))
+            if (entry.obsolete() ||
+                (storeErr != null && storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false))))
                 continue;
 
             try {
