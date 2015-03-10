@@ -1698,6 +1698,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for stop routine.
      */
     private static class StopFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
@@ -1740,6 +1743,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Synchronous message acknowledgement future.
      */
     private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private UUID nodeId;
 

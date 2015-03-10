@@ -48,6 +48,9 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  */
 public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<K, V, Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -954,6 +957,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

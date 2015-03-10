@@ -48,6 +48,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Long>
     implements Comparable<GridDhtPartitionsExchangeFuture<K, V>>, GridDhtTopologyFuture {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Dummy flag. */
     private final boolean dummy;
 

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -429,6 +428,9 @@ public class GridAffinityAssignmentCache {
      * Affinity ready future. Will remove itself from ready futures map.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<Long> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private long reqTopVer;
 
