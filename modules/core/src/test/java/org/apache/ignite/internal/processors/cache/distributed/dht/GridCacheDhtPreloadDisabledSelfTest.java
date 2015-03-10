@@ -115,8 +115,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @param i Grid index.
      * @return Topology.
      */
-    private GridClientPartitionTopology topology(int i) {
-        return (GridClientPartitionTopology)near(grid(i).jcache(null)).dht().topology();
+    private GridDhtPartitionTopology topology(int i) {
+        return near(grid(i).jcache(null)).dht().topology();
     }
 
     /** @throws Exception If failed. */
