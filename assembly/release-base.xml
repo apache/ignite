@@ -33,6 +33,21 @@
         </file>
 
         <file>
+            <source>RELEASE_NOTES.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>README.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>DISCLAIMER.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
@@ -40,11 +55,6 @@
         <file>
             <source>config/java.util.logging.properties</source>
             <outputDirectory>/config</outputDirectory>
-        </file>
-
-        <file>
-            <source>docs/release_notes.pdf</source>
-            <outputDirectory>/docs</outputDirectory>
         </file>
     </files>
 
