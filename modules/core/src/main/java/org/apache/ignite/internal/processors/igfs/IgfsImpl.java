@@ -1018,8 +1018,8 @@ public final class IgfsImpl implements IgfsEx {
                     Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                     for (IgfsFile child : children) {
-                        IgfsFileInfo fsInfo = new IgfsFileInfo(cfg.getBlockSize(), child.length(),
-                            evictExclude(path, false), child.properties());
+                        IgfsFileInfo fsInfo = new IgfsFileInfo(
+                            child.blockSize(), child.length(), evictExclude(path, false), child.properties());
 
                         files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
