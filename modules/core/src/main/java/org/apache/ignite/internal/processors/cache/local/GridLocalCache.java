@@ -127,7 +127,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
 
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 

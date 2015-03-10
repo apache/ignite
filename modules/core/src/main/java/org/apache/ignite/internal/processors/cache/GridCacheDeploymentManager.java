@@ -71,7 +71,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private volatile boolean locDepOwner;
 
     /** */
-    private final GridThreadLocal<Boolean> ignoreOwnership = new GridThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> ignoreOwnership = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }

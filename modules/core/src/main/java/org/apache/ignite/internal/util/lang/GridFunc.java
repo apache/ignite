@@ -2709,88 +2709,6 @@ public class GridFunc {
     }
 
     /**
-     * Converts given object with interface {@link org.apache.ignite.internal.IgniteInternalFuture} into an object implementing {@link Future}.
-     *
-     * @param fut Future to convert.
-     * @param <T> Type of computation result.
-     * @return Instance implementing {@link Future}.
-     */
-    public static <T> Future<T> as(final IgniteInternalFuture<T> fut) {
-        A.notNull(fut, "fut");
-
-        return new GridSerializableFuture<T>() {
-            @Override public boolean cancel(boolean mayInterruptIfRunning) {
-                if (mayInterruptIfRunning) {
-                    try {
-                        return fut.cancel();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-                else
-                    return false;
-            }
-
-            @Override public boolean isCancelled() {
-                return fut.isCancelled();
-            }
-
-            @Override public boolean isDone() {
-                return fut.isDone();
-            }
-
-            @Override public T get() throws InterruptedException, ExecutionException {
-                try {
-                    return fut.get();
-                }
-                catch (IgniteFutureCancelledCheckedException ignore) {
-                    throw new CancellationException("The computation was cancelled.");
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    throw new InterruptedException("The computation was interrupted.");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new ExecutionException("The computation failed.", e);
-                }
-            }
-
-            @Override public T get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException,
-                TimeoutException {
-                try {
-                    return fut.get(timeout, unit);
-                }
-                catch (IgniteFutureCancelledCheckedException ignore) {
-                    throw new CancellationException("The computation was cancelled.");
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    throw new InterruptedException("The computation was interrupted.");
-                }
-                catch (IgniteFutureTimeoutCheckedException e) {
-                    throw new TimeoutException("The computation timed out: " + e.getMessage());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new ExecutionException("The computation failed.", e);
-                }
-            }
-        };
-    }
-
-    /**
-     * Gets closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
-     *
-     * @param <T> Type of future.
-     * @return Closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
-     */
-    public static <T> IgniteClosure<IgniteInternalFuture<T>, Future<T>> future() {
-        return new C1<IgniteInternalFuture<T>, Future<T>>() {
-            @Override public Future<T> apply(IgniteInternalFuture<T> fut) {
-                return as(fut);
-            }
-        };
-    }
-
-    /**
      * Curries given closure.
      *
      * @param f Closure.
@@ -8553,7 +8471,7 @@ public class GridFunc {
      * @return Completed future.
      */
     public static <T> IgniteInternalFuture<T> awaitOne(IgniteInternalFuture<T>... futs) {
-        return isEmpty(futs) ? new GridFinishedFutureEx<T>() : awaitOne(asList(futs));
+        return isEmpty(futs) ? new GridFinishedFuture<T>() : awaitOne(asList(futs));
     }
 
     /**
@@ -8565,7 +8483,7 @@ public class GridFunc {
      */
     public static <T> IgniteInternalFuture<T> awaitOne(Iterable<IgniteInternalFuture<T>> futs) {
         if (F.isEmpty(futs))
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -8585,7 +8503,7 @@ public class GridFunc {
                         };
                     }
 
-                    fut.listenAsync(c);
+                    fut.listen(c);
                 }
                 else
                     return fut;
@@ -8594,7 +8512,7 @@ public class GridFunc {
 
         // Only NULLs have been passed in.
         if (c == null)
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         boolean interrupted = false;
 

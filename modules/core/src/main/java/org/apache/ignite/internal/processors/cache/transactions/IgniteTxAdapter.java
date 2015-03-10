@@ -959,7 +959,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridFutureAdapter<IgniteInternalTx> fut = finFut.get();
 
         if (fut == null) {
-            fut = new GridFutureAdapter<IgniteInternalTx>(cctx.kernalContext()) {
+            fut = new GridFutureAdapter<IgniteInternalTx>() {
                 @Override public String toString() {
                     return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
                 }

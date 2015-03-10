@@ -24,6 +24,7 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -118,7 +119,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 if (!topFut.isDone()) {
                     final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
 
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
                             onMessage0(nodeId, cacheMsg, c0);
                         }
@@ -215,36 +216,43 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                             ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
-                    startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> f) {
-                            rw.readLock();
+                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(final IgniteInternalFuture<?> f) {
+                            cctx.kernalContext().closure().runLocalSafe(
+                                new GridPlainRunnable() {
+                                    @Override public void run() {
+                                        rw.readLock();
 
-                            try {
-                                if (stopping) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Received cache communication message while stopping " +
-                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+                                        try {
+                                            if (stopping) {
+                                                if (log.isDebugEnabled())
+                                                    log.debug("Received cache communication message while stopping " +
+                                                        "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
 
-                                    return;
+                                                return;
+                                            }
+
+                                            f.get();
+
+                                            if (log.isDebugEnabled())
+                                                log.debug("Start future completed for message [nodeId=" + nodeId +
+                                                    ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
+
+                                            processMessage(nodeId, cacheMsg, c);
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            // Log once.
+                                            if (startErr.compareAndSet(false, true))
+                                                U.error(log, "Failed to complete preload start future " +
+                                                    "(will ignore message) " +
+                                                    "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
+                                        }
+                                        finally {
+                                            rw.readUnlock();
+                                        }
+                                    }
                                 }
-
-                                f.get();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Start future completed for message [nodeId=" + nodeId +
-                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                processMessage(nodeId, cacheMsg, c);
-                            }
-                            catch (IgniteCheckedException e) {
-                                // Log once.
-                                if (startErr.compareAndSet(false, true))
-                                    U.error(log, "Failed to complete preload start future (will ignore message) " +
-                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                            }
-                            finally {
-                                rw.readUnlock();
-                            }
+                            );
                         }
                     });
                 }
@@ -285,10 +293,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private void processMessage(UUID nodeId, GridCacheMessage<K, V> msg,
         IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c) {
         try {
-            // Start clean.
-            if (msg.transactional())
-                CU.resetTxContext(cctx);
-
             // We will not end up with storing a bunch of new UUIDs
             // in each cache entry, since node ID is stored in NIO session
             // on handshake.
@@ -301,8 +305,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             U.error(log, "Failed processing message [senderId=" + nodeId + ']', e);
         }
         finally {
-            // Clear thread-local tx contexts.
-            CU.resetTxContext(cctx);
+            // Reset thread local context.
+            cctx.tm().resetContext();
+            cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
             CU.unwindEvicts(cctx);

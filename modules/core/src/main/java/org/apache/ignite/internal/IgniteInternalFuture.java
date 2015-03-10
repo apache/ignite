@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
@@ -107,77 +106,11 @@ public interface IgniteInternalFuture<R> {
     public long duration();
 
     /**
-     * Flag to turn on or off synchronous listener notification. If this flag is {@code true}, then
-     * upon future completion the notification may happen in the same thread that created
-     * the future. This becomes especially important when adding listener to a future that
-     * is already {@code done} - if this flag is {@code true}, then listener will be
-     * immediately notified within the same thread.
-     * <p>
-     * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
-     *
-     * @param syncNotify Flag to turn on or off synchronous listener notification.
-     */
-    public void syncNotify(boolean syncNotify);
-
-    /**
-     * Gets value of synchronous listener notification flag. If this flag is {@code true}, then
-     * upon future completion the notification may happen in the same thread that created
-     * the future. This becomes especially important when adding listener to a future that
-     * is already {@code done} - if this flag is {@code true}, then listener will be
-     * immediately notified within the same thread.
-     * <p>
-     * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
-     *
-     * @return Synchronous listener notification flag.
-     */
-    public boolean syncNotify();
-
-    /**
-     * Flag to turn on or off concurrent listener notification. This flag comes into play only
-     * when a future has more than one listener subscribed to it. If this flag is {@code true},
-     * then all listeners will be notified concurrently by different threads; otherwise,
-     * listeners will be notified one after another within one thread (depending on
-     * {@link #syncNotify()} flag, these notifications may happen either in the same thread which
-     * started the future, or in a different thread).
-     * <p>
-     * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
-     *
-     * @param concurNotify Flag to turn on or off concurrent listener notification.
-     */
-    public void concurrentNotify(boolean concurNotify);
-
-    /**
-     * Gets value concurrent listener notification flag. This flag comes into play only
-     * when a future has more than one listener subscribed to it. If this flag is {@code true},
-     * then all listeners will be notified concurrently by different threads; otherwise,
-     * listeners will be notified one after another within one thread (depending on
-     * {@link #syncNotify()} flag, these notifications may happen either in the same thread which
-     * started the future, or in a different thread).
-     * <p>
-     * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
-     *
-     * @return Concurrent listener notification flag
-     */
-    public boolean concurrentNotify();
-
-    /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
-
-    /**
-     * Removes given listeners from the future. If no listener is passed in, then all listeners
-     * will be removed.
-     *
-     * @param lsnr Listeners to remove.
-     */
-    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>>... lsnr);
+    public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -187,4 +120,14 @@ public interface IgniteInternalFuture<R> {
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
+
+    /**
+     * @return Error value if future has already been completed with error.
+     */
+    public Throwable error();
+
+    /**
+     * @return Result value if future has already been completed normally.
+     */
+    public R result();
 }

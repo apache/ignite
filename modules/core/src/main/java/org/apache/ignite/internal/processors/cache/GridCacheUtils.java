@@ -1218,7 +1218,7 @@ public class GridCacheUtils {
         assert ctx != null;
         assert prj != null;
 
-        ctx.tm().txContextReset();
+        ctx.tm().resetContext();
 
         return prj.txStartEx(concurrency, isolation);
     }
@@ -1235,15 +1235,6 @@ public class GridCacheUtils {
             ", isolation=" + tx.isolation() + ", state=" + tx.state() + ", invalidate=" + tx.isInvalidate() +
             ", rollbackOnly=" + tx.isRollbackOnly() + ", nodeId=" + tx.nodeId() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
-    }
-
-    /**
-     * @param ctx Cache context.
-     */
-    public static void resetTxContext(GridCacheSharedContext ctx) {
-        assert ctx != null;
-
-        ctx.tm().txContextReset();
     }
 
     /**
@@ -1593,10 +1584,10 @@ public class GridCacheUtils {
      * @return {@code True} in this is IGFS data or meta cache.
      */
     public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        IgfsConfiguration[] igfsCfgs = cfg.getIgfsConfiguration();
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
-            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 // IGFS config probably has not been validated yet => possible NPE, so we check for null.
                 if (igfsCfg != null &&
                     (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))
@@ -1784,7 +1775,7 @@ public class GridCacheUtils {
      */
     @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
-            return new CacheWriterException(e);
+            return new CacheWriterException(U.convertExceptionNoWrap(e));
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);

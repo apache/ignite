@@ -75,7 +75,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("partitioned");
         igfsCfg.setMetaCacheName("partitioned");
@@ -88,7 +88,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 

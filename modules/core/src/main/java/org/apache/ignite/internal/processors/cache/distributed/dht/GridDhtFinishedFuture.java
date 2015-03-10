@@ -17,41 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Finished DHT future.
  */
 public class GridDhtFinishedFuture<T> extends GridFinishedFuture<T> implements GridDhtFuture<T> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridDhtFinishedFuture() {
-        // No-op.
-    }
-
-    /**
-     * @param ctx Context.
      * @param t Result.
      */
-    public GridDhtFinishedFuture(GridKernalContext ctx, T t) {
-        super(ctx, t);
+    public GridDhtFinishedFuture(T t) {
+        super(t);
     }
 
     /**
-     * @param ctx Context.
      * @param err Error.
      */
-    public GridDhtFinishedFuture(GridKernalContext ctx, Throwable err) {
-        super(ctx, err);
+    public GridDhtFinishedFuture(Throwable err) {
+        super(err);
     }
 
     /** {@inheritDoc} */

@@ -83,13 +83,13 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
             IgniteCheckedException err =
                 new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("key"));
 
-            return new GridFinishedFuture(ctx, err);
+            return new GridFinishedFuture(err);
         }
         else if (req.delta() == null) {
             IgniteCheckedException err =
                 new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("delta"));
 
-            return new GridFinishedFuture(ctx, err);
+            return new GridFinishedFuture(err);
         }
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {

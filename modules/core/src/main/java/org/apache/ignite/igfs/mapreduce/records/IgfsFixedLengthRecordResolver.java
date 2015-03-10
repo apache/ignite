@@ -52,7 +52,7 @@ public class IgfsFixedLengthRecordResolver implements IgfsRecordResolver, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgfsInputStream stream,
+    @Override public IgfsFileRange resolveRecords(IgniteFileSystem fs, IgfsInputStream stream,
         IgfsFileRange suggestedRecord)
         throws IgniteException, IOException {
         long suggestedEnd = suggestedRecord.start() + suggestedRecord.length();

@@ -2941,23 +2941,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (txEnabled()) {
-            Transaction tx = cache.txStart();
+            try (Transaction tx = cache.txStart()) {
+                cache.replace(key, 2);
 
-            cache.replace(key, 2);
+                assert cache.peek(key, F.asList(GLOBAL)) == 1;
 
-            assert cache.peek(key, F.asList(GLOBAL)) == 1;
+                if (cacheMode() == LOCAL) {
+                    assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
+                    assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
+                }
 
-            if (cacheMode() == LOCAL) {
-                assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
-                assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
+                assert cache.peek(key, F.asList(TX)) == 2;
+                assert cache.peek(key, F.asList(SMART)) == 2;
+                assert cache.peek(key, F.asList(SWAP)) == null;
+                assert cache.peek(key, F.asList(DB)) == 1;
+
+                tx.commit();
             }
-
-            assert cache.peek(key, F.asList(TX)) == 2;
-            assert cache.peek(key, F.asList(SMART)) == 2;
-            assert cache.peek(key, F.asList(SWAP)) == null;
-            assert cache.peek(key, F.asList(DB)) == 1;
-
-            tx.commit();
         }
         else
             cache.replace(key, 2);

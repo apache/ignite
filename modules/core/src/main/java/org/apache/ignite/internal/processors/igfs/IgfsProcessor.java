@@ -51,8 +51,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Converts context to IGFS. */
-    private static final IgniteClosure<IgfsContext,IgniteFs> CTX_TO_IGFS = new C1<IgfsContext, IgniteFs>() {
-        @Override public IgniteFs apply(IgfsContext igfsCtx) {
+    private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
+        @Override public IgniteFileSystem apply(IgfsContext igfsCtx) {
             return igfsCtx.igfs();
         }
     };
@@ -73,17 +73,17 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        IgfsConfiguration[] cfgs = ctx.config().getIgfsConfiguration();
+        FileSystemConfiguration[] cfgs = ctx.config().getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
         validateLocalIgfsConfigurations(cfgs);
 
         // Start IGFS instances.
-        for (IgfsConfiguration cfg : cfgs) {
+        for (FileSystemConfiguration cfg : cfgs) {
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
-                new IgfsConfiguration(cfg),
+                new FileSystemConfiguration(cfg),
                 new IgfsMetaManager(),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
@@ -98,6 +98,54 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
+        
+        IgniteConfiguration gridCfg = ctx.config();
+
+        // Node doesn't have IGFS if it:
+        // is daemon;
+        // doesn't have configured IGFS;
+        // doesn't have configured caches.
+        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getFileSystemConfiguration()) ||
+            F.isEmpty(gridCfg.getCacheConfiguration()))
+            return;
+
+        final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
+
+        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
+            @Override public void apply(CacheConfiguration c) {
+                cacheCfgs.put(c.getName(), c);
+            }
+        });
+
+        Collection<IgfsAttributes> attrVals = new ArrayList<>();
+
+        assert gridCfg.getFileSystemConfiguration() != null;
+
+        for (FileSystemConfiguration igfsCfg : gridCfg.getFileSystemConfiguration()) {
+            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
+
+            if (cacheCfg == null)
+                continue; // No cache for the given IGFS configuration.
+
+            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
+
+            if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
+                // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
+                // Configuration will be validated later, while starting IgfsProcessor.
+                continue;
+
+            attrVals.add(new IgfsAttributes(
+                igfsCfg.getName(),
+                igfsCfg.getBlockSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                igfsCfg.getMetaCacheName(),
+                igfsCfg.getDataCacheName(),
+                igfsCfg.getDefaultMode(),
+                igfsCfg.getPathModes(),
+                igfsCfg.isFragmentizerEnabled()));
+        }
+
+        ctx.addNodeAttribute(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
     }
 
     /** {@inheritDoc} */
@@ -167,12 +215,12 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Collection<IgniteFs> igfss() {
+    @Override public Collection<IgniteFileSystem> igfss() {
         return F.viewReadOnly(igfsCache.values(), CTX_TO_IGFS);
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFs igfs(@Nullable String name) {
+    @Override @Nullable public IgniteFileSystem igfs(@Nullable String name) {
         IgfsContext igfsCtx = igfsCache.get(maskName(name));
 
         return igfsCtx == null ? null : igfsCtx.igfs();
@@ -191,60 +239,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         return new IgfsJobImpl(job, igfsName, path, start, len, recRslv);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        super.addAttributes(attrs);
-
-        IgniteConfiguration gridCfg = ctx.config();
-
-        // Node doesn't have IGFS if it:
-        // is daemon;
-        // doesn't have configured IGFS;
-        // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getIgfsConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
-            return;
-
-        final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
-
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
-            @Override public void apply(CacheConfiguration c) {
-                cacheCfgs.put(c.getName(), c);
-            }
-        });
-
-        Collection<IgfsAttributes> attrVals = new ArrayList<>();
-
-        assert gridCfg.getIgfsConfiguration() != null;
-
-        for (IgfsConfiguration igfsCfg : gridCfg.getIgfsConfiguration()) {
-            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
-
-            if (cacheCfg == null)
-                continue; // No cache for the given IGFS configuration.
-
-            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
-
-            if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
-                // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
-                // Configuration will be validated later, while starting IgfsProcessor.
-                continue;
-
-            attrVals.add(new IgfsAttributes(
-                igfsCfg.getName(),
-                igfsCfg.getBlockSize(),
-                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
-                igfsCfg.getMetaCacheName(),
-                igfsCfg.getDataCacheName(),
-                igfsCfg.getDefaultMode(),
-                igfsCfg.getPathModes(),
-                igfsCfg.isFragmentizerEnabled()));
-        }
-
-        attrs.put(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
-    }
-
     /**
      * @param name Cache name.
      * @return Masked name accounting for {@code nulls}.
@@ -258,10 +252,10 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
      * @param cfgs IGFS configurations
      * @throws IgniteCheckedException If any of IGFS configurations is invalid.
      */
-    private void validateLocalIgfsConfigurations(IgfsConfiguration[] cfgs) throws IgniteCheckedException {
+    private void validateLocalIgfsConfigurations(FileSystemConfiguration[] cfgs) throws IgniteCheckedException {
         Collection<String> cfgNames = new HashSet<>();
 
-        for (IgfsConfiguration cfg : cfgs) {
+        for (FileSystemConfiguration cfg : cfgs) {
             String name = cfg.getName();
 
             if (cfgNames.contains(name))
@@ -327,7 +321,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (secondary) {
                 // When working in any mode except of primary, secondary FS config must be provided.
                 assertParameter(cfg.getSecondaryFileSystem() != null,
-                    "secondaryFileSystem cannot be null when mode is SECONDARY");
+                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
             }
 
             cfgNames.add(name);

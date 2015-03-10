@@ -23,33 +23,19 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Data loader future.
  */
 class GridDataLoaderFuture extends GridFutureAdapter<Object> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Data loader. */
     @GridToStringExclude
     private IgniteDataLoaderImpl dataLdr;
-
-    /**
-     * Default constructor for {@link Externalizable} support.
-     */
-    public GridDataLoaderFuture() {
-        // No-op.
-    }
 
     /**
      * @param ctx Context.
      * @param dataLdr Data loader.
      */
     GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
-        super(ctx);
-
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;
@@ -57,8 +43,6 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        checkValid();
-
         if (onCancelled()) {
             dataLdr.closeEx(true);
 

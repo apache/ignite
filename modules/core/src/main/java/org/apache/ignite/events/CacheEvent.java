@@ -179,7 +179,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
+    public String cacheName() {
         return cacheName;
     }
 
@@ -206,7 +206,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Node which initiated cache operation or {@code null} if that node is not available.
      */
-    @Nullable public ClusterNode eventNode() {
+    public ClusterNode eventNode() {
         return evtNode;
     }
 
@@ -216,7 +216,7 @@ public class CacheEvent extends EventAdapter {
      * @return Cache entry associated with event.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K> K key() {
+    public <K> K key() {
         return (K)key;
     }
 
@@ -226,7 +226,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return ID of surrounding cache transaction.
      */
-    @Nullable public IgniteUuid xid() {
+    public IgniteUuid xid() {
         return xid;
     }
 
@@ -235,7 +235,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return ID of the lock if held.
      */
-    @Nullable public Object lockId() {
+    public Object lockId() {
         return lockId;
     }
 
@@ -245,7 +245,7 @@ public class CacheEvent extends EventAdapter {
      * @return New value associated with event (<tt>null</tt> if event is
      *      {@link EventType#EVT_CACHE_OBJECT_REMOVED}.
      */
-    @Nullable public Object newValue() {
+    public Object newValue() {
         return newVal;
     }
 
@@ -254,7 +254,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Old value associated with event.
      */
-    @Nullable public Object oldValue() {
+    public Object oldValue() {
         return oldVal;
     }
 
@@ -290,7 +290,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Subject ID.
      */
-    @Nullable public UUID subjectId() {
+    public UUID subjectId() {
         return subjId;
     }
 
@@ -299,7 +299,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Closure class name.
      */
-    @Nullable public String closureClassName() {
+    public String closureClassName() {
         return cloClsName;
     }
 
@@ -308,7 +308,7 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Task name.
      */
-    @Nullable public String taskName() {
+    public String taskName() {
         return taskName;
     }
 

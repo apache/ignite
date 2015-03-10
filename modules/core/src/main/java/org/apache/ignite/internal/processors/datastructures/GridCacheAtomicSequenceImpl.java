@@ -303,7 +303,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                 locVal += l;
 
-                return new GridFinishedFuture<>(ctx.kernalContext(), updated ? locVal : curVal);
+                return new GridFinishedFuture<>(updated ? locVal : curVal);
             }
         }
         finally {
@@ -347,7 +347,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
                         locVal += l;
 
-                        return new GridFinishedFuture<>(ctx.kernalContext(), updated ? locVal : curVal);
+                        return new GridFinishedFuture<>(updated ? locVal : curVal);
                     }
                 }
                 finally {
