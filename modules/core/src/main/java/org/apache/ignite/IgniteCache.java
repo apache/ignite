@@ -21,7 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -469,7 +469,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getRebalancePartitionedDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link CacheConsistentHashAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link CacheConfiguration#getRebalancePartitionedDelay()} for more information on how to configure

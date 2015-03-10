@@ -43,7 +43,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
         cc.setWriteSynchronizationMode(FULL_ASYNC);
         cc.setStartSize(20);
         cc.setRebalanceMode(preloadMode);
-        cc.setPreloadBatchSize(preloadBatchSize);
+        cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 

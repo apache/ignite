@@ -40,7 +40,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
