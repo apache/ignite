@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
-
-import org.apache.ignite.igfs.*;
+package org.apache.ignite.igfs;
 
 /**
  * Exception indicating that directory can not be deleted because it is not empty.

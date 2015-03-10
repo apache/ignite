@@ -126,7 +126,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      */
     public static IgfsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
-            return new IgfsFileNotFoundException(e);
+            return new IgfsPathNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
             return new IgfsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
@@ -233,7 +233,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgfsPath> res = new ArrayList<>(statuses.length);
 
@@ -243,7 +243,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -256,7 +256,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgfsFile> res = new ArrayList<>(statuses.length);
 
@@ -271,7 +271,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);

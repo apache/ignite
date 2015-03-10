@@ -20,7 +20,7 @@ package org.apache.ignite.igfs;
 /**
  * {@code IGFS} exception indicating that target resource is not found.
  */
-public class IgfsFileNotFoundException extends IgfsInvalidPathException {
+public class IgfsPathNotFoundException extends IgfsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +29,7 @@ public class IgfsFileNotFoundException extends IgfsInvalidPathException {
      *
      * @param msg Error message.
      */
-    public IgfsFileNotFoundException(String msg) {
+    public IgfsPathNotFoundException(String msg) {
         super(msg);
     }
 
@@ -38,7 +38,7 @@ public class IgfsFileNotFoundException extends IgfsInvalidPathException {
      *
      * @param cause Exception cause.
      */
-    public IgfsFileNotFoundException(Throwable cause) {
+    public IgfsPathNotFoundException(Throwable cause) {
         super(cause);
     }
 }
