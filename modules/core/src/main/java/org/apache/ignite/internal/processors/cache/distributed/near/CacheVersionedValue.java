@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
@@ -29,9 +31,11 @@ import java.nio.*;
  */
 public class CacheVersionedValue implements Message {
     /** Value. */
+    @GridToStringInclude
     private CacheObject val;
 
     /** Cache version. */
+    @GridToStringInclude
     private GridCacheVersion ver;
 
     /** */
@@ -125,7 +129,7 @@ public class CacheVersionedValue implements Message {
 
         switch (reader.state()) {
             case 0:
-                val = reader.readMessage("obj");
+                val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
                     return false;
@@ -153,5 +157,10 @@ public class CacheVersionedValue implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheVersionedValue.class, this);
     }
 }
