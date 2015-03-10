@@ -43,9 +43,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final CacheEntryPredicate prjPred;
-
-    /** */
     private final GridCacheQueryType type;
 
     /** */
@@ -101,11 +98,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param filter Scan filter.
      * @param incMeta Include metadata flag.
      * @param keepPortable Keep portable flag.
-     * @param prjPred Cache projection filter.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
-        @Nullable CacheEntryPredicate prjPred,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
@@ -118,7 +113,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.type = type;
         this.clsName = clsName;
         this.clause = clause;
-        this.prjPred = prjPred;
         this.filter = filter;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
@@ -148,7 +142,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param taskHash Task hash.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
-        CacheEntryPredicate prjPred,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -165,7 +158,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         UUID subjId,
         int taskHash) {
         this.cctx = cctx;
-        this.prjPred = prjPred;
         this.type = type;
         this.log = log;
         this.pageSize = pageSize;
@@ -181,13 +173,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepPortable = keepPortable;
         this.subjId = subjId;
         this.taskHash = taskHash;
-    }
-
-    /**
-     * @return cache projection filter.
-     */
-    @Nullable public CacheEntryPredicate projectionFilter() {
-        return prjPred;
     }
 
     /**

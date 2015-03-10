@@ -470,25 +470,14 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         cache.putx(1, new ObjectValue("test", 1));
         cache.putx(2, new ObjectValue("test", 2));
 
-        CacheEntryPredicate p = new  CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                ObjectValue val = CU.value(e.rawGet(), e.context(), false);
-
-                return val != null && val.intVal == 1;
-            }
-        });
-
-        CacheProjection<Integer, ObjectValue> cachePrj = ((IgniteKernal)grid(0))
-            .<Integer, ObjectValue>cache(null).projection(p);
-
         CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
-            cachePrj.queries().createFullTextQuery(ObjectValue.class, "test");
+            cache.queries().createFullTextQuery(ObjectValue.class, "test");
 
         CacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute();
 
         assert iter != null;
 
-        int expCnt = 1;
+        int expCnt = 2;
 
         for (int i = 0; i < expCnt; i++)
             assert iter.next() != null;
@@ -845,36 +834,6 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assert res1 != null;
         assert res1.size() == gridCount();
         assert F.sumInt(res1) == (cacheMode() == REPLICATED ? 12 * gridCount() : 12);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReduceQueryOnProjection() throws Exception {
-        CacheProjection<String, Integer> c = ((IgniteKernal)ignite).cache(null);
-
-        assert c.putx("key1", 1);
-        assert c.putx("key2", 2);
-        assert c.putx("key3", 3);
-        assert c.putx("key4", 4);
-        assert c.putx("key5", 5);
-
-        // Filter values less than 3.
-        CacheEntryPredicate p = new  CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                Integer val = CU.value(e.rawGet(), e.context(), false);
-
-                return val != null && val > 3;
-            }
-        });
-
-        CacheProjection<String, Integer> cachePrj = ((IgniteKernal)ignite).<String, Integer>cache(null).projection(p);
-
-        CacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
-
-        Collection<Integer> res = q.execute(new SumRemoteReducer()).get();
-
-        assertEquals(9, F.sumInt(res));
     }
 
     /**

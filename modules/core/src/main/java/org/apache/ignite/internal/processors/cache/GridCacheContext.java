@@ -1753,7 +1753,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
-        return cacheObjects().toCacheObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
     }
 
     /**
@@ -1761,17 +1761,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
     }
 
     /**
      * @param bytes Bytes.
      * @return Cache key object.
+     * @throws IgniteCheckedException If failed.
      */
     public KeyCacheObject toCacheKeyObject(byte[] bytes) throws IgniteCheckedException {
         Object obj = ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, deploy().localLoader());
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj);
+        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, false);
     }
 
     /**
@@ -1790,7 +1791,9 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (ldr == null)
                 return null;
 
-            return ctx.cacheObjects().toCacheObject(cacheObjCtx, ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr));
+            return ctx.cacheObjects().toCacheObject(cacheObjCtx,
+                ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr),
+                false);
         }
 
         return ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes);

@@ -196,8 +196,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @return Query info.
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
-        CacheEntryPredicate prjPred = req.projectionFilter();
-
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();
 
@@ -209,7 +207,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridCacheQueryAdapter<?> qry =
             new GridCacheQueryAdapter<>(
                 cctx,
-                prjPred,
                 req.type(),
                 log,
                 req.pageSize(),
@@ -229,7 +226,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         return new GridCacheQueryInfo(
             false,
-            prjPred,
             trans,
             rdc,
             qry,
@@ -509,7 +505,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
-                qry.query().projectionFilter(),
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -618,7 +613,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 null,
                 null,
-                qry.query().projectionFilter(),
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),

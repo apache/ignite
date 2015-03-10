@@ -45,7 +45,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public int typeId(Object obj);
 
     /**
-     * Converts temporary offheap object to heap-based.
+     * Converts temporary off-heap object to heap-based.
      *
      * @param ctx Context.
      * @param obj Object.
@@ -55,13 +55,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public Object unwrapTemporary(GridCacheContext ctx, @Nullable Object obj) throws IgniteException;
 
     /**
-     * @param obj Object to marshal.
-     * @return Portable object.
-     * @throws IgniteException In case of error.
-     */
-    public Object marshalToPortable(@Nullable Object obj) throws IgniteException;
-
-    /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).
      *
      * @param obj Cache object.
@@ -69,18 +62,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Object to be store in cache.
      */
     @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
-
-    /**
-     * @return Portable marshaller for client connectivity or {@code null} if it's not
-     *      supported (in case of OS edition).
-     */
-    @Nullable public GridClientMarshaller portableMarshaller();
-
-    /**
-     * @param marsh Client marshaller.
-     * @return Whether marshaller is portable.
-     */
-    public boolean isPortable(GridClientMarshaller marsh);
 
     /**
      * Checks whether object is portable object.
@@ -132,10 +113,21 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param ctx Cache context.
+     * @param obj Key value.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @return Cache key object.
+     */
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj);
+
+    /**
+     * @param ctx Cache context.
      * @param obj Object.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
      * @return Cache object.
      */
-    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj);
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj);
 
     /**
      * @param ctx Cache context.
@@ -155,13 +147,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp) throws IgniteCheckedException;
 
     /**
-     * @param ctx Cache context.
-     * @param obj Key value.
-     * @return Cache key object.
-     */
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj);
-
-    /**
      * @param obj Value.
      * @return {@code True} if object is of known immutable type of it is marked
      *          with {@link IgniteImmutable} annotation.
@@ -169,6 +154,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean immutable(Object obj);
 
     /**
+     * @param cacheName Cache name.
      * @return {@code True} if portable format should be preserved when passing values to cache store.
      */
     public boolean keepPortableInStore(@Nullable String cacheName);

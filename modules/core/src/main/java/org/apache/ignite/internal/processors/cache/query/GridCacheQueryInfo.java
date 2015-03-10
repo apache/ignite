@@ -33,9 +33,6 @@ class GridCacheQueryInfo {
     private boolean loc;
 
     /** */
-    private CacheEntryPredicate prjPred;
-
-    /** */
     private IgniteClosure<Object, Object> trans;
 
     /** */
@@ -64,7 +61,6 @@ class GridCacheQueryInfo {
 
     /**
      * @param loc {@code true} if local query.
-     * @param prjPred Projection predicate.
      * @param trans Transforming closure.
      * @param rdc Reducer.
      * @param qry Query base.
@@ -77,7 +73,6 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        CacheEntryPredicate prjPred,
         IgniteClosure<Object, Object> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
@@ -89,7 +84,6 @@ class GridCacheQueryInfo {
         Object[] args
     ) {
         this.loc = loc;
-        this.prjPred = prjPred;
         this.trans = trans;
         this.rdc = rdc;
         this.qry = qry;
@@ -120,13 +114,6 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryAdapter<?> query() {
         return qry;
-    }
-
-    /**
-     * @return Projection predicate.
-     */
-    CacheEntryPredicate projectionPredicate() {
-        return prjPred;
     }
 
     /**

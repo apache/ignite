@@ -728,7 +728,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Reset MVCC context.
      */
     public void contextReset() {
-        pending.set(new LinkedList<GridCacheMvccCandidate<K>>());
+        pending.set(new LinkedList<GridCacheMvccCandidate>());
     }
 
     /**

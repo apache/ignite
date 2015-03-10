@@ -205,8 +205,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         for (IgniteCache<Integer, String> cache : caches) {
             for (Integer key : map.keySet()) {
-                if (aff.isPrimaryOrBackup(grid(caches.indexOf(cache)).localNode(), key) ||
-                    nearEnabled())
+                if (aff.isPrimaryOrBackup(grid(caches.indexOf(cache)).localNode(), key))
                     assertEquals(map.get(key), cache.localPeek(key));
                 else
                     assertNull(cache.localPeek(key));

@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  *
@@ -49,44 +51,74 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         return ctx.copyOnGet() && val != null && !ctx.processor().immutable(val);
     }
 
-    /**
-     * @return {@code True} if value is byte array.
-     */
-    protected abstract boolean byteArray();
-
     /** {@inheritDoc} */
     @Override public byte type() {
-        return byteArray() ? TYPE_BYTE_ARR : TYPE_REGULAR;
+        return TYPE_REGULAR;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        byte[] valBytes = byteArray() ? (byte[])val : this.valBytes;
-
         assert valBytes != null;
-
-        out.writeBoolean(byteArray());
 
         U.writeByteArray(out, valBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean byteArr = in.readBoolean();
+        valBytes = U.readByteArray(in);
+    }
 
-        byte[] valBytes = U.readByteArray(in);
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
 
-        if (byteArr)
-            val = valBytes;
-        else
-            this.valBytes = valBytes;
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                valBytes = reader.readByteArray("valBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByteArray("valBytes", valBytes))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */
     public String toString() {
-        if (byteArray())
-            return getClass().getSimpleName() + " [val=<byte array>, len=" + ((byte[])val).length + ']';
-        else
-            return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+        return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
     }
 }

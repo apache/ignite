@@ -1474,16 +1474,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             return new GridFinishedFuture<>();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean compact(K key) throws IgniteCheckedException {
-        return compact(key, (CacheEntryPredicate[])null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void compactAll() throws IgniteCheckedException {
-        compactAll(keySet());
-    }
-
     /**
      * @param entry Removes entry from cache if currently mapped value is the same as passed.
      */
@@ -1987,7 +1977,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final boolean keepCacheObjects
         ) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K1, V1>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
 
         IgniteTxLocalAdapter tx = null;
 
@@ -4127,13 +4117,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             .execute();
 
         return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
-            @Override
-            protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
+            @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
                 return new CacheEntryImpl<>(e.getKey(), e.getValue());
             }
 
-            @Override
-            protected void remove(Cache.Entry<K, V> item) {
+            @Override protected void remove(Cache.Entry<K, V> item) {
                 ctx.gate().enter();
 
                 try {
@@ -4750,40 +4738,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @param key Key.
      * @param filter Filters to evaluate.
-     * @return {@code True} if compacted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean compact(K key, @Nullable CacheEntryPredicate... filter)
-        throws IgniteCheckedException {
-        ctx.denyOnFlag(READ);
-
-        A.notNull(key, "key");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-        GridCacheEntryEx entry = peekEx(cacheKey);
-
-        try {
-            if (entry != null && entry.compact(filter)) {
-                removeIfObsolete(cacheKey);
-
-                return true;
-            }
-        }
-        catch (GridCacheEntryRemovedException ignored) {
-            if (log().isDebugEnabled())
-                log().debug("Got removed entry in invalidate(...): " + key);
-        }
-
-        return false;
-    }
-
-    /**
-     * @param key Key.
-     * @param filter Filters to evaluate.
      * @return {@code True} if evicted.
      */
     public boolean evict(K key, @Nullable CacheEntryPredicate... filter) {
@@ -4900,21 +4854,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * @param keys Keys.
-     * @param filter Filters to evaluate.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void compactAll(@Nullable Iterable<K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        ctx.denyOnFlag(READ);
-
-        if (keys != null) {
-            for (K key : keys)
-                compact(key, filter);
-        }
-    }
-
-    /**
      * @param key Key.
      * @param deserializePortable Deserialize portable flag.
      * @return Cached value.
@@ -4946,8 +4885,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return getAllAsync(Collections.singletonList(key), deserializePortable).chain(
                 new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-                    @Override
-                    public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+                    @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                         Map<K, V> map = e.get();
 
                         assert map.isEmpty() || map.size() == 1 : map.size();

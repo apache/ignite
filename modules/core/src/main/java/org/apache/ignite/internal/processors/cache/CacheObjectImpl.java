@@ -18,17 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
-
-import java.nio.*;
-import java.util.*;
 
 /**
  *
  */
-@IgniteCodeGeneratingFail // Need to handle 'byteArray' state during write/read.
 public class CacheObjectImpl extends CacheObjectAdapter {
     /**
      *
@@ -55,13 +49,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
         try {
             if (cpy) {
-                byte[] bytes = valueBytes(ctx);
-
-                if (byteArray())
-                    return (T)Arrays.copyOf(bytes, bytes.length);
-                else
-                    return (T)ctx.processor().unmarshal(ctx, valBytes,
-                        val == null ? ctx.kernalContext().config().getClassLoader() : val.getClass().getClassLoader());
+                return (T)ctx.processor().unmarshal(ctx, valBytes,
+                    val == null ? ctx.kernalContext().config().getClassLoader() : val.getClass().getClassLoader());
             }
 
             if (val != null)
@@ -79,15 +68,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean byteArray() {
-        return val instanceof byte[];
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-        if (byteArray())
-            return (byte[])val;
-
         if (valBytes == null)
             valBytes = ctx.processor().marshal(ctx, val);
 
@@ -98,7 +79,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (valBytes == null && !byteArray())
+        if (valBytes == null)
             valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
     }
 
@@ -111,81 +92,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert val != null || valBytes != null;
-
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        boolean byteArr = byteArray();
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray("valBytes", byteArr ? (byte[])val : valBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean("byteArr", byteArr))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                valBytes = reader.readByteArray("valBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                boolean byteArr = reader.readBoolean("byteArr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                if (byteArr) {
-                    val = valBytes;
-
-                    valBytes = null;
-                }
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public byte directType() {
         return 89;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

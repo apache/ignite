@@ -431,12 +431,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact(K key,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return super.compact(key, filter) | dht().compact(key, filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> entry(K key) {
         // We don't try wrap entry from near or dht cache.
         // Created object will be wrapped once some method is called.

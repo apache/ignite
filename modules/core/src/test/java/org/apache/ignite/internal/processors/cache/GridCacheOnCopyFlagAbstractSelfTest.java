@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
+ * Tests that cache value is copied for get, interceptor and invoke closure.
  */
 public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
@@ -49,6 +49,9 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
     /** */
     private static Interceptor interceptor;
+
+    /** */
+    private static boolean noInterceptor;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -65,10 +68,19 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        noInterceptor = false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
+        noInterceptor = true;
+
+        interceptor.delegate(null);
 
         for (int i = 0; i < gridCount(); i++)
             cache(i, null).clearLocally();
@@ -90,6 +102,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
@@ -251,6 +264,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testPutGet() throws Exception {
+        noInterceptor = true;
+
         IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
 
         Map<TestKey, TestValue> map = new HashMap<>();
@@ -286,6 +301,52 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             assertNotSame(val0, e.getValue());
 
             TestValue val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
+
+            assertNotSame(val0, val1);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutGetByteArray() throws Exception {
+        noInterceptor = true;
+
+        IgniteCache<TestKey, byte[]> cache = grid(0).jcache(null);
+
+        Map<TestKey, byte[]> map = new HashMap<>();
+
+        for (int i = 0; i < ITER_CNT; i++) {
+            TestKey key = new TestKey(i, i);
+            byte[] val = new byte[10];
+
+            cache.put(key, val);
+
+            map.put(key, val);
+        }
+
+        GridCacheAdapter cache0 = internalCache(cache);
+
+        GridCacheContext cctx = cache0.context();
+
+        for (Map.Entry<TestKey, byte[]> e : map.entrySet()) {
+            GridCacheEntryEx entry = cache0.peekEx(e.getKey());
+
+            assertNotNull("No entry for key: " + e.getKey(), entry);
+
+            TestKey key0 = entry.key().value(cctx.cacheObjectContext(), false);
+
+            assertNotSame(key0, e.getKey());
+
+            TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
+
+            assertNotSame(key0, key1);
+
+            byte[] val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
+
+            assertNotSame(val0, e.getValue());
+
+            byte[] val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
 
             assertNotSame(val0, val1);
         }
@@ -444,33 +505,44 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor<TestKey, TestValue> {
+    private class Interceptor implements CacheInterceptor<TestKey, Object> {
         /** */
         CacheInterceptor<TestKey, TestValue> delegate = new CacheInterceptorAdapter<>();
 
         /** {@inheritDoc} */
-        @Override public TestValue onGet(TestKey key, @Nullable TestValue val) {
-            return delegate.onGet(key, val);
+        @Override public Object onGet(TestKey key, @Nullable Object val) {
+            if (!noInterceptor)
+                return delegate.onGet(key, (TestValue)val);
+
+            return val;
         }
 
         /** {@inheritDoc} */
-        @Override public TestValue onBeforePut(Cache.Entry<TestKey, TestValue> entry, TestValue newVal) {
-            return delegate.onBeforePut(entry, newVal);
+        @Override public Object onBeforePut(Cache.Entry<TestKey, Object> entry, Object newVal) {
+            if (!noInterceptor)
+                return delegate.onBeforePut((Cache.Entry)entry, (TestValue)newVal);
+
+            return newVal;
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterPut(Cache.Entry<TestKey, TestValue> entry) {
-            delegate.onAfterPut(entry);
+        @Override public void onAfterPut(Cache.Entry<TestKey, Object> entry) {
+            if (!noInterceptor)
+                delegate.onAfterPut((Cache.Entry)entry);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Boolean, TestValue> onBeforeRemove(Cache.Entry<TestKey, TestValue> entry) {
-            return delegate.onBeforeRemove(entry);
+        @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<TestKey, Object> entry) {
+            if (!noInterceptor)
+                return (IgniteBiTuple)delegate.onBeforeRemove((Cache.Entry)entry);
+
+            return new IgniteBiTuple<>(false, entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterRemove(Cache.Entry<TestKey, TestValue> entry) {
-            delegate.onAfterRemove(entry);
+        @Override public void onAfterRemove(Cache.Entry<TestKey, Object> entry) {
+            if (!noInterceptor)
+                delegate.onAfterRemove((Cache.Entry)entry);
         }
 
         /**

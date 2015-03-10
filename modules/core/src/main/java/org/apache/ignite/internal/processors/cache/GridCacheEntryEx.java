@@ -215,17 +215,6 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
-     * Optimizes the size of this entry.
-     *
-     * @param filter Optional filter that entry should pass before invalidation.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     * @throws IgniteCheckedException If operation failed.
-     * @return {@code true} if entry was not being used and could be removed.
-     */
-    public boolean compact(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException;
-
-    /**
      * @param swap Swap flag.
      * @param obsoleteVer Version for eviction.
      * @param filter Optional filter.

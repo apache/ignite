@@ -2604,46 +2604,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean compact(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        // For optimistic checking.
-        GridCacheVersion startVer;
-
-        synchronized (this) {
-            checkObsolete();
-
-            startVer = ver;
-        }
-
-        if (!cctx.isAll(this, filter))
-            return false;
-
-        synchronized (this) {
-            checkObsolete();
-
-            if (deletedUnlocked())
-                return false; // Cannot compact soft-deleted entries.
-
-            if (startVer.equals(ver)) {
-                if (hasValueUnlocked() && !checkExpired()) {
-// TODO IGNITE-51.
-//                    if (!isOffHeapValuesOnly()) {
-//                        if (val != null)
-//                            valBytes = null;
-//                    }
-
-                    return false;
-                }
-                else
-                    return clear(nextVersion(), false, filter);
-            }
-        }
-
-        // If version has changed do it again.
-        return compact(filter);
-    }
-
     /**
      *
      * @param val New value.
@@ -3188,7 +3148,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (valPtr != 0) {
             CacheObject val0 = cctx.fromOffheap(valPtr, tmp);
 
-            val0.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+            if (!tmp && cctx.kernalContext().config().isPeerClassLoadingEnabled())
+                val0.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
             return val0;
         }

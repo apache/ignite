@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -354,7 +355,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
                             cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
+                                @Override
+                                public void run() {
                                     prepare();
                                 }
                             });
@@ -379,24 +381,24 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (tx.activeCacheIds().isEmpty())
             return cctx.exchange().lastTopologyFuture();
 
-        GridCacheContext<K, V> nonLocalCtx = null;
+        GridCacheContext<K, V> nonLocCtx = null;
 
         for (int cacheId : tx.activeCacheIds()) {
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (!cacheCtx.isLocal()) {
-                nonLocalCtx = cacheCtx;
+                nonLocCtx = cacheCtx;
 
                 break;
             }
         }
 
-        if (nonLocalCtx == null)
+        if (nonLocCtx == null)
             return cctx.exchange().lastTopologyFuture();
 
-        nonLocalCtx.topology().readLock();
+        nonLocCtx.topology().readLock();
 
-        return nonLocalCtx.topology().topologyVersionFuture();
+        return nonLocCtx.topology().topologyVersionFuture();
     }
 
     /**

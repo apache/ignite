@@ -1290,21 +1290,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public void clear(long timeout) throws IgniteCheckedException;
 
     /**
-     * Clears serialized value bytes from entry (if any) leaving only object representation.
-     *
-     * @param key Key to compact.
-     * @throws IgniteCheckedException If failed to compact.
-     * @return {@code true} if entry was deleted from cache (i.e. was expired).
-     */
-    public boolean compact(K key) throws IgniteCheckedException;
-
-    /**
-     * Clears serialized value bytes from cache entries (if any) leaving only object representation.
-     * @throws IgniteCheckedException If failed to compact.
-     */
-    public void compactAll() throws IgniteCheckedException;
-
-    /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,
      * then this value is returned. In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED}
      * caches, the value will be loaded from the primary node, which in its turn may load the value

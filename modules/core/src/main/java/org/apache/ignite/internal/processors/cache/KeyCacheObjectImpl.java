@@ -43,7 +43,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes) {
         assert val != null;
-        assert valBytes != null || this instanceof UserKeyCacheObjectImpl : this;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -59,13 +58,9 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public boolean byteArray() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-        assert valBytes != null : this;
+        if (valBytes == null)
+            valBytes = ctx.processor().marshal(ctx, val);
 
         return valBytes;
     }
@@ -109,57 +104,8 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray("valBytes", valBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                valBytes = reader.readByteArray("valBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public byte directType() {
         return DIRECT_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

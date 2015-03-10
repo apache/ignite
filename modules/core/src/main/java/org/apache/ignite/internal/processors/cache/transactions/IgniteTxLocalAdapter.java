@@ -1532,7 +1532,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     }
 
                                     if (txEntry != null)
-                                        txEntry.cached(entryEx(cacheCtx, txKey), txEntry.keyBytes());
+                                        txEntry.cached(entryEx(cacheCtx, txKey));
 
                                     continue; // While loop.
                                 }

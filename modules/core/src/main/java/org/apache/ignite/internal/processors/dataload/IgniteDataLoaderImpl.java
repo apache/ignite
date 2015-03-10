@@ -393,13 +393,13 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
                 for (Map.Entry<K, V> entry : entries)
-                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey()));
+                    keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey(), true));
             }
 
             Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
                 @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
-                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey());
-                    CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue());
+                    KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), true);
+                    CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), true);
 
                     return new IgniteDataLoaderEntry(key, val);
                 }
@@ -410,7 +410,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
-            return new IgniteFinishedFutureImpl<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(e);
         }
         finally {
             leaveBusy();
@@ -441,10 +441,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     public IgniteFuture<?> addDataInternal(Collection<? extends IgniteDataLoaderEntry> entries) {
         enterBusy();
 
-        GridFutureAdapter<Object> resFut = new GridFutureAdapter<>(ctx);
+        GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
 
         try {
-            resFut.listenAsync(rmvActiveFut);
+            resFut.listen(rmvActiveFut);
 
             activeFuts.add(resFut);
 
@@ -485,8 +485,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
-        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key);
-        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val);
+        KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, true);
+        CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
         return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key0, val0)));
     }

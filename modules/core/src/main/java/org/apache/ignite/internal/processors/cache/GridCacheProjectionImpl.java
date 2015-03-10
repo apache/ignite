@@ -895,16 +895,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact(K key) throws IgniteCheckedException {
-        return cache.compact(key, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void compactAll() throws IgniteCheckedException {
-        cache.compactAll(keySet());
-    }
-
-    /** {@inheritDoc} */
     @Override public V remove(K key,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         return removeAsync(key, filter).get();
