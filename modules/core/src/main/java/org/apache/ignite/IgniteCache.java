@@ -398,7 +398,25 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if entry was in use at the time of this method invocation and could not be
      * cleared.
      */
-    public boolean clear(K key);
+    public boolean clearLocally(K key);
+
+    /**
+     * Clears all entry from this cache and swap storage only if the entry
+     * is not currently locked, and is not participating in a transaction.
+     * <p/>
+     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * also be cleared from swap.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache. It does not remove entries from
+     * remote caches or from underlying persistent storage.
+     * This method is not transactionally consistent.
+     * Transactional semantics must be guaranteed outside of Ignite.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if flag {@link CacheFlag#READ} are set on projection.
+     */
+    public void clearLocally();
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
