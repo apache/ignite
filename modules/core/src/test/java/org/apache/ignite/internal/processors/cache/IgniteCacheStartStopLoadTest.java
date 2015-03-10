@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.*;
@@ -105,10 +106,8 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
             for (IgniteInternalFuture<?> fut : futs)
                 fut.get();
 
-            for (int i = 0; i < nodeCount(); i++) {
-                for (String cacheName : CACHE_NAMES)
-                    assert ignite(i).jcache(cacheName) != null;
-            }
+            for (String cacheName : CACHE_NAMES)
+                assert ignite(0).jcache(cacheName) != null;
 
             if (weakMap == null) {
                 weakMap = new WeakHashMap<>();
