@@ -55,8 +55,6 @@ import scala.util.control.Breaks._
  * |                |     R/r Number of cache reads.                                         |
  * |                |     W/w Number of cache writes.                                        |
  * +-----------------------------------------------------------------------------------------+
- * | cache -compact | Compacts all entries in cache on all nodes.                            |
- * +-----------------------------------------------------------------------------------------+
  * | cache -clear   | Clears all entries from cache on all nodes.                            |
  * +-----------------------------------------------------------------------------------------+
  * | cache -scan    | List all entries in cache with specified name.                         |
@@ -69,7 +67,6 @@ import scala.util.control.Breaks._
  *     cache -i
  *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr|cn} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
- *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  * }}}
@@ -103,8 +100,6 @@ import scala.util.control.Breaks._
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
- *     -compact
- *          Compacts entries in cache.
  *     -clear
  *          Clears cache.
  *     -scan
@@ -128,10 +123,6 @@ import scala.util.control.Breaks._
  *         Prints cache statistics for interactively selected node.
  *     cache -s=hi -r -a
  *         Prints detailed statistics about all caches sorted by number of hits in reverse order.
- *     cache -compact
- *         Compacts entries in interactively selected cache.
- *     cache -compact -c=cache
- *         Compacts entries in cache with name 'cache'.
  *     cache -clear
  *         Clears interactively selected cache.
  *     cache -clear -c=cache
@@ -177,12 +168,6 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -s=no -r</ex>
      *     Prints statistics about all caches sorted by number of nodes in reverse order.
-     * <br>
-     * <ex>cache -compact</ex>
-     *      Compacts entries in interactively selected cache.
-     * <br>
-     * <ex>cache -compact -c=cache</ex>
-     *      Compacts entries in cache with name 'cache'.
      * <br>
      * <ex>cache -clear</ex>
      *      Clears interactively selected cache.
@@ -252,7 +237,7 @@ class VisorCacheCommand {
                     case cn => cn
                 }
 
-                if (Seq("clear", "compact", "swap", "scan").exists(hasArgFlag(_, argLst))) {
+                if (Seq("clear", "swap", "scan").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
                             case Some(name) => argLst = argLst ++ Seq("c" -> name)
@@ -261,8 +246,6 @@ class VisorCacheCommand {
 
                     if (hasArgFlag("clear", argLst))
                         VisorCacheClearCommand().clear(argLst, node)
-                    else if (hasArgFlag("compact", argLst))
-                        VisorCacheCompactCommand().compact(argLst, node)
                     else if (hasArgFlag("swap", argLst))
                         VisorCacheSwapCommand().swap(argLst, node)
                     else if (hasArgFlag("scan", argLst))
@@ -626,7 +609,7 @@ class VisorCacheCommand {
 object VisorCacheCommand {
     addHelp(
         name = "cache",
-        shortInfo = "Prints cache statistics, clears cache, compacts entries in cache, prints list of all entries from cache.",
+        shortInfo = "Prints cache statistics, clears cache, prints list of all entries from cache.",
         longInfo = Seq(
             "Prints statistics about caches from specified node on the entire grid.",
             "Output sorting can be specified in arguments.",
@@ -640,8 +623,6 @@ object VisorCacheCommand {
             " ",
             "Clears cache.",
             " ",
-            "Compacts entries in cache.",
-            " ",
             "Prints list of all entries from cache.",
             " ",
             "Swaps backup entries in cache."
@@ -650,7 +631,6 @@ object VisorCacheCommand {
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr} {-a} {-r}",
-            "cache -compact {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
@@ -670,9 +650,6 @@ object VisorCacheCommand {
             "-c=<cache-name>" -> Seq(
                 "Name of the cache.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
-            ),
-            "-compact" -> Seq(
-                "Compacts entries in cache."
             ),
             "-clear" -> Seq(
                 "Clears cache."
@@ -728,9 +705,6 @@ object VisorCacheCommand {
             ),
             "cache -s=hi -r -a" ->
                 "Prints detailed statistics about all caches sorted by number of hits in reverse order.",
-            "cache -compact" -> "Compacts entries in interactively selected cache.",
-            "cache -compact -c=cache" -> "Compacts entries in cache with name 'cache'.",
-            "cache -compact -c=@c0" -> "Compacts cache with name taken from 'c0' memory variable.",
             "cache -clear" -> "Clears interactively selected cache.",
             "cache -clear -c=cache" -> "Clears cache with name 'cache'.",
             "cache -clear -c=@c0" -> "Clears cache with name taken from 'c0' memory variable.",
