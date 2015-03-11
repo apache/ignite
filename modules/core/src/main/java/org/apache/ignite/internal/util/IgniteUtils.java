@@ -521,6 +521,7 @@ public abstract class IgniteUtils {
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
 
+        // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
     }
 
