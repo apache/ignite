@@ -36,7 +36,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     private static final long serialVersionUID = 0L;
 
     /** Near keys. */
-    @GridDirectCollection(byte[].class)
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
 
     /**
@@ -111,7 +111,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (writer.state()) {
             case 9:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -133,7 +133,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (reader.state()) {
             case 9:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.BYTE_ARR);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
