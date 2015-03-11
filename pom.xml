@@ -559,11 +559,11 @@
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
                                         <exclude>DEVNOTES.txt</exclude>
-                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
+                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--Apache License, Version 2.0 (Copyright)-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--Stanford University license, California, USA-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--Stanford University license, California, USA-->
+                                        <exclude>src/main/java/org/pcollections/**</exclude><!--MIT license-->
+                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--GPL !!!-->
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/config/start-nodes.ini</exclude><!---->
