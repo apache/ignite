@@ -27,33 +27,33 @@ import java.util.*;
 /**
  * Extras where MVCC is set.
  */
-public class GridCacheMvccEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheMvccEntryExtras extends GridCacheEntryExtrasAdapter {
     /** MVCC. */
-    private GridCacheMvcc<K> mvcc;
+    private GridCacheMvcc mvcc;
 
     /**
      * Constructor.
      *
      * @param mvcc MVCC.
      */
-    public GridCacheMvccEntryExtras(GridCacheMvcc<K> mvcc) {
+    public GridCacheMvccEntryExtras(GridCacheMvcc mvcc) {
         assert mvcc != null;
 
         this.mvcc = mvcc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesMvccEntryExtras<>(attrData, mvcc) : this;
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+        return attrData != null ? new GridCacheAttributesMvccEntryExtras(attrData, mvcc) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvcc<K> mvcc() {
+    @Override public GridCacheMvcc mvcc() {
         return mvcc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
         if (mvcc != null) {
             this.mvcc = mvcc;
 
@@ -64,13 +64,13 @@ public class GridCacheMvccEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
-        return obsoleteVer != null ? new GridCacheMvccObsoleteEntryExtras<>(mvcc, obsoleteVer) : this;
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+        return obsoleteVer != null ? new GridCacheMvccObsoleteEntryExtras(mvcc, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
-        return ttl != 0 ? new GridCacheMvccTtlEntryExtras<>(mvcc, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
+        return ttl != 0 ? new GridCacheMvccTtlEntryExtras(mvcc, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

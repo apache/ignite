@@ -390,30 +390,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgnitePredicate CACHE_ENTRY_HAS_GET_VAL = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Cache.Entry)o).getValue() != null;
-        }
-
-        @Override public String toString() {
-            return "Cache entry has-get-value predicate.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate CACHE_ENTRY_NO_GET_VAL = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Cache.Entry)o).getValue() == null;
-        }
-
-        @Override public String toString() {
-            return "Cache entry no-get-value predicate.";
-        }
-    };
-
-    /** */
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
@@ -7822,34 +7798,6 @@ public class GridFunc {
             return alwaysFalse();
 
         return cacheHasKeys(asList(keys));
-    }
-
-    /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     * method returns {@code non-null} value.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     *      method returns {@code non-null} value.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasGetValue() {
-        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
-    }
-
-    /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     * method returns {@code null} value.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     *      method returns {@code null} value.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheNoGetValue() {
-        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
     }
 
     /**

@@ -44,10 +44,10 @@ public class ClassesGenerator {
         assert args.length >= 3;
 
         String basePath = args[0];
-        String header = args[1];
+        String hdr = args[1];
         String[] packages = args[2].split(":");
 
-        ClassesGenerator gen = new ClassesGenerator(basePath, header, packages);
+        ClassesGenerator gen = new ClassesGenerator(basePath, hdr, packages);
 
         gen.generate();
     }
@@ -69,19 +69,19 @@ public class ClassesGenerator {
     private final String basePath;
 
     /** */
-    private final String header;
+    private final String hdr;
 
     /** */
     private final String[] packages;
 
     /**
      * @param basePath Base file path.
-     * @param header Header.
+     * @param hdr Header.
      * @param packages Included packages.
      */
-    private ClassesGenerator(String basePath, String header, String[] packages) {
+    private ClassesGenerator(String basePath, String hdr, String[] packages) {
         this.basePath = basePath;
-        this.header = header;
+        this.hdr = hdr;
         this.packages = packages;
     }
 
@@ -105,7 +105,7 @@ public class ClassesGenerator {
 
         PrintStream out = new PrintStream(new File(basePath, FILE_PATH));
 
-        out.println(header);
+        out.println(hdr);
         out.println();
 
         for (Class cls : classes)

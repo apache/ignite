@@ -22,14 +22,14 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 /**
  * Lock and Unlock callbacks.
  */
-public interface GridCacheMvccCallback<K, V> {
+public interface GridCacheMvccCallback {
     /**
      * Called when entry gets a first candidate. This call
      * happens within entry internal synchronization.
      *
      * @param entry Entry.
      */
-    public void onLocked(GridDistributedCacheEntry<K, V> entry);
+    public void onLocked(GridDistributedCacheEntry entry);
 
     /**
      * Called when entry lock ownership changes. This call
@@ -40,8 +40,8 @@ public interface GridCacheMvccCallback<K, V> {
      * @param prev Previous candidate.
      * @param owner Current owner.
      */
-    public void onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> prev,
-        GridCacheMvccCandidate<K> owner);
+    public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate prev,
+        GridCacheMvccCandidate owner);
 
     /**
      * Called when entry has no more candidates. This call happens
@@ -49,5 +49,5 @@ public interface GridCacheMvccCallback<K, V> {
      *
      * @param entry Entry
      */
-    public void onFreed(GridDistributedCacheEntry<K, V> entry);
+    public void onFreed(GridDistributedCacheEntry entry);
 }

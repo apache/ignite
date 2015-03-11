@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Near transaction finish request.
  */
-public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishRequest<K, V> {
+public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     private static final long serialVersionUID = 0L;
 

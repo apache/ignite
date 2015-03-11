@@ -15,108 +15,83 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 
 import java.nio.*;
 
 /**
- * Wrapped value bytes of cache entry.
+ * Cache object and version.
  */
-public class GridCacheValueBytes implements Message {
+public class CacheVersionedValue implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Null instance. */
-    private static final GridCacheValueBytes NULL = new GridCacheValueBytes();
+    /** Value. */
+    @GridToStringInclude
+    private CacheObject val;
 
-    /**
-     * @param bytes Bytes.
-     * @return Plain value bytes.
-     */
-    public static GridCacheValueBytes plain(Object bytes) {
-        assert bytes != null && bytes instanceof byte[];
+    /** Cache version. */
+    @GridToStringInclude
+    private GridCacheVersion ver;
 
-        return new GridCacheValueBytes((byte[])bytes, true);
-    }
-
-    /**
-     * @param bytes Bytes.
-     * @return Marshaled value bytes.
-     */
-    public static GridCacheValueBytes marshaled(byte[] bytes) {
-        assert bytes != null;
-
-        return new GridCacheValueBytes(bytes, false);
-    }
-
-    /**
-     * @return Nil value bytes.
-     */
-    public static GridCacheValueBytes nil() {
-        return NULL;
-    }
-
-    /** Bytes. */
-    private byte[] bytes;
-
-    /** Flag indicating if provided byte array is actual value, not marshaled data. */
-    private boolean plain;
-
-    /**
-     * Private constructor for NULL instance.
-     */
-    public GridCacheValueBytes() {
+    /** */
+    public CacheVersionedValue() {
         // No-op.
     }
 
     /**
-     * Constructor.
+     * @param val Cache value.
+     * @param ver Cache version.
+     */
+    CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+        this.val = val;
+        this.ver = ver;
+    }
+
+    /**
+     * @return Cache version.
+     */
+    public GridCacheVersion version() {
+        return ver;
+    }
+
+    /**
+     * @return Cache object.
+     */
+    public CacheObject value() {
+        return val;
+    }
+
+    /**
+     * This method is called before the whole message is sent
+     * and is responsible for pre-marshalling state.
      *
-     * @param bytes Bytes.
-     * @param plain Flag indicating if provided byte array is actual value, not marshaled data.
+     * @param ctx Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridCacheValueBytes(byte[] bytes, boolean plain) {
-        this.bytes = bytes;
-        this.plain = plain;
+    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        if (val != null)
+            val.prepareMarshal(ctx);
     }
 
     /**
-     * @return Bytes.
+     * This method is called after the whole message is received
+     * and is responsible for unmarshalling state.
+     *
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] get() {
-        return bytes;
-    }
-
-    /**
-     * @return Bytes if this is plain bytes or {@code null} otherwise.
-     */
-    @Nullable public byte[] getIfPlain() {
-        return plain && bytes != null ? bytes : null;
-    }
-
-    /**
-     * @return Bytes if this is marshaled bytes or {@code null} otherwise.
-     */
-    @Nullable public byte[] getIfMarshaled() {
-        return !plain && bytes != null ? bytes : null;
-    }
-
-    /**
-     * @return Flag indicating if provided byte array is actual value, not marshaled data.
-     */
-    public boolean isPlain() {
-        return plain;
-    }
-
-    /**
-     * @return {@code True} if byte array is {@code null}.
-     */
-    public boolean isNull() {
-        return bytes == null;
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -132,13 +107,13 @@ public class GridCacheValueBytes implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("bytes", bytes))
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("plain", plain))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -157,7 +132,7 @@ public class GridCacheValueBytes implements Message {
 
         switch (reader.state()) {
             case 0:
-                bytes = reader.readByteArray("bytes");
+                val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
                     return false;
@@ -165,7 +140,7 @@ public class GridCacheValueBytes implements Message {
                 reader.incrementState();
 
             case 1:
-                plain = reader.readBoolean("plain");
+                ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -179,7 +154,7 @@ public class GridCacheValueBytes implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 88;
+        return 102;
     }
 
     /** {@inheritDoc} */
@@ -189,6 +164,6 @@ public class GridCacheValueBytes implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheValueBytes.class, this, "len", bytes != null ? bytes.length : -1);
+        return S.toString(CacheVersionedValue.class, this);
     }
 }
