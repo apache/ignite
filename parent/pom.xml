@@ -279,7 +279,7 @@
                                 <tagletArtifact>
                                     <groupId>org.apache.ignite</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>RELEASE</version>
+                                    <version>${project.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
@@ -597,6 +597,36 @@
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
                         <version>0.11</version>
+                        <configuration>
+                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <licenses>
+                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
+                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
+                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
+                                    <fullText>
+                                        Licensed to the Apache Software Foundation (ASF) under one or more
+                                        contributor license agreements.  See the NOTICE file distributed with
+                                        this work for additional information regarding copyright ownership.
+                                        The ASF licenses this file to You under the Apache License, Version 2.0
+                                        (the "License"); you may not use this file except in compliance with
+                                        the License.  You may obtain a copy of the License at
+
+                                        http://www.apache.org/licenses/LICENSE-2.0
+
+                                        Unless required by applicable law or agreed to in writing, software
+                                        distributed under the License is distributed on an "AS IS" BASIS,
+                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                        See the License for the specific language governing permissions and
+                                        limitations under the License.
+                                    </fullText>
+                                </license>
+                            </licenses>
+                            <licenseFamilies>
+                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                                    <familyName>Ignite Apache License 2.0</familyName>
+                                </licenseFamily>
+                            </licenseFamilies>
+                        </configuration>
                         <executions>
                             <execution>
                                 <phase>validate</phase>
@@ -626,23 +656,26 @@
                                         <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
                                         <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/config/start-nodes.ini</exclude>
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
+                                        <exclude>src/test/config/start-nodes.ini</exclude><!---->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
+                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
                                         <exclude>modules/winservice/IgniteService.sln</exclude>
                                         <exclude>modules/winservice/IgniteService/IgniteService.csproj</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude>
+                                        <exclude>ipc/shmem/compile</exclude><!---->
                                         <exclude>ipc/shmem/config.guess</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.sub</exclude><!--own license-->
                                         <exclude>ipc/shmem/configure</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure.ac</exclude>
+                                        <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/configure.ac</exclude><!---->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
                                         <exclude>ipc/shmem/install-sh</exclude><!--own license-->
                                         <exclude>ipc/shmem/depcomp</exclude><!--own license-->

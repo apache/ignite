@@ -43,13 +43,13 @@
     </scm>
 
     <modules>
+        <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
-        <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
         <module>modules/web</module>
@@ -172,7 +172,7 @@
                             <dependency>
                                 <groupId>org.apache.ignite</groupId>
                                 <artifactId>ignite-tools</artifactId>
-                                <version>RELEASE</version>
+                                <version>${project.version}</version>
                             </dependency>
                         </dependencies>
                         <executions>
@@ -462,7 +462,7 @@
                             <dependency>
                                 <groupId>org.apache.ignite</groupId>
                                 <artifactId>ignite-tools</artifactId>
-                                <version>RELEASE</version>
+                                <version>${project.version}</version>
                             </dependency>
                         </dependencies>
                         <executions>

@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.0-RELEASE-TEST-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
