@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -113,6 +113,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -130,6 +131,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             implicit,
             implicitSingle,
             sys,
+            plc,
             concurrency,
             isolation,
             timeout,
@@ -762,7 +764,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         IgniteInternalFuture<IgniteInternalTx<K, V>> prepareFut = prepFut.get();
 
-        prepareFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+        prepareFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
             @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                 GridNearTxFinishFuture<K, V> fut0 = commitFut.get();
 
@@ -831,7 +833,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         else {
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         // Check for errors in prepare future.
@@ -884,12 +886,12 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     ) {
         if (state() != PREPARING) {
             if (timedOut())
-                return new GridFinishedFuture<>(cctx.kernalContext(),
+                return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(),
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
@@ -965,7 +967,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             if (prep != null)
                 return (IgniteInternalFuture<IgniteInternalTx>)(IgniteInternalFuture)prep;
 
-            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(this);
         }
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
@@ -994,7 +996,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         else
-            prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            prep.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
@@ -1047,7 +1049,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             fut.finish();
         }
         else
-            prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            prep.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
@@ -1076,13 +1078,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
@@ -1108,8 +1110,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
@@ -1227,65 +1229,5 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxLocal.class, this, "mappings", mappings.keySet(), "super", super.toString());
-    }
-
-    /**
-     *
-     */
-    private static class PessimisticPrepareFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K, V>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Transaction. */
-        @GridToStringExclude
-        private IgniteInternalTx<K, V> tx;
-
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public PessimisticPrepareFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         * @param tx Transaction.
-         */
-        private PessimisticPrepareFuture(GridKernalContext ctx, IgniteInternalTx<K, V> tx) {
-            super(ctx);
-            this.tx = tx;
-        }
-
-        /**
-         * @param e Exception.
-         */
-        void onError(Throwable e) {
-            boolean marked = tx.setRollbackOnly();
-
-            if (e instanceof IgniteTxRollbackCheckedException) {
-                if (marked) {
-                    try {
-                        tx.rollback();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                    }
-                }
-            }
-
-            onDone(tx, e);
-        }
-
-        /**
-         * Completes future.
-         */
-        void complete() {
-            onDone(tx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "PessimisticPrepareFuture[xidVer=" + tx.xidVersion() + ", done=" + isDone() + ']';
-        }
     }
 }

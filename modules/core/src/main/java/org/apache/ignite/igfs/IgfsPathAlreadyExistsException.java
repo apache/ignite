@@ -17,34 +17,41 @@
 
 package org.apache.ignite.igfs;
 
+import org.apache.ignite.internal.processors.igfs.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Exception thrown when target path supposed to be created already exists.
  */
-public class IgfsPathAlreadyExistsException extends IgfsInvalidPathException {
+public class IgfsPathAlreadyExistsException extends IgfsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Error message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
     public IgfsPathAlreadyExistsException(String msg) {
         super(msg);
     }
 
     /**
-     * @param cause Exception cause.
+     * Constructor.
+     *
+     * @param cause Cause.
      */
     public IgfsPathAlreadyExistsException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param msg Error message.
-     * @param cause Exception cause.
+     * Constructor.
+     *
+     * @param msg   Message.
+     * @param cause Cause.
      */
-    public IgfsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
+    public IgfsPathAlreadyExistsException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

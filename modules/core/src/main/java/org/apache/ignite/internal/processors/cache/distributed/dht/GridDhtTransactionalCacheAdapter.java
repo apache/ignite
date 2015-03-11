@@ -197,6 +197,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.version(),
                                     /*commitVer*/null,
                                     ctx.system(),
+                                    ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.isInvalidate(),
@@ -206,7 +207,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.subjectId(),
                                     req.taskNameHash());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
                                     throw new IgniteTxRollbackCheckedException("Failed to acquire lock (transaction " +
@@ -344,7 +345,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            keyFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            keyFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     processDhtLockRequest0(nodeId, req);
                 }
@@ -520,7 +521,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
-        f.listenAsync(CU.errorLogger(log, GridCacheLockTimeoutException.class,
+        f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class));
     }
 
@@ -591,7 +592,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long accessTtl,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
-            return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
+            return new GridDhtFinishedFuture<>(true);
 
         GridDhtTxLocalAdapter<K, V> tx = (GridDhtTxLocalAdapter<K, V>)txx;
 
@@ -635,7 +636,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (log.isDebugEnabled())
                             log.debug("Got lock request for cancelled lock (will fail): " + entry);
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridDhtFinishedFuture<>(e);
                     }
                 }
             }
@@ -684,13 +685,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         if (keyFut == null)
-            keyFut = new GridFinishedFutureEx<>();
+            keyFut = new GridFinishedFuture<>();
 
-        return new GridEmbeddedFuture<>(true, keyFut,
+        return new GridEmbeddedFuture<>(keyFut,
             new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse<K,V>>>() {
                 @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
                     if (exx != null)
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
+                        return new GridDhtFinishedFuture<>(exx);
 
                     IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
 
@@ -772,7 +773,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                     fut.onError(e);
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                                    return new GridDhtFinishedFuture<>(e);
                                 }
                             }
                         }
@@ -790,6 +791,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
                                     ctx.system(),
+                                    ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.timeout(),
@@ -804,7 +806,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 tx.syncCommit(req.syncCommit());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !tx.init()) {
                                     String msg = "Failed to acquire lock (transaction has been completed): " +
@@ -815,7 +817,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (tx != null)
                                         tx.rollback();
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), new IgniteCheckedException(msg));
+                                    return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
                                 }
 
                                 tx.topologyVersion(req.topologyVersion());
@@ -877,11 +879,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         else {
                                             sendLockReply(nearNode, t, req, resp);
 
-                                            return new GridFinishedFutureEx<>(resp);
+                                            return new GridFinishedFuture<>(resp);
                                         }
                                     }
-                                },
-                                ctx.kernalContext());
+                                }
+                            );
                         }
                         else {
                             assert fut != null;
@@ -892,8 +894,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             final GridCacheVersion mappedVer = fut.version();
 
                             return new GridDhtEmbeddedFuture<>(
-                                ctx.kernalContext(),
-                                fut,
                                 new C2<Boolean, Exception, GridNearLockResponse<K, V>>() {
                                     @Override public GridNearLockResponse<K, V> apply(Boolean b, Exception e) {
                                         if (e != null)
@@ -912,7 +912,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                         return res;
                                     }
-                                });
+                                },
+                                fut);
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -929,12 +930,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             }
                         }
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(),
+                        return new GridDhtFinishedFuture<>(
                             new IgniteCheckedException(err, e));
                     }
                 }
-            },
-            ctx.kernalContext());
+            }
+        );
     }
 
     /**

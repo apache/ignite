@@ -36,11 +36,4 @@ public @interface IgniteSpiConsistencyChecked {
      */
     @SuppressWarnings("JavaDoc")
     public boolean optional();
-
-    /**
-     * Flag for performing consistency check for daemon node.
-     *
-     * @return {@code True} if need to perform consistence check for daemon node, {@code false} otherwise.
-     */
-    public boolean checkDaemon() default false;
 }

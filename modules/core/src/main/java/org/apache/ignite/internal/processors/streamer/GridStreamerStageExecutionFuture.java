@@ -29,7 +29,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -79,25 +78,10 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     private StreamerMetricsHolder metricsHolder;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridStreamerStageExecutionFuture() {
-        assert false : "Streamer execution future should never be serialized.";
-
-        execId = null;
-        execStartTs = 0;
-        futId = null;
-        stageName = null;
-        evts = null;
-        streamer = null;
-        parentFutId = null;
-    }
-
-    /**
     * @param streamer Streamer extended context.
     * @param execId Execution ID. If parent future ID is {@code null} then this is a root future
-    * and execution ID must be {@code null}.
-     * @param failoverAttemptCnt Number of attempts this set of events was tried to failover.
+    *       and execution ID must be {@code null}.
+    * @param failoverAttemptCnt Number of attempts this set of events was tried to failover.
     * @param execStartTs Execution start timestamp.
     * @param parentFutId Parent future ID.
     * @param prevExecNodes Node IDs on which pipeline was already executed.
@@ -114,8 +98,6 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
         String stageName,
         Collection<?> evts
     ) {
-        super(streamer.kernalContext());
-
         assert streamer != null;
         assert stageName != null;
         assert evts != null;
@@ -226,7 +208,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
             }
         }
         catch (IgniteCheckedException e) {
-            onFailed(ctx.localNodeId(), e);
+            onFailed(streamer.kernalContext().localNodeId(), e);
         }
     }
 
@@ -253,11 +235,6 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
      */
     public IgniteUuid parentFutureId() {
         return parentFutId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Throwable error() {
-        return super.error();
     }
 
     /**

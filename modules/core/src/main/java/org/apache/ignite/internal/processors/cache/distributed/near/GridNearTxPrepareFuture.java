@@ -24,24 +24,23 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -59,6 +58,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
 
@@ -68,9 +70,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /** Transaction. */
     @GridToStringExclude
     private GridNearTxLocal<K, V> tx;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Error. */
     @GridToStringExclude
@@ -84,13 +83,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
     /** */
     private Collection<IgniteTxKey<K>> lockKeys = new GridConcurrentHashSet<>();
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxPrepareFuture() {
-        // No-op.
-    }
 
     /**
      * @param cctx Context.
@@ -116,7 +108,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridNearTxPrepareFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -362,11 +355,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
                 }
                 else {
-                    topFut.syncNotify(false);
-
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
-                            prepare();
+                            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                                @Override public void run() {
+                                    prepare();
+                                }
+                            });
                         }
                     });
                 }
@@ -847,20 +842,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         private ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param m Mapping.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridDistributedTxMapping<K, V> m,
-            ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings) {
-            super(cctx.kernalContext());
-
+        MiniFuture(
+            GridDistributedTxMapping<K, V> m,
+            ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings
+        ) {
             this.m = m;
             this.mappings = mappings;
         }

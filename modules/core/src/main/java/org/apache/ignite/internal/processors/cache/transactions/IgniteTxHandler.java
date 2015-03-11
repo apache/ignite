@@ -173,10 +173,9 @@ public class IgniteTxHandler<K, V> {
         final IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
     ) {
 
-        IgniteInternalFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+        IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
-            ctx.kernalContext(),
             fut,
             new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> apply(Object o, Exception ex) {
@@ -240,7 +239,7 @@ public class IgniteTxHandler<K, V> {
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         GridDhtTxLocal<K, V> tx;
@@ -269,6 +268,7 @@ public class IgniteTxHandler<K, V> {
                 req.implicitSingle(),
                 req.implicitSingle(),
                 req.system(),
+                req.policy(),
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
@@ -282,7 +282,7 @@ public class IgniteTxHandler<K, V> {
                 req.taskNameHash()
             );
 
-            tx = ctx.tm().onCreated(tx);
+            tx = ctx.tm().onCreated(null, tx);
 
             if (tx != null)
                 tx.topologyVersion(req.topologyVersion());
@@ -326,7 +326,7 @@ public class IgniteTxHandler<K, V> {
 
             final GridDhtTxLocal<K, V> tx0 = tx;
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            fut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> txFut) {
                     try {
                         txFut.get();
@@ -343,7 +343,7 @@ public class IgniteTxHandler<K, V> {
             return fut;
         }
         else
-            return new GridFinishedFuture<>(ctx.kernalContext(), (IgniteInternalTx<K, V>)null);
+            return new GridFinishedFuture<>((IgniteInternalTx<K, V>)null);
     }
 
     /**
@@ -443,7 +443,7 @@ public class IgniteTxHandler<K, V> {
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
-            return new GridFinishedFutureEx<IgniteInternalTx>(locTx);
+            return new GridFinishedFuture<IgniteInternalTx>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
@@ -459,7 +459,7 @@ public class IgniteTxHandler<K, V> {
             nearFinishFut = finishDhtLocal(nodeId, locTx, req);
 
         if (colocatedFinishFut != null && nearFinishFut != null) {
-            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>(ctx.kernalContext());
+            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> res = new GridCompoundFuture<>();
 
             res.add(colocatedFinishFut);
             res.add(nearFinishFut);
@@ -506,7 +506,7 @@ public class IgniteTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, req.policy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -527,7 +527,7 @@ public class IgniteTxHandler<K, V> {
             if (req.commit()) {
                 if (tx == null) {
                     // Create transaction and add entries.
-                    tx = ctx.tm().onCreated(
+                    tx = ctx.tm().onCreated(null,
                         new GridDhtTxLocal<>(
                             ctx,
                             nodeId,
@@ -538,6 +538,7 @@ public class IgniteTxHandler<K, V> {
                             true,
                             false, /* we don't know, so assume false. */
                             req.system(),
+                            req.policy(),
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
@@ -574,7 +575,7 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
-                commitFut.listenAsync(CU.errorLogger(log));
+                commitFut.listen(CU.errorLogger(log));
 
                 return commitFut;
             }
@@ -590,7 +591,7 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
@@ -602,12 +603,12 @@ public class IgniteTxHandler<K, V> {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
-                rollbackFut.listenAsync(CU.errorLogger(log));
+                rollbackFut.listen(CU.errorLogger(log));
 
                 return rollbackFut;
             }
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -637,7 +638,7 @@ public class IgniteTxHandler<K, V> {
             if (tx != null)
                 return tx.rollbackAsync();
 
-            return new GridFinishedFuture<>(ctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -757,7 +758,7 @@ public class IgniteTxHandler<K, V> {
             finish(nodeId, nearTx, req);
 
         if (dhtTx != null && !dhtTx.done()) {
-            dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+            dhtTx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
                     sendReply(nodeId, req);
                 }
@@ -919,6 +920,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
@@ -932,7 +934,7 @@ public class IgniteTxHandler<K, V> {
 
                 tx.writeVersion(req.writeVersion());
 
-                tx = ctx.tm().onCreated(tx);
+                tx = ctx.tm().onCreated(null, tx);
 
                 if (tx == null || !ctx.tm().onStarted(tx)) {
                     if (log.isDebugEnabled())
@@ -1038,6 +1040,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
@@ -1052,7 +1055,7 @@ public class IgniteTxHandler<K, V> {
                 tx.writeVersion(req.writeVersion());
 
                 if (!tx.empty()) {
-                    tx = ctx.tm().onCreated(tx);
+                    tx = ctx.tm().onCreated(null, tx);
 
                     if (tx == null || !ctx.tm().onStarted(tx))
                         throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + tx);

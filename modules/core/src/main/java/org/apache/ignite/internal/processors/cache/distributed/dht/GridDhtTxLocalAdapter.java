@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -95,6 +96,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -106,8 +108,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, sys, concurrency, isolation, timeout, invalidate, storeEnabled,
-            txSize, grpLockKey, partLock, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, invalidate,
+            storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
 
@@ -500,7 +502,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(cacheCtx, ex.partition());
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
         }
     }
 
@@ -526,13 +528,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
         final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
         if (F.isEmpty(entries))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
@@ -606,7 +608,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -633,7 +635,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                 skipped + ']');
 
         if (passedKeys.isEmpty())
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
@@ -667,8 +669,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
@@ -831,7 +833,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             rollbackAsync().get();
         }
         finally {
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
         }
     }
 

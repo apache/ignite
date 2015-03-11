@@ -61,7 +61,7 @@ public class IgfsMapReduceExample {
                 String regexStr = args[1];
 
                 // Get an instance of Ignite File System.
-                IgniteFs fs = ignite.fileSystem("igfs");
+                IgniteFileSystem fs = ignite.fileSystem("igfs");
 
                 // Working directory path.
                 IgfsPath workDir = new IgfsPath("/examples/fs");
@@ -94,7 +94,7 @@ public class IgfsMapReduceExample {
      * @param file File to write.
      * @throws Exception In case of exception.
      */
-    private static void writeFile(IgniteFs fs, IgfsPath fsPath, File file) throws Exception {
+    private static void writeFile(IgniteFileSystem fs, IgfsPath fsPath, File file) throws Exception {
         System.out.println();
         System.out.println("Copying file to IGFS: " + file);
 
@@ -173,7 +173,7 @@ public class IgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs igfs, IgfsRangeInputStream in) throws IgniteException, IOException {
+        @Override public Object execute(IgniteFileSystem igfs, IgfsRangeInputStream in) throws IgniteException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

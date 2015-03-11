@@ -20,7 +20,6 @@ package org.apache.ignite.testframework;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
@@ -56,7 +55,7 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
-    private static final Map<Class<? extends Test>, String> addrs = new HashMap<>();
+    private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
     private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
@@ -117,7 +116,7 @@ public final class GridTestUtils {
      *      and this message should be equal.
      * @return Thrown throwable.
      */
-    @Nullable public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
+    public static Throwable assertThrows(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -402,7 +401,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast group.
      */
-    public static synchronized String getNextMulticastGroup(Class<? extends Test> cls) {
+    public static synchronized String getNextMulticastGroup(Class<?> cls) {
         String addrStr = addrs.get(cls);
 
         if (addrStr != null)
@@ -807,18 +806,7 @@ public final class GridTestUtils {
      * @see #getIgniteHome()
      */
     @Nullable public static File resolveIgnitePath(String path) {
-        return resolveIgnitePath(null, path);
-    }
-
-    /**
-     * @param igniteHome Optional ignite home path.
-     * @param path Path to resolve.
-     * @return Resolved path, or {@code null} if file cannot be resolved.
-     */
-    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
-        File file = resolvePath(igniteHome, path);
-
-        return file != null ? file : resolvePath(igniteHome, "os/" + path);
+        return resolvePath(null, path);
     }
 
     /**
@@ -876,14 +864,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param cache Cache.
-     * @return Affinity.
-     */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
-        return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
-    }
-
-    /**
      * @param cacheName Cache name.
      * @param backups Number of backups.
      * @param log Logger.
@@ -900,7 +880,7 @@ public final class GridTestUtils {
             while (true) {
                 boolean wait = false;
 
-                for (int p = 0; p < affinity(cache).partitions(); p++) {
+                for (int p = 0; p < g.affinity(cacheName).partitions(); p++) {
                     Collection<ClusterNode> nodes = top.nodes(p, -1);
 
                     if (nodes.size() > backups + 1) {

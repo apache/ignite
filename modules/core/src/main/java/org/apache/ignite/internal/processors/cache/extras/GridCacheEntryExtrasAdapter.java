@@ -21,12 +21,14 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 
+import java.util.*;
+
 /**
  * Cache extras adapter.
  */
 public abstract class GridCacheEntryExtrasAdapter<K> implements GridCacheEntryExtras<K> {
     /** {@inheritDoc} */
-    @Override public GridLeanMap<String, Object> attributesData() {
+    @Override public GridLeanMap<UUID, Object> attributesData() {
         return null;
     }
 

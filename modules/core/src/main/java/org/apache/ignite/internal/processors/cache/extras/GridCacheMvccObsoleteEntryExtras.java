@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * Extras where MVCC and obsolete version are set.
  */
@@ -47,7 +49,7 @@ public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<UUID, Object> attrData) {
         return attrData != null ? new GridCacheAttributesMvccObsoleteEntryExtras<>(attrData, mvcc, obsoleteVer) : this;
     }
 

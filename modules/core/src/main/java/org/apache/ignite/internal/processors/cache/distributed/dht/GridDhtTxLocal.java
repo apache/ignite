@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -105,6 +106,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -123,6 +125,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             implicit,
             implicitSingle,
             sys,
+            plc,
             concurrency,
             isolation,
             timeout,
@@ -509,7 +512,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+                prep.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
@@ -597,7 +600,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+            prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.

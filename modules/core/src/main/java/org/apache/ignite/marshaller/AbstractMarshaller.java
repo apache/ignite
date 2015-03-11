@@ -33,6 +33,14 @@ public abstract class AbstractMarshaller implements Marshaller {
     /** Default initial buffer size for the {@link GridByteArrayOutputStream}. */
     public static final int DFLT_BUFFER_SIZE = 512;
 
+    /** Context. */
+    protected MarshallerContext ctx;
+
+    /** {@inheritDoc} */
+    @Override public void setContext(MarshallerContext ctx) {
+        this.ctx = ctx;
+    }
+
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         GridByteArrayOutputStream out = null;

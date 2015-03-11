@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
@@ -765,7 +765,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             c = connectionForSpace(space);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
 
         return queryTwoStep(space, GridSqlQuerySplitter.split(c, sqlQry, params));
@@ -1112,7 +1112,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Starting cache query index...");
 
         if (ctx == null) // This is allowed in some tests.
-            marshaller = new OptimizedMarshaller();
+            marshaller = new JdkMarshaller();
         else {
             this.ctx = ctx;
 

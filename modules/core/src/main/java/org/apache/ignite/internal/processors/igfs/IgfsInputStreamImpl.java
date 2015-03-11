@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -45,7 +46,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
     /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final IgfsReader secReader;
+    private final IgfsSecondaryFileSystemPositionedReadable secReader;
 
     /** Logger. */
     private IgniteLogger log;
@@ -110,7 +111,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
      * @param metrics Local IGFS metrics.
      */
     IgfsInputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable IgfsReader secReader, IgfsLocalMetrics metrics) {
+        int seqReadsBeforePrefetch, @Nullable IgfsSecondaryFileSystemPositionedReadable secReader, IgfsLocalMetrics metrics) {
         assert igfsCtx != null;
         assert path != null;
         assert fileInfo != null;
@@ -396,7 +397,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
 
                     // File was deleted.
                     if (newInfo == null)
-                        throw new IgfsFileNotFoundException("Failed to read file block (file was concurrently " +
+                        throw new IgfsPathNotFoundException("Failed to read file block (file was concurrently " +
                                 "deleted) [path=" + path + ", blockIdx=" + blockIdx + ']');
 
                     fileInfo = newInfo;
@@ -493,16 +494,16 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
                 if (!evictFut.isDone()) {
                     pendingFuts.add(evictFut);
 
-                    evictFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
-                        @Override public void apply(IgniteInternalFuture<byte[]> t) {
+                    evictFut.listen(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
+                        @Override
+                        public void apply(IgniteInternalFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 
                             pendingFutsLock.lock();
 
                             try {
                                 pendingFutsCond.signalAll();
-                            }
-                            finally {
+                            } finally {
                                 pendingFutsLock.unlock();
                             }
                         }

@@ -37,25 +37,27 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.TransactionState.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  *
  */
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
     implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
-    /** */
+    /** */         
     private static final long serialVersionUID = 0L;
-
+    
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -72,9 +74,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
     /** DHT mappings. */
     private Map<UUID, GridDistributedTxMapping<K, V>> dhtMap;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Error. */
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
@@ -128,13 +127,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxPrepareFuture() {
-        // No-op.
-    }
-
-    /**
      * @param cctx Context.
      * @param tx Transaction.
      * @param nearMiniId Near mini future id.
@@ -173,7 +165,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         this.nearMiniId = nearMiniId;
 
-        log = U.logger(ctx, logRef, GridDhtTxPrepareFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
 
         dhtMap = tx.dhtMap();
         nearMap = tx.nearMap();
@@ -321,7 +314,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
-                                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), key, val);
+                                    CacheInvokeEntry<K, V> invokeEntry =
+                                        new CacheInvokeEntry<>(txEntry.context(), key, val);
 
                                     EntryProcessor<K, V, ?> processor = t.get1();
 
@@ -496,9 +490,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             if (!tx.near()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
+                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ?
+                        tx.commitAsync() : tx.rollbackAsync();
 
-                    fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> gridCacheTxGridFuture) {
                             try {
                                 if (replied.compareAndSet(false, true))
@@ -1104,7 +1099,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxPrepareFuture.class, this, "super", super.toString());
+        return S.toString(GridDhtTxPrepareFuture.class, this, "xid", tx.xidVersion(), "super", super.toString());
     }
 
     /**
@@ -1130,20 +1125,15 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         private GridDistributedTxMapping<K, V> nearMapping;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            super(cctx.kernalContext());
-        }
-
-        /**
          * @param nodeId Node ID.
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
-        MiniFuture(UUID nodeId, GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
-            super(cctx.kernalContext());
-
+        MiniFuture(
+            UUID nodeId,
+            GridDistributedTxMapping<K, V> dhtMapping,
+            GridDistributedTxMapping<K, V> nearMapping
+        ) {
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 
             this.nodeId = nodeId;

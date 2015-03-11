@@ -208,7 +208,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+            exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                 @Override public void apply(IgniteInternalFuture<Long> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
@@ -357,7 +357,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
@@ -809,6 +809,25 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
+                if (!CU.isMarshallerCache(cctx.name())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
+
+                    try {
+                        cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
+                                "[cacheName=" + cctx.name() + ']');
+
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
+                    }
+                }
+
                 int preloadOrder = cctx.config().getPreloadOrder();
 
                 if (preloadOrder > 0) {
@@ -1051,8 +1070,6 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param workers List of workers.
          */
         private SyncFuture(Collection<DemandWorker> workers) {
-            super(cctx.kernalContext());
-
             assert workers.size() == poolSize();
 
             remaining = Collections.synchronizedList(new LinkedList<>(workers));

@@ -383,7 +383,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(long topVer) {
-        GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
+        GridCompoundFuture f = new GridCompoundFuture();
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
@@ -406,6 +406,12 @@ public class GridCacheSharedContext<K, V> {
 
         for (Integer cacheId : activeCacheIds) {
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
+
+            // System transactions may sap only one cache.
+            if (cacheCtx.system()) {
+                if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
+                    return false;
+            }
 
             // Check that caches have the same store.
             if (activeCacheCtx.store().store() != cacheCtx.store().store())

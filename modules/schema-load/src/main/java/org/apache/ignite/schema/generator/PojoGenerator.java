@@ -401,8 +401,7 @@ public class PojoGenerator {
      * @throws IOException If failed to write generated code into file.
      */
     public static void generate(PojoDescriptor pojo, String outFolder, String pkg, boolean constructor,
-        boolean includeKeys, ConfirmCallable askOverwrite)
-        throws IOException {
+        boolean includeKeys, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
         if (!pkgFolder.exists() && !pkgFolder.mkdirs())

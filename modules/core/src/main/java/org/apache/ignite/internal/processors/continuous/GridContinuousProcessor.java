@@ -355,9 +355,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Register handler only if local node passes projection predicate.
                 if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
                     try {
-                        if (ctx.config().isPeerClassLoadingEnabled())
-                            item.hnd.p2pUnmarshal(data.nodeId, ctx);
-
                         if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
@@ -394,7 +391,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        StartRequestData reqData = new StartRequestData(prjPred, hnd, bufSize, interval, autoUnsubscribe);
+        StartRequestData reqData = new StartRequestData(prjPred, hnd.clone(), bufSize, interval, autoUnsubscribe);
 
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
@@ -416,11 +413,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 // Handle peer deployment for other handler-specific objects.
-                hnd.p2pMarshal(ctx);
+                reqData.hnd.p2pMarshal(ctx);
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
 
         // Register per-routine notifications listener if ordered messaging is used.
@@ -459,7 +456,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             // Stop with exception if projection is empty.
             if (nodes.isEmpty() && !locIncluded) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new ClusterTopologyCheckedException("Failed to register remote continuous listener (projection is empty)."));
             }
 
@@ -520,6 +517,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!nodes.isEmpty()) {
             // Do not send projection predicate (nodes already filtered).
             reqData.prjPred = null;
+            reqData.prjPredBytes = null;
 
             // Send start requests.
             try {
@@ -553,7 +551,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     hnd.onListenerRegistered(routineId, ctx);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to register handler locally: " + hnd, e));
             }
         }
@@ -1617,6 +1615,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Consume ID. */
         private UUID routineId;
 
@@ -1641,7 +1642,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param routineId Consume ID.
          */
         StartFuture(GridKernalContext ctx, UUID routineId) {
-            super(ctx);
+            this.ctx = ctx;
 
             this.routineId = routineId;
         }
@@ -1701,18 +1702,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public StopFuture() {
-            // No-op.
-        }
+        /** */
+        private GridKernalContext ctx;
 
         /**
          * @param ctx Kernal context.
          */
         StopFuture(GridKernalContext ctx) {
-            super(ctx);
+            this.ctx = ctx;
         }
 
         /**
@@ -1751,19 +1748,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private UUID nodeId;
 
         /**
-         * Required by {@link Externalizable}.
-         */
-        public SyncMessageAckFuture() {
-            // No-op.
-        }
-
-        /**
          * @param ctx Kernal context.
          * @param nodeId Master node ID.
          */
         SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
-            super(ctx);
-
             this.nodeId = nodeId;
         }
 

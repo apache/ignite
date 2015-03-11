@@ -117,14 +117,14 @@ public interface IgniteEx extends Ignite {
      * @param name IGFS name.
      * @return IGFS.
      */
-    @Nullable public IgniteFs igfsx(@Nullable String name);
+    @Nullable public IgniteFileSystem igfsx(@Nullable String name);
 
     /**
      * Get Hadoop facade.
      *
      * @return Hadoop.
      */
-    public GridHadoop hadoop();
+    public Hadoop hadoop();
 
     /** {@inheritDoc} */
     @Override IgniteClusterEx cluster();

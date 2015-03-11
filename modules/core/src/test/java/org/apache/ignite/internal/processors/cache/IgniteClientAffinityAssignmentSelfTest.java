@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
@@ -58,8 +57,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
             ccfg.setDistributionMode(client ? CLIENT_ONLY : PARTITIONED_ONLY);
 
             if (aff == 0)
-                ccfg.setAffinity(new CacheConsistentHashAffinityFunction(false, PARTS));
-            else if (aff == 1)
                 ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, PARTS));
             else
                 ccfg.setAffinity(new CachePartitionFairAffinity(PARTS));
@@ -73,7 +70,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testConsistentHashAssignment() throws Exception {
+    public void testRendezvousAssignment() throws Exception {
         aff = 0;
 
         checkAffinityFunction();
@@ -82,17 +79,8 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testRendezvousAssignment() throws Exception {
-        aff = 1;
-
-        checkAffinityFunction();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testFairAssignment() throws Exception {
-        aff = 2;
+        aff = 1;
 
         checkAffinityFunction();
     }

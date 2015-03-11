@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -52,6 +51,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger. */
+    private static IgniteLogger log;
+
     /** Wait for 1 second for topology to change. */
     private static final long REMAP_PAUSE = 1000;
 
@@ -60,9 +62,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
     /** Topology. */
     private GridDhtPartitionTopology<K, V> top;
-
-    /** Logger. */
-    private IgniteLogger log;
 
     /** Keys to request. */
     private Collection<? extends K> keys;
@@ -91,10 +90,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param keys Keys.
      * @param preloader Preloader.
      */
-    public GridDhtForceKeysFuture(GridCacheContext<K, V> cctx, long topVer, Collection<? extends K> keys,
-        GridDhtPreloader<K, V> preloader) {
-        super(cctx.kernalContext());
-
+    public GridDhtForceKeysFuture(
+        GridCacheContext<K, V> cctx,
+        long topVer, Collection<? extends K> keys,
+        GridDhtPreloader<K, V> preloader
+    ) {
         assert topVer != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
 
@@ -105,16 +105,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         top = cctx.dht().topology();
 
-        log = U.logger(ctx, logRef, GridDhtForceKeysFuture.class);
-
-        syncNotify(true);
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtForceKeysFuture() {
-        // No-op.
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtForceKeysFuture.class);
     }
 
     /**
@@ -392,21 +384,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private Collection<ClusterNode> exc;
 
         /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
-
-        /**
          * @param node Node.
          * @param keys Keys.
          * @param curTopVer Topology version for this mini-future.
          * @param exc Exclude node list.
          */
         MiniFuture(ClusterNode node, Collection<K> keys, int curTopVer, Collection<ClusterNode> exc) {
-            super(cctx.kernalContext());
-
             assert node != null;
             assert curTopVer > 0;
             assert exc != null;

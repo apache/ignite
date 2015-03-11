@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -263,7 +262,7 @@ public class GridAffinityAssignmentCache {
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
-            new AffinityReadyFuture(ctx.kernalContext(), topVer));
+            new AffinityReadyFuture(topVer));
 
         aff = head.get();
 
@@ -436,18 +435,8 @@ public class GridAffinityAssignmentCache {
         private long reqTopVer;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
          */
-        public AffinityReadyFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         */
-        private AffinityReadyFuture(GridKernalContext ctx, long reqTopVer) {
-            super(ctx);
-
+        private AffinityReadyFuture(long reqTopVer) {
             this.reqTopVer = reqTopVer;
         }
 

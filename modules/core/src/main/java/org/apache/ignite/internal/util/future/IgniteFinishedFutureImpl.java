@@ -17,24 +17,35 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  *
  */
 public class IgniteFinishedFutureImpl<V> extends IgniteFutureImpl<V> {
     /**
-     * @param ctx Context.
-     * @param err Error.
+     *
      */
-    public IgniteFinishedFutureImpl(GridKernalContext ctx, Throwable err) {
-        super(new GridFinishedFuture<V>(ctx, err));
+    public IgniteFinishedFutureImpl() {
+        super(new GridFinishedFuture<>((V)null));
     }
 
     /**
-     * @param ctx Context.
+     * @param res Result.
      */
-    public IgniteFinishedFutureImpl(GridKernalContext ctx) {
-        super(new GridFinishedFuture<>(ctx, (V)null));
+    public IgniteFinishedFutureImpl(V res) {
+        super(new GridFinishedFuture<>(res));
+    }
+
+    /**
+     * @param err Error.
+     */
+    public IgniteFinishedFutureImpl(Throwable err) {
+        super(new GridFinishedFuture<V>(err));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteFinishedFutureImpl.class, this);
     }
 }

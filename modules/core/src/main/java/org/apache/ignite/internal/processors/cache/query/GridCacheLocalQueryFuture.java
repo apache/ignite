@@ -26,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -43,13 +42,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     private IgniteInternalFuture<?> fut;
 
     /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheLocalQueryFuture() {
-        // No-op.
-    }
-
-    /**
      * @param ctx Context.
      * @param qry Query.
      */
@@ -63,7 +55,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
      * Executes query runnable.
      */
     void execute() {
-        fut = ctx.closure().runLocalSafe(run, true);
+        fut = cctx.kernalContext().closure().runLocalSafe(run, true);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +122,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
                 rdc,
                 qry.query(),
                 GridCacheLocalQueryFuture.this,
-                ctx.localNodeId(),
+                cctx.localNodeId(),
                 cctx.io().nextIoId(),
                 qry.query().includeMetadata(),
                 true,

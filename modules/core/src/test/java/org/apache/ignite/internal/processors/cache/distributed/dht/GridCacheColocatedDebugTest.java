@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -71,7 +71,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 30));
+        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 30));
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);

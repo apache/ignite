@@ -230,7 +230,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private IgniteHadoopProcessorAdapter hadoopProc;
+    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -280,12 +280,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     protected ExecutorService restExecSvc;
 
+    /** */
+    @GridToStringExclude
+    private Map<String, Object> attrs = new HashMap<>();
 
     /** */
     private IgniteEx grid;
 
     /** */
     private ExecutorService utilityCachePool;
+
+    /** */
+    private ExecutorService marshCachePool;
 
     /** */
     private IgniteConfiguration cfg;
@@ -305,6 +311,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Exception registry. */
     private IgniteExceptionRegistry registry;
 
+    /** Marshaller context. */
+    private MarshallerContextImpl marshCtx;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -315,17 +324,17 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * Creates new kernal context.
      *
-     *  @param log Logger.
-     *  @param grid Grid instance managed by kernal.
-     *  @param cfg Grid configuration.
-     *  @param gw Kernal gateway.
-     *  @param utilityCachePool Utility cache pool.
-     *  @param execSvc Public executor service.
-     *  @param sysExecSvc System executor service.
-     *  @param p2pExecSvc P2P executor service.
-     *  @param mgmtExecSvc Management executor service.
-     *  @param igfsExecSvc IGFS executor service.
-     *  @param restExecSvc REST executor service.
+     * @param log Logger.
+     * @param grid Grid instance managed by kernal.
+     * @param cfg Grid configuration.
+     * @param gw Kernal gateway.
+     * @param utilityCachePool Utility cache pool.
+     * @param execSvc Public executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param igfsExecSvc IGFS executor service.
+     * @param restExecSvc REST executor service.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -335,6 +344,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         GridKernalGateway gw,
         IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -350,12 +360,15 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.gw = gw;
         this.registry = registry;
         this.utilityCachePool = utilityCachePool;
+        this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+
+        marshCtx = new MarshallerContextImpl();
 
         try {
             spring = SPRING.create(false);
@@ -456,8 +469,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof IgniteHadoopProcessorAdapter)
-            hadoopProc = (IgniteHadoopProcessorAdapter)comp;
+        else if (comp instanceof HadoopProcessorAdapter)
+            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -680,13 +693,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteHadoopProcessorAdapter hadoop() {
+    @Override public HadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService utilityCachePool() {
         return utilityCachePool;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService marshallerCachePool() {
+        return marshCachePool;
     }
 
     /** {@inheritDoc} */
@@ -861,8 +879,33 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public Object nodeAttribute(String key) {
+        return attrs.get(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNodeAttribute(String key) {
+        return attrs.containsKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object addNodeAttribute(String key, Object val) {
+        return attrs.put(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return attrs;
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return cluster;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MarshallerContextImpl marshallerContext() {
+        return marshCtx;
     }
 
     /** {@inheritDoc} */

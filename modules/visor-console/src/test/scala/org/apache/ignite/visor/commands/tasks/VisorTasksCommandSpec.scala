@@ -39,13 +39,14 @@ class VisorTasksCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
      * Open visor and execute several tasks before all tests.
      */
     override def beforeAll() {
-        Ignition.start(config("grid-1"))
+        val ignite = Ignition.start(config("grid-1"))
+
         Ignition.start(config("grid-2"))
 
         visor.open(config("visor-demo-node"), "n/a")
 
         try {
-            val compute = visor.ignite.compute().withAsync
+            val compute = ignite.compute().withAsync
 
             compute.withName("TestTask1").execute(new TestTask1(), null)
 

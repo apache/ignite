@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -46,13 +45,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** */
     private CountDownLatch firstPageLatch = new CountDownLatch(1);
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheDistributedQueryFuture() {
-        // No-op.
-    }
 
     /**
      * @param ctx Cache context.

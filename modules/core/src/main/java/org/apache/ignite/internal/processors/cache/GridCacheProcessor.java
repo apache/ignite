@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
@@ -57,14 +56,14 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -132,14 +131,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
                 aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction(false, 512);
+                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction(false, 512);
 
                 aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
 
@@ -152,8 +151,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                    CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
+                    CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
                         aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
@@ -304,14 +303,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cc.getAffinity() instanceof CachePartitionFairAffinity)
                 throw new IgniteCheckedException("REPLICATED cache can not be started with CachePartitionFairAffinity" +
                     " [cacheName=" + cc.getName() + ']');
-
-            if (cc.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cc.getAffinity();
-
-                if (aff.isExcludeNeighbors())
-                    throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
-                        "CacheConsistentHashAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
-            }
 
             if (cc.getAffinity() instanceof CacheRendezvousAffinityFunction) {
                 CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cc.getAffinity();
@@ -559,10 +550,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        IgfsConfiguration[] igfsCfgs = ctx.grid().configuration().getIgfsConfiguration();
+        FileSystemConfiguration[] igfsCfgs = ctx.grid().configuration().getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
-            for (IgfsConfiguration igfsCfg : igfsCfgs) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 sysCaches.add(igfsCfg.getMetaCacheName());
                 sysCaches.add(igfsCfg.getDataCacheName());
             }
@@ -571,8 +562,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (IgniteComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
+        sysCaches.add(CU.MARSH_CACHE_NAME);
         sysCaches.add(CU.UTILITY_CACHE_NAME);
-
         sysCaches.add(CU.ATOMICS_CACHE_NAME);
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -911,6 +902,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
 
+        if (!(ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))) {
+            GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
+
+            Map<String, String> interceptors = new HashMap<>();
+
+            int i = 0;
+
+            for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+                assert caches.containsKey(cfg.getName()) : cfg.getName();
+
+                GridCacheContext ctx = caches.get(cfg.getName()).context();
+
+                attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
+
+                if (cfg.getInterceptor() != null)
+                    interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
+            }
+
+            ctx.addNodeAttribute(ATTR_CACHE, attrVals);
+
+            ctx.addNodeAttribute(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
+
+            if (!interceptors.isEmpty())
+                ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
+        }
+
+        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+            }
+        });
+
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
     }
@@ -939,36 +962,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchMgr,
             ioMgr
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        if (ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))
-            return;
-
-        GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
-
-        Map<String, String> interceptors = new HashMap<>();
-
-        int i = 0;
-
-        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-            assert caches.containsKey(cfg.getName()) : cfg.getName();
-
-            GridCacheContext ctx = caches.get(cfg.getName()).context();
-
-            attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
-
-            if (cfg.getInterceptor() != null)
-                interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
-        }
-
-        attrs.put(ATTR_CACHE, attrVals);
-
-        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
-
-        if (!interceptors.isEmpty())
-            attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
 
     /**
@@ -1017,8 +1010,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
             CacheConfiguration cfg = cache.configuration();
 
-            if (cfg.getAffinity() instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cfg.getAffinity();
+            if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
+                CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
 
                 CacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
@@ -1210,14 +1203,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 "Affinity key backups", locAttr.affinityKeyBackups(),
                                 rmtAttr.affinityKeyBackups(), true);
 
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicas",
-                                "Affinity replicas", locAttr.affinityReplicas(),
-                                rmtAttr.affinityReplicas(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityReplicaCountAttrName",
-                                "Affinity replica count attribute name", locAttr.affinityReplicaCountAttrName(),
-                                rmtAttr.affinityReplicaCountAttrName(), true);
-
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity.hashIdResolver",
                                 "Partitioned cache affinity hash ID resolver class",
                                 locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
@@ -1323,7 +1308,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         .get(order);
 
                     if (fut == null) {
-                        fut = new GridCompoundFuture<>(ctx);
+                        fut = new GridCompoundFuture<>();
 
                         preloadFuts.put(order, fut);
                     }
@@ -1591,6 +1576,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Marshaller system cache.
+     */
+    public GridCacheAdapter<Integer, String> marshallerCache() {
+        return internalCache(CU.MARSH_CACHE_NAME);
+    }
+
+    /**
      * Gets utility cache.
      *
      * @param keyCls Key class.
@@ -1748,9 +1740,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param ldr Class loader.
      */
     public void onUndeployed(ClassLoader ldr) {
-        if (!ctx.isStopping())
-            for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(ldr);
+        if (!ctx.isStopping()) {
+            for (GridCacheAdapter<?, ?> cache : caches.values()) {
+                // Do not notify system caches.
+                if (!cache.context().system() && !CU.isAtomicsCache(cache.context().name()))
+                    cache.onUndeploy(ldr);
+            }
+        }
     }
 
     /**

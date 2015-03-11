@@ -150,7 +150,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgfsProcessorAdapter igfsProc = ignite.context().igfs();
 
-            for (IgniteFs igfs : igfsProc.igfss()) {
+            for (IgniteFileSystem igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {

@@ -53,6 +53,7 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -149,7 +150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapterEx<DiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
+    private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -189,14 +190,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /**
-     * Sets local node attributes into discovery SPI.
-     *
-     * @param attrs Attributes to set.
-     * @param ver Version.
-     */
-    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-        // TODO GG-7574 move to metrics processor?
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        DiscoverySpi spi = getSpi();
+
+        spi.setNodeAttributes(ctx.nodeAttributes(), VER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
         long totSysMemory = -1;
 
         try {
@@ -206,13 +208,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
-        getSpi().setNodeAttributes(attrs, ver);
-    }
+        DiscoverySpi spi = getSpi();
 
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
         discoOrdered = discoOrdered();
 
         histSupported = historySupported();
@@ -236,10 +235,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         new IgniteThread(metricsUpdater).start();
 
-        getSpi().setMetricsProvider(createMetricsProvider());
+        spi.setMetricsProvider(createMetricsProvider());
 
         if (ctx.security().enabled()) {
-            getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
+            spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
                 @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
                     try {
                         return ctx.security().authenticateNode(node, cred);
@@ -255,7 +254,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             });
         }
 
-        getSpi().setListener(new DiscoverySpiListener() {
+        spi.setListener(new DiscoverySpiListener() {
             @Override public void onDiscovery(
                 int type,
                 long topVer,
@@ -316,7 +315,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        getSpi().setDataExchange(new DiscoverySpiDataExchange() {
+        spi.setDataExchange(new DiscoverySpiDataExchange() {
             @Override public Map<Integer, Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
@@ -368,7 +367,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         checkAttributes(discoCache().remoteNodes());
 
-        locNode = getSpi().getLocalNode();
+        locNode = spi.getLocalNode();
 
         topVer.setIfGreater(locNode.order());
 
@@ -923,7 +922,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         long topVer = topologyVersion();
 
         if (topVer >= awaitVer)
-            return new GridFinishedFuture<>(ctx, topVer);
+            return new GridFinishedFuture<>(topVer);
 
         DiscoTopologyFuture fut = new DiscoTopologyFuture(ctx, awaitVer);
 
@@ -1653,6 +1652,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Topology await version. */
         private long awaitVer;
 
@@ -1666,8 +1668,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param awaitVer Await version.
          */
         private DiscoTopologyFuture(GridKernalContext ctx, long awaitVer) {
-            super(ctx);
-
+            this.ctx = ctx;
             this.awaitVer = awaitVer;
         }
 
@@ -2146,8 +2147,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param id Node ID.
          * @return Node.
          */
-        @Nullable
-        ClusterNode node(UUID id) {
+        @Nullable ClusterNode node(UUID id) {
             return nodeMap.get(id);
         }
 

@@ -33,7 +33,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -90,13 +89,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     private volatile long mapTime;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridDhtAtomicUpdateFuture() {
-        // No-op.
-    }
-
-    /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
      * @param writeVer Write version.
@@ -110,8 +102,6 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridNearAtomicUpdateRequest<K, V> updateReq,
         GridNearAtomicUpdateResponse<K, V> updateRes
     ) {
-        super(cctx.kernalContext());
-
         this.cctx = cctx;
         this.writeVer = writeVer;
 
@@ -122,7 +112,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
         forceTransformBackups = updateReq.forceTransformBackups();
 
-        log = U.logger(ctx, logRef, GridDhtAtomicUpdateFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 
         keys = new ArrayList<>(updateReq.keys().size());
     }
@@ -234,7 +225,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
 
-            if (!nodeId.equals(ctx.localNodeId())) {
+            if (!nodeId.equals(cctx.localNodeId())) {
                 GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
@@ -291,7 +282,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
             GridDhtAtomicUpdateRequest<K, V> updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
-                ClusterNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = cctx.discovery().node(nodeId);
 
                 // Node left the grid.
                 if (node == null)

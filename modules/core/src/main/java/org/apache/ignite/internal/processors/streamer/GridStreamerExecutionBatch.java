@@ -21,7 +21,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,13 +29,9 @@ import java.util.*;
 /**
  * Streamer execution batch which should be processed on one node.
  */
-public class GridStreamerExecutionBatch implements Externalizable, OptimizedMarshallable {
+public class GridStreamerExecutionBatch implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** Execution ID (ID of root future). */
     private IgniteUuid execId;
@@ -151,11 +146,6 @@ public class GridStreamerExecutionBatch implements Externalizable, OptimizedMars
      */
     public Collection<Object> events() {
         return evts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */
