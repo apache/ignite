@@ -29,10 +29,7 @@ import java.io.*;
  * Host name is used by {@link S3CheckpointSpi} SPI to give node
  * correct files if it is restarted.
  */
-class S3CheckpointData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+class S3CheckpointData {
     /** Checkpoint data. */
     private final byte[] state;
 
@@ -82,6 +79,63 @@ class S3CheckpointData implements Serializable {
      */
     public String getKey() {
         return key;
+    }
+
+    /**
+     * @return Serialized checkpoint data.
+     */
+    public byte[] toBytes() {
+        byte[] keyBytes = key.getBytes();
+
+        byte[] bytes = new byte[4 + state.length + 8 + 4 + keyBytes.length];
+
+        U.intToBytes(state.length, bytes, 0);
+        U.arrayCopy(state, 0, bytes, 4, state.length);
+        U.longToBytes(expTime, bytes, 4 + state.length);
+        U.intToBytes(keyBytes.length, bytes, 4 + state.length + 8);
+        U.arrayCopy(keyBytes, 0, bytes, 4 + state.length + 8 + 4, keyBytes.length);
+
+        return bytes;
+    }
+
+    /**
+     * @param in Input stream.
+     * @return Checkpoint data.
+     * @throws IOException In case of error.
+     */
+    public static S3CheckpointData fromStream(InputStream in) throws IOException {
+        byte[] buf = new byte[8];
+
+        read(in, buf, 4);
+
+        byte[] state = new byte[U.bytesToInt(buf, 0)];
+
+        read(in, state, state.length);
+
+        read(in, buf, 8);
+
+        long expTime = U.bytesToLong(buf, 0);
+
+        read(in, buf, 4);
+
+        byte[] keyBytes = new byte[U.bytesToInt(buf, 0)];
+
+        read(in, keyBytes, keyBytes.length);
+
+        return new S3CheckpointData(state, expTime, new String(keyBytes));
+    }
+
+    /**
+     * @param in Input stream.
+     * @param buf Buffer.
+     * @param len Number of bytes to read.
+     * @throws IOException In case of error.
+     */
+    private static void read(InputStream in, byte[] buf, int len) throws IOException {
+        int cnt = in.read(buf, 0, len);
+
+        if (cnt < len)
+            throw new IOException("End of stream reached.");
     }
 
     /** {@inheritDoc} */

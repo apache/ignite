@@ -268,6 +268,7 @@ public class IgniteTxHandler<K, V> {
                 req.implicitSingle(),
                 req.implicitSingle(),
                 req.system(),
+                req.policy(),
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
@@ -281,7 +282,7 @@ public class IgniteTxHandler<K, V> {
                 req.taskNameHash()
             );
 
-            tx = ctx.tm().onCreated(tx);
+            tx = ctx.tm().onCreated(null, tx);
 
             if (tx != null)
                 tx.topologyVersion(req.topologyVersion());
@@ -505,7 +506,7 @@ public class IgniteTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, req.policy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -526,7 +527,7 @@ public class IgniteTxHandler<K, V> {
             if (req.commit()) {
                 if (tx == null) {
                     // Create transaction and add entries.
-                    tx = ctx.tm().onCreated(
+                    tx = ctx.tm().onCreated(null,
                         new GridDhtTxLocal<>(
                             ctx,
                             nodeId,
@@ -537,6 +538,7 @@ public class IgniteTxHandler<K, V> {
                             true,
                             false, /* we don't know, so assume false. */
                             req.system(),
+                            req.policy(),
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
@@ -918,6 +920,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
@@ -931,7 +934,7 @@ public class IgniteTxHandler<K, V> {
 
                 tx.writeVersion(req.writeVersion());
 
-                tx = ctx.tm().onCreated(tx);
+                tx = ctx.tm().onCreated(null, tx);
 
                 if (tx == null || !ctx.tm().onStarted(tx)) {
                     if (log.isDebugEnabled())
@@ -1037,6 +1040,7 @@ public class IgniteTxHandler<K, V> {
                     req.version(),
                     null,
                     req.system(),
+                    req.policy(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
@@ -1051,7 +1055,7 @@ public class IgniteTxHandler<K, V> {
                 tx.writeVersion(req.writeVersion());
 
                 if (!tx.empty()) {
-                    tx = ctx.tm().onCreated(tx);
+                    tx = ctx.tm().onCreated(null, tx);
 
                     if (tx == null || !ctx.tm().onStarted(tx))
                         throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + tx);

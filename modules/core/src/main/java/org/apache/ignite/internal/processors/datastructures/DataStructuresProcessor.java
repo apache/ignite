@@ -1262,6 +1262,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      */
     static class CollectionInfo implements Externalizable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private boolean collocated;
 
         /** */
@@ -1305,6 +1308,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      */
     static class QueueInfo extends CollectionInfo {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private int cap;
 

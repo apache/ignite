@@ -301,6 +301,10 @@ public abstract class IgniteUtils {
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap8<>();
+
     /**
      * Initializes enterprise check.
      */
@@ -516,6 +520,8 @@ public abstract class IgniteUtils {
         }
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+
+        System.setProperty("http.strictPostRedirect", "true");
     }
 
     /**
@@ -7895,14 +7901,49 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
-        throws ClassNotFoundException {
-        if (clsName == null)
-            return null;
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
 
-        return cls != null ? cls : Class.forName(clsName, true, ldr);
+        if (cls != null)
+            return cls;
+
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        cls = ldrMap.get(clsName);
+
+        if (cls == null) {
+            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
+    }
+
+    /**
+     * Clears class cache for provided loader.
+     *
+     * @param ldr Class loader.
+     */
+    public static void clearClassCache(ClassLoader ldr) {
+        classCache.remove(ldr);
+    }
+
+    /**
+     * Completely clears class cache.
+     */
+    public static void clearClassCache() {
+        classCache.clear();
     }
 
     /**

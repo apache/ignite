@@ -56,14 +56,14 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -562,8 +562,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (IgniteComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
+        sysCaches.add(CU.MARSH_CACHE_NAME);
         sysCaches.add(CU.UTILITY_CACHE_NAME);
-
         sysCaches.add(CU.ATOMICS_CACHE_NAME);
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -927,6 +927,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!interceptors.isEmpty())
                 ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
         }
+
+        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+            }
+        });
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
@@ -1567,6 +1573,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> publicCache() {
         return publicCache(null);
+    }
+
+    /**
+     * @return Marshaller system cache.
+     */
+    public GridCacheAdapter<Integer, String> marshallerCache() {
+        return internalCache(CU.MARSH_CACHE_NAME);
     }
 
     /**

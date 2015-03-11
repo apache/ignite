@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -88,6 +89,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param xidVer XID version.
      * @param commitVer Commit version.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -104,6 +106,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -120,6 +123,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
             ctx.versions().last(),
             Thread.currentThread().getId(),
             sys,
+            plc,
             concurrency,
             isolation,
             timeout,

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -29,13 +28,9 @@ import java.util.*;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable {
+public class GridCacheReturn<V> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "JavaAbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** Value. */
     @GridToStringInclude
@@ -198,11 +193,6 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
         }
 
         resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

@@ -169,7 +169,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {

@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
+import org.apache.ignite.internal.client.marshaller.jdk.*;
 import org.apache.ignite.internal.processors.hadoop.proto.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -111,7 +111,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
 
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
-                    cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
+                    cliCfg.setMarshaller(new GridClientJdkMarshaller());
                     cliCfg.setDaemon(true);
 
                     try {

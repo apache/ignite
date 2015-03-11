@@ -24,7 +24,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -280,6 +279,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -69,6 +69,9 @@ public class GridCacheUtils {
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
+    /** Marshaller system cache name. */
+    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 
@@ -1510,7 +1513,15 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is marshaller system cache.
+     */
+    public static boolean isMarshallerCache(String cacheName) {
+        return MARSH_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
         return UTILITY_CACHE_NAME.equals(cacheName);
@@ -1518,7 +1529,7 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is atomics system cache.
      */
     public static boolean isAtomicsCache(String cacheName) {
         return ATOMICS_CACHE_NAME.equals(cacheName);
@@ -1529,7 +1540,8 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
+        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+            isAtomicsCache(cacheName);
     }
 
     /**

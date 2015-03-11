@@ -355,9 +355,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Register handler only if local node passes projection predicate.
                 if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
                     try {
-                        if (ctx.config().isPeerClassLoadingEnabled())
-                            item.hnd.p2pUnmarshal(data.nodeId, ctx);
-
                         if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
@@ -394,7 +391,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        StartRequestData reqData = new StartRequestData(prjPred, hnd, bufSize, interval, autoUnsubscribe);
+        StartRequestData reqData = new StartRequestData(prjPred, hnd.clone(), bufSize, interval, autoUnsubscribe);
 
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
@@ -416,7 +413,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 // Handle peer deployment for other handler-specific objects.
-                hnd.p2pMarshal(ctx);
+                reqData.hnd.p2pMarshal(ctx);
             }
         }
         catch (IgniteCheckedException e) {
@@ -520,6 +517,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!nodes.isEmpty()) {
             // Do not send projection predicate (nodes already filtered).
             reqData.prjPred = null;
+            reqData.prjPredBytes = null;
 
             // Send start requests.
             try {

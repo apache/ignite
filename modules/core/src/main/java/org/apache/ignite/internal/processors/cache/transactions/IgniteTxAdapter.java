@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -135,6 +134,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** System transaction flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /** */
     protected boolean onePhaseCommit;
 
@@ -225,6 +227,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param implicitSingle Implicit with one key flag.
      * @param loc Local flag.
      * @param sys System transaction flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -238,6 +241,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean implicitSingle,
         boolean loc,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -257,6 +261,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.implicitSingle = implicitSingle;
         this.loc = loc;
         this.sys = sys;
+        this.plc = plc;
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
@@ -283,6 +288,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param startVer Start version mark.
      * @param threadId Thread ID.
      * @param sys System transaction flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -296,6 +302,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheVersion startVer,
         long threadId,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -310,6 +317,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.xidVer = xidVer;
         this.startVer = startVer;
         this.sys = sys;
+        this.plc = plc;
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
@@ -412,7 +420,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public GridIoPolicy ioPolicy() {
-        return sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        return plc;
     }
 
     /** {@inheritDoc} */

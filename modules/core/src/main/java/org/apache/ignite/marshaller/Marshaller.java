@@ -66,6 +66,13 @@ import java.io.*;
  */
 public interface Marshaller {
     /**
+     * Sets marshaller context.
+     *
+     * @param ctx Marshaller context.
+     */
+    public void setContext(MarshallerContext ctx);
+
+    /**
      * Marshals object to the output stream. This method should not close
      * given output stream.
      *

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -44,13 +43,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
+public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** Owning transaction. */
     @GridToStringExclude
@@ -898,11 +893,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         conflictVer = CU.readVersion(in);
 
         expiryPlc = (ExpiryPolicy)in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */
