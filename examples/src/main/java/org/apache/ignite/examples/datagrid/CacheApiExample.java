@@ -52,7 +52,6 @@ public class CacheApiExample {
             CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
             cfg.setCacheMode(CacheMode.PARTITIONED);
-
             cfg.setName(CACHE_NAME);
 
             try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
@@ -79,7 +78,6 @@ public class CacheApiExample {
         // Put and do not return previous value (all methods ending with 'x' return boolean).
         // Performs better when previous value is not needed.
         cache.put(2, "2");
-
 
         // Put asynchronously.
         final IgniteCache<Integer, String> asyncCache = cache.withAsync();
