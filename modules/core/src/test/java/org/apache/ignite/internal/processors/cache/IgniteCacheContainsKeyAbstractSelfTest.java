@@ -127,9 +127,9 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     private boolean txContainsKey(Transaction tx, String key) {
         TransactionProxyImpl<String, Integer> proxy = (TransactionProxyImpl<String, Integer>)tx;
 
-        IgniteInternalTx<String, Integer> txEx = proxy.tx();
+        IgniteInternalTx txEx = proxy.tx();
 
-        IgniteTxEntry entry = txEx.entry(context(0).txKey(key));
+        IgniteTxEntry entry = txEx.entry(context(0).txKey(context(0).toCacheKeyObject(key)));
 
         return entry != null;
     }

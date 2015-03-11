@@ -27,9 +27,9 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.
@@ -66,9 +66,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Default lock timeout. */
     private long dfltLockTimeout;
-
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes;
 
     /** Cache preload mode. */
     private CachePreloadMode preloadMode;
@@ -168,7 +165,6 @@ public class GridCacheAttributes implements Externalizable {
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
-        storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
         writeBehindBatchSize = cfg.getWriteBehindBatchSize();
@@ -394,13 +390,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating if cached values should be additionally stored in serialized form.
-     */
-    public boolean storeValueBytes() {
-        return storeValBytes;
-    }
-
-    /**
      * @return Preload batch size.
      */
     public int preloadBatchSize() {
@@ -501,7 +490,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeEnum(out, preloadMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
-        out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
         out.writeInt(writeBehindBatchSize);
@@ -543,7 +531,6 @@ public class GridCacheAttributes implements Externalizable {
         preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
-        storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
         writeBehindBatchSize = in.readInt();

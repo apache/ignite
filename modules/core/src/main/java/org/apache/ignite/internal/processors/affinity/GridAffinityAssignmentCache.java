@@ -92,6 +92,10 @@ public class GridAffinityAssignmentCache {
         CacheAffinityKeyMapper affMapper,
         int backups)
     {
+        assert ctx != null;
+        assert aff != null;
+        assert affMapper != null;
+
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;
@@ -295,15 +299,6 @@ public class GridAffinityAssignmentCache {
      * @return Partition.
      */
     public int partition(Object key) {
-        if (ctx.portableEnabled()) {
-            try {
-                key = ctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
-
         return aff.partition(affinityKey(key));
     }
 
@@ -315,6 +310,9 @@ public class GridAffinityAssignmentCache {
      * @return Affinity key.
      */
     private Object affinityKey(Object key) {
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(ctx.cacheObjectContext(), false);
+
         return (key instanceof GridCacheInternal ? ctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 

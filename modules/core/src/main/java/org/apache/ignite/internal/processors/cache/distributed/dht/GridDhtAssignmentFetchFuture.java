@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
-public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<List<ClusterNode>>> {
+public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     private static IgniteLogger log;
 
     /** Cache context. */
-    private final GridCacheContext<K, V> ctx;
+    private final GridCacheContext ctx;
 
     /** List of available nodes this future can fetch data from. */
     private Queue<ClusterNode> availableNodes;
@@ -65,7 +65,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param availableNodes Available nodes.
      */
     public GridDhtAssignmentFetchFuture(
-        GridCacheContext<K, V> ctx,
+        GridCacheContext ctx,
         long topVer,
         Collection<ClusterNode> availableNodes
     ) {
@@ -86,7 +86,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * Initializes fetch future.
      */
     public void init() {
-        ((GridDhtPreloader<K, V>)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
+        ((GridDhtPreloader)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
 
         requestFromNextNode();
     }
@@ -95,7 +95,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
      * @param node Node.
      * @param res Reponse.
      */
-    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
         if (res.topologyVersion() != topVer) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
@@ -133,7 +133,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable List<List<ClusterNode>> res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
-            ((GridDhtPreloader<K, V>)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
+            ((GridDhtPreloader)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
 
             return true;
         }
@@ -159,7 +159,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest<K, V>(ctx.cacheId(), topVer),
+                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(ctx.cacheId(), topVer),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.

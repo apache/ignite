@@ -33,7 +33,7 @@ import java.nio.*;
 /**
  * Reply for synchronous phase 2.
  */
-public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
+public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -98,7 +98,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (err != null)
@@ -106,7 +106,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)

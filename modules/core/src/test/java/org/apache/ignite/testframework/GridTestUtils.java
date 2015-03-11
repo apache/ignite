@@ -875,7 +875,7 @@ public final class GridTestUtils {
         for (Ignite g : Ignition.allGrids()) {
             GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
 
-            GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
+            GridDhtPartitionTopology top = dht(cache).topology();
 
             while (true) {
                 boolean wait = false;
