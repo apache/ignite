@@ -29,7 +29,6 @@ import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -66,7 +65,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         // This property is essential for this test.

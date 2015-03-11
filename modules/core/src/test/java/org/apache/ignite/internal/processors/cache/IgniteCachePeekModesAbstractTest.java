@@ -61,8 +61,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -76,7 +76,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         ccfg.setBackups(1);
 
         if (gridName.equals(getTestGridName(0)))
-            ccfg.setDistributionMode(NEAR_PARTITIONED);
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(HEAP_ENTRIES));
 

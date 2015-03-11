@@ -34,7 +34,6 @@ import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.CacheManager;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
@@ -1240,8 +1239,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        throw new UnsupportedOperationException();
+        try {
+            ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1250,12 +1253,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return cacheMgr != null && cacheMgr.isClosed();
     }
 
+    /**
+     *
+     */
+    public GridCacheProjectionEx delegate() {
+        return delegate;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.isAssignableFrom(IgniteCache.class))
+        if (clazz.isAssignableFrom(getClass()))
             return (T)this;
-        else if (clazz.isAssignableFrom(Ignite.class))
+        else if (clazz.isAssignableFrom(IgniteEx.class))
             return (T)ctx.grid();
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
@@ -1456,7 +1466,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      * Closeable iterator.
      */
-    private static abstract class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
+    private abstract static class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
         /** */
         private X cur;
 

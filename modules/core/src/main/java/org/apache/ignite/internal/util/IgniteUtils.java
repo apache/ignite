@@ -6940,72 +6940,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets cache attributes from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Attributes.
-     */
-    @Nullable public static GridCacheAttributes cacheAttributes(ClusterNode n, @Nullable String cacheName) {
-        for (GridCacheAttributes a : cacheAttributes(n)) {
-            if (F.eq(a.cacheName(), cacheName))
-                return a;
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets view on all cache names started on the node.
-     *
-     * @param n Node to get cache names for.
-     * @return Cache names for the node.
-     */
-    public static Collection<String> cacheNames(ClusterNode n) {
-        return F.viewReadOnly(
-            F.asList(n.<GridCacheAttributes[]>attribute(ATTR_CACHE)),
-            new C1<GridCacheAttributes, String>() {
-                @Override public String apply(GridCacheAttributes attrs) {
-                    return attrs.cacheName();
-                }
-            });
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache name to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCache(ClusterNode n, @Nullable String cacheName) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if given node has at least one cache.
-     *
-     * @param n Node to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCaches(ClusterNode n) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        return !F.isEmpty(caches);
-    }
-
-    /**
      * Checks if given node has specified streamer started.
      *
      * @param n Node to check.
@@ -7025,63 +6959,6 @@ public abstract class IgniteUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheMode cacheMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.cacheMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.atomicityMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache distribution mode on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache distribution mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.partitionedTaxonomy();
-
-        return null;
     }
 
     /**

@@ -44,7 +44,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     public static final CacheAffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
 
     /** */
-    public GridCacheAbstractUsersAffinityMapperSelfTest() {
+    protected GridCacheAbstractUsersAffinityMapperSelfTest() {
         super(false /* doesn't start grid */);
     }
 
@@ -64,7 +64,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         cacheCfg.setName(null);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDistributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
         cacheCfg.setAffinityMapper(AFFINITY_MAPPER);
@@ -83,7 +83,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Cache atomicity mode.

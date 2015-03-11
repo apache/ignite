@@ -132,6 +132,24 @@ public class Ignition {
     }
 
     /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public static void setClientMode(boolean clientMode) {
+        IgnitionEx.setClientMode(clientMode);
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public static boolean isClientMode() {
+        return IgnitionEx.isClientMode();
+    }
+
+    /**
      * Gets state of grid default grid.
      *
      * @return Default grid state.

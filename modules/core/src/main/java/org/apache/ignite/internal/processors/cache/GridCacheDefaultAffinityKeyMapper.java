@@ -46,7 +46,7 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
 
     /** Injected ignite instance. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    private transient Ignite ignite;
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(

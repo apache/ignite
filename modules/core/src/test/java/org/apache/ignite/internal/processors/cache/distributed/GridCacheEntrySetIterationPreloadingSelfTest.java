@@ -40,8 +40,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

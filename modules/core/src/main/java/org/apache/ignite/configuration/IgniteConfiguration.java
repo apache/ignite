@@ -18,14 +18,28 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.*;
+import org.apache.ignite.spi.checkpoint.noop.*;
+import org.apache.ignite.spi.collision.noop.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.deployment.local.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.eventstorage.memory.*;
+import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
+import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
@@ -51,15 +65,15 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
- * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method. It defines all configuration
+ * {@link Ignition#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize Ignite instance.
+ * {@link Ignition#start(IgniteConfiguration)} method to initialize Ignite instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
  * <p>
- * For more information about grid configuration and startup refer to {@link org.apache.ignite.Ignition}
+ * For more information about grid configuration and startup refer to {@link Ignition}
  * documentation.
  */
 public class IgniteConfiguration {
@@ -306,6 +320,12 @@ public class IgniteConfiguration {
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
+    /** Client cache configurations. */
+    private NearCacheConfiguration[] nearCacheCfg;
+
+    /** Client mode flag. */
+    private Boolean clientMode;
+
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
@@ -475,7 +495,7 @@ public class IgniteConfiguration {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
+     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on Ignite and needs to participate in the topology but also needs to be
@@ -483,7 +503,7 @@ public class IgniteConfiguration {
      * or in-memory data grid storage.
      *
      * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
-     * @see org.apache.ignite.cluster.ClusterGroup#forDaemons()
+     * @see ClusterGroup#forDaemons()
      */
     public boolean isDaemon() {
         return daemon;
@@ -494,7 +514,7 @@ public class IgniteConfiguration {
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
      * visible on the main APIs, i.e. they are not part of any projections. The only
-     * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
+     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
      * is build on Ignite and needs to participate in the topology but also needs to be
@@ -519,8 +539,8 @@ public class IgniteConfiguration {
 
     /**
      * Should return any user-defined attributes to be added to this node. These attributes can
-     * then be accessed on nodes by calling {@link org.apache.ignite.cluster.ClusterNode#attribute(String)} or
-     * {@link org.apache.ignite.cluster.ClusterNode#attributes()} methods.
+     * then be accessed on nodes by calling {@link ClusterNode#attribute(String)} or
+     * {@link ClusterNode#attributes()} methods.
      * <p>
      * Note that system adds the following (among others) attributes automatically:
      * <ul>
@@ -574,7 +594,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return a thread pool size to be used in grid.
-     * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
+     * This executor service will be in charge of processing {@link ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
@@ -599,7 +619,7 @@ public class IgniteConfiguration {
 
     /**
      * Size of thread pool that is in charge of processing internal and Visor
-     * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
+     * {@link ComputeJob GridJobs}.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_MGMT_THREAD_CNT}
      *
@@ -642,7 +662,7 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getPublicThreadPoolSize()
      */
     public void setPublicThreadPoolSize(int poolSize) {
-        this.pubPoolSize = poolSize;
+        pubPoolSize = poolSize;
     }
 
     /**
@@ -652,7 +672,7 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getSystemThreadPoolSize()
      */
     public void setSystemThreadPoolSize(int poolSize) {
-        this.sysPoolSize = poolSize;
+        sysPoolSize = poolSize;
     }
 
     /**
@@ -662,7 +682,7 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getManagementThreadPoolSize()
      */
     public void setManagementThreadPoolSize(int poolSize) {
-        this.mgmtPoolSize = poolSize;
+        mgmtPoolSize = poolSize;
     }
 
     /**
@@ -672,7 +692,7 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getPeerClassLoadingThreadPoolSize()
      */
     public void setPeerClassLoadingThreadPoolSize(int poolSize) {
-        this.p2pPoolSize = poolSize;
+        p2pPoolSize = poolSize;
     }
 
     /**
@@ -682,7 +702,7 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getIgfsThreadPoolSize()
      */
     public void setIgfsThreadPoolSize(int poolSize) {
-        this.igfsPoolSize = poolSize;
+        igfsPoolSize = poolSize;
     }
 
     /**
@@ -693,7 +713,7 @@ public class IgniteConfiguration {
      *
      * @return Ignite installation home or {@code null} to make the system attempt to
      *      infer it automatically.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
+     * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getIgniteHome() {
         return ggHome;
@@ -704,7 +724,7 @@ public class IgniteConfiguration {
      *
      * @param ggHome {@code Ignition} installation folder.
      * @see IgniteConfiguration#getIgniteHome()
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
+     * @see IgniteSystemProperties#IGNITE_HOME
      */
     public void setIgniteHome(String ggHome) {
         this.ggHome = ggHome;
@@ -719,7 +739,7 @@ public class IgniteConfiguration {
      *
      * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getIgniteHome()
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
+     * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {
         return ggWork;
@@ -776,8 +796,8 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.JdkMarshaller} will be used on other VMs.
+     * {@link OptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link JdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */
@@ -805,7 +825,7 @@ public class IgniteConfiguration {
      * execution. This way, a task can be physically deployed only on one node
      * and then internally penetrate to all other nodes.
      * <p>
-     * See {@link org.apache.ignite.compute.ComputeTask} documentation for more information about task deployment.
+     * See {@link ComputeTask} documentation for more information about task deployment.
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
@@ -1077,8 +1097,8 @@ public class IgniteConfiguration {
      * routines.
      *
      * @return Collection of life-cycle beans.
-     * @see org.apache.ignite.lifecycle.LifecycleBean
-     * @see org.apache.ignite.lifecycle.LifecycleEventType
+     * @see LifecycleBean
+     * @see LifecycleEventType
      */
     public LifecycleBean[] getLifecycleBeans() {
         return lifecycleBeans;
@@ -1091,7 +1111,7 @@ public class IgniteConfiguration {
      * routines.
      *
      * @param lifecycleBeans Collection of lifecycle beans.
-     * @see org.apache.ignite.lifecycle.LifecycleEventType
+     * @see LifecycleEventType
      */
     public void setLifecycleBeans(LifecycleBean... lifecycleBeans) {
         this.lifecycleBeans = lifecycleBeans;
@@ -1099,7 +1119,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured event SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi} will be used.
+     * {@link MemoryEventStorageSpi} will be used.
      *
      * @return Grid event SPI implementation or {@code null} to use default implementation.
      */
@@ -1108,9 +1128,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.eventstorage.EventStorageSpi}.
+     * Sets fully configured instance of {@link EventStorageSpi}.
      *
-     * @param evtSpi Fully configured instance of {@link org.apache.ignite.spi.eventstorage.EventStorageSpi}.
+     * @param evtSpi Fully configured instance of {@link EventStorageSpi}.
      * @see IgniteConfiguration#getEventStorageSpi()
      */
     public void setEventStorageSpi(EventStorageSpi evtSpi) {
@@ -1119,7 +1139,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured discovery SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} will be used by default.
+     * {@link TcpDiscoverySpi} will be used by default.
      *
      * @return Grid discovery SPI implementation or {@code null} to use default implementation.
      */
@@ -1128,9 +1148,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.discovery.DiscoverySpi}.
+     * Sets fully configured instance of {@link DiscoverySpi}.
      *
-     * @param discoSpi Fully configured instance of {@link org.apache.ignite.spi.discovery.DiscoverySpi}.
+     * @param discoSpi Fully configured instance of {@link DiscoverySpi}.
      * @see IgniteConfiguration#getDiscoverySpi()
      */
     public void setDiscoverySpi(DiscoverySpi discoSpi) {
@@ -1273,7 +1293,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured SPI communication  implementation. If not provided,
-     * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi} will be used by default.
+     * {@link TcpCommunicationSpi} will be used by default.
      *
      * @return Grid communication SPI implementation or {@code null} to use default implementation.
      */
@@ -1282,9 +1302,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.communication.CommunicationSpi}.
+     * Sets fully configured instance of {@link CommunicationSpi}.
      *
-     * @param commSpi Fully configured instance of {@link org.apache.ignite.spi.communication.CommunicationSpi}.
+     * @param commSpi Fully configured instance of {@link CommunicationSpi}.
      * @see IgniteConfiguration#getCommunicationSpi()
      */
     public void setCommunicationSpi(CommunicationSpi commSpi) {
@@ -1293,7 +1313,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured collision SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.collision.noop.NoopCollisionSpi} is used and jobs get activated immediately
+     * {@link NoopCollisionSpi} is used and jobs get activated immediately
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
@@ -1306,9 +1326,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.collision.CollisionSpi}.
+     * Sets fully configured instance of {@link CollisionSpi}.
      *
-     * @param colSpi Fully configured instance of {@link org.apache.ignite.spi.collision.CollisionSpi} or
+     * @param colSpi Fully configured instance of {@link CollisionSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getCollisionSpi()
      */
@@ -1318,7 +1338,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured deployment SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi} will be used.
+     * {@link LocalDeploymentSpi} will be used.
      *
      * @return Grid deployment SPI implementation or {@code null} to use default implementation.
      */
@@ -1327,9 +1347,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.deployment.DeploymentSpi}.
+     * Sets fully configured instance of {@link DeploymentSpi}.
      *
-     * @param deploySpi Fully configured instance of {@link org.apache.ignite.spi.deployment.DeploymentSpi}.
+     * @param deploySpi Fully configured instance of {@link DeploymentSpi}.
      * @see IgniteConfiguration#getDeploymentSpi()
      */
     public void setDeploymentSpi(DeploymentSpi deploySpi) {
@@ -1338,7 +1358,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured checkpoint SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi} will be used.
+     * {@link NoopCheckpointSpi} will be used.
      *
      * @return Grid checkpoint SPI implementation or {@code null} to use default implementation.
      */
@@ -1347,9 +1367,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}.
+     * Sets fully configured instance of {@link CheckpointSpi}.
      *
-     * @param cpSpi Fully configured instance of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}.
+     * @param cpSpi Fully configured instance of {@link CheckpointSpi}.
      * @see IgniteConfiguration#getCheckpointSpi()
      */
     public void setCheckpointSpi(CheckpointSpi... cpSpi) {
@@ -1358,7 +1378,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured failover SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.failover.always.AlwaysFailoverSpi} will be used.
+     * {@link AlwaysFailoverSpi} will be used.
      *
      * @return Grid failover SPI implementation or {@code null} to use default implementation.
      */
@@ -1367,9 +1387,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.failover.FailoverSpi}.
+     * Sets fully configured instance of {@link FailoverSpi}.
      *
-     * @param failSpi Fully configured instance of {@link org.apache.ignite.spi.failover.FailoverSpi} or
+     * @param failSpi Fully configured instance of {@link FailoverSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getFailoverSpi()
      */
@@ -1379,7 +1399,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured load balancing SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} will be used.
+     * {@link RoundRobinLoadBalancingSpi} will be used.
      *
      * @return Grid load balancing SPI implementation or {@code null} to use default implementation.
      */
@@ -1420,9 +1440,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}.
+     * Sets fully configured instance of {@link LoadBalancingSpi}.
      *
-     * @param loadBalancingSpi Fully configured instance of {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} or
+     * @param loadBalancingSpi Fully configured instance of {@link LoadBalancingSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getLoadBalancingSpi()
      */
@@ -1431,9 +1451,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi}.
+     * Sets fully configured instances of {@link SwapSpaceSpi}.
      *
-     * @param swapSpaceSpi Fully configured instances of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi} or
+     * @param swapSpaceSpi Fully configured instances of {@link SwapSpaceSpi} or
      *      <tt>null</tt> if no SPI provided.
      * @see IgniteConfiguration#getSwapSpaceSpi()
      */
@@ -1443,7 +1463,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured swap space SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} will be used.
+     * {@link FileSwapSpaceSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).
@@ -1552,6 +1572,43 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets configuration (descriptors) for all near caches.
+     *
+     * @return Client cache configurations.
+     */
+    public NearCacheConfiguration[] getNearCacheConfiguration() {
+        return nearCacheCfg;
+    }
+
+    /**
+     * Sets configuration for all near caches.
+     *
+     * @param nearCacheCfg Near cache configurations.
+     */
+    @SuppressWarnings({"ZeroLengthArrayAllocation"})
+    public void setNearCacheConfiguration(NearCacheConfiguration... nearCacheCfg) {
+        this.nearCacheCfg = nearCacheCfg == null ? new NearCacheConfiguration[0] : nearCacheCfg;
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public Boolean isClientMode() {
+        return clientMode;
+    }
+
+    /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public void setClientMode(boolean clientMode) {
+        this.clientMode = clientMode;
+    }
+
+    /**
      * Gets flag indicating whether cache sanity check is enabled. If enabled, then Ignite
      * will perform the following checks and throw an exception if check fails:
      * <ul>
@@ -1602,7 +1659,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.Event)}.
+     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(Event)}.
      * Note, that either the include event types or the exclude event types can be established.
      *
      * @param inclEvtTypes Include event types.
@@ -1817,7 +1874,7 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see org.apache.ignite.events.EventType
+     * @see EventType
      */
     public Map<IgnitePredicate<? extends Event>, int[]> getLocalEventListeners() {
         return lsnrs;

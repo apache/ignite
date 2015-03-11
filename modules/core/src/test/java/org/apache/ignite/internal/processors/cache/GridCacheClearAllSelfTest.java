@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -67,7 +66,6 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         ccfg.setName(cacheName);
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setDistributionMode(NEAR_PARTITIONED);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);

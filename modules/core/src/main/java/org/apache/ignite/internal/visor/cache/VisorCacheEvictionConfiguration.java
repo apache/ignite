@@ -76,7 +76,7 @@ public class VisorCacheEvictionConfiguration implements Serializable {
         cfg.syncTimeout = ccfg.getEvictSynchronizedTimeout();
         cfg.syncKeyBufSize = ccfg.getEvictSynchronizedKeyBufferSize();
         cfg.evictSynchronized = ccfg.isEvictSynchronized();
-        cfg.nearSynchronized = ccfg.isEvictNearSynchronized();
+//        cfg.nearSynchronized = ccfg.isEvictNearSynchronized(); TODO IGNITE-45
         cfg.maxOverflowRatio = ccfg.getEvictMaxOverflowRatio();
 
         return cfg;

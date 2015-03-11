@@ -33,7 +33,6 @@ import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -73,7 +72,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setWriteBehindEnabled(true);
         cc.setWriteBehindFlushFrequency(WRITE_BEHIND_FLUSH_FREQ);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setNearConfiguration(new NearCacheConfiguration());
 
         CacheStore store = stores[idx] = new GridCacheTestStore();
 

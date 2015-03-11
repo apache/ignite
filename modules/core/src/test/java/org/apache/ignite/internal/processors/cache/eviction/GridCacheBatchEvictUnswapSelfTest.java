@@ -31,8 +31,6 @@ import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  * Swap benchmark.
  */
@@ -96,7 +94,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
         cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setEvictSynchronized(false);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
 
         return cacheCfg;
     }

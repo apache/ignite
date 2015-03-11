@@ -127,8 +127,8 @@ public class VisorCache implements Serializable {
 
         CacheMode mode = cfg.getCacheMode();
 
-        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY;
+        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED);
+//            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY; TODO IGNITE-45 use context.affinityNode()
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;

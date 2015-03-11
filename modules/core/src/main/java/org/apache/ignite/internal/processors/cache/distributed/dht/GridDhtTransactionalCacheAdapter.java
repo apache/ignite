@@ -500,7 +500,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     private void processNearLockRequest(UUID nodeId, GridNearLockRequest<K, V> req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
         assert nodeId != null;
         assert req != null;
 
@@ -1214,7 +1214,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     @SuppressWarnings({"RedundantTypeArguments", "TypeMayBeWeakened"})
     private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest<K, V> req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
         assert nodeId != null;
 
         removeLocks(nodeId, req.version(), req.keys(), true);

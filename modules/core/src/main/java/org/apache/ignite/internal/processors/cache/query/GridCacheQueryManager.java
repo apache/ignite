@@ -1762,7 +1762,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
-                    return U.hasCache(n, space);
+                    return cctx.kernalContext().discovery().cacheAffinityNode(n, space);
                 }
             });
 

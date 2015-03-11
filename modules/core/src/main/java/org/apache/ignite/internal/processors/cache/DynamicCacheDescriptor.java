@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -34,20 +34,20 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
-    /** Deploy filter bytes. */
-    @GridToStringExclude
-    private IgnitePredicate<ClusterNode> nodeFilter;
-
     /** Cancelled flag. */
     private boolean cancelled;
 
+    /** Validation error. */
+    private IgniteCheckedException validationError;
+
+    /** Locally configured flag. */
+    private boolean locCfg;
+
     /**
      * @param cacheCfg Cache configuration.
-     * @param nodeFilter Node filter.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgnitePredicate<ClusterNode> nodeFilter, IgniteUuid deploymentId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
-        this.nodeFilter = nodeFilter;
         this.deploymentId = deploymentId;
     }
 
@@ -59,17 +59,31 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @param deploymentId Deployment ID.
+     */
+    public void deploymentId(IgniteUuid deploymentId) {
+        this.deploymentId = deploymentId;
+    }
+
+    /**
+     * @return Locally configured flag.
+     */
+    public boolean locallyConfigured() {
+        return locCfg;
+    }
+
+    /**
+     * @param locCfg Locally configured flag.
+     */
+    public void locallyConfigured(boolean locCfg) {
+        this.locCfg = locCfg;
+    }
+
+    /**
      * @return Cache configuration.
      */
     public CacheConfiguration cacheConfiguration() {
         return cacheCfg;
-    }
-
-    /**
-     * @return Node filter.
-     */
-    public IgnitePredicate<ClusterNode> nodeFilter() {
-        return nodeFilter;
     }
 
     /**
@@ -86,8 +100,32 @@ public class DynamicCacheDescriptor {
         return cancelled;
     }
 
+    /**
+     * @return {@code True} if descriptor is valid and cache should be started.
+     */
+    public boolean valid() {
+        return validationError == null;
+    }
+
+    /**
+     * @throws IgniteCheckedException If validation failed.
+     */
+    public void checkValid() throws IgniteCheckedException {
+        if (validationError != null)
+            throw validationError;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheDescriptor.class, this, "cacheName", cacheCfg.getName());
+    }
+
+    /**
+     * Sets validation error.
+     *
+     * @param e Validation error.
+     */
+    public void validationFailed(IgniteCheckedException e) {
+        validationError = e;
     }
 }

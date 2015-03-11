@@ -33,7 +33,6 @@ import javax.cache.integration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -64,7 +63,10 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+        if (nearEnabled)
+            cc.setNearConfiguration(new NearCacheConfiguration());
+
         cc.setAtomicityMode(TRANSACTIONAL);
 
         CacheStore store = new CacheStoreAdapter<Object, Object>() {

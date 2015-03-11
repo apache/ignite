@@ -96,7 +96,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setBackups(1);
-        cc.setDistributionMode(mode);
+        // TODO IGNITE-45.
+//        cc.setDistributionMode(mode);
 
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store()));
         cc.setReadThrough(true);

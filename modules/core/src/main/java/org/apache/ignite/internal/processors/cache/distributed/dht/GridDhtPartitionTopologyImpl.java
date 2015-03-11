@@ -172,7 +172,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
         lock.readLock().lock();
 
         try {
-            assert topVer.topologyVersion() > 0;
+            assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
+                ", cacheName=" + cctx.name() + ']';
 
             return topVer;
         }

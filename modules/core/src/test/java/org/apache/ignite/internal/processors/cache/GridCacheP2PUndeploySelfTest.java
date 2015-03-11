@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
@@ -99,10 +98,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setPreloadMode(mode);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        partCacheCfg.setEvictNearSynchronized(false);
         partCacheCfg.setQueryIndexEnabled(false);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        partCacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         if (offheap)
             partCacheCfg.setOffHeapMaxMemory(OFFHEAP);

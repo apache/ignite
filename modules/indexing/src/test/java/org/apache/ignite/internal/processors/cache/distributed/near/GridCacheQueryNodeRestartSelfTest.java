@@ -78,7 +78,6 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 

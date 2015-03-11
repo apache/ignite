@@ -544,7 +544,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
             if (log.isDebugEnabled())
                 log.debug("Initialized future: " + this);
 
-            if (!U.hasCaches(discoEvt.node()))
+            if (canSkipExchange())
                 onDone(exchId.topologyVersion());
             else {
                 // If this node is not oldest.
@@ -567,11 +567,18 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
     }
 
     /**
+     * @return {@code True} if no distributed exchange is needed.
+     */
+    private boolean canSkipExchange() {
+        return false; // TODO ignite-45;
+    }
+
+    /**
      * Starts dynamic caches.
      */
     private void startCaches() throws IgniteCheckedException {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (req.isStart())
+            if (req.isStart() || req.isClientStart())
                 ctx.cache().prepareCacheStart(req);
         }
     }
@@ -581,7 +588,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
      */
     private void stopCaches() {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (!req.isStart())
+            if (req.isStop())
                 ctx.cache().prepareCacheStop(req);
         }
     }
@@ -682,8 +689,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
 
             if (!F.isEmpty(reqs)) {
                 for (DynamicCacheChangeRequest req : reqs) {
-                    if (req.isStart() && F.eq(cacheCtx.name(), req.cacheName()))
-                        cacheCtx.preloader().onInitialExchangeComplete(err);
+                    if (F.eq(cacheCtx.name(), req.cacheName())) {
+                        if (req.isStart())
+                            cacheCtx.preloader().onInitialExchangeComplete(err);
+                        else if (req.isClientStart()) {
+                            if (req.clientNodeId().equals(ctx.localNodeId()))
+                                cacheCtx.preloader().onInitialExchangeComplete(err);
+                        }
+                    }
                 }
             }
         }

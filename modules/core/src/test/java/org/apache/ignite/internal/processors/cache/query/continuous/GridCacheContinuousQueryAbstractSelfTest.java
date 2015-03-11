@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -78,7 +77,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
-        cacheCfg.setDistributionMode(distributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setPreloadMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
@@ -110,8 +109,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */

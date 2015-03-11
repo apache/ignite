@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -43,10 +42,11 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        if (cfg.getDistributionMode() == NEAR_ONLY)
-            cfg.setDistributionMode(CLIENT_ONLY);
-        else
-            cfg.setDistributionMode(PARTITIONED_ONLY);
+// TODO IGNITE-45
+//        if (cfg.getDistributionMode() == NEAR_ONLY)
+//            cfg.setDistributionMode(CLIENT_ONLY);
+//        else
+//            cfg.setDistributionMode(PARTITIONED_ONLY);
 
         return cfg;
     }
@@ -67,8 +67,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

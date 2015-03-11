@@ -64,8 +64,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(true);
-        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-        cc.setEvictNearSynchronized(false);
+        cc.setNearConfiguration(new NearCacheConfiguration());
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);

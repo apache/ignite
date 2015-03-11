@@ -8271,36 +8271,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets node predicate which returns {@code true} for all nodes which have given cache names
-     * started.
-     *
-     * @param cacheNames Cache names to get predicate for. Empty array means default cache name. If
-     *      {@code null} array is passed, then {@link #alwaysFalse()} predicate will be returned.
-     * @return Predicate which returns {@code true} for all nodes which have given cache names
-     *      started.
-     */
-    public static IgnitePredicate<ClusterNode> cacheNodesForNames(@Nullable final String... cacheNames) {
-        if (cacheNames == null)
-            return alwaysFalse();
-
-        return new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                Collection<String> names = U.cacheNames(n);
-
-                for (String name : names) {
-                    if (name == null && cacheNames.length == 0)
-                        return true;
-
-                    if (U.containsStringArray(cacheNames, name, false))
-                        return true;
-                }
-
-                return false;
-            }
-        };
-    }
-
-    /**
      * Gets event predicate that returns {@code true} only if event type is one of the given.
      * Note that if array of provided types is {@code null} or empty this method returns
      * predicate that evaluates to {@code false} when applying.

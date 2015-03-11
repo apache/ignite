@@ -568,25 +568,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if node is affinity node for given cache configuration.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if local node is affinity node (i.e. will store partitions).
-     */
-    public static boolean isAffinityNode(CacheConfiguration cfg) {
-        if (cfg.getCacheMode() == LOCAL)
-            return true;
-
-        CacheDistributionMode partTax = cfg.getDistributionMode();
-
-        if (partTax == null)
-            partTax = distributionMode(cfg);
-
-        return partTax == CacheDistributionMode.PARTITIONED_ONLY ||
-            partTax == CacheDistributionMode.NEAR_PARTITIONED;
-    }
-
-    /**
      * Gets DHT affinity nodes.
      *
      * @param ctx Cache context.
@@ -606,42 +587,6 @@ public class GridCacheUtils {
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return affinityNodes(ctx, topOrder.topologyVersion());
-    }
-
-    /**
-     * Checks if given node has specified cache started and the local DHT storage is enabled.
-     *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean affinityNode(GridCacheContext ctx, ClusterNode s) {
-        assert ctx != null;
-        assert s != null;
-
-        GridCacheAttributes[] caches = s.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(ctx.namex(), attrs.cacheName()))
-                    return attrs.isAffinityNode();
-
-        return false;
-    }
-
-    /**
-     * Checks if given node contains configured cache with the name
-     * as described by given cache context.
-     *
-     * @param ctx Cache context.
-     * @param node Node to check.
-     * @return {@code true} if node contains required cache.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, ClusterNode node) {
-        assert ctx != null;
-        assert node != null;
-
-        return U.hasCache(node, ctx.namex());
     }
 
     /**
@@ -665,19 +610,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() == LOCAL)
             return false;
 
-        return cfg.getDistributionMode() == NEAR_PARTITIONED ||
-            cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
-    }
-
-    /**
-     * Gets default partitioned cache mode.
-     *
-     * @param cfg Configuration.
-     * @return Partitioned cache mode.
-     */
-    public static CacheDistributionMode distributionMode(CacheConfiguration cfg) {
-        return cfg.getDistributionMode() != null ?
-            cfg.getDistributionMode() : CacheDistributionMode.PARTITIONED_ONLY;
+        return cfg.getNearConfiguration() != null;
     }
 
     /**
@@ -757,11 +690,12 @@ public class GridCacheUtils {
     public static ClusterNode oldest(GridCacheSharedContext cctx, long topOrder) {
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveCacheNodes(cctx, topOrder))
+        for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
+        }
 
-        assert oldest != null;
+        assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
         assert oldest.order() <= topOrder || topOrder < 0;
 
         return oldest;
@@ -1399,14 +1333,14 @@ public class GridCacheUtils {
      * @param log Logger used to log warning message (used only if fail flag is not set).
      * @param locCfg Local configuration.
      * @param rmtCfg Remote configuration.
-     * @param rmt Remote node.
+     * @param rmtNodeId Remote node.
      * @param attr Attribute name.
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
      * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(IgniteLogger log, CacheConfiguration locCfg,
-        CacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
-        assert rmt != null;
+        CacheConfiguration rmtCfg, UUID rmtNodeId, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
+        assert rmtNodeId != null;
         assert attr != null;
         assert attr.get1() != null;
         assert attr.get2() != null;
@@ -1415,7 +1349,7 @@ public class GridCacheUtils {
 
         Object rmtVal = U.property(rmtCfg, attr.get1());
 
-        checkAttributeMismatch(log, rmtCfg.getName(), rmt, attr.get1(), attr.get2(), locVal, rmtVal, fail);
+        checkAttributeMismatch(log, rmtCfg.getName(), rmtNodeId, attr.get1(), attr.get2(), locVal, rmtVal, fail);
     }
 
     /**
@@ -1423,7 +1357,7 @@ public class GridCacheUtils {
      *
      * @param log Logger used to log warning message (used only if fail flag is not set).
      * @param cfgName Remote cache name.
-     * @param rmt Remote node.
+     * @param rmtNodeId Remote node.
      * @param attrName Short attribute name for error message.
      * @param attrMsg Full attribute name for error message.
      * @param locVal Local value.
@@ -1431,9 +1365,9 @@ public class GridCacheUtils {
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
      * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(IgniteLogger log, String cfgName, ClusterNode rmt, String attrName,
+    public static void checkAttributeMismatch(IgniteLogger log, String cfgName, UUID rmtNodeId, String attrName,
         String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws IgniteCheckedException {
-        assert rmt != null;
+        assert rmtNodeId != null;
         assert attrName != null;
         assert attrMsg != null;
 
@@ -1444,7 +1378,7 @@ public class GridCacheUtils {
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
-                    ", rmtNodeId=" + rmt.id() + ']');
+                    ", rmtNodeId=" + rmtNodeId + ']');
             }
             else {
                 assert log != null;
@@ -1453,7 +1387,7 @@ public class GridCacheUtils {
                     "configuration) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
-                    ", rmtNodeId=" + rmt.id() + ']');
+                    ", rmtNodeId=" + rmtNodeId + ']');
             }
         }
     }
@@ -1523,6 +1457,7 @@ public class GridCacheUtils {
         cache.setSwapEnabled(false);
         cache.setQueryIndexEnabled(false);
         cache.setCacheStoreFactory(null);
+        cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
         cache.setPreloadMode(SYNC);
 

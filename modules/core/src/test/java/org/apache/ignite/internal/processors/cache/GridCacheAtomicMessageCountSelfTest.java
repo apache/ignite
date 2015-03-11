@@ -70,13 +70,14 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cCfg.setDistributionMode(partDistMode);
+        // TODO IGNITE-45
+//        cCfg.setDistributionMode(partDistMode);
         cCfg.setAtomicWriteOrderMode(writeOrderMode);
 
-        if (idx == 0)
-            cCfg.setDistributionMode(partDistMode);
-        else
-            cCfg.setDistributionMode(PARTITIONED_ONLY);
+//        if (idx == 0)
+//            cCfg.setDistributionMode(partDistMode);
+//        else
+//            cCfg.setDistributionMode(PARTITIONED_ONLY);
 
         idx++;
 

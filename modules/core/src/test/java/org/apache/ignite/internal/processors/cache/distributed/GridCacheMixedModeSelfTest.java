@@ -46,7 +46,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
         if (F.eq(gridName, getTestGridName(0)))
-            cfg.setDistributionMode(CacheDistributionMode.NEAR_ONLY);
+            return null; // TODO IGNITE-45
 
         return cfg;
     }

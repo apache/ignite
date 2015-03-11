@@ -39,7 +39,6 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -734,7 +733,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
+        assertNotNull(jcache(0).getConfiguration(CacheConfiguration.class).getNearConfiguration());
 
         cache0.put(key, 1);
 
@@ -1035,7 +1034,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         if (nearCache && gridName.equals(getTestGridName(0)))
-            cfg.setDistributionMode(NEAR_PARTITIONED);
+            cfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setExpiryPolicyFactory(factory);
 

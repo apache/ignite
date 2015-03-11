@@ -127,7 +127,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
-            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
+            // TODO IGNITE-45
+//            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
             cc.setReadThrough(true);
@@ -135,7 +136,6 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setLoadPreviousValue(true);
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
-            cc.setEvictNearSynchronized(false);
 
             CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 

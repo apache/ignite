@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
@@ -283,7 +282,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
-            assert !isAffinityNode(cctx.config());
+            assert !cctx.affinityNode();
 
             onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all partition " +
                 "nodes left the grid)."));

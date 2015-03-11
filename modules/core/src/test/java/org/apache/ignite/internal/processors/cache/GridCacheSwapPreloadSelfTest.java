@@ -67,7 +67,6 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setEvictSynchronized(false);
-        cacheCfg.setEvictNearSynchronized(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         if (cacheMode == PARTITIONED)

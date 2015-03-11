@@ -202,6 +202,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache weak query iterator holder. */
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
+    /** Affinity node. */
+    private boolean affNode;
+
     /** Conflict resolver. */
     private GridCacheVersionAbstractConflictResolver conflictRslvr;
 
@@ -236,6 +239,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
+        boolean affNode,
 
         /*
          * Managers in starting order!
@@ -271,6 +275,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
+        this.affNode = affNode;
 
         /*
          * Managers in starting order!
@@ -355,6 +360,13 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (conflictRslvr == null && storeMgr.isLocalStore())
             conflictRslvr = new GridCacheVersionConflictResolver();
+    }
+
+    /**
+     * @return {@code True} if local node is affinity node.
+     */
+    public boolean affinityNode() {
+        return affNode;
     }
 
     /**
@@ -848,7 +860,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache configuration for given cache instance.
      */
-    public CacheConfiguration config() {
+    public CacheConfiguration<K, V> config() {
         return cacheCfg;
     }
 

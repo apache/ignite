@@ -82,12 +82,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
-    /** Distribution modes to include into global size calculation. */
-    private static final Set<CacheDistributionMode> SIZE_NODES = EnumSet.of(
-        CacheDistributionMode.NEAR_PARTITIONED,
-        CacheDistributionMode.PARTITIONED_ONLY,
-        CacheDistributionMode.NEAR_ONLY);
-
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
                 String>>() {
@@ -4182,7 +4176,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteClusterEx cluster = ctx.grid().cluster();
 
-        ClusterGroup grp = modes.near ? cluster.forCacheNodes(name(), SIZE_NODES) : cluster.forDataNodes(name());
+        ClusterGroup grp = modes.near ? cluster.forCacheNodes(name(), true, true, false) : cluster.forDataNodes(name());
 
         Collection<ClusterNode> nodes = grp.nodes();
 
@@ -4835,6 +4829,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.preloader().forcePreload();
 
         return ctx.preloader().syncFuture();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean affinityNode() {
+        return ctx.affinityNode();
     }
 
     /** {@inheritDoc} */

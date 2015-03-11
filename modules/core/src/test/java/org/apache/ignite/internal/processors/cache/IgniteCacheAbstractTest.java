@@ -120,7 +120,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         }
 
         cfg.setWriteSynchronizationMode(writeSynchronization());
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
 
         cfg.setCacheLoaderFactory(loaderFactory());
 
@@ -188,7 +188,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Partitioned mode.
      */
-    protected abstract CacheDistributionMode distributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Write synchronization.

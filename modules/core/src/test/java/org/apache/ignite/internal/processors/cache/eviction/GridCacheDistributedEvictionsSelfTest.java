@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -79,7 +78,11 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         cc.setCacheMode(mode);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            cc.setNearConfiguration(nearCfg);
+        }
 
         cc.setSwapEnabled(false);
 
@@ -88,7 +91,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         // Set only DHT policy, leave default near policy.
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(10));
         cc.setEvictSynchronized(evictSync);
-        cc.setEvictNearSynchronized(evictNearSync);
         cc.setEvictSynchronizedKeyBufferSize(1);
 
         cc.setAffinity(new GridCacheModuloAffinityFunction(gridCnt, 1));

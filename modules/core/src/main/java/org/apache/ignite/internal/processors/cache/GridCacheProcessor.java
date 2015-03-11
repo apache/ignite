@@ -51,6 +51,7 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.management.*;
@@ -61,7 +62,6 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -74,6 +74,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 /**
  * Cache processor.
  */
+@SuppressWarnings("unchecked")
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
@@ -109,10 +110,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private ConcurrentMap<String, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
 
     /** Dynamic caches. */
-    private ConcurrentMap<String, DynamicCacheDescriptor> dynamicCaches = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
+
+    /** */
+    private volatile boolean validateCfg = true;
 
     /**
      * @param ctx Kernal context.
@@ -141,6 +145,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getMemoryMode() == null)
             cfg.setMemoryMode(DFLT_MEMORY_MODE);
+
+        if (cfg.getNodeFilter() == null)
+            cfg.setNodeFilter(CacheConfiguration.SERVER_NODES);
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
@@ -187,21 +194,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAtomicityMode() == null)
             cfg.setAtomicityMode(ATOMIC);
 
-        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
-            if (cfg.getDistributionMode() == null)
-                cfg.setDistributionMode(PARTITIONED_ONLY);
-
-            if (cfg.getDistributionMode() == PARTITIONED_ONLY ||
-                cfg.getDistributionMode() == CLIENT_ONLY) {
-                if (cfg.getNearEvictionPolicy() != null)
-                    U.quietAndWarn(log, "Ignoring near eviction policy since near cache is disabled.");
-            }
-
-            assert cfg.getDistributionMode() != null;
-        }
-        else
-            assert cfg.getCacheMode() == LOCAL;
-
         if (cfg.getWriteSynchronizationMode() == null)
             cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
 
@@ -239,7 +231,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 writer = writerFactory.create();
 
             if (ldr != null || writer != null) {
-                final GridCacheLoaderWriterStore store = new GridCacheLoaderWriterStore(ldr, writer);
+                final CacheStore store = new GridCacheLoaderWriterStore(ldr, writer);
 
                 cfg.setCacheStoreFactory(new Factory<CacheStore<? super Object, ? super Object>>() {
                     @Override public CacheStore<? super Object, ? super Object> create() {
@@ -277,9 +269,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             perf.add(msg, true);
 
         if (cfg.getCacheMode() == PARTITIONED) {
-            perf.add("Disable near cache (set 'partitionDistributionMode' to PARTITIONED_ONLY or CLIENT_ONLY)",
-                cfg.getDistributionMode() != NEAR_PARTITIONED &&
-                    cfg.getDistributionMode() != NEAR_ONLY);
+            perf.add("Disable near cache (set 'nearEnabled' to false)", cfg.getNearConfiguration() != null);
 
             if (cfg.getAffinity() != null)
                 perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);
@@ -325,11 +315,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "CacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
-            if (cc.getDistributionMode() == NEAR_PARTITIONED) {
-                U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
-                    "will be changed to PARTITIONED_ONLY [cacheName=" + cc.getName() + ']');
+            if (cc.getNearConfiguration() != null) {
+                U.warn(log, "Near cache cannot be used with REPLICATED cache, " +
+                    "will be ignored [cacheName=" + cc.getName() + ']');
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
             }
         }
 
@@ -485,11 +475,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void prepare(CacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
-        prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            prepare(cfg, nearCfg.getNearEvictionPolicy(), true);
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -518,11 +512,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cctx.config();
 
         cleanup(cfg, cfg.getEvictionPolicy(), false);
-        cleanup(cfg, cfg.getNearEvictionPolicy(), true);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.jta().tmLookup(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
 
         cctx.cleanup();
     }
@@ -616,6 +614,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCacheContext cacheCtx = createCache(cfg);
 
+            DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cfg, IgniteUuid.randomUuid());
+
+            desc.locallyConfigured(true);
+
+            registeredCaches.put(cfg.getName(), desc);
+
+            ctx.discovery().setCacheFilter(
+                cfg.getName(),
+                cfg.getNodeFilter(),
+                cfg.getNearConfiguration() != null,
+                cfg.getCacheMode() == LOCAL);
+
             sharedCtx.addCacheContext(cacheCtx);
 
             startSeq.add(cacheCtx.cache());
@@ -653,32 +663,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
 
-        if (!(ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))) {
-            GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
-
-            Map<String, String> interceptors = new HashMap<>();
-
-            int i = 0;
-
-            for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-                assert caches.containsKey(cfg.getName()) : cfg.getName();
-
-                GridCacheContext ctx = caches.get(cfg.getName()).context();
-
-                attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
-
-                if (cfg.getInterceptor() != null)
-                    interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
-            }
-
-            ctx.addNodeAttribute(ATTR_CACHE, attrVals);
-
-            ctx.addNodeAttribute(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
-
-            if (!interceptors.isEmpty())
-                ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
-        }
-
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
     }
@@ -689,13 +673,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        // Start dynamic caches received from collect discovery data.
-        for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
-            if (hasStaticCache(desc.cacheConfiguration().getName()))
-                throw new IgniteCheckedException("Failed to start node (current grid has dynamic cache which " +
-                    "conflicts with locally configured static cache: " + desc.cacheConfiguration().getName());
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            for (ClusterNode n : ctx.discovery().remoteNodes()) {
+                checkTransactionConfiguration(n);
 
-            if (desc.nodeFilter().apply(ctx.discovery().localNode())) {
+                DeploymentMode locDepMode = ctx.config().getDeploymentMode();
+                DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
+
+                CU.checkAttributeMismatch(log, null, n.id(), "deploymentMode", "Deployment mode",
+                    locDepMode, rmtDepMode, true);
+            }
+        }
+
+        validateCfg = false;
+
+        // Start dynamic caches received from collect discovery data.
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            // Check if validation failed on node start.
+            desc.checkValid();
+
+            IgnitePredicate filter = desc.cacheConfiguration().getNodeFilter();
+
+            if (filter.apply(ctx.discovery().localNode()) && !desc.locallyConfigured()) {
                 GridCacheContext ctx = createCache(desc.cacheConfiguration());
 
                 ctx.dynamicDeploymentId(desc.deploymentId());
@@ -716,10 +715,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
-            for (ClusterNode n : ctx.discovery().remoteNodes())
-                checkCache(n);
-        }
+        // Must call onKernalStart on shared managers after creation of fetched caches.
+        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
+            mgr.onKernalStart();
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
@@ -746,9 +744,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
-
-        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
-            mgr.onKernalStart();
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
@@ -1029,11 +1024,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx,
             sharedCtx,
             cfg,
+            ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),
 
-                /*
-                 * Managers in starting order!
-                 * ===========================
-                 */
+            /*
+             * Managers in starting order!
+             * ===========================
+             */
             evtMgr,
             swapMgr,
             serMgr,
@@ -1095,13 +1091,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else {
                     switch (cfg.getAtomicityMode()) {
                         case TRANSACTIONAL: {
-                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtColocatedCache(cacheCtx) :
+                            cache = cacheCtx.affinityNode() ?
+                                new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                             break;
                         }
                         case ATOMIC: {
-                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                            cache = cacheCtx.affinityNode() ?
+                                new GridDhtAtomicCache(cacheCtx) :
                                 new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                             break;
@@ -1151,11 +1149,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx,
                 sharedCtx,
                 cfg,
+                ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),
 
-                    /*
-                     * Managers in starting order!
-                     * ===========================
-                     */
+                /*
+                 * Managers in starting order!
+                 * ===========================
+                 */
                 evtMgr,
                 swapMgr,
                 serMgr,
@@ -1179,9 +1178,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
 
-                    GridDhtCache dhtCache = !GridCacheUtils.isAffinityNode(cfg) ?
-                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                        new GridDhtCache(cacheCtx);
+                    GridDhtCache dhtCache = cacheCtx.affinityNode() ?
+                        new GridDhtCache(cacheCtx) :
+                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                     dhtCache.near(near);
 
@@ -1196,7 +1195,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridNearAtomicCache near = (GridNearAtomicCache)cache;
 
-                    GridDhtAtomicCache dhtCache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                    GridDhtAtomicCache dhtCache = cacheCtx.affinityNode() ?
+                        new GridDhtAtomicCache(cacheCtx) :
                         new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                     dhtCache.near(near);
@@ -1220,39 +1220,87 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets a collection of currentlty started caches.
+     *
+     * @return Collection of started cache names.
+     */
+    public Collection<String> cacheNames() {
+        return registeredCaches.keySet();
+    }
+
+    /**
+     * Gets cache mode.
+     *
+     * @param cacheName Cache name to check.
+     * @return Cache mode.
+     */
+    public CacheMode cacheMode(String cacheName) {
+        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+
+        return desc != null ? desc.cacheConfiguration().getCacheMode() : null;
+    }
+
+    /**
      * @param req Request to check.
      * @return {@code True} if change request was registered to apply.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public boolean dynamicCacheRegistered(DynamicCacheChangeRequest req) {
-        DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
+        DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
-        return desc != null && desc.deploymentId().equals(req.deploymentId()) && desc.cancelled() != req.isStart();
+        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
+            if (req.isStart() || req.isClientStart())
+                return !desc.cancelled();
+            else
+                return desc.cancelled();
+        }
+
+        return false;
     }
 
     /**
      * @param req Start request.
      */
     public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
-        assert req.isStart();
+        assert req.isStart() || req.isClientStart();
 
-        if (hasStaticCache(req.cacheName())) {
-            U.warn(log, "Failed to start dynamic cache (a static cache with the same name is already " +
-                "configured: " + req.cacheName());
+        IgnitePredicate nodeFilter = req.startCacheConfiguration().getNodeFilter();
 
-            return;
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        if (req.isStart()) {
+            if (nodeFilter.apply(locNode)) {
+                GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
+
+                cacheCtx.dynamicDeploymentId(req.deploymentId());
+
+                sharedCtx.addCacheContext(cacheCtx);
+
+                startCache(cacheCtx.cache());
+                onKernalStart(cacheCtx.cache());
+
+                caches.put(cacheCtx.name(), cacheCtx.cache());
+            }
         }
+        else if (req.isClientStart()) {
+            if (req.clientNodeId().equals(locNode.id())) {
+                if (nodeFilter.apply(locNode)) {
+                    U.warn(log, "Requested to start client cache on affinity node (will ignore): " + req);
 
-        if (req.startNodeFilter().apply(ctx.discovery().localNode())) {
-            GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
+                    return;
+                }
 
-            cacheCtx.dynamicDeploymentId(req.deploymentId());
+                GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
 
-            sharedCtx.addCacheContext(cacheCtx);
+                cacheCtx.dynamicDeploymentId(req.deploymentId());
 
-            startCache(cacheCtx.cache());
-            onKernalStart(cacheCtx.cache());
+                sharedCtx.addCacheContext(cacheCtx);
 
-            caches.put(cacheCtx.name(), cacheCtx.cache());
+                startCache(cacheCtx.cache());
+                onKernalStart(cacheCtx.cache());
+
+                caches.put(cacheCtx.name(), cacheCtx.cache());
+            }
         }
     }
 
@@ -1260,7 +1308,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Stop request.
      */
     public void prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert !req.isStart();
+        assert req.isStop();
 
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(req.cacheName());
@@ -1290,17 +1338,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(DynamicCacheChangeRequest req) {
-        if (req.isStart()) {
+        if (req.isStart() || req.isClientStart()) {
             GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
 
             if (cache != null)
                 jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
         else {
-            DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
+            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
             if (desc != null && desc.cancelled() && desc.deploymentId().equals(req.deploymentId()))
-                dynamicCaches.remove(req.cacheName(), desc);
+                registeredCaches.remove(req.cacheName(), desc);
         }
 
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.cacheName());
@@ -1346,13 +1394,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
         // Collect dynamically started caches to a single object.
-        Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(dynamicCaches.size());
+        Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(registeredCaches.size());
 
-        for (DynamicCacheDescriptor desc : dynamicCaches.values()) {
-            if (!desc.cancelled()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-                    desc.cacheConfiguration(),
-                    desc.nodeFilter());
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            if (!desc.cancelled() && desc.valid()) {
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration());
 
                 req.deploymentId(desc.deploymentId());
 
@@ -1369,46 +1415,52 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
 
             for (DynamicCacheChangeRequest req : batch.requests()) {
-                dynamicCaches.put(req.cacheName(), new DynamicCacheDescriptor(
-                    req.startCacheConfiguration(),
-                    req.startNodeFilter(),
-                    req.deploymentId()));
+                DynamicCacheDescriptor existing = registeredCaches.get(req.cacheName());
 
-                ctx.discovery().addDynamicCacheFilter(req.cacheName(), req.startNodeFilter());
+                try {
+                    if (req.isStart()) {
+                        CacheConfiguration ccfg = req.startCacheConfiguration();
+
+                        if (existing != null) {
+                            if (validateCfg)
+                                checkCache(existing.cacheConfiguration(), ccfg, nodeId);
+
+                            if (existing.valid()) {
+                                existing.deploymentId(req.deploymentId());
+
+                                ctx.discovery().setCacheFilter(
+                                    req.cacheName(),
+                                    ccfg.getNodeFilter(),
+                                    ccfg.getNearConfiguration() != null,
+                                    ccfg.getCacheMode() == LOCAL);
+                            }
+                        }
+                        else
+                            registeredCaches.put(req.cacheName(), new DynamicCacheDescriptor(
+                                ccfg,
+                                req.deploymentId()));
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    existing.validationFailed(e);
+                }
             }
         }
-    }
-
-    /**
-     * @param cacheName Cache name to check.
-     * @return {@code True} if local node has a static cache with the given name configured.
-     */
-    private boolean hasStaticCache(String cacheName) {
-        for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
-                return true;
-        }
-
-        return false;
     }
 
     /**
      * Dynamically starts cache.
      *
      * @param ccfg Cache configuration.
-     * @param nodeFilter Node filter to select nodes on which the cache should be deployed.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCache(CacheConfiguration ccfg, IgnitePredicate<ClusterNode> nodeFilter) {
+    public IgniteInternalFuture<?> dynamicStartCache(CacheConfiguration ccfg) {
         try {
-            if (nodeFilter == null)
-                nodeFilter = F.alwaysTrue();
-
             CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
             initialize(cfg);
 
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cfg, nodeFilter);
+            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cfg);
 
             return F.first(initiateCacheChanges(F.asList(req)));
         }
@@ -1454,19 +1506,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (req.isStart()) {
-                    if (caches.containsKey(req.cacheName())) {
-                        fut.onDone(new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + req.cacheName())));
+                    if (registeredCaches.containsKey(req.cacheName())) {
+                        fut.onDone(new IgniteCheckedException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + req.cacheName()));
                     }
                 }
-                else {
-                    GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
+                else if (!req.isClientStart()) {
+                    DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
-                    if (cache == null)
+                    if (desc == null)
                         // No-op.
                         fut.onDone();
                     else {
-                        IgniteUuid dynamicDeploymentId = cache.context().dynamicDeploymentId();
+                        IgniteUuid dynamicDeploymentId = desc.deploymentId();
 
                         assert dynamicDeploymentId != null;
 
@@ -1518,11 +1570,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
         for (DynamicCacheChangeRequest req : batch.requests()) {
+            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
+
             if (req.isStart()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
 
                 // Check if cache with the same name was concurrently started form different node.
-                if (dynamicCaches.containsKey(ccfg.getName())) {
+                if (desc != null) {
                     // If local node initiated start, fail the start future.
                     DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingFuts.get(ccfg.getName());
 
@@ -1536,19 +1590,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return;
                 }
 
-                DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.startNodeFilter(),
-                    req.deploymentId());
+                DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.deploymentId());
 
-                DynamicCacheDescriptor old = dynamicCaches.put(ccfg.getName(), startDesc);
+                DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
-                ctx.discovery().addDynamicCacheFilter(ccfg.getName(), startDesc.nodeFilter());
+                ctx.discovery().setCacheFilter(
+                    ccfg.getName(),
+                    ccfg.getNodeFilter(),
+                    ccfg.getNearConfiguration() != null,
+                    ccfg.getCacheMode() == LOCAL);
 
                 assert old == null :
                     "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
             }
+            else if (req.isClientStart()) {
+                if (desc != null) {
+                    if (req.nearCacheCfg() != null)
+                        ctx.discovery().addNearNode(req.cacheName(), req.clientNodeId());
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Will not start client cache since cache is not registered: " + req.cacheName());
+                }
+            }
             else {
-                DynamicCacheDescriptor desc = dynamicCaches.get(req.cacheName());
-
                 if (desc == null) {
                     // If local node initiated start, fail the start future.
                     DynamicCacheStartFuture changeFut = (DynamicCacheStartFuture)pendingFuts.get(req.cacheName());
@@ -1565,7 +1630,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 desc.onCancelled();
 
-                ctx.discovery().removeDynamicCacheFilter(req.cacheName());
+                ctx.discovery().removeCacheFilter(req.cacheName());
             }
         }
     }
@@ -1649,176 +1714,126 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets cache interceptor class name from node attributes.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @return Interceptor class name.
-     */
-    @Nullable private String interceptor(ClusterNode node, @Nullable String cacheName) {
-        Map<String, String> map = node.attribute(ATTR_CACHE_INTERCEPTORS);
-
-        return map != null ? map.get(cacheName) : null;
-    }
-
-    /**
      * Checks that remote caches has configuration compatible with the local.
      *
-     * @param rmt Node.
+     * @param rmt Remote node ID.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(ClusterNode rmt) throws IgniteCheckedException {
-        checkTransactionConfiguration(rmt);
+    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, UUID rmt)
+        throws IgniteCheckedException {
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg, null);
+        GridCacheAttributes locAttr = new GridCacheAttributes(locCfg, null);
 
-        GridCacheAttributes[] rmtAttrs = U.cacheAttributes(rmt);
-        GridCacheAttributes[] locAttrs = U.cacheAttributes(ctx.discovery().localNode());
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
+            locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
-        // If remote or local node does not have cache configured, do nothing
-        if (F.isEmpty(rmtAttrs) || F.isEmpty(locAttrs))
-            return;
+        if (rmtAttr.cacheMode() != LOCAL) {
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
+                locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
 
-        DeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        DeploymentMode rmtDepMode = rmt.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicityMode",
+                "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
 
-        for (GridCacheAttributes rmtAttr : rmtAttrs) {
-            for (GridCacheAttributes locAttr : locAttrs) {
-                if (F.eq(rmtAttr.cacheName(), locAttr.cacheName())) {
-                    CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
-                        locAttr.cacheMode(), rmtAttr.cacheMode(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
+                "Cache preload mode", locAttr.cachePreloadMode(), rmtAttr.cachePreloadMode(), true);
 
-                    if (rmtAttr.cacheMode() != LOCAL) {
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
-                            interceptor(ctx.discovery().localNode(), rmtAttr.cacheName()),
-                            interceptor(rmt, rmtAttr.cacheName()), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity", "Cache affinity",
+                locAttr.cacheAffinityClassName(), rmtAttr.cacheAffinityClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicityMode",
-                            "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinityMapper",
+                "Cache affinity mapper", locAttr.cacheAffinityMapperClassName(),
+                rmtAttr.cacheAffinityMapperClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
-                            "Cache preload mode", locAttr.cachePreloadMode(), rmtAttr.cachePreloadMode(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityPartitionsCount",
+                "Affinity partitions count", locAttr.affinityPartitionsCount(),
+                rmtAttr.affinityPartitionsCount(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity", "Cache affinity",
-                            locAttr.cacheAffinityClassName(), rmtAttr.cacheAffinityClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
+                locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinityMapper",
-                            "Cache affinity mapper", locAttr.cacheAffinityMapperClassName(),
-                            rmtAttr.cacheAffinityMapperClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
+                locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityPartitionsCount",
-                            "Affinity partitions count", locAttr.affinityPartitionsCount(),
-                            rmtAttr.affinityPartitionsCount(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
+                "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
+                rmtAttr.transactionManagerLookupClassName(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
-                            locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
+                "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
-                            locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultQueryTimeout",
+                "Default query timeout", locAttr.defaultQueryTimeout(), rmtAttr.defaultQueryTimeout(),
+                false);
 
-                        if (!skipStoreConsistencyCheck(locAttr, rmtAttr)) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
-                                locAttr.storeClassName(), rmtAttr.storeClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
+                "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
 
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "readThrough",
-                                "Read through enabled", locAttr.readThrough(), locAttr.readThrough(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
+                "Preload batch size", locAttr.preloadBatchSize(), rmtAttr.preloadBatchSize(), false);
 
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeThrough",
-                                "Write through enabled", locAttr.writeThrough(), locAttr.writeThrough(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "swapEnabled",
+                "Swap enabled", locAttr.swapEnabled(), rmtAttr.swapEnabled(), false);
 
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "loadPreviousValue",
-                                "Load previous value enabled", locAttr.loadPreviousValue(),
-                                locAttr.loadPreviousValue(), true);
-                        }
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeSynchronizationMode",
+                "Write synchronization mode", locAttr.writeSynchronization(), rmtAttr.writeSynchronization(),
+                true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
-                            "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
-                            rmtAttr.transactionManagerLookupClassName(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindBatchSize",
+                "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
+                false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
-                            "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
+                "Write behind enabled", locAttr.writeBehindEnabled(), rmtAttr.writeBehindEnabled(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultQueryTimeout",
-                            "Default query timeout", locAttr.defaultQueryTimeout(), rmtAttr.defaultQueryTimeout(),
-                            false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushFrequency",
+                "Write behind flush frequency", locAttr.writeBehindFlushFrequency(),
+                rmtAttr.writeBehindFlushFrequency(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
-                            "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushSize",
+                "Write behind flush size", locAttr.writeBehindFlushSize(), rmtAttr.writeBehindFlushSize(),
+                false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
-                            "Preload batch size", locAttr.preloadBatchSize(), rmtAttr.preloadBatchSize(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushThreadCount",
+                "Write behind flush thread count", locAttr.writeBehindFlushThreadCount(),
+                rmtAttr.writeBehindFlushThreadCount(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "swapEnabled",
-                            "Swap enabled", locAttr.swapEnabled(), rmtAttr.swapEnabled(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictMaxOverflowRatio",
+                "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
+                rmtAttr.evictMaxOverflowRatio(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeSynchronizationMode",
-                            "Write synchronization mode", locAttr.writeSynchronization(), rmtAttr.writeSynchronization(),
-                            true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "indexingSpiName", "IndexingSpiName",
+                locAttr.indexingSpiName(), rmtAttr.indexingSpiName(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindBatchSize",
-                            "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
-                            false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
+                "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
-                            "Write behind enabled", locAttr.writeBehindEnabled(), rmtAttr.writeBehindEnabled(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
+                "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushFrequency",
-                            "Write behind flush frequency", locAttr.writeBehindFlushFrequency(),
-                            rmtAttr.writeBehindFlushFrequency(), false);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
+                "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushSize",
-                            "Write behind flush size", locAttr.writeBehindFlushSize(), rmtAttr.writeBehindFlushSize(),
-                            false);
+            if (locAttr.cacheMode() == PARTITIONED) {
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
+                    "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),
+                    true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushThreadCount",
-                            "Write behind flush thread count", locAttr.writeBehindFlushThreadCount(),
-                            rmtAttr.writeBehindFlushThreadCount(), false);
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
+                    "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
+                    rmtAttr.nearEvictionPolicyClassName(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictMaxOverflowRatio",
-                            "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
-                            rmtAttr.evictMaxOverflowRatio(), true);
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
+                    "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
+                    rmtAttr.affinityIncludeNeighbors(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "indexingSpiName", "IndexingSpiName",
-                            locAttr.indexingSpiName(), rmtAttr.indexingSpiName(), true);
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
+                    "Affinity key backups", locAttr.affinityKeyBackups(),
+                    rmtAttr.affinityKeyBackups(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                            "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
-                            "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                            "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        if (locAttr.cacheMode() == PARTITIONED) {
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
-                                "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),
-                                true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictNearSynchronized",
-                                "Eviction near synchronized", locAttr.evictNearSynchronized(),
-                                rmtAttr.evictNearSynchronized(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
-                                "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
-                                rmtAttr.nearEvictionPolicyClassName(), false);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
-                                "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
-                                rmtAttr.affinityIncludeNeighbors(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
-                                "Affinity key backups", locAttr.affinityKeyBackups(),
-                                rmtAttr.affinityKeyBackups(), true);
-
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity.hashIdResolver",
-                                "Partitioned cache affinity hash ID resolver class",
-                                locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
-                                true);
-                        }
-                    }
-                }
-
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "deploymentMode", "Deployment mode",
-                    locDepMode, rmtDepMode, true);
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity.hashIdResolver",
+                    "Partitioned cache affinity hash ID resolver class",
+                    locAttr.affinityHashIdResolverClassName(), rmtAttr.affinityHashIdResolverClassName(),
+                    true);
             }
         }
     }
@@ -1845,16 +1860,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Checks if store check should be skipped for given nodes.
      *
-     * @param locAttr Local node attributes.
-     * @param rmtAttr Remote node attributes.
+     * @param cfg Cache configuration.
+     * @param rmtNode Remote node.
+     * @param locNode Local node.
      * @return {@code True} if store check should be skipped.
      */
-    private boolean skipStoreConsistencyCheck(GridCacheAttributes locAttr, GridCacheAttributes rmtAttr) {
+    private boolean skipStoreConsistencyCheck(CacheConfiguration cfg, ClusterNode rmtNode, ClusterNode locNode) {
         return
             // In atomic mode skip check if either local or remote node is client.
-            locAttr.atomicityMode() == ATOMIC &&
-                (locAttr.partitionedTaxonomy() == CLIENT_ONLY || locAttr.partitionedTaxonomy() == NEAR_ONLY ||
-                rmtAttr.partitionedTaxonomy() == CLIENT_ONLY || rmtAttr.partitionedTaxonomy() == NEAR_ONLY);
+            cfg.getAtomicityMode() == ATOMIC &&
+                (!ctx.discovery().cacheAffinityNode(rmtNode, cfg.getName()) ||
+                 !ctx.discovery().cacheAffinityNode(locNode, cfg.getName()));
     }
 
     /**
@@ -2044,12 +2060,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+        try {
+            IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
 
-        if (cache == null)
-            throw new IllegalArgumentException("Cache is not configured: " + name);
+            if (cache == null) {
+                DynamicCacheDescriptor desc = registeredCaches.get(name);
 
-        return cache;
+                if (desc == null || desc.cancelled())
+                    throw new IllegalArgumentException("Cache is not started: " + name);
+
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(),
+                    desc.cacheConfiguration(), null);
+
+                req.deploymentId(desc.deploymentId());
+
+                F.first(initiateCacheChanges(F.asList(req))).get();
+
+                cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+
+                if (cache == null)
+                    throw new IllegalArgumentException("Cache is not started: " + name);
+            }
+
+            return cache;
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
     }
 
     /**
@@ -2236,8 +2273,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ret.add(ccfg.getAffinityMapper());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
-        ret.add(ccfg.getNearEvictionPolicy());
         ret.add(ccfg.getInterceptor());
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            ret.add(nearCfg.getNearEvictionPolicy());
 
         Collections.addAll(ret, objs);
 

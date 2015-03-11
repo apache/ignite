@@ -35,7 +35,6 @@ import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -71,7 +70,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (!nearEnabled())
+            cc.setNearConfiguration(null);
 
         cc.setCacheMode(cacheMode());
 

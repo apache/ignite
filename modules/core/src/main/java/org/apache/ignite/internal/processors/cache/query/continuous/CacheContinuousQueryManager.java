@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -372,12 +371,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 break;
 
             case REPLICATED:
-                if (nodes.size() == 1 && F.first(nodes).equals(cctx.localNode())) {
-                    CacheDistributionMode distributionMode = cctx.config().getDistributionMode();
-
-                    if (distributionMode == PARTITIONED_ONLY || distributionMode == NEAR_PARTITIONED)
-                        skipPrimaryCheck = true;
-                }
+                if (nodes.size() == 1 && F.first(nodes).equals(cctx.localNode()))
+                    skipPrimaryCheck = cctx.affinityNode();
 
                 break;
         }

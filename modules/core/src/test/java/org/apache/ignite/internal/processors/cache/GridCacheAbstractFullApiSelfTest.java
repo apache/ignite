@@ -2551,9 +2551,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testRemoveAfterClear() throws Exception {
         IgniteEx ignite = grid(0);
 
-        CacheDistributionMode distroMode = ignite.jcache(null).getConfiguration(CacheConfiguration.class).getDistributionMode();
+        boolean affNode = ((IgniteKernal)ignite).context().cache().internalCache(null).context().affinityNode();
 
-        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
+        if (!affNode) {
             if (gridCount() < 2)
                 return;
 
@@ -3437,7 +3437,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Collection<String> locKeys = new HashSet<>();
 
-        if (CU.isAffinityNode(cache.configuration())) {
+        if (cache.affinityNode()) {
             locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);

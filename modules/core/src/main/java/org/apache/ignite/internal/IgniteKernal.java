@@ -74,6 +74,7 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
@@ -1185,6 +1186,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         add(ATTR_JVM_PID, U.jvmPid());
 
+        add(ATTR_CLIENT_MODE, cfg.isClientMode());
+
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
 
@@ -1919,7 +1922,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (log.isDebugEnabled())
             for (Object key : U.asIterable(System.getProperties().keys()))
-                log.debug("System property [" + key + '=' + System.getProperty((String) key) + ']');
+                log.debug("System property [" + key + '=' + System.getProperty((String)key) + ']');
     }
 
     /**
@@ -2248,6 +2251,42 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        @Nullable NearCacheConfiguration<K, V> nearCfg) {
+        // TODO: implement.
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
+        // TODO: implement.
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        // TODO: implement.
+
     }
 
     /**

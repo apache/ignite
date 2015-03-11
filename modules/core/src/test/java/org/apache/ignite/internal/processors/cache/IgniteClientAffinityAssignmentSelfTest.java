@@ -26,8 +26,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  * Tests affinity assignment for different affinity types.
  */
@@ -48,13 +46,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cache) {
+        if (cache && !client) {
             CacheConfiguration ccfg = new CacheConfiguration();
 
             ccfg.setCacheMode(CacheMode.PARTITIONED);
             ccfg.setBackups(1);
             ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-            ccfg.setDistributionMode(client ? CLIENT_ONLY : PARTITIONED_ONLY);
+
+            ccfg.setNearConfiguration(null);
 
             if (aff == 0)
                 ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, PARTS));

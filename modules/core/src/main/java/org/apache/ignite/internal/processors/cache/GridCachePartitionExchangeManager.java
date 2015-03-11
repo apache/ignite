@@ -99,6 +99,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private ExchangeFutureSet exchFuts = new ExchangeFutureSet();
 
+    public static volatile boolean stop = false;
+
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {

@@ -251,7 +251,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -276,8 +276,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Partitioned mode.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -323,7 +323,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return {@code true} if near cache should be enabled.
      */
     protected boolean nearEnabled() {
-        return distributionMode() == NEAR_ONLY || distributionMode() == NEAR_PARTITIONED;
+        return nearConfiguration() != null;
     }
 
     /**

@@ -77,10 +77,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
-                final Collection<String> caches = new HashSet<>();
-
-                for (ClusterNode clusterNode : ((DiscoveryEvent)evt).topologyNodes())
-                    caches.addAll(U.cacheNames(clusterNode));
+                final Collection<String> caches = ctx.cache().cacheNames();
 
                 final Collection<AffinityAssignmentKey> rmv = new HashSet<>();
 
@@ -186,7 +183,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         ClusterNode loc = ctx.discovery().localNode();
 
-        if (U.hasCache(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
+        if (ctx.discovery().cacheNode(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
             return Collections.singletonList(loc);
 
         AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
@@ -272,7 +269,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         ClusterNode loc = ctx.discovery().localNode();
 
-        if (U.hasCache(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
+        if (ctx.discovery().cacheNode(loc, cacheName) && ctx.cache().cache(cacheName).configuration().getCacheMode() == LOCAL)
             return F.asMap(loc, (Collection<K>)keys);
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
@@ -298,7 +295,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         ClusterNode loc = ctx.discovery().localNode();
 
         // Check local node.
-        if (U.hasCache(loc, cacheName)) {
+        if (ctx.discovery().cacheNode(loc, cacheName)) {
             GridCacheContext<Object,Object> cctx = ctx.cache().internalCache(cacheName).context();
 
             AffinityInfo info = new AffinityInfo(
@@ -319,7 +316,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.discovery().remoteNodes(),
             new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
-                    return U.hasCache(n, cacheName);
+                    return ctx.discovery().cacheNode(n, cacheName);
                 }
             });
 
@@ -352,7 +349,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             ClusterNode n = it.next();
 
-            CacheMode mode = U.cacheMode(n, cacheName);
+            CacheMode mode = ctx.cache().cacheMode(cacheName);
 
             assert mode != null;
 

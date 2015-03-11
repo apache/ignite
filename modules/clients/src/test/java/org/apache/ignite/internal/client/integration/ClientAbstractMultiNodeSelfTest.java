@@ -180,7 +180,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
 
         if (cacheName == null)
             cfg.setCacheMode(LOCAL);

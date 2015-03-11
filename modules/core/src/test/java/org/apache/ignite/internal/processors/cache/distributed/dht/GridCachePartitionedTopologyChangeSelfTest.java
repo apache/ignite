@@ -38,7 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -78,7 +77,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(SYNC);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 

@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -74,7 +73,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(mode);
         cacheCfg.setQueryIndexEnabled(false);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setStartSize(startSize);
 
         if (onheap > 0) {

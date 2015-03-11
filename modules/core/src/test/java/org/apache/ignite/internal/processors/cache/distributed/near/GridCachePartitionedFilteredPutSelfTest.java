@@ -28,7 +28,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -68,7 +67,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
 
         return cfg;
     }
