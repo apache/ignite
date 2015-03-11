@@ -39,9 +39,6 @@ public class IgniteThread extends Thread {
     /** Number of all grid threads in the system. */
     private static final AtomicLong threadCntr = new AtomicLong(0);
 
-    /** Boolean flag indicating of this thread is currently processing message. */
-    private boolean procMsg;
-
     /**
      * Creates thread with given worker.
      *
@@ -85,20 +82,6 @@ public class IgniteThread extends Thread {
      */
     private static String createName(long num, String threadName, String gridName) {
         return threadName + "-#" + num + '%' + gridName + '%';
-    }
-
-    /**
-     * @param procMsg Flag indicating whether thread is currently processing message.
-     */
-    public void processingMessage(boolean procMsg) {
-        this.procMsg = procMsg;
-    }
-
-    /**
-     * @return Flag indicating whether thread is currently processing message.
-     */
-    public boolean processingMessage() {
-        return procMsg;
     }
 
     /** {@inheritDoc} */

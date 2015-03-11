@@ -446,7 +446,7 @@ public class GridNioServer<T> {
             GridNioFuture<?> fut0 = futs.iterator().next();
 
             for (GridNioFuture<?> fut : futs) {
-                fut.messageThread(true);
+                fut.backPressureDisabled(true);
 
                 ((NioOperationFuture)fut).resetSession(ses0);
             }

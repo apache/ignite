@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements GridNioFuture<R> {
     /** Message thread flag. */
-    private boolean msgThread;
+    private boolean backPressureDisabled;
 
     /**
      * @param res Result.
@@ -42,13 +42,13 @@ public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void messageThread(boolean msgThread) {
-        this.msgThread = msgThread;
+    @Override public void backPressureDisabled(boolean backPressureDisabled) {
+        this.backPressureDisabled = backPressureDisabled;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean messageThread() {
-        return msgThread;
+    @Override public boolean backPressureDisabled() {
+        return backPressureDisabled;
     }
 
     /** {@inheritDoc} */

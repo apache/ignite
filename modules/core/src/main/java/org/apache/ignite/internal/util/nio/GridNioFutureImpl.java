@@ -28,16 +28,16 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     private static final long serialVersionUID = 0L;
 
     /** */
-    protected boolean msgThread;
+    protected boolean backPressureDisabled;
 
     /** {@inheritDoc} */
-    @Override public void messageThread(boolean msgThread) {
-        this.msgThread = msgThread;
+    @Override public void backPressureDisabled(boolean backPressureDisabled) {
+        this.backPressureDisabled = backPressureDisabled;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean messageThread() {
-        return msgThread;
+    @Override public boolean backPressureDisabled() {
+        return backPressureDisabled;
     }
 
     /** {@inheritDoc} */

@@ -164,7 +164,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @return Updated size of the queue.
      */
     int offerSystemFuture(GridNioFuture<?> writeFut) {
-        writeFut.messageThread(true);
+        writeFut.backPressureDisabled(true);
 
         boolean res = queue.offerFirst(writeFut);
 
@@ -184,12 +184,10 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @return Updated size of the queue.
      */
     int offerFuture(GridNioFuture<?> writeFut) {
-        boolean msgThread = false;
-
-        if (sem != null && !msgThread)
+        if (sem != null)
             sem.acquireUninterruptibly();
 
-        writeFut.messageThread(msgThread);
+        writeFut.backPressureDisabled(false);
 
         boolean res = queue.offer(writeFut);
 
@@ -222,7 +220,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         if (last != null) {
             queueSize.decrementAndGet();
 
-            if (sem != null && !last.messageThread())
+            if (sem != null && !last.backPressureDisabled())
                 sem.release();
 
             if (recovery != null) {

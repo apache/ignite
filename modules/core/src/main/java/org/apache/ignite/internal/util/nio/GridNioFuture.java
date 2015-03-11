@@ -24,16 +24,16 @@ import org.apache.ignite.internal.*;
  */
 public interface GridNioFuture<R> extends IgniteInternalFuture<R> {
     /**
-     * Sets flag indicating that message send future was created in thread that was processing a message.
+     * Sets flag indicating that back pressure should be disabled for message send future.
      *
-     * @param msgThread {@code True} if future was created in thread that is processing message.
+     * @param backPressureDisabled {@code True} if back pressure should be disabled for message future.
      */
-    public void messageThread(boolean msgThread);
+    public void backPressureDisabled(boolean backPressureDisabled);
 
     /**
-     * @return {@code True} if future was created in thread that was processing message.
+     * @return {@code True} if back pressure disabled for message future.
      */
-    public boolean messageThread();
+    public boolean backPressureDisabled();
 
     /**
      * @return {@code True} if skip recovery for this operation.
