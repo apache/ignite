@@ -4140,15 +4140,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         throw CU.convertToCacheException(e);
                     }
                 }
-            },
-
-            false,
-
-            new IgnitePredicate<Cache.Entry<K, V>>() {
-                @Override public boolean apply(Cache.Entry<K, V> lazyEntry) {
-                    return !lazyEntry.unwrap(GridCacheEntryEx.class).obsoleteOrDeleted();
-                }
-            }
+            }, false
         );
     }
 
