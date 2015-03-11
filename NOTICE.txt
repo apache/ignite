@@ -19,3 +19,13 @@ http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7C
 This software has a dependency on Persistent Collections library,
 licensed under MIT license.
 https://github.com/blackdrag/pcollections
+
+
+This software has a dependency on Open JDK library,
+licensed under GPL license.
+http://openjdk.java.net/
+
+
+This software has a dependency on snaptree library,
+licensed under SNAPTREE license.
+https://github.com/nbronson/snaptree/
