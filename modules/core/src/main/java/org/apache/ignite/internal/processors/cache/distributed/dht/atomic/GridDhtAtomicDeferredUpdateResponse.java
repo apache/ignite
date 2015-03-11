@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Deferred dht atomic update response.
  */
-public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 

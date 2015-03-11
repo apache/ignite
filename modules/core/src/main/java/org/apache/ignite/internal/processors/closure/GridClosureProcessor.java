@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -414,7 +415,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5<>(node, job), null, false);
+            return ctx.task().execute(new T5(node, job), null, false);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
@@ -566,7 +567,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8<>(job, arg), null, false);
+            return ctx.task().execute(new T8(job, arg), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -589,7 +590,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -613,7 +614,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job, arg, nodes), null, false);
+            return ctx.task().execute(new T11<>(job), arg, false);
         }
         finally {
             busyLock.readUnlock();
@@ -1092,7 +1093,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Collection, Collection)}.
      */
-    private class T1 extends TaskNoReduceAdapter<Void> {
+    private class T1 extends TaskNoReduceAdapter<Void> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1126,7 +1127,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#runAsync(GridClosureCallMode, Runnable, Collection)}.
      */
-    private class T2 extends TaskNoReduceAdapter<Void> {
+    private class T2 extends TaskNoReduceAdapter<Void> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1157,7 +1158,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#forkjoinAsync(GridClosureCallMode, Collection, org.apache.ignite.lang.IgniteReducer, Collection)}
      */
-    private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+    private class T3<R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1210,7 +1211,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T4 extends TaskNoReduceAdapter<Void> {
+    private static class T4 extends TaskNoReduceAdapter<Void> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1241,7 +1242,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+    private static class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1284,7 +1285,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Collection, Collection)}
      */
-    private class T6<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+    private class T6<R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1327,7 +1328,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Task that is free of dragged in enclosing context for the method
      * {@link GridClosureProcessor#callAsync(GridClosureCallMode, Callable, Collection)}
      */
-    private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+    private class T7<R> extends GridPeerDeployAwareTaskAdapter<Void, R> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1365,7 +1366,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> {
+    private static class T8<T, R> extends GridPeerDeployAwareTaskAdapter<Void, R> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1409,7 +1410,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T9<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+    private class T9<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>>
+        implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1460,7 +1462,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T10<T, R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> {
+    private class T10<T, R1, R2> extends GridPeerDeployAwareTaskAdapter<Void, R2> implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1526,30 +1528,25 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<Void, Collection<R>> {
+    private class T11<T, R> extends GridPeerDeployAwareTaskAdapter<T, Collection<R>>
+        implements GridNoImplicitInjection {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
         private final IgniteClosure<T, R> job;
 
-        /** */
-        private final T arg;
-
         /**
          * @param job Job.
-         * @param arg Job argument.
-         * @param nodes Collection of nodes.
          */
-        private T11(IgniteClosure<T, R> job, @Nullable T arg, Collection<ClusterNode> nodes) {
+        private T11(IgniteClosure<T, R> job) {
             super(U.peerDeployAware(job));
 
             this.job = job;
-            this.arg = arg;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) {
             if (F.isEmpty(subgrid))
                 return Collections.emptyMap();
 
@@ -1557,7 +1554,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 JobMapper mapper = new JobMapper(subgrid.size());
 
                 for (ClusterNode n : subgrid)
-                    mapper.map(job(job, this.arg), n);
+                    mapper.map(job(job, arg), n);
 
                 return mapper.map();
             }
@@ -1575,7 +1572,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C1<T, R> implements ComputeJob, Externalizable {
+    private static class C1<T, R> implements ComputeJob, Externalizable, GridNoImplicitInjection,
+        GridInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1625,6 +1623,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteClosure userObject() {
+            return job;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C1.class, this);
         }
@@ -1648,7 +1651,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Argument.
          */
-        public C1MLA(IgniteClosure<T, R> job, T arg) {
+        private C1MLA(IgniteClosure<T, R> job, T arg) {
             super(job, arg);
         }
 
@@ -1666,7 +1669,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C2<R> implements ComputeJob, Externalizable {
+    private static class C2<R> implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1683,7 +1686,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param c Callable.
          */
-        public C2(Callable<R> c) {
+        private C2(Callable<R> c) {
             this.c = c;
         }
 
@@ -1713,6 +1716,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public Callable userObject() {
+            return c;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C2.class, this);
         }
@@ -1735,7 +1743,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param c Callable.
          */
-        public C2MLA(Callable<R> c) {
+        private C2MLA(Callable<R> c) {
             super(c);
         }
 
@@ -1752,7 +1760,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C4 implements ComputeJob, Externalizable {
+    private static class C4 implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1769,7 +1777,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param r Runnable.
          */
-        public C4(Runnable r) {
+        private C4(Runnable r) {
             this.r = r;
         }
 
@@ -1796,6 +1804,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public Runnable userObject() {
+            return r;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C4.class, this);
         }
@@ -1804,7 +1817,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware{
+    private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1818,7 +1831,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          * @param r Runnable.
          */
-        public C4MLA(Runnable r) {
+        private C4MLA(Runnable r) {
             super(r);
         }
 

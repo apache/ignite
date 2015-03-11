@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 

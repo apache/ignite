@@ -41,6 +41,9 @@ import static org.apache.ignite.internal.processors.hadoop.proto.HadoopClientPro
  * Ignite Hadoop client protocol provider.
  */
 public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
+    /** Framework name used in configuration. */
+    public static final String FRAMEWORK_NAME = "ignite";
+
     /** Clients. */
     private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 

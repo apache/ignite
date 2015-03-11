@@ -2001,16 +2001,14 @@ public class ConcurrentHashMap8<K, V>
 
     /**
      * Returns a power of two table size for the given desired capacity.
-     * See Hackers Delight, sec 3.2
      */
     private static final int tableSizeFor(int c) {
-        int n = c - 1;
-        n |= n >>> 1;
-        n |= n >>> 2;
-        n |= n >>> 4;
-        n |= n >>> 8;
-        n |= n >>> 16;
-        return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+        if (c <= 0)
+            return 1;
+
+        int n = Integer.highestOneBit(c - 1) << 1;
+
+        return (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n;
     }
 
     /**

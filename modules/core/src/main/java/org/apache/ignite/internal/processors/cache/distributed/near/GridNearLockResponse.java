@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Near cache lock response.
  */
-public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V> {
+public class GridNearLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -153,20 +153,16 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
     /**
      * @param val Value.
-     * @param valBytes Value bytes (possibly {@code null}).
      * @param filterPassed Boolean flag indicating whether filter passed for fast-commit transaction.
      * @param dhtVer DHT version.
      * @param mappedVer Mapped version.
-     * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addValueBytes(
-        @Nullable V val,
-        @Nullable byte[] valBytes,
+        @Nullable CacheObject val,
         boolean filterPassed,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheVersion mappedVer,
-        GridCacheContext<K, V> ctx
+        @Nullable GridCacheVersion mappedVer
     ) throws IgniteCheckedException {
         int idx = valuesSize();
 
@@ -177,7 +173,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             filterRes[idx] = filterPassed;
 
         // Delegate to super.
-        addValueBytes(val, valBytes, ctx);
+        addValue(val);
     }
 
     /** {@inheritDoc} */

@@ -17,32 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.serialization.*;
+import org.apache.ignite.cache.*;
 
-import java.util.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Cache manager responsible for translating user objects into cache objects.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-public class IgniteCacheOsSerializationManager<K, V> extends GridCacheManagerAdapter<K, V>
-    implements IgniteCacheSerializationManager<K, V> {
+public class GridCacheOnCopyFlagReplicatedSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override public boolean portableEnabled() {
-        return false;
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean keepPortableInStore() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return o;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return col;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

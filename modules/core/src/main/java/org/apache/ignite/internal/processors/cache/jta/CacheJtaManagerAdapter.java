@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 /**
  * Provides possibility to integrate cache transactions with JTA.
  */
-public abstract class CacheJtaManagerAdapter<K, V> extends GridCacheManagerAdapter<K, V> {
+public abstract class CacheJtaManagerAdapter extends GridCacheManagerAdapter {
     /**
      * Creates transaction manager finder.
      *

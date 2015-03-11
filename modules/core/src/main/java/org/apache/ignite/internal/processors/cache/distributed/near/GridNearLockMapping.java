@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -27,21 +28,21 @@ import java.util.*;
 /**
  * Key-to node mapping.
  */
-public class GridNearLockMapping<K, V> {
+public class GridNearLockMapping {
     /** Node to which keys are mapped. */
     private ClusterNode node;
 
     /** Collection of mapped keys. */
     @GridToStringInclude
-    private Collection<K> mappedKeys = new LinkedList<>();
+    private Collection<KeyCacheObject> mappedKeys = new LinkedList<>();
 
     /** Near lock request. */
     @GridToStringExclude
-    private GridNearLockRequest<K, V> req;
+    private GridNearLockRequest req;
 
     /** Distributed keys. Key will not be distributed if lock is reentry. */
     @GridToStringInclude
-    private Collection<K> distributedKeys;
+    private Collection<KeyCacheObject> distributedKeys;
 
     /**
      * Creates near lock mapping for specified node and key.
@@ -49,7 +50,7 @@ public class GridNearLockMapping<K, V> {
      * @param node Node.
      * @param firstKey First key in mapped keys collection.
      */
-    public GridNearLockMapping(ClusterNode node, K firstKey) {
+    public GridNearLockMapping(ClusterNode node, KeyCacheObject firstKey) {
         assert node != null;
         assert firstKey != null;
 
@@ -68,28 +69,28 @@ public class GridNearLockMapping<K, V> {
     /**
      * @return Mapped keys.
      */
-    public Collection<K> mappedKeys() {
+    public Collection<KeyCacheObject> mappedKeys() {
         return mappedKeys;
     }
 
     /**
      * @param key Key to add to mapping.
      */
-    public void addKey(K key) {
+    public void addKey(KeyCacheObject key) {
         mappedKeys.add(key);
     }
 
     /**
      * @return Near lock request.
      */
-    @Nullable public GridNearLockRequest<K, V> request() {
+    @Nullable public GridNearLockRequest request() {
         return req;
     }
 
     /**
      * @param req Near lock request.
      */
-    public void request(GridNearLockRequest<K, V> req) {
+    public void request(GridNearLockRequest req) {
         assert req != null;
 
         this.req = req;
@@ -98,14 +99,14 @@ public class GridNearLockMapping<K, V> {
     /**
      * @return Collection of distributed keys.
      */
-    public Collection<K> distributedKeys() {
+    public Collection<KeyCacheObject> distributedKeys() {
         return distributedKeys;
     }
 
     /**
      * @param distributedKeys Collection of distributed keys.
      */
-    public void distributedKeys(Collection<K> distributedKeys) {
+    public void distributedKeys(Collection<KeyCacheObject> distributedKeys) {
         this.distributedKeys = distributedKeys;
     }
 

@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Transaction node mapping.
  */
-public class GridDistributedTxMapping<K, V> implements Externalizable {
+public class GridDistributedTxMapping implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
 
     /** Entries. */
     @GridToStringInclude
-    private Collection<IgniteTxEntry<K, V>> entries;
+    private Collection<IgniteTxEntry> entries;
 
     /** Explicit lock flag. */
     private boolean explicitLock;
@@ -131,7 +131,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @return Entries.
      */
-    public Collection<IgniteTxEntry<K, V>> entries() {
+    public Collection<IgniteTxEntry> entries() {
         return entries;
     }
 
@@ -139,7 +139,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param entries Mapped entries.
      * @param readOnly Flag indicating that passed in collection is read-only.
      */
-    public void entries(Collection<IgniteTxEntry<K, V>> entries, boolean readOnly) {
+    public void entries(Collection<IgniteTxEntry> entries, boolean readOnly) {
         this.entries = entries;
 
         // Set copy on remove flag as passed in collection is unmodifiable.
@@ -173,28 +173,28 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     public void dhtVersion(GridCacheVersion dhtVer) {
         this.dhtVer = dhtVer;
 
-        for (IgniteTxEntry<K, V> e : entries)
+        for (IgniteTxEntry e : entries)
             e.dhtVersion(dhtVer);
     }
 
     /**
      * @return Reads.
      */
-    public Collection<IgniteTxEntry<K, V>> reads() {
-        return F.view(entries, CU.<K, V>reads());
+    public Collection<IgniteTxEntry> reads() {
+        return F.view(entries, CU.reads());
     }
 
     /**
      * @return Writes.
      */
-    public Collection<IgniteTxEntry<K, V>> writes() {
-        return F.view(entries, CU.<K, V>writes());
+    public Collection<IgniteTxEntry> writes() {
+        return F.view(entries, CU.writes());
     }
 
     /**
      * @param entry Adds entry.
      */
-    public void add(IgniteTxEntry<K, V> entry) {
+    public void add(IgniteTxEntry entry) {
         ensureModifiable();
 
         entries.add(entry);
@@ -204,7 +204,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param entry Entry to remove.
      * @return {@code True} if entry was removed.
      */
-    public boolean removeEntry(IgniteTxEntry<K, V> entry) {
+    public boolean removeEntry(IgniteTxEntry entry) {
         ensureModifiable();
 
         return entries.remove(entry);
@@ -225,13 +225,13 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param parts Partitions.
      * @param c Collection.
      */
-    private void evictPartitions(int[] parts, Collection<IgniteTxEntry<K, V>> c) {
+    private void evictPartitions(int[] parts, Collection<IgniteTxEntry> c) {
         assert parts != null;
 
-        for (Iterator<IgniteTxEntry<K, V>> it = c.iterator(); it.hasNext();) {
-            IgniteTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry> it = c.iterator(); it.hasNext();) {
+            IgniteTxEntry e = it.next();
 
-            GridCacheEntryEx<K,V> cached = e.cached();
+            GridCacheEntryEx cached = e.cached();
 
             if (U.containsIntArray(parts, cached.partition()))
                 it.remove();
@@ -241,7 +241,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @param keys Keys to evict readers for.
      */
-    public void evictReaders(@Nullable Collection<IgniteTxKey<K>> keys) {
+    public void evictReaders(@Nullable Collection<IgniteTxKey> keys) {
         if (keys == null || keys.isEmpty())
             return;
 
@@ -254,12 +254,12 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param keys Keys to evict readers for.
      * @param entries Entries to check.
      */
-    private void evictReaders(Collection<IgniteTxKey<K>> keys, @Nullable Collection<IgniteTxEntry<K, V>> entries) {
+    private void evictReaders(Collection<IgniteTxKey> keys, @Nullable Collection<IgniteTxEntry> entries) {
         if (entries == null || entries.isEmpty())
             return;
 
-        for (Iterator<IgniteTxEntry<K, V>> it = entries.iterator(); it.hasNext();) {
-            IgniteTxEntry<K, V> entry = it.next();
+        for (Iterator<IgniteTxEntry> it = entries.iterator(); it.hasNext();) {
+            IgniteTxEntry entry = it.next();
 
             if (keys.contains(entry.txKey()))
                 it.remove();

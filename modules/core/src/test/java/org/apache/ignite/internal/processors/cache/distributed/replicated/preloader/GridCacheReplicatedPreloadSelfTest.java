@@ -160,7 +160,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             cache1.put(1, "val1");
             cache1.put(2, "val2");
 
-            GridCacheEntryEx<Integer, String> e1 = cache1.peekEx(1);
+            GridCacheEntryEx e1 = cache1.peekEx(1);
 
             assert e1 != null;
 
@@ -193,7 +193,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals("val1", cache2.peek(1));
             assertEquals("val2", cache2.peek(2));
 
-            GridCacheEntryEx<Integer, String> e2 = cache2.peekEx(1);
+            GridCacheEntryEx e2 = cache2.peekEx(1);
 
             assert e2 != null;
             assert e2 != e1;

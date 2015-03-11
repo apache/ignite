@@ -3054,8 +3054,7 @@ public abstract class IgniteUtils {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
                 !new File(cur, "modules").isDirectory() ||
-                !new File(cur, "config").isDirectory() ||
-                !new File(cur, "license").isDirectory())
+                !new File(cur, "config").isDirectory())
                 continue;
 
             return cur.getPath();
@@ -5369,7 +5368,7 @@ public abstract class IgniteUtils {
      * @return Top level user class.
      */
     public static GridPeerDeployAware detectPeerDeployAware(GridPeerDeployAware obj) {
-        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridIdentityHashSet<>(3));
+        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridLeanIdentitySet<>());
 
         // Pass in obj.getClass() to avoid infinite recursion.
         return p != null ? p : peerDeployAware(obj.getClass());
