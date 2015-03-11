@@ -91,9 +91,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /** Default value for 'storeValueBytes' flag indicating if value bytes should be stored. */
-    public static final boolean DFLT_STORE_VALUE_BYTES = true;
-
     /** Default preload mode for distributed cache. */
     public static final CachePreloadMode DFLT_PRELOAD_MODE = CachePreloadMode.ASYNC;
 
@@ -220,6 +217,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache distribution mode. */
     private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
+    /** Default value for 'copyOnRead' flag. */
+    public static final boolean DFLT_COPY_ON_READ = true;
+
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
 
@@ -246,9 +246,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Flag indicating whether this is invalidation-based cache. */
     private boolean invalidate = DFLT_INVALIDATE;
-
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes = DFLT_STORE_VALUE_BYTES;
 
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
@@ -322,6 +319,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
 
+    /** Copy on read flag. */
+    private boolean cpOnRead = DFLT_COPY_ON_READ;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -352,6 +352,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
+        cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
@@ -391,7 +392,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         readFromBackup = cc.isReadFromBackup();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
-        storeValBytes = cc.isStoreValueBytes();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
@@ -993,27 +993,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setInvalidate(boolean invalidate) {
         this.invalidate = invalidate;
-    }
-
-    /**
-     * Flag indicating if cached values should be additionally stored in serialized form. It's set to true by default.
-     *
-     * @param storeValBytes {@code true} if cached values should be additionally stored in serialized form, {@code
-     * false} otherwise.
-     */
-    public void setStoreValueBytes(boolean storeValBytes) {
-        this.storeValBytes = storeValBytes;
-    }
-
-    /**
-     * Flag indicating if cached values should be additionally stored in serialized form.
-     * It's set to {@code true} by default.
-     *
-     * @return {@code true} if cached values should be additionally stored in
-     *      serialized form, {@code false} otherwise.
-     */
-    public boolean isStoreValueBytes() {
-        return storeValBytes;
     }
 
     /**
@@ -1621,6 +1600,30 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
+    }
+
+    /**
+     * Gets flag indicating whether copy of of the value stored in cache should be created
+     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * passed to {@link CacheInterceptor} and to {@link org.apache.ignite.cache.IgniteEntryProcessor}.
+     * <p>
+     * Copies are not created for immutable types, see {@link IgniteImmutable}.
+     *
+     * @return Copy on get flag.
+     * @see IgniteImmutable
+     */
+    public boolean isCopyOnRead() {
+        return cpOnRead;
+    }
+
+    /**
+     * Set copy on get flag.
+     *
+     * @param cpOnGet Copy on get flag.
+     * @see #isCopyOnRead
+     */
+    public void setCopyOnRead(boolean cpOnGet) {
+        this.cpOnRead = cpOnGet;
     }
 
     /** {@inheritDoc} */

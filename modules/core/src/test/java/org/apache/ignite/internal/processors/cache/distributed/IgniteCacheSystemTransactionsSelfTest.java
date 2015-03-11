@@ -142,7 +142,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal kernal = (IgniteKernal)grid(i);
 
-            IgniteTxManager<Object, Object> tm = kernal.context().cache().context().tm();
+            IgniteTxManager tm = kernal.context().cache().context().tm();
 
             Map map = U.field(tm, "threadMap");
 
@@ -173,14 +173,14 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
                 Object key = vals[i];
                 Object val = vals[i + 1];
 
-                GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                GridCacheEntryEx entry = cache.peekEx(key);
 
                 if (entry != null) {
                     assertFalse("Entry is locked [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']',
                         entry.lockedByAny());
 
                     assertEquals("Invalid entry value [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']',
-                        val, entry.rawGet());
+                        val, entry.rawGet().value(cache.context().cacheObjectContext(), false));
                 }
             }
         }

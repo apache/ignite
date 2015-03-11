@@ -90,9 +90,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Cache interceptor. */
     private String interceptor;
 
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean valBytes;
-
     /** Cache affinityCfg config. */
     private VisorCacheAffinityConfiguration affinityCfg;
 
@@ -158,7 +155,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.memoryMode = ccfg.getMemoryMode();
         cfg.indexingSpiName = ccfg.getIndexingSpiName();
         cfg.interceptor = compactClass(ccfg.getInterceptor());
-        cfg.valBytes = ccfg.isStoreValueBytes();
         cfg.typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
         cfg.statisticsEnabled = ccfg.isStatisticsEnabled();
         cfg.mgmtEnabled = ccfg.isManagementEnabled();
@@ -318,13 +314,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     @Nullable public String interceptor() {
         return interceptor;
-    }
-
-    /**
-     * @return {@code true} if cached values should be additionally stored in serialized form.
-     */
-    public boolean valueBytes() {
-        return valBytes;
     }
 
     /**

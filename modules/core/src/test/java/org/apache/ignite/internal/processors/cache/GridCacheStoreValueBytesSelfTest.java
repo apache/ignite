@@ -53,7 +53,6 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setStoreValueBytes(storeValBytes);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -72,27 +71,6 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDisabled() throws Exception {
-        storeValBytes = false;
-
-        Ignite g0 = startGrid(0);
-        Ignite g1 = startGrid(1);
-
-        IgniteCache<Integer, String> c = g0.jcache(null);
-
-        c.put(1, "Cached value");
-
-        GridCacheEntryEx<Object, Object> entry = ((IgniteKernal)g1).internalCache().peekEx(1);
-
-        assert entry != null;
-        assert entry.valueBytes().isNull();
-    }
-
-    /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
     public void testEnabled() throws Exception {
         storeValBytes = true;
 
@@ -103,7 +81,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx<Object, Object> entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
 
         assert entry != null;
         assert entry.valueBytes() != null;
