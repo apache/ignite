@@ -229,6 +229,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         if (debug)
             start0 = log(ignite.log(), "Collected events", getClass(), start0);
 
+        res.errorCount(ignite.context().exceptionRegistry().errorCount());
+
         caches(res, arg);
 
         if (debug)
