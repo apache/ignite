@@ -59,19 +59,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
                             <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-                                    <property name="dialect">
-                                        <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
-                                    </property>
-
-                                    <property name="dataSource">
-                                        <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                                            <constructor-arg value="jdbc:h2:tcp://localhost/mem:ExampleDb"/>
-                                            <constructor-arg value="sa"/>
-                                            <constructor-arg value=""/>
-                                        </bean>
-                                    </property>
-                                </bean>
+                                <bean class="org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPojoPersonStore"/>
                             </constructor-arg>
                         </bean>
                     </property>

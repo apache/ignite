@@ -25,6 +25,7 @@ import org.apache.ignite.lang.*;
 import org.h2.tools.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.io.*;
 import java.sql.*;
@@ -34,19 +35,24 @@ import java.sql.*;
  * transaction with cache transactions and maps {@link Long} to {@link Person}.
  */
 public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
-    /** H2 database TCP server. */
-    private Server srv;
-
     /**
      * Constructor.
      *
      * @throws IgniteException If failed.
      */
     public CacheJdbcPojoPersonStore() throws IgniteException {
-        // Construct example database in memory.
-        dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
+        try {
+            // Try to connect to database server.
+            dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
 
-        prepareDb();
+            resolveDialect();
+        }
+        catch (CacheException ignore) {
+            // Construct example database in memory.
+            dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
+
+            prepareDb();
+        }
     }
 
     /**
@@ -63,10 +69,11 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
                 "examples/config/store/example-database.script");
 
         try {
-            RunScript.execute(dataSrc.getConnection(), new FileReader(script));
-
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
-            srv = Server.createTcpServer().start();
+            Server.createTcpServer("-tcpDaemon").start();
+
+            // Load sample data into database.
+            RunScript.execute(dataSrc.getConnection(), new FileReader(script));
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to initialize database", e);
@@ -85,13 +92,5 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
         final int entryCnt = (Integer)args[0];
 
         super.loadCache(clo, "java.lang.Long", "select * from PERSONS limit " + entryCnt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-        if (srv != null)
-            srv.stop();
-
-        super.stop();
     }
 }

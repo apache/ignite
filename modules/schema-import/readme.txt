@@ -176,3 +176,39 @@ Or you can load data from database to cache with custom SQL:
     cache.loadCache(null, "java.lang.Long", "select * from PERSON where id = 2")
 
 Also if you put data into cache it will be inserted / updated in underlying database.
+
+
+Performance optimization.
+------------------------------------------
+
+1. Use DataSource with connection pool.
+2. Enable write-behind feature by default write-behind is disabled.
+
+Example of spring configuration:
+
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    ...
+    <!-- Cache configuration. -->
+    <property name="cacheConfiguration">
+        <list>
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                ...
+                <!-- Sets flag indicating whether write-behind is enabled.. -->
+                <property name="writeBehindEnabled" value="true/>
+                ...
+            </bean>
+        </list>
+    </property>
+    ...
+</bean>
+
+Example of java code configuration:
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+...
+CacheConfiguration ccfg = new CacheConfiguration<>();
+...
+ccfg.setWriteBehindEnabled(true);
+...
+// Start Ignite node.
+Ignition.start(cfg);
