@@ -61,7 +61,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new IdentityHashMap<CacheStore, ThreadLocal>(),
                 null,
                 new CacheConfiguration()),
-            new GridCacheEvictionManager<K, V>(),
+            new GridCacheEvictionManager(),
             new GridCacheLocalQueryManager<K, V>(),
             new CacheContinuousQueryManager(),
             new GridCacheAffinityManager(),
