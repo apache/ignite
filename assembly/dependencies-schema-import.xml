@@ -32,14 +32,14 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-schema-load</include>
+                <include>org.apache.ignite:ignite-schema-import</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
                         <directory>target</directory>
-                        <outputDirectory>/schema-load</outputDirectory>
+                        <outputDirectory>/schema-import</outputDirectory>
                         <includes>
                             <include>*.jar</include>
                         </includes>

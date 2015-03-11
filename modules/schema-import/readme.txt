@@ -5,7 +5,7 @@ Ignite ships with its own database schema mapping wizard which provides automati
 persistence stores. This utility automatically connects to the underlying database and generates all the required
 XML OR-mapping configuration and Java domain model POJOs.
 
-To start the wizard for generating database schema mapping, execute bin/ignite-schema-load.sh script:
+To start the wizard for generating database schema mapping, execute bin/ignite-schema-import.sh script:
 
 For connection with RDBMS system from utility you need to provide: connection url and jdbc driver.
 Note that JDBC drivers are not supplied with the utility and should be provided separately.

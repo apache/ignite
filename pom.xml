@@ -684,7 +684,7 @@
                                         </fileset>
 
                                         <fileset>
-                                            <directory>bin/include/schema-load</directory>
+                                            <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>
