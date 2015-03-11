@@ -31,6 +31,7 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -299,11 +299,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService marshallerCachePool();
 
     /**
-     * Gets portable processor.
+     * Gets cache object processor.
      *
-     * @return Portable processor.
+     * @return Cache object processor.
      */
-    public GridPortableProcessor portable();
+    public IgniteCacheObjectProcessor cacheObjects();
 
     /**
      * Gets query processor.

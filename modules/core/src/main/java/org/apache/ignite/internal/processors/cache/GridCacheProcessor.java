@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -122,7 +121,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     @SuppressWarnings("unchecked")
-    private void initialize(CacheConfiguration cfg) throws IgniteCheckedException {
+    private void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -164,7 +163,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg.setBackups(Integer.MAX_VALUE);
 
         if (cfg.getAffinityMapper() == null)
-            cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+            cfg.setAffinityMapper(cacheObjCtx.defaultAffMapper());
 
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
 
@@ -580,8 +579,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName());
+
             // Initialize defaults.
-            initialize(cfg);
+            initialize(cfg, cacheObjCtx);
 
             CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
@@ -599,6 +600,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             toPrepare.add(jta.tmLookup());
             toPrepare.add(cfgStore);
+            toPrepare.add(cfg.getAffinityMapper());
+
+            if (cfg.getAffinityMapper() != cacheObjCtx.defaultAffMapper())
+                toPrepare.add(cacheObjCtx.defaultAffMapper());
 
             if (cfgStore instanceof GridCacheLoaderWriterStore) {
                 toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
@@ -608,17 +613,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             prepare(cfg, toPrepare.toArray(new Object[toPrepare.size()]));
 
             U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
-
-            // Init default key mapper.
-            CacheAffinityKeyMapper dfltAffMapper;
-
-            if (cfg.getAffinityMapper().getClass().equals(GridCacheDefaultAffinityKeyMapper.class))
-                dfltAffMapper = cfg.getAffinityMapper();
-            else {
-                dfltAffMapper = new GridCacheDefaultAffinityKeyMapper();
-
-                prepare(cfg, dfltAffMapper, false);
-            }
 
             cfgs[i] = cfg; // Replace original configuration value.
 
@@ -631,7 +625,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
-            IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -646,7 +639,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  */
                 evtMgr,
                 swapMgr,
-                serMgr,
                 storeMgr,
                 evictMgr,
                 qryMgr,
@@ -657,7 +649,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 drMgr,
                 jta);
 
-            cacheCtx.defaultAffMapper(dfltAffMapper);
+            cacheCtx.cacheObjectContext(cacheObjCtx);
 
             GridCacheAdapter cache = null;
 
@@ -786,7 +778,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                      */
                     evtMgr,
                     swapMgr,
-                    serMgr,
                     storeMgr,
                     evictMgr,
                     qryMgr,
@@ -797,7 +788,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     drMgr,
                     jta);
 
-                cacheCtx.defaultAffMapper(dfltAffMapper);
+                cacheCtx.cacheObjectContext(cacheObjCtx);
 
                 GridDhtCacheAdapter dht = null;
 
@@ -1176,9 +1167,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeValueBytes",
-                            "Store value bytes", locAttr.storeValueBytes(), rmtAttr.storeValueBytes(), true);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
@@ -1338,7 +1326,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        ctx.portable().onCacheProcessorStarted();
+        ctx.cacheObjects().onCacheProcessorStarted();
     }
 
     /** {@inheritDoc} */
@@ -1492,9 +1480,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    qryMgr.remove(key, keyBytes);
+                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);

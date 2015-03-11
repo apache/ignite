@@ -224,7 +224,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -255,7 +255,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             info("Checking grid: " + grid(i).localNode().id());
 
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -299,7 +299,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -340,7 +340,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -405,7 +405,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -435,7 +435,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 

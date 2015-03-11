@@ -290,7 +290,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                 for (Ignite g : ignites) {
                     info(">>> Checking affinity for grid: " + g.name());
 
-                    GridDhtPartitionTopology<Integer, String> top = topology(g);
+                    GridDhtPartitionTopology top = topology(g);
 
                     GridDhtPartitionFullMap fullMap = top.partitionMap(true);
 
@@ -365,7 +365,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Topology.
      */
-    private GridDhtPartitionTopology<Integer, String> topology(Ignite g) {
+    private GridDhtPartitionTopology topology(Ignite g) {
         return ((GridNearCacheAdapter<Integer, String>)((IgniteKernal)g).<Integer, String>internalCache()).dht().topology();
     }
 

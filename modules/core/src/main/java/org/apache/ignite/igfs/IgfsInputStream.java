@@ -17,8 +17,6 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.igfs.secondary.*;
-
 import java.io.*;
 
 /**

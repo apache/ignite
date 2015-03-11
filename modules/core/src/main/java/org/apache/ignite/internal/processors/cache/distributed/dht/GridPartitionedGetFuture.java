@@ -62,7 +62,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheContext<K, V> cctx;
 
     /** Keys. */
-    private Collection<? extends K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Topology version. */
     private long topVer;
@@ -119,7 +119,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long topVer,
         boolean readThrough,
         boolean reload,
@@ -160,7 +160,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public void init() {
         long topVer = this.topVer > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<K, Boolean>>emptyMap(), topVer);
+        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
     }
@@ -173,13 +173,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // Should not flip trackable flag from true to false since get future can be remapped.
-    }
-
-    /**
-     * @return Keys.
-     */
-    Collection<? extends K> keys() {
-        return keys;
     }
 
     /** {@inheritDoc} */
@@ -226,7 +219,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -267,14 +260,19 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version on which keys should be mapped.
      */
-    private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, long topVer) {
+    private void map(Collection<KeyCacheObject> keys,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
+        long topVer)
+    {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache " +
+                "(all partition nodes left the grid)."));
 
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings = U.newHashMap(CU.affinityNodes(cctx, topVer).size());
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings =
+            U.newHashMap(CU.affinityNodes(cctx, topVer).size());
 
         final int keysSize = keys.size();
 
@@ -283,17 +281,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean hasRmtNodes = false;
 
         // Assign keys to primary nodes.
-        for (K key : keys) {
-            if (key == null) {
-                NullPointerException err = new NullPointerException("Null key");
-
-                onDone(err);
-
-                throw err;
-            }
-
+        for (KeyCacheObject key : keys)
             hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
-        }
 
         if (isDone())
             return;
@@ -308,16 +297,16 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         }
 
         // Create mini futures.
-        for (Map.Entry<ClusterNode, LinkedHashMap<K, Boolean>> entry : mappings.entrySet()) {
+        for (Map.Entry<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> entry : mappings.entrySet()) {
             final ClusterNode n = entry.getKey();
 
-            final LinkedHashMap<K, Boolean> mappedKeys = entry.getValue();
+            final LinkedHashMap<KeyCacheObject, Boolean> mappedKeys = entry.getValue();
 
             assert !mappedKeys.isEmpty();
 
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
-                final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
+                final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     cache().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
@@ -326,16 +315,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         topVer,
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
-                        deserializePortable,
                         expiryPlc,
                         skipVals);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
                 if (!F.isEmpty(invalidParts)) {
-                    Collection<K> remapKeys = new ArrayList<>(keysSize);
+                    Collection<KeyCacheObject> remapKeys = new ArrayList<>(keysSize);
 
-                    for (K key : keys) {
+                    for (KeyCacheObject key : keys) {
                         if (key != null && invalidParts.contains(cctx.affinity().partition(key)))
                             remapKeys.add(key);
                     }
@@ -351,8 +339,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
+                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>, Map<K, V>>() {
+                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
                         try {
                             return createResultMap(fut.get());
                         }
@@ -369,7 +357,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             else {
                 MiniFuture fut = new MiniFuture(n, mappedKeys, topVer);
 
-                GridCacheMessage<K, V> req = new GridNearGetRequest<>(
+                GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
                     futId,
                     fut.futureId(),
@@ -408,8 +396,10 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @return {@code True} if has remote nodes.
      */
     @SuppressWarnings("ConstantConditions")
-    private boolean map(K key, Map<ClusterNode, LinkedHashMap<K, Boolean>> mappings, Map<K, V> locVals,
-        long topVer, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped) {
+    private boolean map(KeyCacheObject key,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings, Map<K, V> locVals,
+        long topVer,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped) {
         GridDhtCacheAdapter<K, V> colocated = cache();
 
         boolean remote = false;
@@ -418,7 +408,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
 
         while (true) {
-            GridCacheEntryEx<K, V> entry = null;
+            GridCacheEntryEx entry = null;
 
             try {
                 if (!reload && allowLocRead) {
@@ -430,7 +420,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (entry != null) {
                             boolean isNew = entry.isNewLocked();
 
-                            V v = entry.innerGet(null,
+                            CacheObject v = entry.innerGet(null,
                                 /*swap*/true,
                                 /*read-through*/false,
                                 /*fail-fast*/true,
@@ -451,14 +441,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
-                                K key0 = key;
-
-                                if (cctx.portableEnabled()) {
-                                    v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
-                                    key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-                                }
-
-                                locVals.put(key0, v);
+                                cctx.addResult(locVals, key, v, skipVals, false, deserializePortable, true);
 
                                 return false;
                             }
@@ -473,19 +456,19 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 remote = !node.isLocal();
 
-                LinkedHashMap<K, Boolean> keys = mapped.get(node);
+                LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);
 
                 if (keys != null && keys.containsKey(key)) {
                     if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                        onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " + MAX_REMAP_CNT
-                            + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
+                        onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                            MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
                             U.toShortString(node) + ", mappings=" + mapped + ']'));
 
                         return false;
                     }
                 }
 
-                LinkedHashMap<K, Boolean> old = mappings.get(node);
+                LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
 
                 if (old == null)
                     mappings.put(node, old = new LinkedHashMap<>(3, 1f));
@@ -526,33 +509,16 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param infos Entry infos.
      * @return Result map.
      */
-    private Map<K, V> createResultMap(Collection<GridCacheEntryInfo<K, V>> infos) {
+    private Map<K, V> createResultMap(Collection<GridCacheEntryInfo> infos) {
         int keysSize = infos.size();
 
-        try {
-            if (keysSize != 0) {
-                Map<K, V> map = new GridLeanMap<>(keysSize);
+        if (keysSize != 0) {
+            Map<K, V> map = new GridLeanMap<>(keysSize);
 
-                for (GridCacheEntryInfo<K, V> info : infos) {
-                    info.unmarshalValue(cctx, cctx.deploy().globalLoader());
+            for (GridCacheEntryInfo info : infos)
+                cctx.addResult(map, info.key(), info.value(), skipVals, false, deserializePortable, false);
 
-                    K key = info.key();
-                    V val = info.value();
-
-                    if (cctx.portableEnabled()) {
-                        key = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
-                        val = (V)cctx.unwrapPortableIfNeeded(val, !deserializePortable);
-                    }
-
-                    map.put(key, val);
-                }
-
-                return map;
-            }
-        }
-        catch (IgniteCheckedException e) {
-            // Fail.
-            onDone(e);
+            return map;
         }
 
         return Collections.emptyMap();
@@ -579,7 +545,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         /** Keys. */
         @GridToStringInclude
-        private LinkedHashMap<K, Boolean> keys;
+        private LinkedHashMap<KeyCacheObject, Boolean> keys;
 
         /** Topology version on which this future was mapped. */
         private long topVer;
@@ -589,7 +555,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param keys Keys.
          * @param topVer Topology version.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<K, Boolean> keys, long topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, long topVer) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
@@ -612,7 +578,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /**
          * @return Keys.
          */
-        public Collection<K> keys() {
+        public Collection<KeyCacheObject> keys() {
             return keys.keySet();
         }
 
@@ -651,7 +617,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param res Result callback.
          */
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        void onResult(final GridNearGetResponse<K, V> res) {
+        void onResult(final GridNearGetResponse res) {
             final Collection<Integer> invalidParts = res.invalidPartitions();
 
             // If error happened on remote node, fail the whole future.
@@ -689,8 +655,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         long topVer = fut.get();
 
                         // This will append new futures to compound list.
-                        map(F.view(keys.keySet(), new P1<K>() {
-                            @Override public boolean apply(K key) {
+                        map(F.view(keys.keySet(),  new P1<KeyCacheObject>() {
+                            @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
                         }), F.t(node, keys), topVer);
