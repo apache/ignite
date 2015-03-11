@@ -565,20 +565,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     map,
                     subjId);
 
-                if (task != null) {
-                    // Check if someone reuses the same task instance by walking
-                    // through the "tasks" map
-                    for (GridTaskWorker worker : tasks.values()) {
-                        ComputeTask workerTask = worker.getTask();
-
-                        // Check that the same instance of task is being used by comparing references.
-                        if (workerTask != null && task == workerTask)
-                            U.warn(log, "Most likely the same task instance is being executed. " +
-                                "Please avoid executing the same task instances in parallel because " +
-                                "they may have concurrent resources access and conflict each other: " + task);
-                    }
-                }
-
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
