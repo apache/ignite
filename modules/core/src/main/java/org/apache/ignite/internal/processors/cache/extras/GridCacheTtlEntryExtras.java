@@ -49,7 +49,7 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesTtlEntryExtras<K>(attrData, ttl, expireTime) : this;
+        return attrData != null ? new GridCacheAttributesTtlEntryExtras(attrData, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

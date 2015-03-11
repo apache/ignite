@@ -55,7 +55,7 @@ public class GridCacheObsoleteTtlEntryExtras extends GridCacheEntryExtrasAdapter
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesObsoleteTtlEntryExtras<K>(attrData, obsoleteVer, ttl,
+        return attrData != null ? new GridCacheAttributesObsoleteTtlEntryExtras(attrData, obsoleteVer, ttl,
             expireTime) : this;
     }
 

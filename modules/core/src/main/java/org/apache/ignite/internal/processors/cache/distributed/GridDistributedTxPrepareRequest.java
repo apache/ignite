@@ -421,54 +421,60 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
+                if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection("reads", reads, MessageCollectionItemType.MSG))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeCollection("reads", reads, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeInt("txSize", txSize))
+                if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
             case 23:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
                 if (!writer.writeCollection("writes", writes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -563,15 +569,19 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 16:
-                sys = reader.readBoolean("sys");
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
+
                 reader.incrementState();
 
             case 17:
-                threadId = reader.readLong("threadId");
+                reads = reader.readCollection("reads", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -579,7 +589,15 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 18:
-                timeout = reader.readLong("timeout");
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
+                threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -587,7 +605,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 20:
-                txNodesBytes = reader.readByteArray("txNodesBytes");
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -595,7 +613,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 21:
-                txSize = reader.readInt("txSize");
+                txNodesBytes = reader.readByteArray("txNodesBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -603,7 +621,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 22:
-                writeVer = reader.readMessage("writeVer");
+                txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -611,6 +629,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 23:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
                 writes = reader.readCollection("writes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -630,7 +656,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 25;
     }
 
     /** {@inheritDoc} */

@@ -302,7 +302,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeByte("plc", plc != null ? (byte) plc.ordinal() : -1))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();

@@ -72,7 +72,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
 
     /** Per-thread system transaction map. */
-    private final ConcurrentMap<TxThreadKey, IgniteInternalTx<K, V>> sysThreadMap = newMap();
+    private final ConcurrentMap<TxThreadKey, IgniteInternalTx> sysThreadMap = newMap();
 
     /** Per-ID map. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
@@ -357,7 +357,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public IgniteTxLocalAdapter newTx(
         boolean implicit,
         boolean implicitSingle,
-        @Nullable GridCacheContext<K, V> sysCacheCtx,
+        @Nullable GridCacheContext sysCacheCtx,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -677,8 +677,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return User transaction for current thread.
      */
-    @Nullable public IgniteInternalTx userTx(GridCacheContext<K, V> cctx) {
-        IgniteInternalTx<K, V> tx = tx(cctx, Thread.currentThread().getId());
+    @Nullable public IgniteInternalTx userTx(GridCacheContext cctx) {
+        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
 
         return tx != null && tx.user() && tx.state() == ACTIVE ? tx : null;
     }
@@ -696,7 +696,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Transaction for thread with given ID.
      */
     @SuppressWarnings({"unchecked"})
-    private <T> T tx(GridCacheContext<K, V> cctx, long threadId) {
+    private <T> T tx(GridCacheContext cctx, long threadId) {
         if (cctx == null || !cctx.system())
             return (T)threadMap.get(threadId);
 
@@ -1406,7 +1406,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @param tx Transaction to clear.
      */
-    private void clearThreadMap(IgniteInternalTx<K, V> tx) {
+    private void clearThreadMap(IgniteInternalTx tx) {
         if (tx.local() && !tx.dht()) {
             if (!tx.system())
                 threadMap.remove(tx.threadId(), tx);
@@ -1416,8 +1416,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (cacheId != null)
                     sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
                 else {
-                    for (Iterator<IgniteInternalTx<K, V>> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
-                        IgniteInternalTx<K, V> txx = it.next();
+                    for (Iterator<IgniteInternalTx> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
+                        IgniteInternalTx txx = it.next();
 
                         if (tx == txx) {
                             it.remove();
