@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -110,7 +109,7 @@ public class HadoopIgfsUtils {
         // First check for any nested IOException; if exists - re-throw it.
         if (e.hasCause(IOException.class))
             return e.getCause(IOException.class);
-        else if (e.hasCause(IgfsFileNotFoundException.class))
+        else if (e.hasCause(IgfsPathNotFoundException.class))
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
         else if (e.hasCause(IgfsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);

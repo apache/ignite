@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -39,6 +40,9 @@ import static org.junit.Assert.*;
  * Test for optimized object streams.
  */
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final MarshallerContext CTX = new MarshallerContextTestImpl();
+
     /**
      * @throws Exception If failed.
      */
@@ -216,7 +220,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testRequireSerializable() throws Exception {
         try {
-            new OptimizedMarshaller(true, null, null, 0).marshal(new Object());
+            OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+            marsh.setContext(CTX);
+
+            marsh.marshal(new Object());
 
             assert false : "Exception not thrown.";
         }
@@ -242,7 +250,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final OptimizedMarshaller marsh = new OptimizedMarshaller(false, null, null, 5);
+        final OptimizedMarshaller marsh = new OptimizedMarshaller();
+
+        marsh.setContext(CTX);
+
+        marsh.setPoolSize(5);
 
         try {
             multithreaded(new Callable<Object>() {
@@ -289,9 +301,13 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         obj2.longArr = new Long[] {500L, 600L};
         obj2.doubleArr = new Double[] {500.0d, 600.0d};
 
-        TestObject[] arr = new TestObject[] {obj1, obj2};
+        TestObject[] arr = {obj1, obj2};
 
         assertArrayEquals(arr, (Object[])marshalUnmarshal(arr));
+
+        String[] strArr = {"str1", "str2"};
+
+        assertArrayEquals(strArr, (String[])marshalUnmarshal(strArr));
     }
 
     /**
@@ -979,6 +995,20 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    public void testThrowable() throws Exception {
+        Throwable t = new Throwable("Throwable");
+
+        assertEquals(t.getMessage(), ((Throwable)marshalUnmarshal(t)).getMessage());
+
+        CacheFlagException flagEx = new CacheFlagException(CacheFlag.CLONE, CacheFlag.READ);
+
+        assertEquals(flagEx.flags(), ((CacheFlagException)marshalUnmarshal(flagEx)).flags());
+    }
+
+    /**
      * Marshals and unmarshals object.
      *
      * @param obj Original object.
@@ -992,7 +1022,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
-            out.requireSerializable(true);
+            out.context(CTX, null, true);
 
             out.writeObject(obj);
 
@@ -1000,7 +1030,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.classLoader(getClass().getClassLoader());
+            in.context(CTX, null, getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
 
@@ -1052,7 +1082,8 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(0);
+            out.writeInt(0);
+            out.writeInt(200);
             out.writeObject("str");
         }
 

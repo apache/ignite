@@ -118,22 +118,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             assert atomicsCache != null;
 
-            dsView = atomicsCache.projection(GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
+            dsView = atomicsCache.flagsOn(CLONE);
 
-            cntDownLatchView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
+            cntDownLatchView = atomicsCache.flagsOn(CLONE);
 
-            atomicLongView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
+            atomicLongView = atomicsCache.flagsOn(CLONE);
 
-            atomicRefView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
+            atomicRefView = atomicsCache.flagsOn(CLONE);
 
-            atomicStampedView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
+            atomicStampedView = atomicsCache.flagsOn(CLONE);
 
-            seqView = atomicsCache.projection
-                (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+            seqView = atomicsCache.flagsOn(CLONE);
 
             dsCacheCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
         }
@@ -992,26 +987,28 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      * @param tx Committed transaction.
      */
-    public <K, V> void onTxCommitted(IgniteInternalTx<K, V> tx) {
+    public <K, V> void onTxCommitted(IgniteInternalTx tx) {
         if (dsCacheCtx == null)
             return;
 
         if (!dsCacheCtx.isDht() && tx.internal() && (!dsCacheCtx.isColocated() || dsCacheCtx.isReplicated())) {
-            Collection<IgniteTxEntry<K, V>> entries = tx.writeEntries();
+            Collection<IgniteTxEntry> entries = tx.writeEntries();
 
             if (log.isDebugEnabled())
                 log.debug("Committed entries: " + entries);
 
-            for (IgniteTxEntry<K, V> entry : entries) {
+            for (IgniteTxEntry entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
-                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
-                    GridCacheInternal key = (GridCacheInternal)entry.key();
+                if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key().internal()) {
+                    GridCacheInternal key = entry.key().value(entry.context().cacheObjectContext(), false);
 
-                    if (entry.value() instanceof GridCacheCountDownLatchValue) {
+                    Object val0 = CU.value(entry.value(), entry.context(), false);
+
+                    if (val0 instanceof GridCacheCountDownLatchValue) {
                         // Notify latch on changes.
                         GridCacheRemovable latch = dsMap.get(key);
 
-                        GridCacheCountDownLatchValue val = (GridCacheCountDownLatchValue)entry.value();
+                        GridCacheCountDownLatchValue val = (GridCacheCountDownLatchValue)val0;
 
                         if (latch instanceof GridCacheCountDownLatchEx) {
                             GridCacheCountDownLatchEx latch0 = (GridCacheCountDownLatchEx)latch;
@@ -1035,8 +1032,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 }
 
                 // Check deleted GridCacheInternal keys.
-                if (entry.op() == DELETE && entry.key() instanceof GridCacheInternal) {
-                    GridCacheInternal key = (GridCacheInternal)entry.key();
+                if (entry.op() == DELETE && entry.key().internal()) {
+                    GridCacheInternal key = entry.key().value(entry.context().cacheObjectContext(), false);
 
                     // Entry's val is null if entry deleted.
                     GridCacheRemovable obj = dsMap.remove(key);
@@ -1262,6 +1259,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      */
     static class CollectionInfo implements Externalizable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private boolean collocated;
 
         /** */
@@ -1305,6 +1305,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      */
     static class QueueInfo extends CollectionInfo {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private int cap;
 

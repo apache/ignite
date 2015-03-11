@@ -22,31 +22,33 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Cache extras.
  */
-public interface GridCacheEntryExtras<K> {
+public interface GridCacheEntryExtras {
     /**
      * @return Attributes data.
      */
-    @Nullable public GridLeanMap<String, Object> attributesData();
+    @Nullable public GridLeanMap<UUID, Object> attributesData();
 
     /**
      * @param attrData Attributes data.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData);
+    public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData);
 
     /**
      * @return MVCC.
      */
-    @Nullable public GridCacheMvcc<K> mvcc();
+    @Nullable public GridCacheMvcc mvcc();
 
     /**
      * @param mvcc NVCC.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc);
+    public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc);
 
     /**
      * @return Obsolete version.
@@ -57,7 +59,7 @@ public interface GridCacheEntryExtras<K> {
      * @param obsoleteVer Obsolete version.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer);
+    public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer);
 
     /**
      * @return TTL.
@@ -74,7 +76,7 @@ public interface GridCacheEntryExtras<K> {
      * @param expireTime Expire time.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime);
+    public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime);
 
     /**
      * @return Extras size.

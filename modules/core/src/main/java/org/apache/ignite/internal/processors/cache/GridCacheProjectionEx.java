@@ -49,7 +49,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *
      * @return Filter on which this projection is based on.
      */
-    @Nullable public IgnitePredicate<Cache.Entry<K, V>> predicate();
+    @Nullable public CacheEntryPredicate predicate();
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -62,8 +62,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V put(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -75,8 +75,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -89,8 +89,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    public boolean putx(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -102,8 +102,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Store DR data.
@@ -112,7 +112,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void putAllConflict(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException;
 
     /**
      * Store DR data asynchronously.
@@ -122,7 +122,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> putAllConflictAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
+        throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -133,8 +134,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V remove(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -144,8 +145,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Removes DR data.
@@ -154,7 +155,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Removes DR data asynchronously.
@@ -164,7 +165,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -175,8 +176,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    public boolean removex(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -186,8 +187,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -212,7 +213,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -237,7 +238,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If replace operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -258,7 +259,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException;
+    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -282,7 +283,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val);
+    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
 
     /**
      * @param key Key to retrieve the value for.
@@ -292,8 +293,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V get(K key, @Nullable GridCacheEntryEx entry, boolean deserializePortable,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Gets value from cache. Will go to primary node even if this is a backup.
@@ -372,7 +373,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<Cache.Entry<K, V>> entrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
      * Gets set of primary entries containing internal entries.
@@ -380,7 +381,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Primary entry set.
      */
-    public Set<Cache.Entry<K, V>> primaryEntrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public Set<Cache.Entry<K, V>> primaryEntrySetx(CacheEntryPredicate... filter);
 
     /**
      * @return {@link ExpiryPolicy} associated with this projection.

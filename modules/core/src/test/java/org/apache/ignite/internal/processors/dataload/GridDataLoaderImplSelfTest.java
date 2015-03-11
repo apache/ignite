@@ -128,13 +128,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            Marshaller marsh = g0.configuration().getMarshaller();
-
-            if (marsh instanceof OptimizedMarshaller)
-                assertTrue(((OptimizedMarshaller)marsh).isRequireSerializable());
-            else
-                fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
-
             IgniteDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.nio.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
+import java.util.*;
 
 /**
  * Mock nio session with disabled functionality for testing parser.
@@ -110,17 +111,17 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
 
     /** {@inheritDoc} */
     @Override public <T> T meta(int key) {
-        return meta(String.valueOf(key));
+        return meta(new UUID(key, key));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T addMeta(int key, T val) {
-        return addMeta(String.valueOf(key), val);
+        return addMeta(new UUID(key, key), val);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T removeMeta(int key) {
-        return removeMeta(String.valueOf(key));
+        return removeMeta(new UUID(key, key));
     }
 
     /** {@inheritDoc} */

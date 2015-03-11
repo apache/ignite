@@ -47,6 +47,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 /**
  * Test fo regular igfs operations.
  */
+@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
@@ -692,25 +693,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeleteDirectoryNotEmpty() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        // We have different results for dual and non-dual modes.
-        if (dual)
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    igfs.delete(SUBDIR, false);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                igfs.delete(SUBDIR, false);
 
-                    return null;
-                }
-            }, IgniteCheckedException.class, "Failed to delete the path due to secondary file system exception:");
-        else {
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    igfs.delete(SUBDIR, false);
-
-                    return null;
-                }
-            }, IgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
-                   "recursive flag is not set)");
-        }
+                return null;
+            }
+        }, IgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
+            "recursive flag is not set)");
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
     }
@@ -878,7 +868,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsFileNotFoundException.class, "File not found: " + FILE);
+        }, IgfsPathNotFoundException.class, "File not found: " + FILE);
     }
 
     /**
@@ -1911,6 +1901,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param createCnt How many file creations to perform.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
@@ -2444,14 +2435,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param igfs IGFS.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public static void clear(IgniteFileSystem igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgfsPath, IgfsFileWorker> workerMap =
-            (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
+        Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
 
         for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();

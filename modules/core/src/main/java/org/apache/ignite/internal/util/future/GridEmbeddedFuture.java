@@ -29,6 +29,9 @@ import org.apache.ignite.lang.*;
  */
 @SuppressWarnings({"NullableProblems"})
 public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Embedded future to wait for. */
     private IgniteInternalFuture<B> embedded;
 

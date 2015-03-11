@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -28,13 +27,9 @@ import java.util.concurrent.*;
 /**
  * Externalizable wrapper for {@link ExpiryPolicy}.
  */
-public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, OptimizedMarshallable {
+public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** */
     private ExpiryPolicy plc;
@@ -71,11 +66,6 @@ public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externali
         assert plc != null;
 
         this.plc = plc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

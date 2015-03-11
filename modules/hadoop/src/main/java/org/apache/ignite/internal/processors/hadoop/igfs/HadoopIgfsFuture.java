@@ -24,6 +24,9 @@ import org.jetbrains.annotations.*;
  * IGFS client future that holds response parse closure.
  */
 public class HadoopIgfsFuture<T> extends GridFutureAdapter<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Output buffer. */
     private byte[] outBuf;
 

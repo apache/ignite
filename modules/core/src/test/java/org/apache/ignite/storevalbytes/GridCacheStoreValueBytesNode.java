@@ -114,8 +114,6 @@ public class GridCacheStoreValueBytesNode {
 
         cacheCfg.setCacheMode(PARTITIONED);
 
-        cacheCfg.setStoreValueBytes(storeValBytes);
-
         cacheCfg.setBackups(1);
 
         if (nearOnly) {
