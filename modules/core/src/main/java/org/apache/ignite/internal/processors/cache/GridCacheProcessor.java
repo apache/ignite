@@ -1244,31 +1244,63 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request to check.
      * @return {@code True} if change request was registered to apply.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public boolean dynamicCacheRegistered(DynamicCacheChangeRequest req) {
         DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
-        return desc != null && desc.deploymentId().equals(req.deploymentId()) && desc.cancelled() != req.isStart();
+        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
+            if (req.isStart() || req.isClientStart())
+                return !desc.cancelled();
+            else
+                return desc.cancelled();
+        }
+
+        return false;
     }
 
     /**
      * @param req Start request.
      */
     public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
-        assert req.isStart();
+        assert req.isStart() || req.isClientStart();
 
         IgnitePredicate nodeFilter = req.startCacheConfiguration().getNodeFilter();
 
-        if (nodeFilter.apply(ctx.discovery().localNode())) {
-            GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
+        ClusterNode locNode = ctx.discovery().localNode();
 
-            cacheCtx.dynamicDeploymentId(req.deploymentId());
+        if (req.isStart()) {
+            if (nodeFilter.apply(locNode)) {
+                GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
 
-            sharedCtx.addCacheContext(cacheCtx);
+                cacheCtx.dynamicDeploymentId(req.deploymentId());
 
-            startCache(cacheCtx.cache());
-            onKernalStart(cacheCtx.cache());
+                sharedCtx.addCacheContext(cacheCtx);
 
-            caches.put(cacheCtx.name(), cacheCtx.cache());
+                startCache(cacheCtx.cache());
+                onKernalStart(cacheCtx.cache());
+
+                caches.put(cacheCtx.name(), cacheCtx.cache());
+            }
+        }
+        else if (req.isClientStart()) {
+            if (req.clientNodeId().equals(locNode.id())) {
+                if (nodeFilter.apply(locNode)) {
+                    U.warn(log, "Requested to start client cache on affinity node (will ignore): " + req);
+
+                    return;
+                }
+
+                GridCacheContext cacheCtx = createCache(req.startCacheConfiguration());
+
+                cacheCtx.dynamicDeploymentId(req.deploymentId());
+
+                sharedCtx.addCacheContext(cacheCtx);
+
+                startCache(cacheCtx.cache());
+                onKernalStart(cacheCtx.cache());
+
+                caches.put(cacheCtx.name(), cacheCtx.cache());
+            }
         }
     }
 
@@ -1276,7 +1308,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Stop request.
      */
     public void prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert !req.isStart();
+        assert req.isStop();
 
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(req.cacheName());
@@ -1306,7 +1338,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(DynamicCacheChangeRequest req) {
-        if (req.isStart()) {
+        if (req.isStart() || req.isClientStart()) {
             GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
 
             if (cache != null)
@@ -1474,19 +1506,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (req.isStart()) {
-                    if (caches.containsKey(req.cacheName())) {
-                        fut.onDone(new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + req.cacheName())));
+                    if (registeredCaches.containsKey(req.cacheName())) {
+                        fut.onDone(new IgniteCheckedException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + req.cacheName()));
                     }
                 }
-                else {
-                    GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
+                else if (!req.isClientStart()) {
+                    DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
-                    if (cache == null)
+                    if (desc == null)
                         // No-op.
                         fut.onDone();
                     else {
-                        IgniteUuid dynamicDeploymentId = cache.context().dynamicDeploymentId();
+                        IgniteUuid dynamicDeploymentId = desc.deploymentId();
 
                         assert dynamicDeploymentId != null;
 
@@ -2032,10 +2064,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
 
             if (cache == null) {
-                if (!registeredCaches.containsKey(name))
+                DynamicCacheDescriptor desc = registeredCaches.get(name);
+
+                if (desc == null || desc.cancelled())
                     throw new IllegalArgumentException("Cache is not started: " + name);
 
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(), null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(),
+                    desc.cacheConfiguration(), null);
+
+                req.deploymentId(desc.deploymentId());
 
                 F.first(initiateCacheChanges(F.asList(req))).get();
 

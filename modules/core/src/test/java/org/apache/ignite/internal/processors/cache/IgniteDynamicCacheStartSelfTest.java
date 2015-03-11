@@ -120,6 +120,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             try {
                 fut.get();
 
+                info("Succeeded: " + System.identityHashCode(fut));
+
                 succeeded++;
             }
             catch (IgniteCheckedException e) {
@@ -178,6 +180,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (IgniteInternalFuture<?> fut : futs) {
             try {
                 fut.get();
+
+                info("Succeeded: " + System.identityHashCode(fut));
 
                 succeeded++;
             }
@@ -389,7 +393,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 else
                     GridTestUtils.assertThrows(log, new Callable<Object>() {
                         @Override public Object call() throws Exception {
-                            return kernal0.jcache(DYNAMIC_CACHE_NAME);
+                            return kernal0.cache(DYNAMIC_CACHE_NAME);
                         }
                     }, IllegalArgumentException.class, null);
             }
@@ -423,5 +427,50 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 return kernal.context().cache().dynamicStartCache(ccfg).get();
             }
         }, IgniteCheckedException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testClientCache() throws Exception {
+        try {
+            testAttribute = false;
+
+            startGrid(nodeCount());
+
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+            CacheConfiguration ccfg = new CacheConfiguration();
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+            ccfg.setName(DYNAMIC_CACHE_NAME);
+
+            ccfg.setNodeFilter(NODE_FILTER);
+
+            kernal.context().cache().dynamicStartCache(ccfg).get();
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    IgniteKernal ignite = (IgniteKernal)grid(nodeCount());
+
+                    return ignite.cache(DYNAMIC_CACHE_NAME);
+                }
+            }, IllegalArgumentException.class, null);
+
+            GridCachePartitionExchangeManager.stop = true;
+
+            // Should obtain client cache on new node.
+            IgniteCache<Object, Object> clientCache = ignite(nodeCount()).jcache(DYNAMIC_CACHE_NAME);
+
+            clientCache.put("1", "1");
+
+            for (int g = 0; g < nodeCount() + 1; g++)
+                assertEquals("1", ignite(g).jcache(DYNAMIC_CACHE_NAME).get("1"));
+
+            kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
+        }
+        finally {
+            stopGrid(nodeCount());
+        }
     }
 }

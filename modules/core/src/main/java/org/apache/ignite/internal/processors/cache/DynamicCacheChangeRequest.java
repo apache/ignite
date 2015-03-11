@@ -71,10 +71,12 @@ public class DynamicCacheChangeRequest implements Serializable {
      * Constructor creates near cache start request.
      *
      * @param clientNodeId Client node ID.
+     * @param startCfg Start cache configuration.
      * @param nearCacheCfg Near cache configuration.
      */
-    public DynamicCacheChangeRequest(UUID clientNodeId, NearCacheConfiguration nearCacheCfg) {
+    public DynamicCacheChangeRequest(UUID clientNodeId, CacheConfiguration startCfg, NearCacheConfiguration nearCacheCfg) {
         this.clientNodeId = clientNodeId;
+        this.startCfg = startCfg;
         this.nearCacheCfg = nearCacheCfg;
     }
 
@@ -96,7 +98,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a start request.
      */
     public boolean isStart() {
-        return startCfg != null;
+        return clientNodeId == null && startCfg != null;
     }
 
     /**
@@ -104,6 +106,13 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean isClientStart() {
         return clientNodeId != null;
+    }
+
+    /**
+     * @return {@code True} if this is a stop request.
+     */
+    public boolean isStop() {
+        return clientNodeId == null && startCfg == null;
     }
 
     /**

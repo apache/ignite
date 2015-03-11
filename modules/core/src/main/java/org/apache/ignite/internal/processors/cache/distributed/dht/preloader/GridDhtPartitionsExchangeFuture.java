@@ -427,6 +427,8 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
+            U.debug(log, "Initializing exchange future: " + reqs);
+
             if (isDone())
                 return;
 
@@ -578,7 +580,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
      */
     private void startCaches() throws IgniteCheckedException {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (req.isStart())
+            if (req.isStart() || req.isClientStart())
                 ctx.cache().prepareCacheStart(req);
         }
     }
@@ -588,7 +590,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
      */
     private void stopCaches() {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (!req.isStart())
+            if (req.isStop())
                 ctx.cache().prepareCacheStop(req);
         }
     }
@@ -689,8 +691,14 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
 
             if (!F.isEmpty(reqs)) {
                 for (DynamicCacheChangeRequest req : reqs) {
-                    if (req.isStart() && F.eq(cacheCtx.name(), req.cacheName()))
-                        cacheCtx.preloader().onInitialExchangeComplete(err);
+                    if (F.eq(cacheCtx.name(), req.cacheName())) {
+                        if (req.isStart())
+                            cacheCtx.preloader().onInitialExchangeComplete(err);
+                        else if (req.isClientStart()) {
+                            if (req.clientNodeId().equals(ctx.localNodeId()))
+                                cacheCtx.preloader().onInitialExchangeComplete(err);
+                        }
+                    }
                 }
             }
         }
