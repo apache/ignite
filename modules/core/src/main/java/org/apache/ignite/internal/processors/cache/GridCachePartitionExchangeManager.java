@@ -99,8 +99,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private ExchangeFutureSet exchFuts = new ExchangeFutureSet();
 
-    public static volatile boolean stop = false;
-
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -118,7 +116,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 final ClusterNode n = e.eventNode();
 
                 GridDhtPartitionExchangeId exchId = null;
-                GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
+                GridDhtPartitionsExchangeFuture exchFut = null;
 
                 if (e.type() != EVT_DISCOVERY_CUSTOM_EVT) {
                     assert !loc.id().equals(n.id());
@@ -289,13 +287,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            for (GridCacheContext cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(null);
         }
         catch (IgniteFutureTimeoutCheckedException e) {
             IgniteCheckedException err = new IgniteCheckedException("Timed out waiting for exchange future: " + fut, e);
 
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            for (GridCacheContext cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(err);
 
             throw err;
@@ -533,7 +531,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws IgniteCheckedException {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, AffinityTopologyVersion.NONE);
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
         }
@@ -559,7 +557,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id, cctx.versions().last());
 
-        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal())
                 m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
         }
@@ -634,7 +632,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (fut.onAdded()) {
             exchWorker.addFuture(fut);
 
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
+            for (GridCacheContext cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onExchangeFutureAdded();
 
             return true;
@@ -658,7 +656,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal()) {
                         GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -695,7 +693,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal()) {
                         GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -805,7 +803,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 try {
                     boolean preloadFinished = true;
 
-                    for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                         preloadFinished &= cacheCtx.preloader().syncFuture().isDone();
 
                         if (!preloadFinished)
@@ -861,7 +859,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Just pick first worker to do this, so we don't
                             // invoke topology callback more than once for the
                             // same event.
-                            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                 if (cacheCtx.isLocal())
                                     continue;
 
@@ -894,7 +892,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                             long delay = cacheCtx.config().getPreloadPartitionedDelay();
 
                             GridDhtPreloaderAssignments<K, V> assigns = null;
@@ -991,7 +989,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    private class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture> {
+    private static class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -1904,21 +1904,22 @@ public class IgnitionEx {
          * @return Marshaller system cache configuration.
          */
         private static CacheConfiguration marshallerSystemCache(boolean client) {
-            CacheConfiguration cache = new CacheConfiguration();
+            if (!client) {
+                CacheConfiguration cache = new CacheConfiguration();
 
-            cache.setName(CU.MARSH_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
-            cache.setQueryIndexEnabled(false);
-            cache.setPreloadMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+                cache.setName(CU.MARSH_CACHE_NAME);
+                cache.setCacheMode(REPLICATED);
+                cache.setAtomicityMode(TRANSACTIONAL);
+                cache.setSwapEnabled(false);
+                cache.setQueryIndexEnabled(false);
+                cache.setPreloadMode(SYNC);
+                cache.setWriteSynchronizationMode(FULL_SYNC);
+                cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
 
-            if (client)
-                cache.setDistributionMode(CLIENT_ONLY);
+                return cache;
+            }
 
-            return cache;
+            return null;
         }
 
         /**

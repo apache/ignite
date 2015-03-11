@@ -671,9 +671,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
-
                 writer.incrementState();
 
             case 21:
@@ -849,8 +846,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 20:
-                topVer = reader.readLong("topVer");
-
                 if (!reader.isLastRead())
                     return false;
 

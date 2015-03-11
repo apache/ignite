@@ -179,7 +179,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName);
+        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName, null);
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 

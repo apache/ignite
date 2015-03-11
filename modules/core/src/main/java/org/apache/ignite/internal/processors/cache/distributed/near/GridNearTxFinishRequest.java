@@ -201,9 +201,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
-
                 writer.incrementState();
 
         }
@@ -263,8 +260,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 25:
-                topVer = reader.readLong("topVer");
-
                 if (!reader.isLastRead())
                     return false;
 

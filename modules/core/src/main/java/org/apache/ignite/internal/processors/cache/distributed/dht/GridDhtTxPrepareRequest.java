@@ -410,8 +410,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 37:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
 
                 writer.incrementState();
 
@@ -528,8 +526,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 37:
-                topVer = reader.readLong("topVer");
-
                 if (!reader.isLastRead())
                     return false;
 

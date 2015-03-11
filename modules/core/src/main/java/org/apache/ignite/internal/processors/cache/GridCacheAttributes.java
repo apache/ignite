@@ -242,13 +242,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Flag indicating if cached values should be additionally stored in serialized form.
-     */
-    public boolean storeValueBytes() {
-        return ccfg.isStoreValueBytes();
-    }
-
-    /**
      * @return Preload batch size.
      */
     public int preloadBatchSize() {

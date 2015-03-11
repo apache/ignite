@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.jetbrains.annotations.*;
@@ -108,7 +109,8 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param cacheName Cache name.
      * @return Cache object context.
      */
-    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName);
+    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
+        @Nullable CacheConfiguration ccfg);
 
     /**
      * @param ctx Cache context.

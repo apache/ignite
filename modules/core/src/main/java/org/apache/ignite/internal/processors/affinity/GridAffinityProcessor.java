@@ -420,7 +420,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(n, cacheName));
+        return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(n, cacheName, null));
     }
 
     /**

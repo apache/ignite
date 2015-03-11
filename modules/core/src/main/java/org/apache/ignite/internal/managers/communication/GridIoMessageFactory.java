@@ -580,7 +580,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 89:
+            case 106:
                 msg = new AffinityTopologyVersion();
 
                 break;

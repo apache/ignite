@@ -614,7 +614,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final GridNearTxLocal tx,
         final long threadId,
         final GridCacheVersion ver,
-        AffinityTopologyVersion topVer,
+        final AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
         final long timeout,

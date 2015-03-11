@@ -558,7 +558,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void startCaches() throws IgniteCheckedException {
         for (DynamicCacheChangeRequest req : reqs) {
             if (req.isStart() || req.isClientStart())
-                ctx.cache().prepareCacheStart(req);
+                cctx.cache().prepareCacheStart(req);
         }
     }
 
@@ -568,7 +568,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void stopCaches() {
         for (DynamicCacheChangeRequest req : reqs) {
             if (req.isStop())
-                ctx.cache().prepareCacheStop(req);
+                cctx.cache().prepareCacheStop(req);
         }
     }
 

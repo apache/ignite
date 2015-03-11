@@ -336,9 +336,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
-
                 writer.incrementState();
 
             case 14:
@@ -444,8 +441,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 13:
-                topVer = reader.readLong("topVer");
-
                 if (!reader.isLastRead())
                     return false;
 

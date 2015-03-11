@@ -1311,7 +1311,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, long topVer) {
+    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -1335,7 +1335,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer)
+    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert primary || backup;
 

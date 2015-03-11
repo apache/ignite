@@ -208,7 +208,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             topVer = top.topologyVersion();
 
-            MultiUpdateFuture fut = new MultiUpdateFuture(ctx.kernalContext(), topVer);
+            MultiUpdateFuture fut = new MultiUpdateFuture(topVer);
 
             MultiUpdateFuture old = multiTxFuts.putIfAbsent(lockId, fut);
 

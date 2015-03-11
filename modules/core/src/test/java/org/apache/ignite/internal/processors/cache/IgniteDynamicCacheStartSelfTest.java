@@ -457,8 +457,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 }
             }, IllegalArgumentException.class, null);
 
-            GridCachePartitionExchangeManager.stop = true;
-
             // Should obtain client cache on new node.
             IgniteCache<Object, Object> clientCache = ignite(nodeCount()).jcache(DYNAMIC_CACHE_NAME);
 

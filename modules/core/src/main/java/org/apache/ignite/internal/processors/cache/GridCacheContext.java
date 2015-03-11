@@ -840,7 +840,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache configuration for given cache instance.
      */
-    public CacheConfiguration<K, V> config() {
+    public CacheConfiguration config() {
         return cacheCfg;
     }
 
