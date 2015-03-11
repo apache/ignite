@@ -4124,9 +4124,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy() {
-        return F.iterator(
-            iterator(),
-
+        return F.iterator(iterator(),
             new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
                 private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(ctx.expiry());
 
