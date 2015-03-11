@@ -28,6 +28,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -103,6 +104,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** Dflt grid. */
     protected Ignite dfltIgnite;
 
+    /** */
+    private Map<String, CacheConfiguration[]> cacheCfgMap;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -145,10 +149,60 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+        if (cacheStartType() == CacheStartMode.STATIC)
+            super.beforeTestsStarted();
+        else {
+            cacheCfgMap = Collections.synchronizedMap(new HashMap<String, CacheConfiguration[]>());
+
+            if (cacheStartType() == CacheStartMode.NODES_THEN_CACHES) {
+                super.beforeTestsStarted();
+
+                for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
+                    Ignite ignite = IgnitionEx.grid(entry.getKey());
+
+                    for (CacheConfiguration cfg : entry.getValue())
+                        ignite.createCache(cfg);
+                }
+            }
+            else {
+                int cnt = gridCount();
+
+                assert cnt >= 1 : "At least one grid must be started";
+
+                for (int i = 0; i < cnt; i++) {
+                    Ignite ignite = startGrid(i);
+
+                    CacheConfiguration[] cacheCfgs = cacheCfgMap.get(ignite.name());
+
+                    for (CacheConfiguration cfg : cacheCfgs)
+                        ignite.createCache(cfg);
+                }
+
+                if (cnt > 1)
+                    checkTopology(cnt);
+
+                awaitPartitionMapExchange();
+            }
+
+            cacheCfgMap = null;
+        }
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        if (cacheCfgMap == null)
+            return super.startGrid(gridName, ctx);
+
+        IgniteConfiguration cfg = getConfiguration(gridName);
+
+        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+
+        cfg.setCacheConfiguration();
+
+        return IgnitionEx.start(optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */
@@ -4083,5 +4137,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(100);
+    }
+
+    /**
+     *
+     */
+    protected CacheStartMode cacheStartType() {
+        String mode = System.getProperty("cache.start.mode");
+
+        if (CacheStartMode.NODES_THEN_CACHES.name().equalsIgnoreCase(mode))
+            return CacheStartMode.NODES_THEN_CACHES;
+
+        if (CacheStartMode.ONE_BY_ONE.name().equalsIgnoreCase(mode))
+            return CacheStartMode.ONE_BY_ONE;
+
+        return CacheStartMode.STATIC;
+    }
+
+    /**
+     *
+     */
+    public enum CacheStartMode {
+        /** Start caches together nodes (not dynamically) */
+        STATIC,
+
+        /** */
+        NODES_THEN_CACHES,
+
+        /** */
+        ONE_BY_ONE
     }
 }
