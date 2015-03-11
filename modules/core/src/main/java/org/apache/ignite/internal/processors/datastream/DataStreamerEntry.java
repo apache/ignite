@@ -17,69 +17,82 @@
 
 package org.apache.ignite.internal.processors.datastream;
 
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
+import java.util.*;
 
 /**
  *
  */
-public class GridDataLoadResponse implements Message {
+public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long reqId;
+    @GridToStringInclude
+    protected KeyCacheObject key;
 
     /** */
-    private byte[] errBytes;
-
-    /** */
-    private boolean forceLocDep;
+    @GridToStringInclude
+    protected CacheObject val;
 
     /**
-     * @param reqId Request ID.
-     * @param errBytes Error bytes.
-     * @param forceLocDep Force local deployment.
+     *
      */
-    public GridDataLoadResponse(long reqId, byte[] errBytes, boolean forceLocDep) {
-        this.reqId = reqId;
-        this.errBytes = errBytes;
-        this.forceLocDep = forceLocDep;
-    }
-
-    /**
-     * {@code Externalizable} support.
-     */
-    public GridDataLoadResponse() {
+    public DataStreamerEntry() {
         // No-op.
     }
 
     /**
-     * @return Request ID.
+     * @param key Key.
+     * @param val Value.
      */
-    public long requestId() {
-        return reqId;
-    }
-
-    /**
-     * @return Error bytes.
-     */
-    public byte[] errorBytes() {
-        return errBytes;
-    }
-
-    /**
-     * @return {@code True} to force local deployment.
-     */
-    public boolean forceLocalDeployment() {
-        return forceLocDep;
+    public DataStreamerEntry(KeyCacheObject key, CacheObject val) {
+        this.key = key;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDataLoadResponse.class, this);
+    @Override public KeyCacheObject getKey() {
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject getValue() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject setValue(CacheObject val) {
+        CacheObject old = this.val;
+
+        this.val = val;
+
+        return old;
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @return Map entry unwrapping internal key and value.
+     */
+    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
+        return new Map.Entry<K, V>() {
+            @Override public K getKey() {
+                return key.value(ctx.cacheObjectContext(), false);
+            }
+
+            @Override public V setValue(V val) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public V getValue() {
+                return val != null ? val.<V>value(ctx.cacheObjectContext(), false) : null;
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -95,19 +108,13 @@ public class GridDataLoadResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeMessage("val", val))
                     return false;
 
                 writer.incrementState();
@@ -126,7 +133,7 @@ public class GridDataLoadResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
+                key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
                     return false;
@@ -134,15 +141,7 @@ public class GridDataLoadResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                forceLocDep = reader.readBoolean("forceLocDep");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                reqId = reader.readLong("reqId");
+                val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,11 +155,16 @@ public class GridDataLoadResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 63;
+        return 95;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStreamerEntry.class, this);
     }
 }

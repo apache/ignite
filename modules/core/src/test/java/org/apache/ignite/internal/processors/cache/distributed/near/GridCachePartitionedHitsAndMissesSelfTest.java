@@ -142,7 +142,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     private static void realTimePopulate(final Ignite g) {
         try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(null)) {
             // Sets max values to 1 so cache metrics have correct values.
-            ldr.perNodeParallelStreamOperations(1);
+            ldr.perNodeParallelOperations(1);
 
             // Count closure which increments a count on remote node.
             ldr.updater(new IncrementingUpdater());

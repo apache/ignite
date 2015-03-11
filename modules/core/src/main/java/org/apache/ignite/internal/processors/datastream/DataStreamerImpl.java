@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Data streamer implementation.
  */
 @SuppressWarnings("unchecked")
-public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
+public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
     /** Isolated updater. */
     private static final Updater ISOLATED_UPDATER = new IsolatedUpdater();
 
@@ -148,7 +148,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ;
+    private final DelayQueue<DataStreamerImpl<K, V>> flushQ;
 
     /** */
     private boolean skipStore;
@@ -156,7 +156,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     /** */
     private int maxRemapCnt = DFLT_MAX_REMAP_CNT;
 
-    /** Whether a warning at {@link IgniteDataStreamerImpl#allowOverwrite()} printed */
+    /** Whether a warning at {@link DataStreamerImpl#allowOverwrite()} printed */
     private static boolean isWarningPrinted;
 
     /**
@@ -164,10 +164,10 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * @param cacheName Cache name.
      * @param flushQ Flush queue.
      */
-    public IgniteDataStreamerImpl(
+    public DataStreamerImpl(
         final GridKernalContext ctx,
         @Nullable final String cacheName,
-        DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ
+        DelayQueue<DataStreamerImpl<K, V>> flushQ
     ) {
         assert ctx != null;
 
@@ -175,7 +175,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         this.cacheObjProc = ctx.cacheObjects();
 
         if (log == null)
-            log = U.logger(ctx, logRef, IgniteDataStreamerImpl.class);
+            log = U.logger(ctx, logRef, DataStreamerImpl.class);
 
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
@@ -217,13 +217,13 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         // Generate unique topic for this loader.
-        topic = TOPIC_DATALOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                assert msg instanceof GridDataLoadResponse;
+                assert msg instanceof DataStreamerResponse;
 
-                GridDataLoadResponse res = (GridDataLoadResponse)msg;
+                DataStreamerResponse res = (DataStreamerResponse)msg;
 
                 if (log.isDebugEnabled())
                     log.debug("Received data load response: " + res);
@@ -241,7 +241,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         if (log.isDebugEnabled())
             log.debug("Added response listener within topic: " + topic);
 
-        fut = new IgniteDataStreamerFuture(ctx, this);
+        fut = new DataStreamerFuture(this);
 
         publicFut = new IgniteFutureImpl<>(fut);
     }
@@ -320,7 +320,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         if (node == null)
             throw new IgniteException("Failed to get node for cache: " + cacheName);
 
-        updater = allow ? IgniteDataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        updater = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -351,12 +351,12 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
     }
 
     /** {@inheritDoc} */
-    @Override public int perNodeParallelStreamOperations() {
+    @Override public int perNodeParallelOperations() {
         return parallelOps;
     }
 
     /** {@inheritDoc} */
-    @Override public void perNodeParallelStreamOperations(int parallelOps) {
+    @Override public void perNodeParallelOperations(int parallelOps) {
         this.parallelOps = parallelOps;
     }
 
@@ -410,12 +410,12 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     keys.add(cacheObjProc.toCacheKeyObject(cacheObjCtx, entry.getKey(), true));
             }
 
-            Collection<? extends IgniteDataLoaderEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, IgniteDataLoaderEntry>() {
-                @Override public IgniteDataLoaderEntry apply(Entry<K, V> e) {
+            Collection<? extends DataStreamerEntry> entries0 = F.viewReadOnly(entries, new C1<Entry<K, V>, DataStreamerEntry>() {
+                @Override public DataStreamerEntry apply(Entry<K, V> e) {
                     KeyCacheObject key = cacheObjProc.toCacheKeyObject(cacheObjCtx, e.getKey(), true);
                     CacheObject val = cacheObjProc.toCacheObject(cacheObjCtx, e.getValue(), true);
 
-                    return new IgniteDataLoaderEntry(key, val);
+                    return new DataStreamerEntry(key, val);
                 }
             });
 
@@ -437,7 +437,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(KeyCacheObject key, CacheObject val) {
-        return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, val)));
+        return addDataInternal(Collections.singleton(new DataStreamerEntry(key, val)));
     }
 
     /**
@@ -445,14 +445,14 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * @return Future.
      */
     public IgniteFuture<?> removeDataInternal(KeyCacheObject key) {
-        return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key, null)));
+        return addDataInternal(Collections.singleton(new DataStreamerEntry(key, null)));
     }
 
     /**
      * @param entries Entries.
      * @return Future.
      */
-    public IgniteFuture<?> addDataInternal(Collection<? extends IgniteDataLoaderEntry> entries) {
+    public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
         enterBusy();
 
         GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
@@ -467,7 +467,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             if (entries.size() > 1) {
                 keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
 
-                for (IgniteDataLoaderEntry entry : entries)
+                for (DataStreamerEntry entry : entries)
                     keys.add(entry.getKey());
             }
 
@@ -502,7 +502,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
-        return addDataInternal(Collections.singleton(new IgniteDataLoaderEntry(key0, val0)));
+        return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
     }
 
     /** {@inheritDoc} */
@@ -517,18 +517,18 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * @param remaps Remaps count.
      */
     private void load0(
-        Collection<? extends IgniteDataLoaderEntry> entries,
+        Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
         @Nullable final Collection<KeyCacheObject> activeKeys,
         final int remaps
     ) {
         assert entries != null;
 
-        Map<ClusterNode, Collection<IgniteDataLoaderEntry>> mappings = new HashMap<>();
+        Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
 
         boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
-        for (IgniteDataLoaderEntry entry : entries) {
+        for (DataStreamerEntry entry : entries) {
             List<ClusterNode> nodes;
 
             try {
@@ -561,7 +561,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             }
 
             for (ClusterNode node : nodes) {
-                Collection<IgniteDataLoaderEntry> col = mappings.get(node);
+                Collection<DataStreamerEntry> col = mappings.get(node);
 
                 if (col == null)
                     mappings.put(node, col = new ArrayList<>());
@@ -570,7 +570,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             }
         }
 
-        for (final Map.Entry<ClusterNode, Collection<IgniteDataLoaderEntry>> e : mappings.entrySet()) {
+        for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
             final UUID nodeId = e.getKey().id();
 
             Buffer buf = bufMappings.get(nodeId);
@@ -582,7 +582,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     buf = old;
             }
 
-            final Collection<IgniteDataLoaderEntry> entriesForNode = e.getValue();
+            final Collection<DataStreamerEntry> entriesForNode = e.getValue();
 
             IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> t) {
@@ -590,7 +590,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                         t.get();
 
                         if (activeKeys != null) {
-                            for (IgniteDataLoaderEntry e : entriesForNode)
+                            for (DataStreamerEntry e : entriesForNode)
                                 activeKeys.remove(e.getKey());
 
                             if (activeKeys.isEmpty())
@@ -610,7 +610,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
                         if (cancelled) {
                             resFut.onDone(new IgniteCheckedException("Data streamer has been cancelled: " +
-                                IgniteDataStreamerImpl.this, e1));
+                                DataStreamerImpl.this, e1));
                         }
                         else if (remaps + 1 > maxRemapCnt) {
                             resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): "
@@ -866,7 +866,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteDataStreamerImpl.class, this);
+        return S.toString(DataStreamerImpl.class, this);
     }
 
     /** {@inheritDoc} */
@@ -883,7 +883,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
     /** {@inheritDoc} */
     @Override public int compareTo(Delayed o) {
-        return nextFlushTime() > ((IgniteDataStreamerImpl)o).nextFlushTime() ? 1 : -1;
+        return nextFlushTime() > ((DataStreamerImpl)o).nextFlushTime() ? 1 : -1;
     }
 
     /**
@@ -897,7 +897,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         private final Collection<IgniteInternalFuture<Object>> locFuts;
 
         /** Buffered entries. */
-        private List<IgniteDataLoaderEntry> entries;
+        private List<DataStreamerEntry> entries;
 
         /** */
         @GridToStringExclude
@@ -950,9 +950,9 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          * @throws IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
          */
-        @Nullable GridFutureAdapter<?> update(Iterable<IgniteDataLoaderEntry> newEntries,
+        @Nullable GridFutureAdapter<?> update(Iterable<DataStreamerEntry> newEntries,
             IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedCheckedException {
-            List<IgniteDataLoaderEntry> entries0 = null;
+            List<DataStreamerEntry> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
             synchronized (this) {
@@ -960,7 +960,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
                 curFut0.listen(lsnr);
 
-                for (IgniteDataLoaderEntry entry : newEntries)
+                for (DataStreamerEntry entry : newEntries)
                     entries.add(entry);
 
                 if (entries.size() >= bufSize) {
@@ -976,7 +976,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                 submit(entries0, curFut0);
 
                 if (cancelled)
-                    curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " + IgniteDataStreamerImpl.this));
+                    curFut0.onDone(new IgniteCheckedException("Data streamer has been cancelled: " + DataStreamerImpl.this));
             }
 
             return curFut0;
@@ -985,7 +985,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         /**
          * @return Fresh collection with some space for outgrowth.
          */
-        private List<IgniteDataLoaderEntry> newEntries() {
+        private List<DataStreamerEntry> newEntries() {
             return new ArrayList<>((int)(bufSize * 1.2));
         }
 
@@ -995,7 +995,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
-            List<IgniteDataLoaderEntry> entries0 = null;
+            List<DataStreamerEntry> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
             synchronized (this) {
@@ -1058,7 +1058,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          * @param curFut Current future.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private void submit(final Collection<IgniteDataLoaderEntry> entries, final GridFutureAdapter<Object> curFut)
+        private void submit(final Collection<DataStreamerEntry> entries, final GridFutureAdapter<Object> curFut)
             throws IgniteInterruptedCheckedException {
             assert entries != null;
             assert !entries.isEmpty();
@@ -1070,7 +1070,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new IgniteDataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, updater), false);
+                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, updater), false);
 
                 locFuts.add(fut);
 
@@ -1091,7 +1091,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
             }
             else {
                 try {
-                    for (IgniteDataLoaderEntry e : entries) {
+                    for (DataStreamerEntry e : entries) {
                         e.getKey().prepareMarshal(cacheObjCtx);
 
                         CacheObject val = e.getValue();
@@ -1147,7 +1147,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
 
                 reqs.put(reqId, (GridFutureAdapter<Object>)fut);
 
-                GridDataLoadRequest req = new GridDataLoadRequest(
+                DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicBytes,
                     cacheName,
@@ -1163,7 +1163,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     dep == null);
 
                 try {
-                    ctx.io().send(node, TOPIC_DATALOAD, req, PUBLIC_POOL);
+                    ctx.io().send(node, TOPIC_DATASTREAM, req, PUBLIC_POOL);
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
@@ -1207,7 +1207,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
         /**
          * @param res Response.
          */
-        void onResponse(GridDataLoadResponse res) {
+        void onResponse(DataStreamerResponse res) {
             if (log.isDebugEnabled())
                 log.debug("Received data load response: " + res);
 
@@ -1249,7 +1249,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
          *
          */
         void cancelAll() {
-            IgniteCheckedException err = new IgniteCheckedException("Data streamer has been cancelled: " + IgniteDataStreamerImpl.this);
+            IgniteCheckedException err = new IgniteCheckedException("Data streamer has been cancelled: " + DataStreamerImpl.this);
 
             for (IgniteInternalFuture<?> f : locFuts) {
                 try {
@@ -1320,7 +1320,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
                     }
 
                     if (cls0 == null || U.isJdk(cls0))
-                        cls0 = IgniteDataStreamerImpl.class;
+                        cls0 = DataStreamerImpl.class;
                 }
 
                 assert cls0 != null : "Failed to detect deploy class [objs=" + objs + ']';
@@ -1353,7 +1353,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * Isolated updater which only loads entry initial value.
      */
     private static class IsolatedUpdater implements Updater<KeyCacheObject, CacheObject>,
-        IgniteDataStreamerCacheUpdaters.InternalUpdater {
+        DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 

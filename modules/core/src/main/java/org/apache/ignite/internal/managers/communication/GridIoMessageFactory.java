@@ -385,12 +385,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 62:
-                msg = new GridDataLoadRequest();
+                msg = new DataStreamerRequest();
 
                 break;
 
             case 63:
-                msg = new GridDataLoadResponse();
+                msg = new DataStreamerResponse();
 
                 break;
 
@@ -525,7 +525,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 95:
-                msg = new IgniteDataLoaderEntry();
+                msg = new DataStreamerEntry();
 
                 break;
 

@@ -313,9 +313,9 @@ public class IgfsDataManager extends IgfsManager {
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
 
         if (cfg.getPerNodeParallelBatchCount() > 0)
-            ldr.perNodeParallelStreamOperations(cfg.getPerNodeParallelBatchCount());
+            ldr.perNodeParallelOperations(cfg.getPerNodeParallelBatchCount());
 
-        ldr.updater(IgniteDataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
+        ldr.updater(DataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
     }
@@ -1745,7 +1745,8 @@ public class IgfsDataManager extends IgfsManager {
                                 ldr.close(isCancelled());
                             }
                             catch (IgniteException e) {
-                                log.error("Failed to stop data streamer while shutting down igfs async delete thread.", e);
+                                log.error("Failed to stop data streamer while shutting down " +
+                                    "igfs async delete thread.", e);
                             }
                             finally {
                                 fut.onDone(); // Complete future.

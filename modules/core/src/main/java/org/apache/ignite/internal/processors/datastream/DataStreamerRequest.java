@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDataLoadRequest implements Message {
+public class DataStreamerRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,8 +48,8 @@ public class GridDataLoadRequest implements Message {
     private byte[] updaterBytes;
 
     /** Entries to update. */
-    @GridDirectCollection(IgniteDataLoaderEntry.class)
-    private Collection<IgniteDataLoaderEntry> entries;
+    @GridDirectCollection(DataStreamerEntry.class)
+    private Collection<DataStreamerEntry> entries;
 
     /** {@code True} to ignore deployment ownership. */
     private boolean ignoreDepOwnership;
@@ -80,7 +80,7 @@ public class GridDataLoadRequest implements Message {
     /**
      * {@code Externalizable} support.
      */
-    public GridDataLoadRequest() {
+    public DataStreamerRequest() {
         // No-op.
     }
 
@@ -99,11 +99,11 @@ public class GridDataLoadRequest implements Message {
      * @param clsLdrId Class loader ID.
      * @param forceLocDep Force local deployment.
      */
-    public GridDataLoadRequest(long reqId,
+    public DataStreamerRequest(long reqId,
         byte[] resTopicBytes,
         @Nullable String cacheName,
         byte[] updaterBytes,
-        Collection<IgniteDataLoaderEntry> entries,
+        Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
         DeploymentMode depMode,
@@ -158,7 +158,7 @@ public class GridDataLoadRequest implements Message {
     /**
      * @return Entries to update.
      */
-    public Collection<IgniteDataLoaderEntry> entries() {
+    public Collection<DataStreamerEntry> entries() {
         return entries;
     }
 
@@ -220,7 +220,7 @@ public class GridDataLoadRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDataLoadRequest.class, this);
+        return S.toString(DataStreamerRequest.class, this);
     }
 
     /** {@inheritDoc} */

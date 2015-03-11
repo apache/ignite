@@ -33,7 +33,7 @@ import java.util.*;
  * Data center replication cache updater for data streamer.
  */
 public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Updater<KeyCacheObject, CacheObject>,
-    IgniteDataStreamerCacheUpdaters.InternalUpdater {
+    DataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;
 

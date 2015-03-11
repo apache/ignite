@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
  */
-public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
+public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

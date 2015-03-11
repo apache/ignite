@@ -39,9 +39,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  *
  */
-public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
+public class DataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
-    private Collection<IgniteDataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
+    private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -50,7 +50,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
     private Thread flusher;
 
     /** */
-    private final DelayQueue<IgniteDataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
+    private final DelayQueue<DataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -58,14 +58,14 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public IgniteDataStreamerProcessor(GridKernalContext ctx) {
+    public DataStreamerProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.io().addMessageListener(TOPIC_DATALOAD, new GridMessageListener() {
+        ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                assert msg instanceof GridDataLoadRequest;
+                assert msg instanceof DataStreamerRequest;
 
-                processDataLoadRequest(nodeId, (GridDataLoadRequest)msg);
+                processRequest(nodeId, (DataStreamerRequest)msg);
             }
         });
 
@@ -80,7 +80,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
-                    IgniteDataStreamerImpl<K, V> ldr = flushQ.take();
+                    DataStreamerImpl<K, V> ldr = flushQ.take();
 
                     if (!busyLock.enterBusy())
                         return;
@@ -111,14 +111,14 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        ctx.io().removeMessageListener(TOPIC_DATALOAD);
+        ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 
         busyLock.block();
 
         U.interrupt(flusher);
         U.join(flusher, log);
 
-        for (IgniteDataStreamerImpl<?, ?> ldr : ldrs) {
+        for (DataStreamerImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
                 log.debug("Closing active data streamer on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
@@ -141,12 +141,12 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public IgniteDataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName) {
+    public DataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data streamer (grid is stopping).");
 
         try {
-            final IgniteDataStreamerImpl<K, V> ldr = new IgniteDataStreamerImpl<>(ctx, cacheName, flushQ);
+            final DataStreamerImpl<K, V> ldr = new DataStreamerImpl<>(ctx, cacheName, flushQ);
 
             ldrs.add(ldr);
 
@@ -172,7 +172,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    private void processDataLoadRequest(UUID nodeId, GridDataLoadRequest req) {
+    private void processRequest(UUID nodeId, DataStreamerRequest req) {
         if (!busyLock.enterBusy()) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring data load request (node is stopping): " + req);
@@ -237,9 +237,9 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            Collection<IgniteDataLoaderEntry> col = req.entries();
+            Collection<DataStreamerEntry> col = req.entries();
 
-            IgniteDataStreamerUpdateJob job = new IgniteDataStreamerUpdateJob(ctx,
+            DataStreamerUpdateJob job = new DataStreamerUpdateJob(ctx,
                 log,
                 req.cacheName(),
                 col,
@@ -285,7 +285,7 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
             return;
         }
 
-        GridDataLoadResponse res = new GridDataLoadResponse(reqId, errBytes, forceLocDep);
+        DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
             ctx.io().send(nodeId, resTopic, res, PUBLIC_POOL);

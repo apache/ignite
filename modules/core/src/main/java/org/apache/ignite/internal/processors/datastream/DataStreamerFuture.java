@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastream;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -26,26 +25,18 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Data streamer future.
  */
-class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
+class DataStreamerFuture extends GridFutureAdapter<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Data loader. */
     @GridToStringExclude
-    private IgniteDataStreamerImpl dataLdr;
+    private DataStreamerImpl dataLdr;
 
     /**
-     * Default constructor for {@link java.io.Externalizable} support.
-     */
-    public IgniteDataStreamerFuture() {
-        // No-op.
-    }
-
-    /**
-     * @param ctx Context.
      * @param dataLdr Data streamer.
      */
-    IgniteDataStreamerFuture(GridKernalContext ctx, IgniteDataStreamerImpl dataLdr) {
+    DataStreamerFuture(DataStreamerImpl dataLdr) {
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;
@@ -64,6 +55,6 @@ class IgniteDataStreamerFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteDataStreamerFuture.class, this, super.toString());
+        return S.toString(DataStreamerFuture.class, this, super.toString());
     }
 }

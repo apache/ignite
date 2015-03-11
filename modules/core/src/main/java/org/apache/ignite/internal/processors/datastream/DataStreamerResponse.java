@@ -17,82 +17,69 @@
 
 package org.apache.ignite.internal.processors.datastream;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
-import java.util.*;
 
 /**
  *
  */
-public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
+public class DataStreamerResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
-    protected KeyCacheObject key;
+    private long reqId;
 
     /** */
-    @GridToStringInclude
-    protected CacheObject val;
+    private byte[] errBytes;
+
+    /** */
+    private boolean forceLocDep;
 
     /**
-     *
+     * @param reqId Request ID.
+     * @param errBytes Error bytes.
+     * @param forceLocDep Force local deployment.
      */
-    public IgniteDataLoaderEntry() {
+    public DataStreamerResponse(long reqId, byte[] errBytes, boolean forceLocDep) {
+        this.reqId = reqId;
+        this.errBytes = errBytes;
+        this.forceLocDep = forceLocDep;
+    }
+
+    /**
+     * {@code Externalizable} support.
+     */
+    public DataStreamerResponse() {
         // No-op.
     }
 
     /**
-     * @param key Key.
-     * @param val Value.
+     * @return Request ID.
      */
-    public IgniteDataLoaderEntry(KeyCacheObject key, CacheObject val) {
-        this.key = key;
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public KeyCacheObject getKey() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject getValue() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject setValue(CacheObject val) {
-        CacheObject old = this.val;
-
-        this.val = val;
-
-        return old;
+    public long requestId() {
+        return reqId;
     }
 
     /**
-     * @param ctx Cache context.
-     * @return Map entry unwrapping internal key and value.
+     * @return Error bytes.
      */
-    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
-        return new Map.Entry<K, V>() {
-            @Override public K getKey() {
-                return key.value(ctx.cacheObjectContext(), false);
-            }
+    public byte[] errorBytes() {
+        return errBytes;
+    }
 
-            @Override public V setValue(V val) {
-                throw new UnsupportedOperationException();
-            }
+    /**
+     * @return {@code True} to force local deployment.
+     */
+    public boolean forceLocalDeployment() {
+        return forceLocDep;
+    }
 
-            @Override public V getValue() {
-                return val != null ? val.<V>value(ctx.cacheObjectContext(), false) : null;
-            }
-        };
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStreamerResponse.class, this);
     }
 
     /** {@inheritDoc} */
@@ -108,13 +95,19 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -133,7 +126,7 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
 
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,7 +134,15 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
                 reader.incrementState();
 
             case 1:
-                val = reader.readMessage("val");
+                forceLocDep = reader.readBoolean("forceLocDep");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,16 +156,11 @@ public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObj
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 95;
+        return 63;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(IgniteDataLoaderEntry.class, this);
+        return 3;
     }
 }

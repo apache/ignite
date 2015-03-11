@@ -52,7 +52,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  *
  */
-public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest {
+public class DataStreamerProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
 
@@ -178,7 +178,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
 
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -220,7 +220,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
 
             final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
-            rmvLdr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -419,7 +419,7 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(IgniteDataStreamerCacheUpdaters.<Integer, Integer>individual());
+            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.

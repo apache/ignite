@@ -200,7 +200,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgniteDataStreamerProcessor dataLdrProc;
+    private DataStreamerProcessor dataLdrProc;
 
     /** */
     @GridToStringInclude
@@ -457,8 +457,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             affProc = (GridAffinityProcessor)comp;
         else if (comp instanceof GridRestProcessor)
             restProc = (GridRestProcessor)comp;
-        else if (comp instanceof IgniteDataStreamerProcessor)
-            dataLdrProc = (IgniteDataStreamerProcessor)comp;
+        else if (comp instanceof DataStreamerProcessor)
+            dataLdrProc = (DataStreamerProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
@@ -671,8 +671,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> IgniteDataStreamerProcessor<K, V> dataStream() {
-        return (IgniteDataStreamerProcessor<K, V>)dataLdrProc;
+    @Override public <K, V> DataStreamerProcessor<K, V> dataStream() {
+        return (DataStreamerProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */

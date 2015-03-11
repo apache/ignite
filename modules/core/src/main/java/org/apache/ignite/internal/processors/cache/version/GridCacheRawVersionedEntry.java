@@ -32,7 +32,7 @@ import java.nio.*;
 /**
  * Raw versioned entry.
  */
-public class GridCacheRawVersionedEntry<K, V> extends IgniteDataLoaderEntry implements
+public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implements
     GridCacheVersionedEntry<K, V>, GridCacheVersionable, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

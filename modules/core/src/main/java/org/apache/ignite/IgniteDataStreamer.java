@@ -52,7 +52,7 @@ import java.util.*;
  *      value.
  *  </li>
  *  <li>
- *      {@link #perNodeParallelStreamOperations(int)} - sometimes data may be added
+ *      {@link #perNodeParallelOperations(int)} - sometimes data may be added
  *      to the data streamer via {@link #addData(Object, Object)} method faster than it can
  *      be put in cache. In this case, new buffered stream messages are sent to remote nodes
  *      before responses from previous ones are received. This could cause unlimited heap
@@ -102,7 +102,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public String cacheName();
 
     /**
-     * Gets flag value indicating that this data streamer assumes that there are no other concurrent updates to the cache.
+     * Gets flag value indicating that this data streamer assumes that
+     * there are no other concurrent updates to the cache.
      * Default is {@code false}.
      *
      * @return Flag value.
@@ -110,7 +111,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public boolean allowOverwrite();
 
     /**
-     * Sets flag indicating that this data streamer should assume that there are no other concurrent updates to the cache.
+     * Sets flag indicating that this data streamer should assume
+     * that there are no other concurrent updates to the cache.
      * Should not be used when custom cache updater set using {@link #updater(IgniteDataStreamer.Updater)} method.
      * Default is {@code false}. When this flag is set, updates will not be propagated to the cache store.
      *
@@ -154,14 +156,14 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void perNodeBufferSize(int bufSize);
 
     /**
-     * Gets maximum number of parallel stream operations for a single node.
+     * Gets maximum number of parallel update operations for a single node.
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
-    public int perNodeParallelStreamOperations();
+    public int perNodeParallelOperations();
 
     /**
-     * Sets maximum number of parallel stream operations for a single node.
+     * Sets maximum number of parallel update operations for a single node.
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
@@ -169,7 +171,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      */
-    public void perNodeParallelStreamOperations(int parallelOps);
+    public void perNodeParallelOperations(int parallelOps);
 
     /**
      * Gets automatic flush frequency. Essentially, this is the time after which the
@@ -284,7 +286,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
-     * @see #allowOverwrite()      
+     * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteException, IgniteInterruptedException,
         IllegalStateException;
@@ -298,7 +300,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * the streamer.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
-     * then data streamer will not overwrite existing cache entries for better performance 
+     * then data streamer will not overwrite existing cache entries for better performance
      * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Collection of entries to be streamed.
@@ -318,7 +320,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * the streamer.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
-     * then data streamer will not overwrite existing cache entries for better performance 
+     * then data streamer will not overwrite existing cache entries for better performance
      * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Map to be streamed.

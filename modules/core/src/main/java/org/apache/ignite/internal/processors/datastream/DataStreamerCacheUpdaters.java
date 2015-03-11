@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Bundled factory for cache updaters.
  */
-public class IgniteDataStreamerCacheUpdaters {
+public class DataStreamerCacheUpdaters {
     /** */
     private static final IgniteDataStreamer.Updater INDIVIDUAL = new Individual();
 
