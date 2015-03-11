@@ -180,7 +180,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
                         entry.lockedByAny());
 
                     assertEquals("Invalid entry value [g=" + g + ", cacheName=" + cacheName + ", entry=" + entry + ']',
-                        val, entry.rawGet());
+                        val, entry.rawGet().value(cache.context().cacheObjectContext(), false));
                 }
             }
         }

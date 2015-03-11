@@ -345,7 +345,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             null,
             false,
             false,
-            filter);
+            filter).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -398,7 +398,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         CacheEntryPredicate[] filter) {
         ctx.denyOnLocalRead();
 
-        return removeAllAsync0(keys, false, false, filter);
+        return removeAllAsync0(keys, false, false, filter).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */

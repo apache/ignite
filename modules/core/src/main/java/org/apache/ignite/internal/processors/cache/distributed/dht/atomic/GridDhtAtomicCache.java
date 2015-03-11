@@ -467,7 +467,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             false,
             null,
-            filter);
+            filter).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +517,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CacheEntryPredicate[] filter) {
         A.notNull(keys, "keys");
 
-        return removeAllAsync0(keys, null, false, false, filter);
+        return removeAllAsync0(keys, null, false, false, filter).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */

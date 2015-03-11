@@ -107,6 +107,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
         };
 
+    /** {@link GridCacheReturn}-to-null conversion. */
+    protected static final IgniteClosure RET2NULL =
+        new CX1<IgniteInternalFuture<GridCacheReturn>, Object>() {
+            @Nullable @Override public Object applyx(IgniteInternalFuture<GridCacheReturn> fut) throws IgniteCheckedException {
+                fut.get();
+
+                return null;
+            }
+
+            @Override public String toString() {
+                return "Cache return value to null converter.";
+            }
+        };
+
     /** {@link GridCacheReturn}-to-success conversion. */
     private static final IgniteClosure RET2FLAG =
         new CX1<IgniteInternalFuture<GridCacheReturn>, Boolean>() {
@@ -2980,7 +2994,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return asyncOp(new AsyncInOp(m.keySet()) {
             @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, m, false, null, -1, filter);
+                return tx.putAllAsync(ctx, m, false, null, -1, filter).chain(RET2NULL);
             }
 
             @Override public String toString() {
@@ -3124,7 +3138,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteInternalFuture<Object> fut = asyncOp(new AsyncInOp(keys) {
             @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
-                return tx.removeAllAsync(ctx, keys, null, false, filter);
+                return tx.removeAllAsync(ctx, keys, null, false, filter).chain(RET2NULL);
             }
 
             @Override public String toString() {

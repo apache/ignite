@@ -1596,8 +1596,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteFuture<?> f2 = cacheAsync.future();
 
-        f2.get();
-        f1.get();
+        assertNull(f2.get());
+        assertNull(f1.get());
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -2496,7 +2496,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.removeAll(F.asSet("key1", "key2"));
 
-        cacheAsync.future().get();
+        assertNull(cacheAsync.future().get());
 
         checkSize(F.asSet("key3"));
 
