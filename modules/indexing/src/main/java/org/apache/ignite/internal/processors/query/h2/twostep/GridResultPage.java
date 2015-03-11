@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * Page result.
  */
-public class GridResultPage<Z> {
+public class GridResultPage {
     /** */
-    private final Z src;
+    private final UUID src;
 
     /** */
     protected final GridQueryNextPageResponse res;
@@ -34,15 +36,15 @@ public class GridResultPage<Z> {
      * @param src Source.
      * @param res Response.
      */
-    protected GridResultPage(Z src, GridQueryNextPageResponse res) {
+    protected GridResultPage(UUID src, GridQueryNextPageResponse res) {
         this.src = src;
         this.res = res;
     }
 
     /**
-     * @return Result source.
+     * @return Result source node ID.
      */
-    public Z source() {
+    public UUID source() {
         return src;
     }
 

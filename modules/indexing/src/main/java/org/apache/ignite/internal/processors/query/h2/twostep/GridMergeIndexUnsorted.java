@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridMergeIndexUnsorted extends GridMergeIndex {
     /** */
-    private final BlockingQueue<GridResultPage<?>> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
     /**
      * @param tbl  Table.
@@ -43,7 +43,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void addPage0(GridResultPage<?> page) {
+    @Override protected void addPage0(GridResultPage page) {
         queue.add(page);
     }
 
@@ -62,7 +62,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                 if (iter.hasNext())
                     return true;
 
-                GridResultPage<?> page;
+                GridResultPage page;
 
                 try {
                     page = queue.take();
@@ -77,7 +77,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                     return false; // We are done.
                 }
 
-                page.fetchNextPage();
+                fetchNextPage(page);
 
                 iter = page.response().rows().iterator();
 

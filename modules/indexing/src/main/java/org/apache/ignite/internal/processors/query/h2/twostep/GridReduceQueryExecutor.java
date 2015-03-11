@@ -170,17 +170,8 @@ public class GridReduceQueryExecutor {
 
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
-        if (msg.allRows() != -1) { // Only the first page contains row count.
-            idx.addCount(msg.allRows());
-
-            r.latch.countDown();
-        }
-
-        idx.addPage(new GridResultPage<UUID>(node.id(), msg) {
+        idx.addPage(new GridResultPage(node.id(), msg) {
             @Override public void fetchNextPage() {
-                if (res.isLast())
-                    return; // No-op if this message known to be the last.
-
                 try {
                     ctx.io().sendUserMessage(F.asList(node), new GridQueryNextPageRequest(qryReqId, qry, pageSize),
                         GridTopic.TOPIC_QUERY, false, 0);
@@ -190,6 +181,9 @@ public class GridReduceQueryExecutor {
                 }
             }
         });
+
+        if (msg.allRows() != -1) // Only the first page contains row count.
+            r.latch.countDown();
     }
 
     /**
@@ -219,7 +213,10 @@ public class GridReduceQueryExecutor {
                 throw new IgniteException(e);
             }
 
-            tbl.getScanIndex(null).setNumberOfSources(nodes.size());
+            GridMergeIndex idx = tbl.getScanIndex(null);
+
+            for (ClusterNode node : nodes)
+                idx.addSource(node.id());
 
             r.tbls.add(tbl);
 

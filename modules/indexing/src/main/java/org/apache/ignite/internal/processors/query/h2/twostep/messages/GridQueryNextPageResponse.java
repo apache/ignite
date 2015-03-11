@@ -46,9 +46,6 @@ public class GridQueryNextPageResponse implements Externalizable {
     /** */
     private Collection<Value[]> rows;
 
-    /** */
-    private boolean last;
-
     /**
      * For {@link Externalizable}.
      */
@@ -61,10 +58,9 @@ public class GridQueryNextPageResponse implements Externalizable {
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
-     * @param last Last row.
      * @param rows Rows.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, boolean last,
+    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows,
         Collection<Value[]> rows) {
         assert rows != null;
 
@@ -72,7 +68,6 @@ public class GridQueryNextPageResponse implements Externalizable {
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
-        this.last = last;
         this.rows = rows;
     }
 
@@ -105,13 +100,6 @@ public class GridQueryNextPageResponse implements Externalizable {
     }
 
     /**
-     * @return {@code true} If this is the last page.
-     */
-    public boolean isLast() {
-        return last;
-    }
-
-    /**
      * @return Rows.
      */
     public Collection<Value[]> rows() {
@@ -123,7 +111,6 @@ public class GridQueryNextPageResponse implements Externalizable {
         out.writeLong(qryReqId);
         out.writeInt(qry);
         out.writeInt(page);
-        out.writeBoolean(last);
         out.writeInt(allRows);
 
         out.writeInt(rows.size());
@@ -158,7 +145,6 @@ public class GridQueryNextPageResponse implements Externalizable {
         qryReqId = in.readLong();
         qry = in.readInt();
         page = in.readInt();
-        last = in.readBoolean();
         allRows = in.readInt();
 
         int rowCnt = in.readInt();

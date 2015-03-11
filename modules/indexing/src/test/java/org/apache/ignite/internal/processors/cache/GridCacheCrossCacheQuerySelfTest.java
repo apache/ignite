@@ -157,6 +157,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             set1.add((Integer)o.get(0));
         }
 
+        assertFalse(set1.isEmpty());
+
         Set<Integer> set0 = new HashSet<>();
 
         X.println("___ GROUP BY");
@@ -168,7 +170,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             assertTrue(set0.add((Integer) o.get(0)));
         }
 
-        assertFalse(set1.isEmpty());
         assertEquals(set0, set1);
 
         X.println("___ GROUP BY AVG MIN MAX SUM COUNT(*) COUNT(x)");

@@ -284,7 +284,7 @@ public class GridMapQueryExecutor {
 
         try {
             ctx.io().sendUserMessage(F.asList(node),
-                new GridQueryNextPageResponse(qr.qryReqId, qry, page, page == 0 ? res.rowCount : -1, last, rows),
+                new GridQueryNextPageResponse(qr.qryReqId, qry, page, page == 0 ? res.rowCount : -1, rows),
                 GridTopic.TOPIC_QUERY, false, 0);
         }
         catch (IgniteCheckedException e) {
