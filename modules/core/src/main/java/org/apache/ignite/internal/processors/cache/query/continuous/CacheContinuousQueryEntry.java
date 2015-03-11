@@ -34,6 +34,9 @@ import java.nio.*;
  */
 public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
 
     /**

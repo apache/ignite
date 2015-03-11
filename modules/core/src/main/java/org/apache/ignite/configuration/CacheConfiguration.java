@@ -217,8 +217,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache distribution mode. */
     private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
-    /** Default value for 'copyOnGet' flag. */
-    public static final boolean DFLT_COPY_ON_GET = true;
+    /** Default value for 'copyOnRead' flag. */
+    public static final boolean DFLT_COPY_ON_READ = true;
 
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
@@ -319,8 +319,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
 
-    /** Copy on get flag. */
-    private boolean cpOnGet = DFLT_COPY_ON_GET;
+    /** Copy on read flag. */
+    private boolean cpOnRead = DFLT_COPY_ON_READ;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -352,7 +352,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
         cacheWriterFactory = cc.getCacheWriterFactory();
-        cpOnGet = cc.isCopyOnGet();
+        cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
@@ -1612,18 +1612,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Copy on get flag.
      * @see IgniteImmutable
      */
-    public boolean isCopyOnGet() {
-        return cpOnGet;
+    public boolean isCopyOnRead() {
+        return cpOnRead;
     }
 
     /**
      * Set copy on get flag.
      *
      * @param cpOnGet Copy on get flag.
-     * @see #isCopyOnGet
+     * @see #isCopyOnRead
      */
-    public void setCopyOnGet(boolean cpOnGet) {
-        this.cpOnGet = cpOnGet;
+    public void setCopyOnRead(boolean cpOnGet) {
+        this.cpOnRead = cpOnGet;
     }
 
     /** {@inheritDoc} */

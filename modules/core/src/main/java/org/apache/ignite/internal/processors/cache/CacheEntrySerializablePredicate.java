@@ -29,6 +29,9 @@ import java.nio.*;
  */
 public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     @GridDirectTransient
     private CacheEntryPredicate p;

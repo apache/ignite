@@ -30,6 +30,9 @@ import java.util.*;
  */
 public class IgniteDataLoaderEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     protected KeyCacheObject key;
 

@@ -358,9 +358,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLoadAllTest.class);
         suite.addTestSuite(IgniteCacheTxLocalLoadAllTest.class);
 
-        // TODO: IGNITE-402
-//        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
-//        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);

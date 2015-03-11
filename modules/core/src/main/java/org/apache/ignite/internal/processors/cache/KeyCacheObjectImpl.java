@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
  */
 public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject, Comparable<KeyCacheObjectImpl> {
     /** */
-    static final int DIRECT_TYPE = 90;
+    private static final long serialVersionUID = 0L;
 
     /**
      *
@@ -102,7 +102,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return DIRECT_TYPE;
+        return 90;
     }
 
     /** {@inheritDoc} */

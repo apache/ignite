@@ -22,14 +22,15 @@ import org.apache.ignite.configuration.*;
 /**
  *
  */
-public class GridCacheAtomicCopyOnGetDisabledMultiNodeFullApiSelfTest extends GridCacheAtomicMultiNodeFullApiSelfTest {
+public class GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest
+    extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        assert ccfg.isCopyOnGet();
+        assert ccfg.isCopyOnRead();
 
-        ccfg.setCopyOnGet(false);
+        ccfg.setCopyOnRead(false);
 
         return ccfg;
     }

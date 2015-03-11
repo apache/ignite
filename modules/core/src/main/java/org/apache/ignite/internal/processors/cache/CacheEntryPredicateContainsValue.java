@@ -30,6 +30,9 @@ import java.nio.*;
  */
 public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private CacheObject val;
 

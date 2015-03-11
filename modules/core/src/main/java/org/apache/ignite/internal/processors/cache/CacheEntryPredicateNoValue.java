@@ -21,6 +21,9 @@ package org.apache.ignite.internal.processors.cache;
  *
  */
 public class CacheEntryPredicateNoValue extends CacheEntryPredicateAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean apply(GridCacheEntryEx e) {
         return peekVisibleValue(e) == null;

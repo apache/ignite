@@ -68,9 +68,9 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedCopyOnGetDisabledMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicCopyOnGetDisabledMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicCopyOnReadDisabledMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest.class);

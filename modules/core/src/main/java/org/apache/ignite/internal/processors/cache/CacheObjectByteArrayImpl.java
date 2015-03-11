@@ -31,6 +31,9 @@ import java.util.*;
  */
 public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     protected byte[] val;
 
     /**

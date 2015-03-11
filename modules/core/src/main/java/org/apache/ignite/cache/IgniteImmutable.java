@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import java.lang.annotation.*;
 
 /**
- * If cache configuration flag {@link CacheConfiguration#isCopyOnGet()} is set
+ * If cache configuration flag {@link CacheConfiguration#isCopyOnRead()} is set
  * then for each operation implying return value copy of the value stored in cache is created.
  * Also if this flag is set copies are created for values passed to {@link CacheInterceptor} and
  * to {@link org.apache.ignite.cache.IgniteEntryProcessor}.

@@ -34,6 +34,9 @@ import java.nio.*;
  */
 public class GridCacheRawVersionedEntry<K, V> extends IgniteDataLoaderEntry implements
     GridCacheVersionedEntry<K, V>, GridCacheVersionable, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Key bytes. */
     @GridDirectTransient
     private byte[] keyBytes;

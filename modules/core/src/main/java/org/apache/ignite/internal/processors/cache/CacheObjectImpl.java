@@ -24,6 +24,9 @@ import org.jetbrains.annotations.*;
  *
  */
 public class CacheObjectImpl extends CacheObjectAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      *
      */

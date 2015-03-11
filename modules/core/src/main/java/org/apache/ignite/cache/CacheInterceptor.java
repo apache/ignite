@@ -65,7 +65,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true}, then is copy.
+     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true}, then is copy.
      * @param newVal New value.
      * @return Value to be put to cache. Returning {@code null} cancels the update.
      * @see IgniteCache#put(Object, Object)
@@ -82,7 +82,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Current entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
+     * @param entry Current entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
      */
     public void onAfterPut(Cache.Entry<K, V> entry);
 
@@ -97,7 +97,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
+     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.
@@ -115,7 +115,7 @@ public interface CacheInterceptor<K, V> {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Removed entry. If {@link CacheConfiguration#isCopyOnGet()} is {@code true} then is copy.
+     * @param entry Removed entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
      */
     public void onAfterRemove(Cache.Entry<K, V> entry);
 }

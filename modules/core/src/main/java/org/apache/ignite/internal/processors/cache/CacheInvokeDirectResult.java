@@ -32,6 +32,9 @@ import java.nio.*;
  */
 public class CacheInvokeDirectResult implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private KeyCacheObject key;
 
     /** */

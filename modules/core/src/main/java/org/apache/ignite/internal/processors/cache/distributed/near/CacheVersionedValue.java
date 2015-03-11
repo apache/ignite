@@ -30,6 +30,9 @@ import java.nio.*;
  * Cache object and version.
  */
 public class CacheVersionedValue implements Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Value. */
     @GridToStringInclude
     private CacheObject val;
