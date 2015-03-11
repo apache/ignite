@@ -294,20 +294,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        boolean allow = updater != ISOLATED_UPDATER;
-
-        if (!allow && !isWarningPrinted) {
-            synchronized (this) {
-                if (!isWarningPrinted) {
-                    log.warning("Data streamer will not overwrite existing cache entries for better performance " +
-                        "(to change, set allowOverwrite to true)");
-
-                    isWarningPrinted = true;
-                }
-            }
-        }
-
-        return allow;
+        return updater != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -523,6 +510,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         final int remaps
     ) {
         assert entries != null;
+
+        if (!isWarningPrinted) {
+            synchronized (this) {
+                if (!allowOverwrite() && !isWarningPrinted) {
+                    U.warn(log, "Data streamer will not overwrite existing cache entries for better performance " +
+                        "(to change, set allowOverwrite to true)");
+                }
+
+                isWarningPrinted = true;
+            }
+        }
 
         Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
 
