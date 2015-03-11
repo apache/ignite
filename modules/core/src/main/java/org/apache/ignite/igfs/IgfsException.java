@@ -28,30 +28,30 @@ public class IgfsException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates an instance of IGFS exception with descriptive error message.
+     * Constructor.
      *
-     * @param msg Error message.
+     * @param msg Message.
      */
     public IgfsException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of IGFS exception caused by nested exception.
+     * Constructor.
      *
-     * @param cause Exception cause.
+     * @param cause Cause.
      */
     public IgfsException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates an instance of IGFS exception with error message and underlying cause.
+     * Constructor.
      *
-     * @param msg Error message.
-     * @param cause Exception cause.
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public IgfsException(String msg, @Nullable Throwable cause) {
+    public IgfsException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

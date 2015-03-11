@@ -49,7 +49,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             cfg.getDefaultTxIsolation(),
             cfg.getDefaultTxTimeout(),
             0,
-            false
+            null
         ).proxy();
     }
 
@@ -65,7 +65,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            false
+            null
         ).proxy();
     }
 
@@ -82,7 +82,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             timeout,
             txSize,
-            false
+            null
         ).proxy();
     }
 
@@ -103,7 +103,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             timeout,
             txSize,
-            ctx.system());
+            ctx.system() ? ctx : null);
     }
 
     /** {@inheritDoc} */
@@ -121,24 +121,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx.system());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Transaction txStartSystem(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        long timeout, int txSize) {
-        A.notNull(concurrency, "concurrency");
-        A.notNull(isolation, "isolation");
-        A.ensure(timeout >= 0, "timeout cannot be negative");
-        A.ensure(txSize >= 0, "transaction size cannot be negative");
-
-        return txStart0(
-            concurrency,
-            isolation,
-            timeout,
-            txSize,
-            true
-        ).proxy();
+            ctx.system() ? ctx : null);
     }
 
     /**
@@ -146,18 +129,19 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param isolation Transaction isolation.
      * @param timeout Transaction timeout.
      * @param txSize Expected transaction size.
-     * @param sys System flag.
+     * @param sysCacheCtx System cache context.
      * @return Transaction.
      */
+    @SuppressWarnings("unchecked")
     private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        long timeout, int txSize, boolean sys) {
+        long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        IgniteInternalTx tx = cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -166,7 +150,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         tx = cctx.tm().newTx(
             false,
             false,
-            sys,
+            sysCacheCtx,
             concurrency,
             isolation,
             timeout,

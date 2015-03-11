@@ -52,6 +52,9 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheMvccFuture<IgniteInternalTx> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -823,6 +826,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

@@ -36,6 +36,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Nodes order comparator. */
     private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
 

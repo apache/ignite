@@ -24,6 +24,9 @@ import org.jetbrains.annotations.*;
  * Future computation completion is timed out.
  */
 public class IgniteFutureTimeoutException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Creates new exception with given error message.
      *

@@ -69,6 +69,9 @@ public class GridCacheUtils {
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
+    /** Marshaller system cache name. */
+    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 
@@ -94,9 +97,9 @@ public class GridCacheUtils {
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Per-thread generated UID store. */
-    private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
-        @Override protected String initialValue() {
-            return UUID.randomUUID().toString();
+    private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
+        @Override protected UUID initialValue() {
+            return UUID.randomUUID();
         }
     };
 
@@ -250,7 +253,7 @@ public class GridCacheUtils {
      *
      * @return ID for this thread.
      */
-    public static String uuid() {
+    public static UUID uuid() {
         return UUIDS.get();
     }
 
@@ -307,7 +310,7 @@ public class GridCacheUtils {
      * @param meta Meta name.
      * @return Filter for entries with meta.
      */
-    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final String meta) {
+    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final UUID meta) {
         return new P1<KeyCacheObject>() {
             @Override public boolean apply(KeyCacheObject k) {
                 GridCacheEntryEx e = ctx.cache().peekEx(k);
@@ -1556,7 +1559,15 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is marshaller system cache.
+     */
+    public static boolean isMarshallerCache(String cacheName) {
+        return MARSH_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
         return UTILITY_CACHE_NAME.equals(cacheName);
@@ -1564,7 +1575,7 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is atomics system cache.
      */
     public static boolean isAtomicsCache(String cacheName) {
         return ATOMICS_CACHE_NAME.equals(cacheName);
@@ -1575,7 +1586,8 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
+        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+            isAtomicsCache(cacheName);
     }
 
     /**

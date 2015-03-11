@@ -30,6 +30,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 /**
  * Event consume test.
  */
-public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
+public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String PRJ_PRED_CLS_NAME = "org.apache.ignite.tests.p2p.GridEventConsumeProjectionPredicate";
 

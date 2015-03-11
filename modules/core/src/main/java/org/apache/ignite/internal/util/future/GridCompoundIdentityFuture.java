@@ -26,6 +26,9 @@ import org.jetbrains.annotations.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      *
      */

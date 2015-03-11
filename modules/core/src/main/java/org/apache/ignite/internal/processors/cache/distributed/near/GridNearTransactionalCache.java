@@ -112,7 +112,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (keyCheck)
             validateCacheKeys(keys);
 
-        IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
@@ -291,6 +291,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.version(),
                                         null,
                                         ctx.system(),
+                                        ctx.ioPolicy(),
                                         PESSIMISTIC,
                                         req.isolation(),
                                         req.isInvalidate(),
@@ -304,7 +305,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     if (req.groupLock())
                                         tx.groupLockKey(txKey);
 
-                                    tx = ctx.tm().onCreated(tx);
+                                    tx = ctx.tm().onCreated(null, tx);
 
                                     if (tx == null || !ctx.tm().onStarted(tx))
                                         throw new IgniteTxRollbackCheckedException("Failed to acquire lock " +

@@ -1070,6 +1070,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * Multi update future.
      */
     private static class MultiUpdateFuture extends GridFutureAdapter<IgniteUuid> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Topology version. */
         private long topVer;
 

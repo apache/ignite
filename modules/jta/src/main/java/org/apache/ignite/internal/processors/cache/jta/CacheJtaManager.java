@@ -80,7 +80,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                             tx = cctx.tm().newTx(
                                 /*implicit*/false,
                                 /*implicit single*/false,
-                                /*system*/false,
+                                null,
                                 tCfg.getDefaultTxConcurrency(),
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
@@ -92,7 +92,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((IgniteInternalTx)tx, cctx);
+                        rsrc = new GridCacheXAResource(tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

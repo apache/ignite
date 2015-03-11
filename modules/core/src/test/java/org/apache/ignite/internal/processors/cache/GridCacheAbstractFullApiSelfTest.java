@@ -2914,7 +2914,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
 
-        GridCache<String, Integer> cache = ((IgniteKernal)primaryIgnite(key)).cache(null);
+        Ignite ignite = primaryIgnite(key);
+
+        GridCache<String, Integer> cache = ((IgniteKernal)ignite).cache(null);
 
         cache.put(key, 1);
 
@@ -2938,7 +2940,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (txEnabled()) {
-            try (Transaction tx = cache.txStart()) {
+            try (Transaction tx = ignite.transactions().txStart()) {
                 cache.replace(key, 2);
 
                 assert cache.peek(key, F.asList(GLOBAL)) == 1;

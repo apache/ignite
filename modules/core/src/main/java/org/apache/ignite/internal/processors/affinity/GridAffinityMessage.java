@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
@@ -29,13 +28,9 @@ import java.util.*;
 /**
  * Object wrapper containing serialized byte array of original object and deployment information.
  */
-class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
+class GridAffinityMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** */
     private byte[] src;
@@ -126,11 +121,6 @@ class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
      */
     public Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

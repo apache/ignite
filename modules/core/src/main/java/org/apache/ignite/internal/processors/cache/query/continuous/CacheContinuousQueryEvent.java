@@ -29,6 +29,9 @@ import javax.cache.event.*;
  */
 class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridCacheContext cctx;
 
     /** Entry. */
@@ -55,7 +58,8 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public K getKey() {
+    @Override
+    public K getKey() {
         return e.key().value(cctx.cacheObjectContext(), false);
     }
 
@@ -65,7 +69,8 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V getOldValue() {
+    @Override
+    public V getOldValue() {
         return CU.value(e.oldValue(), cctx, false);
     }
 

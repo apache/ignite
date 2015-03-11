@@ -38,6 +38,9 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Collection<GridCacheEntryInfo>>
     implements GridDhtFuture<Collection<GridCacheEntryInfo>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

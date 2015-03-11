@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNioFuture<R> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     protected boolean msgThread;
 
     /** {@inheritDoc} */

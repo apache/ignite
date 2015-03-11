@@ -561,8 +561,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (IgniteComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
+        sysCaches.add(CU.MARSH_CACHE_NAME);
         sysCaches.add(CU.UTILITY_CACHE_NAME);
-
         sysCaches.add(CU.ATOMICS_CACHE_NAME);
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -918,6 +918,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!interceptors.isEmpty())
                 ctx.addNodeAttribute(ATTR_CACHE_INTERCEPTORS, interceptors);
         }
+
+        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+            }
+        });
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
@@ -1555,6 +1561,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> publicCache() {
         return publicCache(null);
+    }
+
+    /**
+     * @return Marshaller system cache.
+     */
+    public GridCacheAdapter<Integer, String> marshallerCache() {
+        return internalCache(CU.MARSH_CACHE_NAME);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -69,6 +70,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Per-thread transaction map. */
     private final ConcurrentMap<Long, IgniteInternalTx> threadMap = newMap();
+
+    /** Per-thread system transaction map. */
+    private final ConcurrentMap<TxThreadKey, IgniteInternalTx<K, V>> sysThreadMap = newMap();
 
     /** Per-ID map. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
@@ -353,7 +357,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public IgniteTxLocalAdapter newTx(
         boolean implicit,
         boolean implicitSingle,
-        boolean sys,
+        @Nullable GridCacheContext<K, V> sysCacheCtx,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -362,6 +366,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
         boolean partLock) {
+        assert sysCacheCtx == null || sysCacheCtx.system();
+
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
         int taskNameHash = cctx.kernalContext().job().currentTaskNameHash();
@@ -370,7 +376,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx,
             implicit,
             implicitSingle,
-            sys,
+            sysCacheCtx != null,
+            sysCacheCtx != null ? sysCacheCtx.ioPolicy() : GridIoPolicy.SYSTEM_POOL,
             concurrency,
             isolation,
             timeout,
@@ -382,14 +389,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             subjId,
             taskNameHash);
 
-        return onCreated(tx);
+        return onCreated(sysCacheCtx, tx);
     }
 
     /**
      * @param tx Created transaction.
      * @return Started transaction.
      */
-    @Nullable public <T extends IgniteInternalTx> T onCreated(T tx) {
+    @Nullable public <T extends IgniteInternalTx> T onCreated(@Nullable GridCacheContext cacheCtx, T tx) {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
         // Start clean.
@@ -408,8 +415,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // Add both, explicit and implicit transactions.
             // Do not add remote and dht local transactions as remote node may have the same thread ID
             // and overwrite local transaction.
-            if (tx.local() && !tx.dht())
-                threadMap.put(tx.threadId(), tx);
+            if (tx.local() && !tx.dht()) {
+                if (cacheCtx == null || !cacheCtx.system())
+                    threadMap.put(tx.threadId(), tx);
+                else
+                    sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
+            }
 
             // Handle mapped versions.
             if (tx instanceof GridCacheMappedVersion) {
@@ -616,8 +627,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Transaction for current thread.
      */
     @SuppressWarnings({"unchecked"})
-    public <T> T threadLocalTx() {
-        IgniteInternalTx tx = tx(Thread.currentThread().getId());
+    public <T> T threadLocalTx(GridCacheContext cctx) {
+        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
 
         return tx != null && tx.local() && (!tx.dht() || tx.colocated()) && !tx.implicit() ? (T)tx : null;
     }
@@ -629,7 +640,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public <T> T tx() {
         IgniteInternalTx tx = txContext();
 
-        return tx != null ? (T)tx : (T)tx(Thread.currentThread().getId());
+        return tx != null ? (T)tx : (T)tx(null, Thread.currentThread().getId());
     }
 
     /**
@@ -658,7 +669,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (tx != null && tx.user() && tx.state() == ACTIVE)
             return tx;
 
-        tx = tx(Thread.currentThread().getId());
+        tx = tx(null, Thread.currentThread().getId());
+
+        return tx != null && tx.user() && tx.state() == ACTIVE ? tx : null;
+    }
+
+    /**
+     * @return User transaction for current thread.
+     */
+    @Nullable public IgniteInternalTx userTx(GridCacheContext<K, V> cctx) {
+        IgniteInternalTx<K, V> tx = tx(cctx, Thread.currentThread().getId());
 
         return tx != null && tx.user() && tx.state() == ACTIVE ? tx : null;
     }
@@ -676,8 +696,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Transaction for thread with given ID.
      */
     @SuppressWarnings({"unchecked"})
-    public <T> T tx(long threadId) {
-        return (T)threadMap.get(threadId);
+    private <T> T tx(GridCacheContext<K, V> cctx, long threadId) {
+        if (cctx == null || !cctx.system())
+            return (T)threadMap.get(threadId);
+
+        TxThreadKey key = new TxThreadKey(threadId, cctx.cacheId());
+
+        return (T)sysThreadMap.get(key);
     }
 
     /**
@@ -1215,8 +1240,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 committedQ.add(tx);
 
             // 11. Remove from per-thread storage.
-            if (tx.local() && !tx.dht())
-                threadMap.remove(tx.threadId(), tx);
+            clearThreadMap(tx);
 
             // 12. Unregister explicit locks.
             if (!tx.alternateVersions().isEmpty()) {
@@ -1295,8 +1319,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 decrementStartVersionCount(tx);
 
             // 7. Remove from per-thread storage.
-            if (tx.local() && !tx.dht())
-                threadMap.remove(tx.threadId(), tx);
+            clearThreadMap(tx);
 
             // 8. Unregister explicit locks.
             if (!tx.alternateVersions().isEmpty())
@@ -1359,8 +1382,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 decrementStartVersionCount(tx);
 
             // 5. Remove from per-thread storage.
-            if (tx.local() && !tx.dht())
-                threadMap.remove(tx.threadId(), tx);
+            clearThreadMap(tx);
 
             // 6. Unregister explicit locks.
             if (!tx.alternateVersions().isEmpty())
@@ -1379,6 +1401,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
         else if (log.isDebugEnabled())
             log.debug("Did not uncommit from TM (was already committed or rolled back): " + tx);
+    }
+
+    /**
+     * @param tx Transaction to clear.
+     */
+    private void clearThreadMap(IgniteInternalTx<K, V> tx) {
+        if (tx.local() && !tx.dht()) {
+            if (!tx.system())
+                threadMap.remove(tx.threadId(), tx);
+            else {
+                Integer cacheId = F.first(tx.activeCacheIds());
+
+                if (cacheId != null)
+                    sysThreadMap.remove(new TxThreadKey(tx.threadId(), cacheId), tx);
+                else {
+                    for (Iterator<IgniteInternalTx<K, V>> it = sysThreadMap.values().iterator(); it.hasNext(); ) {
+                        IgniteInternalTx<K, V> txx = it.next();
+
+                        if (tx == txx) {
+                            it.remove();
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -2016,6 +2065,48 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
             fut.prepare();
+        }
+    }
+
+    /**
+     * Per-thread key for system transactions.
+     */
+    private static class TxThreadKey {
+        /** Thread ID. */
+        private long threadId;
+
+        /** Cache ID. */
+        private int cacheId;
+
+        /**
+         * @param threadId Thread ID.
+         * @param cacheId Cache ID.
+         */
+        private TxThreadKey(long threadId, int cacheId) {
+            this.threadId = threadId;
+            this.cacheId = cacheId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TxThreadKey))
+                return false;
+
+            TxThreadKey that = (TxThreadKey)o;
+
+            return cacheId == that.cacheId && threadId == that.threadId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = (int)(threadId ^ (threadId >>> 32));
+
+            result = 31 * result + cacheId;
+
+            return result;
         }
     }
 

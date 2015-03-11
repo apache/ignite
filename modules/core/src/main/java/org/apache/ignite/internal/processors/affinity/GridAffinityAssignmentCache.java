@@ -427,6 +427,9 @@ public class GridAffinityAssignmentCache {
      */
     private class AffinityReadyFuture extends GridFutureAdapter<Long> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private long reqTopVer;
 
         /**

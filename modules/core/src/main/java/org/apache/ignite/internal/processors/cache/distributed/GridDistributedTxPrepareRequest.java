@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -115,6 +116,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** System flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -150,6 +154,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
+        plc = tx.ioPolicy();
 
         this.reads = reads;
         this.writes = writes;
@@ -171,6 +176,13 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
     }
 
     /**
@@ -409,7 +421,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeBoolean("partLock", partLock))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -551,14 +563,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 16:
-                reads = reader.readCollection("reads", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -566,7 +570,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -574,7 +578,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())

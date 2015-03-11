@@ -414,7 +414,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         // Ensure that next update will not pick old expire time.
-        tx = inTx ? c.txStart() : null;
+        tx = inTx ? transactions().txStart() : null;
 
         try {
             c.put(key, 10);

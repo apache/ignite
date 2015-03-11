@@ -195,7 +195,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param <T> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <T> T removeMeta(String name);
+    @Nullable public <T> T removeMeta(UUID name);
 
     /**
      * Gets metadata by name.
@@ -204,7 +204,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param <T> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <T> T meta(String name);
+    @Nullable public <T> T meta(UUID name);
 
     /**
      * Adds a new metadata.
@@ -215,7 +215,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <T> T addMeta(String name, T val);
+    @Nullable public <T> T addMeta(UUID name, T val);
 
     /**
      * @return Size of the transaction.

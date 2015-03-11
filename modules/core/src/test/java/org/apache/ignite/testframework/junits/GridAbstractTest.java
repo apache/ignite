@@ -370,11 +370,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Test kernal context.
      */
     protected GridTestKernalContext newContext() {
-        GridTestKernalContext ctx = new GridTestKernalContext();
-
-        ctx.config().setGridLogger(log());
-
-        return ctx;
+        return new GridTestKernalContext(log());
     }
 
     /**

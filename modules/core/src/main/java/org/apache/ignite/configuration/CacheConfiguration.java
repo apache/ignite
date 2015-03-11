@@ -43,6 +43,9 @@ import java.util.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default size of preload thread pool. */
     public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
 

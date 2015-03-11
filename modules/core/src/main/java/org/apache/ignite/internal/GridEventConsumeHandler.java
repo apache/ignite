@@ -282,6 +282,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         boolean b = filterBytes != null;
 

@@ -694,6 +694,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      */
     private static class JCacheQueryRemoteFilter implements CacheEntryEventFilter, Externalizable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private CacheEntryEventFilter impl;
 
         /** */

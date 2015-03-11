@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.client.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} to
@@ -42,29 +42,25 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      */
     public GridClientOptimizedMarshaller() {
         opMarsh = new OptimizedMarshaller();
+
+        opMarsh.setContext(new ClientMarshallerContext());
     }
 
     /**
      * Constructs optimized marshaller with specific parameters.
      *
-     * @param requireSer Flag to enforce {@link Serializable} interface or not. If {@code true},
-     *      then objects will be required to implement {@link Serializable} in order to be
-     *      marshalled, if {@code false}, then such requirement will be relaxed.
-     * @param clsNames User preregistered class names.
-     * @param clsNamesPath Path to a file with user preregistered class names.
+     * @param requireSer Require serializable flag.
      * @param poolSize Object streams pool size.
      * @throws IOException If an I/O error occurs while writing stream header.
      * @throws IgniteException If this marshaller is not supported on the current JVM.
-     * @see org.apache.ignite.marshaller.optimized.OptimizedMarshaller
+     * @see OptimizedMarshaller
      */
-    public GridClientOptimizedMarshaller(boolean requireSer, List<String> clsNames, String clsNamesPath, int poolSize)
-        throws IOException {
-        try {
-            opMarsh = new OptimizedMarshaller(requireSer, clsNames, clsNamesPath, poolSize);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IOException(e);
-        }
+    public GridClientOptimizedMarshaller(boolean requireSer, int poolSize) throws IOException {
+        opMarsh = new OptimizedMarshaller();
+
+        opMarsh.setContext(new ClientMarshallerContext());
+        opMarsh.setRequireSerializable(requireSer);
+        opMarsh.setPoolSize(poolSize);
     }
 
     /** {@inheritDoc} */
@@ -98,6 +94,20 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);
+        }
+    }
+
+    /**
+     */
+    private static class ClientMarshallerContext extends MarshallerContextAdapter {
+        /** {@inheritDoc} */
+        @Override protected boolean registerClassName(int id, String clsName) {
+            throw new UnsupportedOperationException(clsName);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected String className(int id) {
+            throw new UnsupportedOperationException();
         }
     }
 }

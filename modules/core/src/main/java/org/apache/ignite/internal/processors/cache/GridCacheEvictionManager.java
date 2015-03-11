@@ -72,7 +72,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();
 
     /** Attribute name used to queue node in entry metadata. */
-    private final String meta = UUID.randomUUID().toString();
+    private final UUID meta = UUID.randomUUID();
 
     /** Active eviction futures. */
     private final Map<Long, EvictionFuture> futs = new ConcurrentHashMap8<>();
@@ -1518,6 +1518,9 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private class EvictionFuture extends GridFutureAdapter<IgniteBiTuple<Collection<EvictionInfo>,
         Collection<EvictionInfo>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final long id = idGen.incrementAndGet();
 

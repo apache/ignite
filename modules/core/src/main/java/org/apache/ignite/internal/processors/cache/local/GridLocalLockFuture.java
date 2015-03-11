@@ -37,6 +37,9 @@ import java.util.concurrent.atomic.*;
  */
 public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     implements GridCacheMvccFuture<Boolean> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

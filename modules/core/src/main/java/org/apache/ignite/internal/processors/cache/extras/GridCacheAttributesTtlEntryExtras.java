@@ -23,12 +23,14 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Extras where attributes and TTL are set.
  */
 public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
-    private GridLeanMap<String, Object> attrData;
+    private GridLeanMap<UUID, Object> attrData;
 
     /** TTL. */
     private long ttl;
@@ -43,7 +45,7 @@ public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapt
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheAttributesTtlEntryExtras(GridLeanMap<String, Object> attrData, long ttl, long expireTime) {
+    public GridCacheAttributesTtlEntryExtras(GridLeanMap<UUID, Object> attrData, long ttl, long expireTime) {
         assert attrData != null;
         assert ttl != 0;
 
@@ -53,12 +55,12 @@ public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public GridLeanMap<String, Object> attributesData() {
+    @Override public GridLeanMap<UUID, Object> attributesData() {
         return attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<String, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 
