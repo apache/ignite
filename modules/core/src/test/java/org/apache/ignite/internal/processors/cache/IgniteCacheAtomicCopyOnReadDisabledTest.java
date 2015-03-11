@@ -20,17 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
+ *
  */
-public class GridCacheOnCopyFlagReplicatedSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-
+public class IgniteCacheAtomicCopyOnReadDisabledTest extends IgniteCacheCopyOnReadDisabledAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;

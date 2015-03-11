@@ -397,6 +397,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
+        suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
+        suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
 
         return suite;
     }
