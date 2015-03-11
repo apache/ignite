@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -40,6 +41,7 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
@@ -65,6 +67,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     private CacheManager cacheMgr;
+
+    /** */
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1239,18 +1244,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void close() {
-        try {
-            ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+        if (closed.compareAndSet(false, true)) {
+            try {
+                ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        return cacheMgr != null && cacheMgr.isClosed();
+        return closed.get() || cacheMgr != null && cacheMgr.isClosed();
     }
 
     /**

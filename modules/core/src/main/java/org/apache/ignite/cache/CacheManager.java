@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -118,12 +117,15 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        CacheConfiguration igniteCacheCfg;
+        if (getCache0(cacheName) != null)
+            throw new CacheException("Cache already exists [cacheName=" + cacheName + ", manager=" + uri + ']');
+
+        CacheConfiguration<K, V> igniteCacheCfg;
 
         if (cacheCfg instanceof CompleteConfiguration)
-            igniteCacheCfg = new CacheConfiguration((CompleteConfiguration)cacheCfg);
+            igniteCacheCfg = new CacheConfiguration<>((CompleteConfiguration<K, V>)cacheCfg);
         else {
-            igniteCacheCfg = new CacheConfiguration();
+            igniteCacheCfg = new CacheConfiguration<>();
 
             igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
             igniteCacheCfg.setStoreValueBytes(cacheCfg.isStoreByValue());
@@ -131,17 +133,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
         igniteCacheCfg.setName(cacheName);
 
-        IgniteInternalFuture<?> fut = ignite.context().cache().dynamicStartCache(igniteCacheCfg, new GridNodePredicate(
-            Collections.singleton(ignite.getLocalNodeId())));
-
-        try {
-            fut.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
-        }
-
-        IgniteCache<K, V> res = ignite.jcache(cacheName);
+        IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
 
         ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
 
@@ -161,7 +153,7 @@ public class CacheManager implements javax.cache.CacheManager {
     @Override public <K, V> Cache<K, V> getCache(String cacheName, Class<K> keyType, Class<V> valType) {
         ensureNotClosed();
 
-        Cache<K, V> cache = ignite.jcache(cacheName);
+        Cache<K, V> cache = getCache0(cacheName);
 
         if (cache != null) {
             if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
@@ -178,7 +170,7 @@ public class CacheManager implements javax.cache.CacheManager {
     @Override public <K, V> Cache<K, V> getCache(String cacheName) {
         ensureNotClosed();
 
-        IgniteCache<K, V> cache = ignite.jcache(cacheName);
+        IgniteCache<K, V> cache = getCache0(cacheName);
 
         if (cache != null) {
             if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
@@ -189,6 +181,18 @@ public class CacheManager implements javax.cache.CacheManager {
         }
 
         return cache;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
+        try {
+            return ignite.jcache(cacheName);
+        }
+        catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -212,7 +216,7 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteCache<?, ?> cache = ignite.jcache(cacheName);
+        IgniteCache<?, ?> cache = getCache0(cacheName);
 
         if (cache != null)
             cache.close();
@@ -241,7 +245,7 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteCache<?, ?> cache = ignite.jcache(cacheName);
+        IgniteCache<?, ?> cache = getCache0(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache not found: " + cacheName);
@@ -261,7 +265,7 @@ public class CacheManager implements javax.cache.CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteCache<?, ?> cache = ignite.jcache(cacheName);
+        IgniteCache<?, ?> cache = getCache0(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache not found: " + cacheName);
