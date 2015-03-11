@@ -44,7 +44,7 @@ public class SnippetGenerator {
                 javaTypeName = javaTypeName.substring(10);
 
             src.add(owner + ".add(new CacheTypeFieldMetadata(\"" + field.dbName() + "\", " +
-                "java.sql.Types." + field.dbTypeName() + ",\"" +
+                "java.sql.Types." + field.dbTypeName() + ", \"" +
                 field.javaName() + "\", " + javaTypeName + ".class));");
         }
     }
