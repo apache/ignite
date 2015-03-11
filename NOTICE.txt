@@ -22,7 +22,7 @@ https://github.com/blackdrag/pcollections
 
 
 This software has a dependency on Open JDK library,
-licensed under GPL license.
+licensed under GPL license with Class Path Exception.
 http://openjdk.java.net/
 
 
