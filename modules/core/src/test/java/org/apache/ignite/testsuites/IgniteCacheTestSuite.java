@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
 import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.internal.processors.cache.local.*;
-import org.apache.ignite.internal.processors.datastream.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 
 /**
  * Test suite.
