@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs;
 
+import org.jetbrains.annotations.*;
+
 /**
  * Exception indicating that directory can not be deleted because it is not empty.
  */
@@ -25,18 +27,30 @@ public class IgfsDirectoryNotEmptyException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Exception message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
     public IgfsDirectoryNotEmptyException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of IGFS exception caused by nested exception.
+     * Constructor.
      *
-     * @param cause Exception cause.
+     * @param cause Cause.
      */
     public IgfsDirectoryNotEmptyException(Throwable cause) {
         super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    public IgfsDirectoryNotEmptyException(@Nullable String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

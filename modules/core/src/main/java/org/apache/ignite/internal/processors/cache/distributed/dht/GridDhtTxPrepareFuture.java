@@ -40,16 +40,19 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.TransactionState.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  *
  */
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
     implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
+    /** */         
+    private static final long serialVersionUID = 0L;
+    
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -1104,6 +1107,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

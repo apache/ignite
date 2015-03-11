@@ -454,7 +454,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      * @throws IOException If write failed.
      */
     private void writeObject(ClusterNode node) throws Exception {
-
         Marshaller marshaller = getTestResources().getMarshaller();
 
         OutputStream out = new NullOutputStream();

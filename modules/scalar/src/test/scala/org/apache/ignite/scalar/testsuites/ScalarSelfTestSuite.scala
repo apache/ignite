@@ -17,8 +17,12 @@
 
 package org.apache.ignite.scalar.testsuites
 
+import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.scalar.tests._
+import org.apache.ignite.testframework.GridTestUtils
+
 import org.junit.runner.RunWith
+
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
@@ -35,4 +39,6 @@ class ScalarSelfTestSuite extends Suites(
     new ScalarReturnableSpec,
     new ScalarSpec
 ) {
+    System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+        GridTestUtils.getNextMulticastGroup(classOf[ScalarSelfTestSuite]))
 }

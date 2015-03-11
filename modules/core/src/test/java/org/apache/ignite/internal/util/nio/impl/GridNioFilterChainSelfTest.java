@@ -25,6 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.nio.*;
+import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -344,17 +345,17 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> T meta(int key) {
-            return meta(String.valueOf(key));
+            return meta(new UUID(key, key));
         }
 
         /** {@inheritDoc} */
         @Override public <T> T addMeta(int key, T val) {
-            return addMeta(String.valueOf(key), val);
+            return addMeta(new UUID(key, key), val);
         }
 
         /** {@inheritDoc} */
         @Override public <T> T removeMeta(int key) {
-            return removeMeta(String.valueOf(key));
+            return removeMeta(new UUID(key, key));
         }
 
         /** {@inheritDoc} */

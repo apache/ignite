@@ -1766,6 +1766,9 @@ public class GridNioServer<T> {
      * Class for requesting write and session close operations.
      */
     private static class NioOperationFuture<R> extends GridNioFutureImpl<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Socket channel in register request. */
         @GridToStringExclude
         private SocketChannel sockCh;

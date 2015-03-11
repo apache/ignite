@@ -1959,7 +1959,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<GridCache<?, ?>>() {
                     @Override public boolean apply(GridCache<?, ?> c) {
-                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) && !CU.ATOMICS_CACHE_NAME.equals(c.name());
+                        return !CU.MARSH_CACHE_NAME.equals(c.name()) && !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
+                            !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }
                 }
             );

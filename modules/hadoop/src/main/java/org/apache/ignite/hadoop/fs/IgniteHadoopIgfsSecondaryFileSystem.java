@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
  * Adapter to use any Hadoop file system {@link FileSystem} as  {@link IgfsSecondaryFileSystem}.
  */
 public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, AutoCloseable {
-
     /** Hadoop file system. */
     private final FileSystem fileSys;
 
@@ -345,7 +344,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
                 }
 
                 @Override public int blockSize() {
-                    return (int)status.getBlockSize();
+                    // By convention directory has blockSize == 0, while file has blockSize > 0:
+                    return isDirectory() ? 0 : (int)status.getBlockSize();
                 }
 
                 @Override public long groupBlockSize() {
@@ -384,7 +384,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
                     return props;
                 }
             };
-
         }
         catch (FileNotFoundException ignore) {
             return null;
