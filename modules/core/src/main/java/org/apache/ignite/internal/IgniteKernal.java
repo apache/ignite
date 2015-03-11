@@ -74,6 +74,7 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
@@ -2254,8 +2255,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
-        // TODO: implement.
-        return null;
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

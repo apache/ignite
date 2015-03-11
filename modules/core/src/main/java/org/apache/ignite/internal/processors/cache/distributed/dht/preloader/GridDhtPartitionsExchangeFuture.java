@@ -427,8 +427,6 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Aff
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
-            U.debug(log, "Initializing exchange future: " + reqs);
-
             if (isDone())
                 return;
 

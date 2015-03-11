@@ -18,6 +18,8 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
@@ -34,7 +36,7 @@ import java.util.concurrent.*;
  */
 public class CacheApiExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheApiExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -43,15 +45,20 @@ public class CacheApiExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            // Demonstrate atomic map operations.
-            atomicMapOperations();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+
+            cfg.setName(CACHE_NAME);
+
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+                // Demonstrate atomic map operations.
+                atomicMapOperations(cache);
+            }
         }
     }
 
@@ -61,11 +68,9 @@ public class CacheApiExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void atomicMapOperations() throws IgniteException {
+    private static void atomicMapOperations(final IgniteCache<Integer, String> cache) throws IgniteException {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
-
-        final IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Put and return previous value.
         String v = cache.getAndPut(1, "1");
