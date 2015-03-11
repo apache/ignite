@@ -184,7 +184,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @return Updated size of the queue.
      */
     int offerFuture(GridNioFuture<?> writeFut) {
-        boolean msgThread = false;//GridNioBackPressureControl.threadProcessingMessage();
+        boolean msgThread = false;
 
         if (sem != null && !msgThread)
             sem.acquireUninterruptibly();

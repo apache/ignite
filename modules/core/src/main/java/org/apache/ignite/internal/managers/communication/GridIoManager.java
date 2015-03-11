@@ -48,7 +48,6 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
@@ -551,8 +550,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
-
                     GridMessageListener lsnr = lsnrMap.get(msg.topic());
 
                     if (lsnr == null)
@@ -565,8 +562,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onMessage(nodeId, obj);
                 }
                 finally {
-                    threadProcessingMessage(false);
-
                     workersCnt.decrement();
 
                     msgC.run();
@@ -603,13 +598,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
-
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
-                    threadProcessingMessage(false);
-
                     workersCnt.decrement();
 
                     msgC.run();
@@ -802,13 +793,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
-
                     unwindMessageSet(msgSet0, lsnr);
                 }
                 finally {
-                    threadProcessingMessage(false);
-
                     workersCnt.decrement();
 
                     msgC.run();
