@@ -44,9 +44,6 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.*;
  * Hadoop client protocol.
  */
 public class HadoopClientProtocol implements ClientProtocol {
-    /** Ignite framework name property. */
-    public static final String FRAMEWORK_NAME = "ignite";
-
     /** Protocol version. */
     private static final long PROTO_VER = 1L;
 
