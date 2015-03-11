@@ -58,7 +58,7 @@ import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 /**
  * Cache eviction manager.
  */
-public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     /** Unsafe instance. */
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
@@ -129,7 +129,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration cfg = cctx.config();
 
-        plc = cctx.isNear() ? cfg.<K, V>getNearEvictionPolicy() : cfg.<K, V>getEvictionPolicy();
+        plc = cctx.isNear() ? cfg.getNearEvictionPolicy() : cfg.getEvictionPolicy();
 
         memoryMode = cctx.config().getMemoryMode();
 
@@ -619,7 +619,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             log.debug("Evicting key locally [key=" + key + ", ver=" + ver + ", obsoleteVer=" + obsoleteVer +
                 ", localNode=" + cctx.localNode() + ']');
 
-        GridCacheAdapter<K, V> cache = near ? cctx.dht().near() : cctx.cache();
+        GridCacheAdapter cache = near ? cctx.dht().near() : cctx.cache();
 
         GridCacheEntryEx entry = cache.peekEx(key);
 
@@ -650,7 +650,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws IgniteCheckedException If failed to evict entry.
      */
     private boolean evict0(
-        GridCacheAdapter<K, V> cache,
+        GridCacheAdapter cache,
         GridCacheEntryEx entry,
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
@@ -909,7 +909,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param obsoleteVer Obsolete version.
      * @throws IgniteCheckedException In case of error.
      */
-    public void batchEvict(Collection<? extends K> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+    public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
         assert !evictSyncAgr;
         assert cctx.isSwapOrOffheapEnabled();
 
@@ -919,12 +919,12 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         boolean recordable = cctx.events().isRecordable(EVT_CACHE_ENTRY_EVICTED);
 
-        GridCacheAdapter<K, V> cache = cctx.cache();
+        GridCacheAdapter cache = cctx.cache();
 
-        Map<K, GridCacheEntryEx> cached = U.newLinkedHashMap(keys.size());
+        Map<Object, GridCacheEntryEx> cached = U.newLinkedHashMap(keys.size());
 
         // Get all participating entries to avoid deadlock.
-        for (K k : keys) {
+        for (Object k : keys) {
             KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
 
             GridCacheEntryEx e = cache.peekEx(cacheKey);
