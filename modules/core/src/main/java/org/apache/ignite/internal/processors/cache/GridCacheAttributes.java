@@ -27,9 +27,9 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.
@@ -66,9 +66,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Default lock timeout. */
     private long dfltLockTimeout;
-
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes;
 
     /** Cache rebalance mode. */
     private CacheRebalanceMode rebalanceMode;
@@ -168,7 +165,6 @@ public class GridCacheAttributes implements Externalizable {
         rebalanceMode = cfg.getRebalanceMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
-        storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
         writeBehindBatchSize = cfg.getWriteBehindBatchSize();
@@ -401,7 +397,7 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Rebalance batch size.
+     * @return Preload batch size.
      */
     public int rebalanceBatchSize() {
         return rebalanceBatchSize;
@@ -501,7 +497,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeEnum(out, rebalanceMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
-        out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
         out.writeInt(writeBehindBatchSize);
@@ -543,7 +538,6 @@ public class GridCacheAttributes implements Externalizable {
         rebalanceMode = CacheRebalanceMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
-        storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
         writeBehindBatchSize = in.readInt();

@@ -630,8 +630,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -661,8 +661,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -697,8 +697,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();

@@ -108,7 +108,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();
 
-                    GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
                         GridCacheVersion ver = entry.version();
@@ -135,7 +135,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();
 
-                    GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
                         GridCacheVersion ver = entry.version();

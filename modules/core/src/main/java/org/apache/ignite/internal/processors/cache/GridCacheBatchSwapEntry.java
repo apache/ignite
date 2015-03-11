@@ -26,12 +26,9 @@ import java.nio.*;
 /**
  * Entry for batch swap operations.
  */
-public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
+public class GridCacheBatchSwapEntry extends GridCacheSwapEntryImpl {
     /** Key. */
-    private K key;
-
-    /** Key bytes. */
-    private byte[] keyBytes;
+    private KeyCacheObject key;
 
     /** Partition. */
     private int part;
@@ -40,45 +37,35 @@ public class GridCacheBatchSwapEntry<K, V> extends GridCacheSwapEntryImpl<V> {
      * Creates batch swap entry.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param part Partition id.
      * @param valBytes Value bytes.
-     * @param valIsByteArr Whether value is byte array.
+     * @param type Value type.
      * @param ver Version.
      * @param ttl Time to live.
      * @param expireTime Expire time.
      * @param keyClsLdrId Key class loader ID.
      * @param valClsLdrId Optional value class loader ID.
      */
-    public GridCacheBatchSwapEntry(K key,
-        byte[] keyBytes,
+    public GridCacheBatchSwapEntry(KeyCacheObject key,
         int part,
         ByteBuffer valBytes,
-        boolean valIsByteArr,
+        byte type,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
         IgniteUuid keyClsLdrId,
         @Nullable IgniteUuid valClsLdrId) {
-        super(valBytes, valIsByteArr, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
+        super(valBytes, type, ver, ttl, expireTime, keyClsLdrId, valClsLdrId);
 
         this.key = key;
-        this.keyBytes = keyBytes;
         this.part = part;
     }
 
     /**
      * @return Key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @return Key bytes.
-     */
-    public byte[] keyBytes() {
-        return keyBytes;
     }
 
     /**

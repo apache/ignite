@@ -35,8 +35,8 @@ public class GridMapEntry<K, V> implements Map.Entry<K, V>, Serializable {
     @GridToStringInclude
     private K key;
 
-    @GridToStringInclude
     /** */
+    @GridToStringInclude
     private V val;
 
     /**

@@ -1037,40 +1037,6 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         assert res.get(1).equals(25);
     }
 
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        P2<Integer, Integer> p = new P2<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                return val < 30;
-            }
-        };
-
-        CacheProjection<Integer, Integer> cachePrj = ((IgniteKernal)grid(0))
-            .<Integer, Integer>cache(null).projection(p);
-
-        CacheQuery<List<?>> q = cachePrj.queries()
-            .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");
-
-        List<List<?>> list = new ArrayList<>(q.execute().get());
-
-        dedup(list);
-
-        Collections.sort(list, new Comparator<List<?>>() {
-            @Override public int compare(List<?> r1, List<?> r2) {
-                return ((Integer)r1.get(0)).compareTo((Integer)r2.get(0));
-            }
-        });
-
-        assertEquals(10, list.size());
-
-        for (int i = 20; i < 30; i++) {
-            List<?> row = list.get(i - 20);
-
-            assertEquals(i, row.get(0));
-            assertEquals(i, row.get(1));
-        }
-    }
-
     /**
      * Dedups result.
      *

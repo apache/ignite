@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Continuous routine handler.
  */
-public interface GridContinuousHandler extends Externalizable {
+public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * Registers listener.
      *
@@ -87,6 +87,13 @@ public interface GridContinuousHandler extends Externalizable {
      * will be sent in non-ordered messages.
      */
     @Nullable public Object orderedTopic();
+
+    /**
+     * Clones this handler.
+     *
+     * @return Clone of this handler.
+     */
+    public GridContinuousHandler clone();
 
     /**
      * @return {@code True} if for events.

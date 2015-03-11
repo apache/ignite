@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.spi.communication.*;
 
 /**
  * Kernal self test suite.
@@ -51,6 +52,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridEventStorageManagerSelfTest.class);
         suite.addTestSuite(GridSwapSpaceManagerSelfTest.class);
         suite.addTestSuite(GridCommunicationSendMessageSelfTest.class);
+        suite.addTestSuite(GridCacheMessageSelfTest.class);
         suite.addTestSuite(GridDeploymentManagerStopSelfTest.class);
         suite.addTestSuite(GridManagerStopSelfTest.class);
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.class);

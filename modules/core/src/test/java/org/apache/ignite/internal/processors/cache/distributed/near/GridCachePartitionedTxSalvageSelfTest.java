@@ -243,7 +243,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         IgniteKernal kernal = (IgniteKernal) ignite;
 
-        GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
+        GridCacheAffinityManager affMgr = kernal.internalCache().context().affinity();
 
         for (int i = 0; i < KEY_CNT * GRID_CNT * 1.5; i++) {
             if (!affMgr.localNode((Object)i, kernal.context().discovery().topologyVersion())) {

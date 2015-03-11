@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Information about partitions of a single node.
  */
-public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -79,7 +79,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (parts != null)
@@ -87,7 +87,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)

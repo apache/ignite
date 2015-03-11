@@ -228,7 +228,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx<Object, Object> e;
+            GridCacheEntryEx e;
 
             if (cache.affinity().isPrimaryOrBackup(grid.localNode(), key)) {
                 if (cache instanceof GridNearCacheAdapter)

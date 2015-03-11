@@ -33,7 +33,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Cache event manager.
  */
-public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheEventManager extends GridCacheManagerAdapter {
     /** Local node ID. */
     private UUID locNodeId;
 
@@ -75,10 +75,31 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, IgniteInternalTx tx, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
-        String cloClsName, String taskName) {
-        addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
+    public void addEvent(int part,
+        KeyCacheObject key,
+        IgniteInternalTx tx,
+        @Nullable GridCacheMvccCandidate owner,
+        int type,
+        @Nullable CacheObject newVal,
+        boolean hasNewVal,
+        @Nullable CacheObject oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        String cloClsName,
+        String taskName)
+    {
+        addEvent(part,
+            key,
+            locNodeId,
+            tx,
+            owner,
+            type,
+            newVal,
+            hasNewVal,
+            oldVal,
+            hasOldVal,
+            subjId,
+            cloClsName,
             taskName);
     }
 
@@ -97,11 +118,32 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, UUID nodeId, IgniteInternalTx tx, GridCacheMvccCandidate<K> owner,
-        int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
-        String taskName) {
-        addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
+    public void addEvent(int part,
+        KeyCacheObject key,
+        UUID nodeId,
+        IgniteInternalTx tx,
+        GridCacheMvccCandidate owner,
+        int type,
+        CacheObject newVal,
+        boolean hasNewVal,
+        CacheObject oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        String cloClsName,
+        String taskName)
+    {
+        addEvent(part,
+            key,
+            nodeId, tx == null ? null : tx.xid(),
+            owner == null ? null : owner.version(),
+            type,
+            newVal,
+            hasNewVal,
+            oldVal,
+            hasOldVal,
+            subjId,
+            cloClsName,
+            taskName);
     }
 
     /**
@@ -118,13 +160,34 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
-        int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
-        String taskName) {
+    public void addEvent(int part,
+        KeyCacheObject key,
+        UUID evtNodeId,
+        @Nullable GridCacheMvccCandidate owner,
+        int type,
+        @Nullable CacheObject newVal,
+        boolean hasNewVal,
+        CacheObject oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        String cloClsName,
+        String taskName)
+    {
         IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
-        addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
-            newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
+        addEvent(part,
+            key,
+            evtNodeId,
+            tx == null ? null : tx.xid(),
+            owner == null ? null : owner.version(),
+            type,
+            newVal,
+            hasNewVal,
+            oldVal,
+            hasOldVal,
+            subjId,
+            cloClsName,
+            taskName);
     }
 
     /**
@@ -144,14 +207,14 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     public void addEvent(
         int part,
-        K key,
+        KeyCacheObject key,
         UUID evtNodeId,
         @Nullable IgniteUuid xid,
         @Nullable Object lockId,
         int type,
-        @Nullable V newVal,
+        @Nullable CacheObject newVal,
         boolean hasNewVal,
-        @Nullable V oldVal,
+        @Nullable CacheObject oldVal,
         boolean hasOldVal,
         UUID subjId,
         @Nullable String cloClsName,
@@ -163,7 +226,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
         // Events are not fired for internal entry.
-        if (!(key instanceof GridCacheInternal)) {
+        if (!key.internal()) {
             ClusterNode evtNode = cctx.discovery().node(evtNodeId);
 
             if (evtNode == null)
@@ -174,9 +237,23 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     "(try to increase topology history size configuration property of configured " +
                     "discovery SPI): " + evtNodeId);
 
-            cctx.gridEvents().record(new CacheEvent(cctx.name(), cctx.localNode(), evtNode,
-                "Cache event.", type, part, cctx.isNear(), key, xid, lockId, newVal, hasNewVal, oldVal, hasOldVal,
-                subjId, cloClsName, taskName));
+            cctx.gridEvents().record(new CacheEvent(cctx.name(),
+                cctx.localNode(),
+                evtNode,
+                "Cache event.",
+                type,
+                part,
+                cctx.isNear(),
+                key.value(cctx.cacheObjectContext(), false),
+                xid,
+                lockId,
+                CU.value(newVal, cctx, false),
+                hasNewVal,
+                CU.value(oldVal, cctx, false),
+                hasOldVal,
+                subjId,
+                cloClsName,
+                taskName));
         }
     }
 

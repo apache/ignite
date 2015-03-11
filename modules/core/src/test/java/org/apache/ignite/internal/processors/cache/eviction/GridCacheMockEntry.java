@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import java.util.*;
 
 
 /**
@@ -32,7 +33,7 @@ import javax.cache.*;
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>,
     EvictableEntry<K, V> {
     /** */
-    private static final String META_KEY = "ignite-mock-eviction-entry-meta";
+    private static final UUID META_KEY = UUID.randomUUID();
 
     /** */
     @GridToStringInclude
@@ -74,7 +75,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
      *
      */
     private void onEvicted() {
-        for (String key : allMeta().keySet())
+        for (UUID key : allMeta().keySet())
             removeMeta(key);
     }
 

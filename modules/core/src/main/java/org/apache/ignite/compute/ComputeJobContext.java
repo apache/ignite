@@ -21,7 +21,6 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Context attached to every job executed on the grid. Note that unlike

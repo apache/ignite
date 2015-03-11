@@ -96,7 +96,9 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
         cfg.setMapReducePlanner(new HadoopTestRoundRobinMrPlanner());
-        cfg.setExternalExecution(false);
+
+        // TODO: IGNITE-404: Uncomment when fixed.
+        //cfg.setExternalExecution(false);
 
         return cfg;
     }

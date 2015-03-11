@@ -54,19 +54,19 @@ class GridDhtPartitionSupplyPool<K, V> {
     private final ReadWriteLock busyLock;
 
     /** */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** */
     private final Collection<SupplyWorker> workers = new LinkedList<>();
 
     /** */
-    private final BlockingQueue<DemandMessage<K, V>> queue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<DemandMessage> queue = new LinkedBlockingDeque<>();
 
     /** */
     private final boolean depEnabled;
 
     /** Preload predicate. */
-    private IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
      * @param cctx Cache context.
@@ -88,8 +88,8 @@ class GridDhtPartitionSupplyPool<K, V> {
         for (int i = 0; i < poolSize; i++)
             workers.add(new SupplyWorker());
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage<K, V>>() {
-            @Override public void apply(UUID id, GridDhtPartitionDemandMessage<K, V> m) {
+        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
+            @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
                 processDemandMessage(id, m);
             }
         });
@@ -120,7 +120,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      *
      * @param preloadPred Preload predicate.
      */
-    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
         this.preloadPred = preloadPred;
     }
 
@@ -148,7 +148,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      * @param nodeId Sender node ID.
      * @param d Message.
      */
-    private void processDemandMessage(UUID nodeId, GridDhtPartitionDemandMessage<K, V> d) {
+    private void processDemandMessage(UUID nodeId, GridDhtPartitionDemandMessage d) {
         if (!enterBusy())
             return;
 
@@ -157,7 +157,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Received partition demand [node=" + nodeId + ", demand=" + d + ']');
 
-                queue.offer(new DemandMessage<>(nodeId, d));
+                queue.offer(new DemandMessage(nodeId, d));
             }
             else
                 U.warn(log, "Received partition demand message when rebalancing is disabled (will ignore): " + d);
@@ -212,7 +212,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                DemandMessage<K, V> msg = poll(queue, this);
+                DemandMessage msg = poll(queue, this);
 
                 if (msg == null)
                     continue;
@@ -234,20 +234,18 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @param msg Message.
          * @param node Demander.
          */
-        private void processMessage(DemandMessage<K, V> msg, ClusterNode node) {
+        private void processMessage(DemandMessage msg, ClusterNode node) {
             assert msg != null;
             assert node != null;
 
-            GridDhtPartitionDemandMessage<K, V> d = msg.message();
+            GridDhtPartitionDemandMessage d = msg.message();
 
-            GridDhtPartitionSupplyMessage<K, V> s = new GridDhtPartitionSupplyMessage<>(d.workerId(),
+            GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(d.workerId(),
                 d.updateSequence(), cctx.cacheId());
 
             long preloadThrottle = cctx.config().getRebalanceThrottle();
 
             boolean ack = false;
-
-            boolean convertPortable = cctx.portableEnabled() && cctx.offheapTiered();
 
             try {
                 // Partition map exchange is finished which means that all near transactions with given
@@ -256,7 +254,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 cctx.mvcc().finishLocks(d.topologyVersion()).get();
 
                 for (Integer part : d.partitions()) {
-                    GridDhtLocalPartition<K, V> loc = top.localPartition(part, d.topologyVersion(), false);
+                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
                     if (loc == null || loc.state() != OWNING || !loc.reserve()) {
                         // Reply with partition of "-1" to let sender know that
@@ -270,11 +268,11 @@ class GridDhtPartitionSupplyPool<K, V> {
                         continue;
                     }
 
-                    GridCacheEntryInfoCollectSwapListener<K, V> swapLsnr = null;
+                    GridCacheEntryInfoCollectSwapListener swapLsnr = null;
 
                     try {
                         if (cctx.isSwapOrOffheapEnabled()) {
-                            swapLsnr = new GridCacheEntryInfoCollectSwapListener<>(log, cctx);
+                            swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                             cctx.swap().addOffHeapListener(part, swapLsnr);
                             cctx.swap().addSwapListener(part, swapLsnr);
@@ -282,7 +280,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                         boolean partMissing = false;
 
-                        for (GridCacheEntryEx<K, V> e : loc.entries()) {
+                        for (GridCacheEntryEx e : loc.entries()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition, so we send '-1' partition and move on.
                                 s.missed(part);
@@ -306,15 +304,15 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 if (preloadThrottle > 0)
                                     U.sleep(preloadThrottle);
 
-                                s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence(),
+                                s = new GridDhtPartitionSupplyMessage(d.workerId(), d.updateSequence(),
                                     cctx.cacheId());
                             }
 
-                            GridCacheEntryInfo<K, V> info = e.info();
+                            GridCacheEntryInfo info = e.info();
 
                             if (info != null && !(info.key() instanceof GridPartitionLockKey) && !info.isNew()) {
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx.shared());
+                                    s.addEntry(part, info, cctx);
                                 else if (log.isDebugEnabled())
                                     log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
                                         info);
@@ -325,15 +323,15 @@ class GridDhtPartitionSupplyPool<K, V> {
                             continue;
 
                         if (cctx.isSwapOrOffheapEnabled()) {
-                            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> iter =
-                                cctx.swap().iterator(part, false);
+                            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
+                                cctx.swap().iterator(part);
 
                             // Iterator may be null if space does not exist.
                             if (iter != null) {
                                 try {
                                     boolean prepared = false;
 
-                                    for (Map.Entry<byte[], GridCacheSwapEntry<V>> e : iter) {
+                                    for (Map.Entry<byte[], GridCacheSwapEntry> e : iter) {
                                         if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                             // Demander no longer needs this partition,
                                             // so we send '-1' partition and move on.
@@ -358,30 +356,22 @@ class GridDhtPartitionSupplyPool<K, V> {
                                             if (preloadThrottle > 0)
                                                 U.sleep(preloadThrottle);
 
-                                            s = new GridDhtPartitionSupplyMessage<>(d.workerId(),
+                                            s = new GridDhtPartitionSupplyMessage(d.workerId(),
                                                 d.updateSequence(), cctx.cacheId());
                                         }
 
-                                        GridCacheSwapEntry<V> swapEntry = e.getValue();
+                                        GridCacheSwapEntry swapEntry = e.getValue();
 
-                                        GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
+                                        GridCacheEntryInfo info = new GridCacheEntryInfo();
 
                                         info.keyBytes(e.getKey());
                                         info.ttl(swapEntry.ttl());
                                         info.expireTime(swapEntry.expireTime());
                                         info.version(swapEntry.version());
-
-                                        if (!swapEntry.valueIsByteArray()) {
-                                            if (convertPortable)
-                                                info.valueBytes(cctx.convertPortableBytes(swapEntry.valueBytes()));
-                                            else
-                                                info.valueBytes(swapEntry.valueBytes());
-                                        }
-                                        else
-                                            info.value(swapEntry.value());
+                                        info.value(swapEntry.value());
 
                                         if (preloadPred == null || preloadPred.apply(info))
-                                            s.addEntry0(part, info, cctx.shared());
+                                            s.addEntry0(part, info, cctx);
                                         else {
                                             if (log.isDebugEnabled())
                                                 log.debug("Rebalance predicate evaluated to false (will not send " +
@@ -425,11 +415,11 @@ class GridDhtPartitionSupplyPool<K, V> {
                         }
 
                         if (swapLsnr != null) {
-                            Collection<GridCacheEntryInfo<K, V>> entries = swapLsnr.entries();
+                            Collection<GridCacheEntryInfo> entries = swapLsnr.entries();
 
                             swapLsnr = null;
 
-                            for (GridCacheEntryInfo<K, V> info : entries) {
+                            for (GridCacheEntryInfo info : entries) {
                                 if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                                     // Demander no longer needs this partition,
                                     // so we send '-1' partition and move on.
@@ -449,12 +439,13 @@ class GridDhtPartitionSupplyPool<K, V> {
                                     if (!reply(node, d, s))
                                         return;
 
-                                    s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence(),
+                                    s = new GridDhtPartitionSupplyMessage(d.workerId(),
+                                        d.updateSequence(),
                                         cctx.cacheId());
                                 }
 
                                 if (preloadPred == null || preloadPred.apply(info))
-                                    s.addEntry(part, info, cctx.shared());
+                                    s.addEntry(part, info, cctx);
                                 else if (log.isDebugEnabled())
                                     log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
                                         info);
@@ -494,7 +485,7 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @return {@code True} if message was sent, {@code false} if recipient left grid.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean reply(ClusterNode n, GridDhtPartitionDemandMessage<K, V> d, GridDhtPartitionSupplyMessage<K, V> s)
+        private boolean reply(ClusterNode n, GridDhtPartitionDemandMessage d, GridDhtPartitionSupplyMessage s)
             throws IgniteCheckedException {
             try {
                 if (log.isDebugEnabled())
@@ -516,7 +507,7 @@ class GridDhtPartitionSupplyPool<K, V> {
     /**
      * Demand message wrapper.
      */
-    private static class DemandMessage<K, V> extends IgniteBiTuple<UUID, GridDhtPartitionDemandMessage<K, V>> {
+    private static class DemandMessage extends IgniteBiTuple<UUID, GridDhtPartitionDemandMessage> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -524,7 +515,7 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @param sndId Sender ID.
          * @param msg Message.
          */
-        DemandMessage(UUID sndId, GridDhtPartitionDemandMessage<K, V> msg) {
+        DemandMessage(UUID sndId, GridDhtPartitionDemandMessage msg) {
             super(sndId, msg);
         }
 
@@ -545,7 +536,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         /**
          * @return Message.
          */
-        public GridDhtPartitionDemandMessage<K, V> message() {
+        public GridDhtPartitionDemandMessage message() {
             return get2();
         }
 

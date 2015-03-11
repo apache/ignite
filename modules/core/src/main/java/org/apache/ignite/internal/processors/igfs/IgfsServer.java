@@ -244,7 +244,8 @@ public class IgfsServer {
 
                     if (first) { // First message must be HANDSHAKE.
                         if (reqId != 0 || ordinal != IgfsIpcCommand.HANDSHAKE.ordinal()) {
-                            U.warn(log, "Handshake failed.");
+                            if (log.isDebugEnabled())
+                                log.debug("IGFS IPC handshake failed [reqId=" + reqId + ", ordinal=" + ordinal + ']');
 
                             return;
                         }
