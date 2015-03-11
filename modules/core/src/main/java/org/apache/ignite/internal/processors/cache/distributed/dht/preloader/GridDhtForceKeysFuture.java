@@ -45,6 +45,9 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  */
 public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Object, Collection<K>>
     implements GridDhtFuture<Collection<K>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -58,10 +61,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private GridCacheContext<K, V> cctx;
 
     /** Topology. */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** Keys to request. */
-    private Collection<? extends K> keys;
+    private Collection<KeyCacheObject> keys;
 
     /** Keys for which local node is no longer primary. */
     private Collection<Integer> invalidParts = new GridLeanSet<>();
@@ -89,7 +92,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     public GridDhtForceKeysFuture(
         GridCacheContext<K, V> cctx,
-        long topVer, Collection<? extends K> keys,
+        long topVer,
+        Collection<KeyCacheObject> keys,
         GridDhtPreloader<K, V> preloader
     ) {
         assert topVer != 0 : topVer;
@@ -170,7 +174,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param res Response.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onResult(UUID nodeId, GridDhtForceKeysResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
@@ -202,14 +206,14 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param exc Exclude nodes.
      * @return {@code True} if some mapping was added.
      */
-    private boolean map(Iterable<? extends K> keys, Collection<ClusterNode> exc) {
-        Map<ClusterNode, Set<K>> mappings = new HashMap<>();
+    private boolean map(Iterable<KeyCacheObject> keys, Collection<ClusterNode> exc) {
+        Map<ClusterNode, Set<KeyCacheObject>> mappings = new HashMap<>();
 
         ClusterNode loc = cctx.localNode();
 
         int curTopVer = topCntr.get();
 
-        for (K key : keys)
+        for (KeyCacheObject key : keys)
             map(key, mappings, exc);
 
         if (isDone())
@@ -223,9 +227,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             trackable = true;
 
             // Create mini futures.
-            for (Map.Entry<ClusterNode, Set<K>> mapped : mappings.entrySet()) {
+            for (Map.Entry<ClusterNode, Set<KeyCacheObject>> mapped : mappings.entrySet()) {
                 ClusterNode n = mapped.getKey();
-                Set<K> mappedKeys = mapped.getValue();
+                Set<KeyCacheObject> mappedKeys = mapped.getValue();
 
                 int cnt = F.size(mappedKeys);
 
@@ -234,7 +238,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                     MiniFuture fut = new MiniFuture(n, mappedKeys, curTopVer, exc);
 
-                    GridDhtForceKeysRequest<K, V> req = new GridDhtForceKeysRequest<>(
+                    GridDhtForceKeysRequest req = new GridDhtForceKeysRequest(
                         cctx.cacheId(),
                         futId,
                         fut.miniId(),
@@ -271,12 +275,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param exc Exclude nodes.
      * @param mappings Mappings.
      */
-    private void map(K key, Map<ClusterNode, Set<K>> mappings, Collection<ClusterNode> exc) {
+    private void map(KeyCacheObject key, Map<ClusterNode, Set<KeyCacheObject>> mappings, Collection<ClusterNode> exc) {
         ClusterNode loc = cctx.localNode();
 
         int part = cctx.affinity().partition(key);
 
-        GridCacheEntryEx<K, V> e = cctx.dht().peekEx(key);
+        GridCacheEntryEx e = cctx.dht().peekEx(key);
 
         try {
             if (e != null && !e.isNewLocked()) {
@@ -307,7 +311,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         }
 
         // Create partition.
-        GridDhtLocalPartition<K, V> locPart = top.localPartition(part, topVer, false);
+        GridDhtLocalPartition locPart = top.localPartition(part, topVer, false);
 
         if (log.isDebugEnabled())
             log.debug("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
@@ -335,7 +339,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 return;
             }
 
-            Collection<K> mappedKeys = F.addIfAbsent(mappings, pick, F.<K>newSet());
+            Collection<KeyCacheObject> mappedKeys = F.addIfAbsent(mappings, pick, F.<KeyCacheObject>newSet());
 
             assert mappedKeys != null;
 
@@ -359,6 +363,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mini-future ID. */
         private IgniteUuid miniId = IgniteUuid.randomUuid();
 
@@ -366,7 +373,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         private ClusterNode node;
 
         /** Requested keys. */
-        private Collection<K> keys;
+        private Collection<KeyCacheObject> keys;
 
         /** Topology version for this mini-future. */
         private int curTopVer;
@@ -383,7 +390,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param curTopVer Topology version for this mini-future.
          * @param exc Exclude node list.
          */
-        MiniFuture(ClusterNode node, Collection<K> keys, int curTopVer, Collection<ClusterNode> exc) {
+        MiniFuture(ClusterNode node, Collection<KeyCacheObject> keys, int curTopVer, Collection<ClusterNode> exc) {
             assert node != null;
             assert curTopVer > 0;
             assert exc != null;
@@ -442,8 +449,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         /**
          * @param res Result callback.
          */
-        void onResult(GridDhtForceKeysResponse<K, V> res) {
-            Collection<K> missedKeys = res.missedKeys();
+        void onResult(GridDhtForceKeysResponse res) {
+            Collection<KeyCacheObject> missedKeys = res.missedKeys();
 
             boolean remapMissed = false;
 
@@ -456,10 +463,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             // If preloading is disabled, we need to check other backups.
             if (!cctx.preloadEnabled()) {
-                Collection<K> retryKeys = F.view(
+                Collection<KeyCacheObject> retryKeys = F.view(
                     keys,
                     F0.notIn(missedKeys),
-                    F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<K, V>info2Key())));
+                    F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key())));
 
                 if (!retryKeys.isEmpty())
                     map(retryKeys, F.concat(false, node, exc));
@@ -469,18 +476,17 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             boolean replicate = cctx.isDrEnabled();
 
-            for (GridCacheEntryInfo<K, V> info : res.forcedInfos()) {
+            for (GridCacheEntryInfo info : res.forcedInfos()) {
                 int p = cctx.affinity().partition(info.key());
 
-                GridDhtLocalPartition<K, V> locPart = top.localPartition(p, -1, false);
+                GridDhtLocalPartition locPart = top.localPartition(p, -1, false);
 
                 if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
-                    GridCacheEntryEx<K, V> entry = cctx.dht().entryEx(info.key());
+                    GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
 
                     try {
                         if (entry.initialValue(
                             info.value(),
-                            info.valueBytes(),
                             info.version(),
                             info.ttl(),
                             info.expireTime(),

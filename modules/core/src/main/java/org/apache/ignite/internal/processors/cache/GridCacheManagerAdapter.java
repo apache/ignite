@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /** Context. */
-    protected GridCacheContext<K, V> cctx;
+    protected GridCacheContext cctx;
 
     /** Logger. */
     protected IgniteLogger log;

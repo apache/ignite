@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
@@ -56,31 +54,8 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
 
         /** {@inheritDoc} */
         @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) {
-            try {
-                final Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
-
-                for (GridCache cache : ignite.cachesx()) {
-                    String cacheName = cache.name();
-
-                    if (names.contains(cacheName)) {
-                        final Set keys = cache.keySet();
-
-                        int before = keys.size(), after = before;
-
-                        for (Object key : keys) {
-                            if (cache.compact(key))
-                                after--;
-                        }
-
-                        res.put(cacheName, new IgniteBiTuple<>(before, after));
-                    }
-                }
-
-                return res;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            // TODO IGNITE-436 remove command.
+            return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */

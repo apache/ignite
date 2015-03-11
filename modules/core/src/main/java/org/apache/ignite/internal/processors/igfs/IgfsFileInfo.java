@@ -189,7 +189,8 @@ public final class IgfsFileInfo implements Externalizable {
      * @param evictExclude Evict exclude flag.
      */
     IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
-        this(false, null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
+        this(blockSize == 0, // NB The contract is: (blockSize == null) <=> isDirectory()
+            null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
 
     /**

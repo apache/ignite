@@ -45,6 +45,8 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MARSHALLER.setContext(new MarshallerContextTestImpl());
+
         bean = new IgniteSpringBean();
 
         bean.setConfiguration(config());

@@ -140,6 +140,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
         suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
         suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
+        suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
 
         // Heuristic exception handling. TODO IGNITE-257
 //        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
@@ -277,8 +278,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
         // suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO: uncomment when fix GG-2239
+
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
@@ -355,9 +358,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLoadAllTest.class);
         suite.addTestSuite(IgniteCacheTxLocalLoadAllTest.class);
 
-        // TODO: IGNITE-402
-//        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
-//        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);

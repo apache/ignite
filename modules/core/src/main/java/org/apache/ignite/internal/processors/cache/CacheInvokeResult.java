@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -27,13 +26,9 @@ import java.io.*;
 /**
  * Implementation of {@link EntryProcessorResult}.
  */
-public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externalizable, OptimizedMarshallable {
+public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "JavaAbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** */
     @GridToStringInclude
@@ -61,11 +56,6 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
      */
     public CacheInvokeResult(Exception err) {
         this.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

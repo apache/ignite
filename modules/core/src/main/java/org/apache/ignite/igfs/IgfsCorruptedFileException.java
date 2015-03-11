@@ -27,24 +27,30 @@ public class IgfsCorruptedFileException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Error message.
+     * Constructor.
+     *
+     * @param msg Message.
      */
     public IgfsCorruptedFileException(String msg) {
         super(msg);
     }
 
     /**
-     * @param cause Error cause.
+     * Constructor.
+     *
+     * @param cause Cause.
      */
     public IgfsCorruptedFileException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * @param msg Error message.
-     * @param cause Error cause.
+     * Constructor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public IgfsCorruptedFileException(String msg, @Nullable Throwable cause) {
+    public IgfsCorruptedFileException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

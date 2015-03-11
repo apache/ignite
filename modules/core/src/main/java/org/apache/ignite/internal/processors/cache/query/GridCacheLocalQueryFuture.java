@@ -21,17 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 
-import javax.cache.*;
 import java.util.*;
 
 /**
  * Local query future.
  */
 public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private Runnable run;
 
@@ -101,9 +102,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
-            IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
-                F.<Cache.Entry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
-
             Marshaller marsh = cctx.marshaller();
 
             IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
@@ -114,7 +112,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
             return new GridCacheQueryInfo(
                 true,
-                prjPred,
                 trans,
                 rdc,
                 qry.query(),

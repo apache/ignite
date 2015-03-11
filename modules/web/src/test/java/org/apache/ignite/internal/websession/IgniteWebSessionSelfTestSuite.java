@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.websession;
 
 import junit.framework.*;
+import org.apache.ignite.testframework.*;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Test suite for web sessions caching functionality.
@@ -34,6 +37,9 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
         suite.addTestSuite(WebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
+
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));
 
         return suite;
     }

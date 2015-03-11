@@ -33,7 +33,7 @@
     </parent>
 
     <properties>
-        <ignite.version>1.0.0-RC2-SNAPSHOT</ignite.version>
+        <ignite.version>1.0.0-RC3-SNAPSHOT</ignite.version>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -1367,7 +1367,7 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>process-resources</phase>
+                                <phase>process-classes</phase>
                                 <configuration>
                                     <target>
                                         <java

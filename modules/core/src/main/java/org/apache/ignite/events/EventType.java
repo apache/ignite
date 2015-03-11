@@ -17,10 +17,8 @@
 
 package org.apache.ignite.events;
 
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
