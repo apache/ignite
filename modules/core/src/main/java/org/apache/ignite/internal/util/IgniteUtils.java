@@ -3054,8 +3054,7 @@ public abstract class IgniteUtils {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
                 !new File(cur, "modules").isDirectory() ||
-                !new File(cur, "config").isDirectory() ||
-                !new File(cur, "license").isDirectory())
+                !new File(cur, "config").isDirectory())
                 continue;
 
             return cur.getPath();
