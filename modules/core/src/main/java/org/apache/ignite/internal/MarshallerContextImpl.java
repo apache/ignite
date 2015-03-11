@@ -47,10 +47,12 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** {@inheritDoc} */
     @Override protected boolean registerClassName(int id, String clsName) {
         try {
-            if (cache == null)
+            GridCacheAdapter<Integer, String> cache0 = cache;
+
+            if (cache0 == null)
                 return false;
 
-            String old = cache.putIfAbsent(id, clsName);
+            String old = cache0.putIfAbsent(id, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +

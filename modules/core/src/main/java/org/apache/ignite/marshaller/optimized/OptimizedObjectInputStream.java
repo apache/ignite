@@ -244,7 +244,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(Class.forName(readUTF(), true, clsLdr), ctx, mapper):
+                    classDescriptor(U.forName(readUTF(), clsLdr), ctx, mapper):
                     classDescriptor(typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
@@ -274,7 +274,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> readClass() throws ClassNotFoundException, IOException {
         int compTypeId = readInt();
 
-        return compTypeId == 0 ? Class.forName(readUTF(), false, clsLdr) :
+        return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
             classDescriptor(compTypeId, clsLdr, ctx, mapper).describedClass();
     }
 
