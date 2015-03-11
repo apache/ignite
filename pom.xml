@@ -381,14 +381,14 @@
                     </execution>
 
                     <execution>
-                        <id>dependencies-schema-load</id>
+                        <id>dependencies-schema-import</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-schema-load.xml</descriptor>
+                                <descriptor>assembly/dependencies-schema-import.xml</descriptor>
                             </descriptors>
                             <outputDirectory>target/release-package/bin</outputDirectory>
                             <finalName>include</finalName>
