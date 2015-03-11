@@ -568,25 +568,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if node is affinity node for given cache configuration.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if local node is affinity node (i.e. will store partitions).
-     */
-    public static boolean isAffinityNode(CacheConfiguration cfg) {
-        if (cfg.getCacheMode() == LOCAL)
-            return true;
-
-        CacheDistributionMode partTax = cfg.getDistributionMode();
-
-        if (partTax == null)
-            partTax = distributionMode(cfg);
-
-        return partTax == CacheDistributionMode.PARTITIONED_ONLY ||
-            partTax == CacheDistributionMode.NEAR_PARTITIONED;
-    }
-
-    /**
      * Gets DHT affinity nodes.
      *
      * @param ctx Cache context.
@@ -629,19 +610,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() == LOCAL)
             return false;
 
-        return cfg.getDistributionMode() == NEAR_PARTITIONED ||
-            cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
-    }
-
-    /**
-     * Gets default partitioned cache mode.
-     *
-     * @param cfg Configuration.
-     * @return Partitioned cache mode.
-     */
-    public static CacheDistributionMode distributionMode(CacheConfiguration cfg) {
-        return cfg.getDistributionMode() != null ?
-            cfg.getDistributionMode() : CacheDistributionMode.PARTITIONED_ONLY;
+        return cfg.getNearConfiguration() != null;
     }
 
     /**

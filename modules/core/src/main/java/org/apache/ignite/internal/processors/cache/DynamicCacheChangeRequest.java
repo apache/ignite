@@ -34,13 +34,13 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Stop cache name. */
     @GridToStringExclude
-    private String stopName;
+    private String cacheName;
 
     /** Cache start configuration. */
     private CacheConfiguration startCfg;
 
     /** Near node ID in case if near cache is being started. */
-    private UUID nearNodeId;
+    private UUID clientNodeId;
 
     /** Near cache configuration. */
     private NearCacheConfiguration nearCacheCfg;
@@ -61,20 +61,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * Constructor creates cache stop request.
      *
-     * @param stopName Cache stop name.
+     * @param cacheName Cache stop name.
      */
-    public DynamicCacheChangeRequest(String stopName) {
-        this.stopName = stopName;
+    public DynamicCacheChangeRequest(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
      * Constructor creates near cache start request.
      *
-     * @param nearNodeId Near node ID.
+     * @param clientNodeId Client node ID.
      * @param nearCacheCfg Near cache configuration.
      */
-    public DynamicCacheChangeRequest(UUID nearNodeId, NearCacheConfiguration nearCacheCfg) {
-        this.nearNodeId = nearNodeId;
+    public DynamicCacheChangeRequest(UUID clientNodeId, NearCacheConfiguration nearCacheCfg) {
+        this.clientNodeId = clientNodeId;
         this.nearCacheCfg = nearCacheCfg;
     }
 
@@ -102,22 +102,22 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return If this is a near cache start request.
      */
-    public boolean isNearStart() {
-        return nearNodeId != null;
+    public boolean isClientStart() {
+        return clientNodeId != null;
     }
 
     /**
      * @return Cache name.
      */
     public String cacheName() {
-        return stopName != null ? stopName : startCfg.getName();
+        return cacheName != null ? cacheName : startCfg.getName();
     }
 
     /**
      * @return Near node ID.
      */
-    public UUID nearNodeId() {
-        return nearNodeId;
+    public UUID clientNodeId() {
+        return clientNodeId;
     }
 
     /**

@@ -86,8 +86,9 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
         ccfgPartitioned.setCacheMode(PARTITIONED);
         ccfgPartitioned.setBackups(1);
         ccfgPartitioned.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgPartitioned.setDistributionMode(gridName.equals(getTestGridName(0)) ? NEAR_PARTITIONED :
-            gridName.equals(getTestGridName(1)) ? NEAR_ONLY : CLIENT_ONLY);
+        // TODO IGNITE-45.
+//        ccfgPartitioned.setDistributionMode(gridName.equals(getTestGridName(0)) ? NEAR_PARTITIONED :
+//            gridName.equals(getTestGridName(1)) ? NEAR_ONLY : CLIENT_ONLY);
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration ccfgColocated = new CacheConfiguration();
@@ -96,7 +97,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
         ccfgColocated.setCacheMode(PARTITIONED);
         ccfgColocated.setBackups(1);
         ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgColocated.setDistributionMode(PARTITIONED_ONLY);
+//        ccfgColocated.setDistributionMode(PARTITIONED_ONLY);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration ccfgReplicated = new CacheConfiguration();

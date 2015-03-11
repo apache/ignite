@@ -129,9 +129,9 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        CacheConfiguration cfg = cctx.config();
+        CacheConfiguration<K, V> cfg = cctx.config();
 
-        plc = cctx.isNear() ? cfg.<K, V>getNearEvictionPolicy() : cfg.<K, V>getEvictionPolicy();
+        plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
 
         memoryMode = cctx.config().getMemoryMode();
 
@@ -148,13 +148,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (!cctx.isLocal()) {
             evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
-            nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
+            nearSync = isNearEnabled(cctx) && !cctx.isNear() && cfg.isEvictSynchronized();
         }
         else {
             if (cfg.isEvictSynchronized())
                 U.warn(log, "Ignored 'evictSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
 
-            if (cfg.isEvictNearSynchronized())
+            if (cfg.getNearConfiguration() != null && cfg.isEvictSynchronized())
                 U.warn(log, "Ignored 'evictNearSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
         }
 

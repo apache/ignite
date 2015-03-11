@@ -53,9 +53,9 @@ public class VisorCacheNearConfiguration implements Serializable {
         VisorCacheNearConfiguration cfg = new VisorCacheNearConfiguration();
 
         cfg.nearEnabled = GridCacheUtils.isNearEnabled(ccfg);
-        cfg.nearStartSize = ccfg.getNearStartSize();
-        cfg.nearEvictPlc = compactClass(ccfg.getNearEvictionPolicy());
-        cfg.nearEvictMaxSize = evictionPolicyMaxSize(ccfg.getNearEvictionPolicy());
+//        cfg.nearStartSize = ccfg.getNearStartSize(); TODO IGNTIE-45
+//        cfg.nearEvictPlc = compactClass(ccfg.getNearEvictionPolicy());
+//        cfg.nearEvictMaxSize = evictionPolicyMaxSize(ccfg.getNearEvictionPolicy());
 
         return cfg;
     }

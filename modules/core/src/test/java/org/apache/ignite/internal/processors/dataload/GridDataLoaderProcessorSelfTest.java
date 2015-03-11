@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -99,11 +98,16 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setCacheMode(mode);
             cc.setAtomicityMode(TRANSACTIONAL);
-            cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+            if (nearEnabled) {
+                NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+                cc.setNearConfiguration(nearCfg);
+            }
+
             cc.setWriteSynchronizationMode(FULL_SYNC);
 
             cc.setEvictSynchronized(false);
-            cc.setEvictNearSynchronized(false);
 
             if (store != null) {
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));

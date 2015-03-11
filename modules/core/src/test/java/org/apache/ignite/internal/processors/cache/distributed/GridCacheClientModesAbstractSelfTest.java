@@ -63,7 +63,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         if (gridCnt.getAndIncrement() == 0) {
-            cfg.setDistributionMode(clientOnly() ? CLIENT_ONLY : NEAR_ONLY);
+            // TODO IGNITE-45
+//            cfg.setDistributionMode(clientOnly() ? CLIENT_ONLY : NEAR_ONLY);
 
             nearOnlyGridName = gridName;
         }

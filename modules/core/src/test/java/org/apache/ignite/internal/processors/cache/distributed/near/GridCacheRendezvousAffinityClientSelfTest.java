@@ -46,8 +46,9 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
         ccfg.setBackups(1);
         ccfg.setAffinity(new CacheRendezvousAffinityFunction());
 
-        if (client)
-            ccfg.setDistributionMode(CLIENT_ONLY);
+        // TODO IGNITE-45.
+//        if (client)
+//            ccfg.setDistributionMode(CLIENT_ONLY);
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -142,7 +142,7 @@ public class VisorCacheConfiguration implements Serializable {
 
         cfg.name = ccfg.getName();
         cfg.mode = ccfg.getCacheMode();
-        cfg.distributionMode = ccfg.getDistributionMode();
+//        cfg.distributionMode = ccfg.getDistributionMode(); TODO IGNITE-45.
         cfg.atomicityMode = ccfg.getAtomicityMode();
         cfg.atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
         cfg.eagerTtl = ccfg.isEagerTtl();

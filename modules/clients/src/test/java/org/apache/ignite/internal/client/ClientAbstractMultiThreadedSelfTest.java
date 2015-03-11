@@ -195,7 +195,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         cfg.setAffinity(new CacheRendezvousAffinityFunction());
 
-        cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         if (cacheName == null)

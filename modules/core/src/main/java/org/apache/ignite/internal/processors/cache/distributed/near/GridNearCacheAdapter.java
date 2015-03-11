@@ -40,7 +40,6 @@ import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Common logic for near caches.
@@ -63,7 +62,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param ctx Context.
      */
     protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getNearStartSize());
+        super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
     }
 
     /** {@inheritDoc} */
@@ -582,16 +581,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
-        if (isAffinityNode(ctx.config()))
+        if (ctx.affinityNode())
             dht().promoteAll(keys);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        if (configuration().getDistributionMode() == CacheDistributionMode.NEAR_PARTITIONED)
-            return dht().randomEntry();
-        else
-            return super.randomEntry();
+        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
     }
 
     /** {@inheritDoc} */
@@ -658,27 +654,22 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
-        switch (configuration().getDistributionMode()) {
-            case NEAR_PARTITIONED:
-                GridCacheVersion obsoleteVer = ctx.versions().next();
+        assert configuration().getNearConfiguration() != null;
 
-                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
+        if (ctx.affinityNode()) {
+            GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
+            List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
 
-                for (GridCacheClearAllRunnable<K, V> dhtJob : dhtJobs)
-                    res.add(new GridNearCacheClearAllRunnable<>(this, obsoleteVer, dhtJob));
+            List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
-                return res;
+            for (GridCacheClearAllRunnable<K, V> dhtJob : dhtJobs)
+                res.add(new GridNearCacheClearAllRunnable<>(this, obsoleteVer, dhtJob));
 
-            case NEAR_ONLY:
-                return super.splitClearLocally();
-
-            default:
-                assert false : "Invalid partition distribution mode.";
-
-                return null;
+            return res;
         }
+        else
+            return super.splitClearLocally();
     }
 
     /**

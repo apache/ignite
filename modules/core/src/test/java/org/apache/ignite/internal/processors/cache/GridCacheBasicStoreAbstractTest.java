@@ -88,7 +88,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
-        cc.setDistributionMode(distributionMode());
         cc.setPreloadMode(SYNC);
 
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
@@ -99,13 +98,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         c.setCacheConfiguration(cc);
 
         return c;
-    }
-
-    /**
-     * @return Distribution mode.
-     */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
     }
 
     /**

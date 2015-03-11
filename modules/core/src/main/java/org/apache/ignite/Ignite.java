@@ -194,9 +194,9 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
 
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
-        @Nullable NearCacheConfiguration<K, V> nearCfg);
+        NearCacheConfiguration<K, V> nearCfg);
 
-    public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> createCache(NearCacheConfiguration<K, V> nearCfg);
 
     /**
      * Stops dynamically started cache.

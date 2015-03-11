@@ -37,7 +37,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -77,7 +76,6 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         cc.setBackups(0);
         cc.setPreloadMode(CachePreloadMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         c.setCacheConfiguration(cc);
 

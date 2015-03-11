@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.spring.*;
@@ -33,8 +34,8 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.noop.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -42,10 +43,8 @@ import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.noop.*;
-import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
@@ -68,7 +67,6 @@ import java.util.logging.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -89,7 +87,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
- * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
+ * {@link IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with <strong>URI deployment</strong>.
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
@@ -161,7 +159,7 @@ public class IgnitionEx {
      * <p>
      * If daemon flag is set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @param daemon Daemon flag to set.
@@ -175,7 +173,7 @@ public class IgnitionEx {
      * <p>
      * If daemon flag it set then all grid instances created by the factory will be
      * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()}.
+     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
      * Note that you can set on and off daemon flag at will.
      *
      * @return Daemon flag.
@@ -236,7 +234,7 @@ public class IgnitionEx {
      * Note that method does not wait for all tasks to be completed.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      default grid will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
+     *      default grid will be cancelled by calling {@link ComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      * @return {@code true} if default grid instance was indeed stopped,
@@ -256,7 +254,7 @@ public class IgnitionEx {
      * @param name Grid name. If {@code null}, then default no-name grid will
      *      be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
-     *      by calling {@link org.apache.ignite.compute.ComputeJob#cancel()} method. Note that just like with
+     *      by calling {@link ComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
@@ -307,7 +305,7 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution
      */
@@ -356,10 +354,10 @@ public class IgnitionEx {
      * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
-     * @see org.apache.ignite.Ignition#RESTART_EXIT_CODE
+     * @see Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
         String file = System.getProperty(IGNITE_SUCCESS_FILE);
@@ -400,13 +398,13 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note that upon completion of this method, the JVM with forcefully exist with
-     * exit code {@link org.apache.ignite.Ignition#KILL_EXIT_CODE}.
+     * exit code {@link Ignition#KILL_EXIT_CODE}.
      *
      * @param cancel If {@code true} then all jobs currently executing on
-     *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
+     *      all grids will be cancelled by calling {@link ComputeJob#cancel()}
      *      method. Note that just like with {@link Thread#interrupt()}, it is
      *      up to the actual job to exit from execution.
-     * @see org.apache.ignite.Ignition#KILL_EXIT_CODE
+     * @see Ignition#KILL_EXIT_CODE
      */
     public static void kill(boolean cancel) {
         stopAll(cancel);
@@ -436,7 +434,7 @@ public class IgnitionEx {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
@@ -473,7 +471,7 @@ public class IgnitionEx {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
@@ -659,7 +657,7 @@ public class IgnitionEx {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
@@ -707,7 +705,7 @@ public class IgnitionEx {
      * @param springCtx Optional Spring application context, possibly {@code null}.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
-     *      {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     *      {@link SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
@@ -739,16 +737,16 @@ public class IgnitionEx {
 
         IgniteBiTuple<Object, Object> t = null;
 
-        Collection<Handler> savedHnds = null;
-
         if (isLog4jUsed) {
             try {
                 t = U.addLog4jNoOpLogger();
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignore) {
                 isLog4jUsed = false;
             }
         }
+
+        Collection<Handler> savedHnds = null;
 
         if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
@@ -918,7 +916,7 @@ public class IgnitionEx {
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
-     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid() throws IgniteIllegalStateException {
@@ -961,7 +959,7 @@ public class IgnitionEx {
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if grid was not properly
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid(UUID locNodeId) throws IgniteIllegalStateException {
@@ -1000,7 +998,7 @@ public class IgnitionEx {
      *      then grid instance belonging to a default no-name grid will be returned.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
@@ -1051,7 +1049,7 @@ public class IgnitionEx {
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.apache.ignite.IgnitionListener)} method.
+     * Removes lsnr added by {@link #addListener(IgnitionListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
@@ -1679,6 +1677,7 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
@@ -1783,16 +1782,16 @@ public class IgnitionEx {
                 cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
             if (cfg.getCheckpointSpi() == null)
-                cfg.setCheckpointSpi(new CheckpointSpi[] {new NoopCheckpointSpi()});
+                cfg.setCheckpointSpi(new NoopCheckpointSpi());
 
             if (cfg.getCollisionSpi() == null)
                 cfg.setCollisionSpi(new NoopCollisionSpi());
 
             if (cfg.getFailoverSpi() == null)
-                cfg.setFailoverSpi(new FailoverSpi[] {new AlwaysFailoverSpi()});
+                cfg.setFailoverSpi(new AlwaysFailoverSpi());
 
             if (cfg.getLoadBalancingSpi() == null)
-                cfg.setLoadBalancingSpi(new LoadBalancingSpi[] {new RoundRobinLoadBalancingSpi()});
+                cfg.setLoadBalancingSpi(new RoundRobinLoadBalancingSpi());
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
@@ -1820,6 +1819,7 @@ public class IgnitionEx {
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("ErrorNotRethrown")
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
@@ -1900,22 +1900,23 @@ public class IgnitionEx {
          * @return Utility system cache configuration.
          */
         private static CacheConfiguration utilitySystemCache(boolean client) {
-            CacheConfiguration cache = new CacheConfiguration();
+            if (!client) {
+                CacheConfiguration cache = new CacheConfiguration();
 
-            cache.setName(CU.UTILITY_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
-            cache.setQueryIndexEnabled(false);
-            cache.setPreloadMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+                cache.setName(CU.UTILITY_CACHE_NAME);
+                cache.setCacheMode(REPLICATED);
+                cache.setAtomicityMode(TRANSACTIONAL);
+                cache.setSwapEnabled(false);
+                cache.setQueryIndexEnabled(false);
+                cache.setPreloadMode(SYNC);
+                cache.setWriteSynchronizationMode(FULL_SYNC);
+                cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+                cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
-            if (client)
-                cache.setDistributionMode(CLIENT_ONLY);
+                return cache;
+            }
 
-            return cache;
+            return null;
         }
 
         /**
@@ -1926,26 +1927,25 @@ public class IgnitionEx {
          * @return Cache configuration for atomic data structures.
          */
         private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg, boolean client) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            if (!client) {
+                CacheConfiguration ccfg = new CacheConfiguration();
 
-            ccfg.setName(CU.ATOMICS_CACHE_NAME);
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setSwapEnabled(false);
-            ccfg.setQueryIndexEnabled(false);
-            ccfg.setPreloadMode(SYNC);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+                ccfg.setName(CU.ATOMICS_CACHE_NAME);
+                ccfg.setAtomicityMode(TRANSACTIONAL);
+                ccfg.setSwapEnabled(false);
+                ccfg.setQueryIndexEnabled(false);
+                ccfg.setPreloadMode(SYNC);
+                ccfg.setWriteSynchronizationMode(FULL_SYNC);
+                ccfg.setCacheMode(cfg.getCacheMode());
+                ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
 
-            if (cfg.getCacheMode() == PARTITIONED) {
-                ccfg.setBackups(cfg.getBackups());
+                if (cfg.getCacheMode() == PARTITIONED)
+                    ccfg.setBackups(cfg.getBackups());
 
-                ccfg.setDistributionMode(client ? NEAR_ONLY : NEAR_PARTITIONED);
+                return ccfg;
             }
-            else
-                ccfg.setDistributionMode(client ? NEAR_ONLY : PARTITIONED_ONLY);
 
-            return ccfg;
+            return null;
         }
 
         /**
@@ -2071,7 +2071,7 @@ public class IgnitionEx {
         }
 
         /**
-         * Registers delegate Mbean instance for {@link org.apache.ignite.Ignition}.
+         * Registers delegate Mbean instance for {@link Ignition}.
          *
          * @param srv MBeanServer where mbean should be registered.
          * @throws IgniteCheckedException If registration failed.
@@ -2124,7 +2124,7 @@ public class IgnitionEx {
         }
 
         /**
-         * Unregister delegate Mbean instance for {@link org.apache.ignite.Ignition}.
+         * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
             synchronized (mbeans) {

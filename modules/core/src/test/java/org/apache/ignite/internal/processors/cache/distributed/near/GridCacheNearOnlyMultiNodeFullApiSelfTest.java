@@ -38,10 +38,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  *
@@ -67,7 +65,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         if (cnt.getAndIncrement() == 0) {
             info("Use grid '" + gridName + "' as near-only.");
 
-            cfg.setDistributionMode(NEAR_ONLY);
+            return null;
         }
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -79,7 +77,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            if (!isAffinityNode(cacheConfiguration(grid(i).configuration(), null))) {
+            if (!cache(i).affinityNode()) {
                 nearIdx = i;
 
                 break;

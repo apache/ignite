@@ -168,7 +168,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private GridPlainInClosure<Serializable> customEvtLsnr;
 
     /** Map of dynamic cache filters. */
-    private Map<String, CachePredicate> dynamicCacheFilters = new HashMap<>();
+    private Map<String, CachePredicate> registeredCaches = new HashMap<>();
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -210,13 +210,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param filter Cache filter.
      * @param loc {@code True} if cache is local.
      */
-    public void addDynamicCacheFilter(
+    public void setCacheFilter(
         String cacheName,
         IgnitePredicate<ClusterNode> filter,
         boolean nearEnabled,
         boolean loc
     ) {
-        dynamicCacheFilters.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
+        registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
     }
 
     /**
@@ -224,8 +224,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      */
-    public void removeDynamicCacheFilter(String cacheName) {
-        dynamicCacheFilters.remove(cacheName);
+    public void removeCacheFilter(String cacheName) {
+        registeredCaches.remove(cacheName);
+    }
+
+    /**
+     * Adds near node ID to cache filter.
+     *
+     * @param cacheName Cache name.
+     * @param nearNodeId Near node ID.
+     */
+    public void addNearNode(String cacheName, UUID nearNodeId) {
+        CachePredicate predicate = registeredCaches.get(cacheName);
+
+        if (predicate != null)
+            predicate.addNearNode(nearNodeId);
     }
 
     /** {@inheritDoc} */
@@ -1131,7 +1144,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node is a cache data node.
      */
     public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+        CachePredicate predicate = registeredCaches.get(cacheName);
 
         return predicate != null && predicate.dataNode(node);
     }
@@ -1142,9 +1155,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has near cache enabled.
      */
     public boolean cacheNearNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+        CachePredicate predicate = registeredCaches.get(cacheName);
 
         return predicate != null && predicate.nearNode(node);
+    }
+
+    public boolean cacheClientNode(ClusterNode node, String cacheName) {
+        CachePredicate predicate = registeredCaches.get(cacheName);
+
+        return predicate != null && predicate.clientNode(node);
     }
 
     /**
@@ -1153,7 +1172,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return If cache with the given name is accessible on the given node.
      */
     public boolean cacheNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = dynamicCacheFilters.get(cacheName);
+        CachePredicate predicate = registeredCaches.get(cacheName);
 
         return predicate != null && predicate.cacheNode(node);
     }
@@ -1896,7 +1915,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 boolean hasCaches = false;
 
-                for (Map.Entry<String, CachePredicate> entry : dynamicCacheFilters.entrySet()) {
+                for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
                     String cacheName = entry.getKey();
 
                     CachePredicate filter = entry.getValue();
@@ -2177,7 +2196,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param exclNode Node to exclude.
          */
         private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
-            for (String cacheName : dynamicCacheFilters.keySet()) {
+            for (String cacheName : registeredCaches.keySet()) {
                 String maskedName = maskNull(cacheName);
 
                 while (true) {
@@ -2259,7 +2278,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean loc;
 
         /** Collection of client near nodes. */
-        private Collection<UUID> nearNodes;
+        private Map<UUID, Boolean> clientNodes;
 
         /**
          * @param cacheFilter Cache filter.
@@ -2272,21 +2291,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             this.nearEnabled = nearEnabled;
             this.loc = loc;
 
-            nearNodes = new GridConcurrentHashSet<>();
+            clientNodes = new ConcurrentHashMap<>();
         }
 
         /**
          * @param nodeId Near node ID to add.
          */
         public void addNearNode(UUID nodeId) {
-            nearNodes.add(nodeId);
+            clientNodes.put(nodeId, true);
+        }
+
+        /**
+         * @param nodeId Near node ID to add.
+         */
+        public void addClientNode(UUID nodeId) {
+            clientNodes.put(nodeId, false);
         }
 
         /**
          * @param nodeId Near node ID to remove.
          */
         public void removeNearNode(UUID nodeId) {
-            nearNodes.remove(nodeId);
+            clientNodes.remove(nodeId);
         }
 
         /**
@@ -2310,7 +2336,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if near cache is present on the given nodes.
          */
         public boolean nearNode(ClusterNode node) {
-            return (nearEnabled && cacheFilter.apply(node)) || nearNodes.contains(node.id());
+            if (nearEnabled && cacheFilter.apply(node))
+                return true;
+
+            Boolean near = clientNodes.get(node.id());
+
+            return near != null && near;
+        }
+
+        /**
+         * @param node Node to check.
+         * @return {@code True} if near cache is present on the given nodes.
+         */
+        public boolean clientNode(ClusterNode node) {
+            Boolean near = clientNodes.get(node.id());
+
+            return near != null && !near;
         }
     }
 }

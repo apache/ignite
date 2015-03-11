@@ -615,7 +615,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Get request.
      */
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest<K, V> req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
 
         long ttl = req.accessTtl();
 
@@ -904,9 +904,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
-        CacheDistributionMode mode = configuration().getDistributionMode();
-
-        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearLocally() :
+        return ctx.affinityNode() ? super.splitClearLocally() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();
     }
 

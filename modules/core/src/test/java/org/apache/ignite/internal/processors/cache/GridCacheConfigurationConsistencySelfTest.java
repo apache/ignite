@@ -46,7 +46,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -308,7 +307,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setAffinity(new CacheRendezvousAffinityFunction() {/*No-op.*/});
+                    cfg.setAffinity(new CacheRendezvousAffinityFunction() {/*No-op.*/
+                    });
                     return null;
                 }
             },
@@ -469,34 +469,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testDifferentEvictNearSynchronized() throws Exception {
-        cacheMode = PARTITIONED;
-
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @SuppressWarnings("deprecation")
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setDistributionMode(NEAR_PARTITIONED);
-                    cfg.setEvictNearSynchronized(true);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @SuppressWarnings("deprecation")
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setDistributionMode(NEAR_PARTITIONED);
-                    cfg.setEvictNearSynchronized(false);
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testDifferentAtomicity() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -504,7 +476,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setDistributionMode(PARTITIONED_ONLY);
+                    cfg.setNearConfiguration(null);
                     cfg.setAtomicityMode(ATOMIC);
                     return null;
                 }
@@ -512,7 +484,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setDistributionMode(PARTITIONED_ONLY);
+                    cfg.setNearConfiguration(null);
                     cfg.setAtomicityMode(TRANSACTIONAL);
                     return null;
                 }
@@ -674,8 +646,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setEvictNearSynchronized(true);
-                cfg.setNearEvictionPolicy(new CacheRandomEvictionPolicy());
+                NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+                nearCfg.setNearEvictionPolicy(new CacheRandomEvictionPolicy());
+
+                cfg.setNearConfiguration(nearCfg);
+
                 return null;
             }
         };
@@ -684,8 +660,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setEvictNearSynchronized(false);
-                cfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy());
+                NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+                nearCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy());
+
+                cfg.setNearConfiguration(nearCfg);
+
                 return null;
             }
         };
@@ -749,7 +729,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
 
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
@@ -765,7 +745,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
-                cc.setDistributionMode(CLIENT_ONLY);
+                // TODO IGNITE-45.
+//                cc.setDistributionMode(CLIENT_ONLY);
                 cc.setCacheStoreFactory(null);
 
                 return null;
@@ -788,7 +769,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
 
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
@@ -804,7 +785,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
                 cc.setCacheStoreFactory(null);
 
                 return null;
@@ -833,7 +814,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
 
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
@@ -850,7 +831,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
 
                 cc.setCacheStoreFactory(null);
 
@@ -880,7 +861,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
 
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
@@ -897,7 +878,8 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
 
-                cc.setDistributionMode(CLIENT_ONLY);
+                // TODO IGNITE-45
+//                cc.setDistributionMode(CLIENT_ONLY);
 
                 cc.setCacheStoreFactory(null);
 

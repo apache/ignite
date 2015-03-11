@@ -1277,7 +1277,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 taskName,
                                 null);
 
-                            val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
+                            val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, (V)val);
 
                             if (val == null)
                                 continue;

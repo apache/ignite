@@ -68,8 +68,11 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-        cacheCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        nearCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+        cacheCfg.setNearConfiguration(nearCfg);
+
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);

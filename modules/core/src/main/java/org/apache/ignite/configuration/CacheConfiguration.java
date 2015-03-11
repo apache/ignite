@@ -74,9 +74,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** Default value for cache distribution mode. */
-    public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = CacheDistributionMode.PARTITIONED_ONLY;
-
     /** Default query timeout. */
     public static final long DFLT_QUERY_TIMEOUT = 0;
 
@@ -109,9 +106,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default eviction synchronized flag. */
     public static final boolean DFLT_EVICT_SYNCHRONIZED = false;
-
-    /** Default near nodes eviction synchronized flag. */
-    public static final boolean DFLT_EVICT_NEAR_SYNCHRONIZED = true;
 
     /** Default eviction key buffer size for batching synchronized evicts. */
     public static final int DFLT_EVICT_KEY_BUFFER_SIZE = 1024;
@@ -194,14 +188,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache expiration policy. */
     private CacheEvictionPolicy evictPlc;
 
-    /** Near cache eviction policy. */
-    private CacheEvictionPolicy nearEvictPlc;
-
     /** Flag indicating whether eviction is synchronized. */
     private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
-
-    /** Flag indicating whether eviction is synchronized with near nodes. */
-    private boolean evictNearSync = DFLT_EVICT_NEAR_SYNCHRONIZED;
 
     /** Eviction key buffer size. */
     private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
@@ -230,11 +218,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default cache start size. */
     private int startSize = DFLT_START_SIZE;
 
-    /** Default near cache start size. */
-    private int nearStartSize = DFLT_NEAR_START_SIZE;
-
-    /** Cache distribution mode. */
-    private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
+    /** Near cache configuration. */
+    private NearCacheConfiguration<K, V> nearCfg;
 
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
@@ -373,12 +358,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheWriterFactory = cc.getCacheWriterFactory();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
-        distro = cc.getDistributionMode();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
         evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
-        evictNearSync = cc.isEvictNearSynchronized();
         evictPlc = cc.getEvictionPolicy();
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
@@ -396,8 +379,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
         memMode = cc.getMemoryMode();
         name = cc.getName();
-        nearStartSize = cc.getNearStartSize();
-        nearEvictPlc = cc.getNearEvictionPolicy();
+        nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
@@ -486,38 +468,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets cache distribution mode. This parameter is taken into account only if
-     * {@link #getCacheMode()} is set to {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} mode.
-     * <p>
-     * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
-     *
-     * @return Cache distribution mode.
-     */
-    public CacheDistributionMode getDistributionMode() {
-        return distro;
-    }
-
-    /**
-     * Sets cache distribution mode.
-     *
-     * @param distro Distribution mode.
-     */
-    public void setDistributionMode(CacheDistributionMode distro) {
-        this.distro = distro;
-    }
-
-    /**
      * @return Near enabled flag.
      */
-    public boolean isNearEnabled() {
-        return distro == CacheDistributionMode.NEAR_ONLY || distro == CacheDistributionMode.NEAR_PARTITIONED;
+    public NearCacheConfiguration<K, V> getNearConfiguration() {
+        return nearCfg;
     }
 
     /**
-     * @param nearEnabled Near enabled flag.
+     * @param nearCfg Near cache configuration.
      */
-    public void setNearEnabled(boolean nearEnabled) {
-        distro = nearEnabled ? CacheDistributionMode.NEAR_PARTITIONED : CacheDistributionMode.PARTITIONED_ONLY;
+    public void setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
+        this.nearCfg = nearCfg;
     }
 
     /**
@@ -540,28 +501,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets eviction policy for {@code near} cache which is different from the one used for
-     * {@code partitioned} cache. By default, returns {@code null}
-     * which means that evictions are disabled for near cache.
-     *
-     * @return Cache eviction policy or {@code null} if evictions should be disabled.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
-        return nearEvictPlc;
-    }
-
-    /**
-     * Sets eviction policy for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching
-     * mode.
-     *
-     * @param nearEvictPlc Eviction policy for near cache.
-     */
-    public void setNearEvictionPolicy(@Nullable CacheEvictionPolicy nearEvictPlc) {
-        this.nearEvictPlc = nearEvictPlc;
-    }
-
-    /**
      * Gets filter which determines on what nodes the cache should be started.
      *
      * @return Predicate specifying on which nodes the cache should be started.
@@ -580,13 +519,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether eviction is synchronized between primary and
-     * backup nodes on partitioned cache. If this parameter is {@code true} and
-     * swap is disabled then {@link CacheProjection#evict(Object)}
-     * and all its variations will involve all nodes where an entry is kept -
-     * this is a group of nodes responsible for partition to which
-     * corresponding key belongs. If this property is set to {@code false} then
-     * eviction is done independently on cache nodes.
+     * Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.
+     * If this parameter is {@code true} and swap is disabled then {@link IgniteCache#localEvict(Collection)}
+     * will involve all nodes where an entry is kept.  If this property is set to {@code false} then
+     * eviction is done independently on different cache nodes.
      * <p>
      * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
      * <p>
@@ -602,39 +538,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets flag indicating whether eviction is synchronized with backup nodes (or the rest of the nodes for replicated
-     * cache).
+     * Sets flag indicating whether eviction is synchronized with backup nodes or near caches
+     * (or the rest of the nodes for replicated cache).
      *
      * @param evictSync {@code true} if synchronized, {@code false} if not.
      */
     public void setEvictSynchronized(boolean evictSync) {
         this.evictSync = evictSync;
-    }
-
-    /**
-     * Sets flag indicating whether eviction is synchronized with near nodes.
-     *
-     * @param evictNearSync {@code true} if synchronized, {@code false} if not.
-     */
-    public void setEvictNearSynchronized(boolean evictNearSync) {
-        this.evictNearSync = evictNearSync;
-    }
-
-    /**
-     * Gets flag indicating whether eviction on primary node is synchronized with
-     * near nodes where entry is kept. Default value is {@code true} and
-     * is defined by {@link #DFLT_EVICT_NEAR_SYNCHRONIZED}.
-     * <p>
-     * Note that in most cases this property should be set to {@code true} to keep
-     * cache consistency. But there may be the cases when user may use some
-     * special near eviction policy to have desired control over near cache
-     * entry set.
-     *
-     * @return {@code true} If eviction is synchronized with near nodes in
-     *      partitioned cache, {@code false} if not.
-     */
-    public boolean isEvictNearSynchronized() {
-        return evictNearSync;
     }
 
     /**
@@ -659,7 +569,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Gets concurrency level for synchronized evictions. This flag only makes sense
-     * with {@link #isEvictNearSynchronized()} or {@link #isEvictSynchronized()} set
+     * with {@link #isEvictSynchronized()} set
      * to {@code true}. When synchronized evictions are enabled, it is possible that
      * local eviction policy will try to evict entries faster than evictions can be
      * synchronized with backup or near nodes. This value specifies how many concurrent
@@ -809,25 +719,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setStartSize(int startSize) {
         this.startSize = startSize;
-    }
-
-    /**
-     * Gets initial cache size for near cache which will be used to pre-create internal
-     * hash table after start. Default value is defined by {@link #DFLT_NEAR_START_SIZE}.
-     *
-     * @return Initial near cache size.
-     */
-    public int getNearStartSize() {
-        return nearStartSize;
-    }
-
-    /**
-     * Start size for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching mode.
-     *
-     * @param nearStartSize Start size for near cache.
-     */
-    public void setNearStartSize(int nearStartSize) {
-        this.nearStartSize = nearStartSize;
     }
 
     /**

@@ -50,7 +50,6 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingle
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setEvictionPolicy(null);

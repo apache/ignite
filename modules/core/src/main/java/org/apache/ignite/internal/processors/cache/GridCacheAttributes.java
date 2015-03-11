@@ -27,9 +27,8 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.
@@ -99,23 +98,7 @@ public class GridCacheAttributes implements Serializable {
      * @return {@code True} if near cache is enabled.
      */
     public boolean nearCacheEnabled() {
-        return cacheMode() != LOCAL && ccfg.isNearEnabled();
-    }
-
-    /**
-     * @return {@code True} if the local node will not contribute any local storage to this
-     * cache, {@code false} otherwise.
-     */
-    @SuppressWarnings("SimplifiableIfStatement")
-    public boolean isAffinityNode() {
-        if (cacheMode() == LOCAL)
-            return true;
-
-        // TODO IGNITE-45 affinity node detection.
-
-        CacheDistributionMode partDistro = ccfg.getDistributionMode();
-
-        return partDistro == PARTITIONED_ONLY || partDistro == NEAR_PARTITIONED;
+        return cacheMode() != LOCAL && ccfg.getNearConfiguration() != null;
     }
 
     /**
@@ -193,7 +176,12 @@ public class GridCacheAttributes implements Serializable {
      * @return Near eviction policy class name.
      */
     public String nearEvictionPolicyClassName() {
-        return className(ccfg.getNearEvictionPolicy());
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg == null)
+            return null;
+
+        return className(nearCfg.getNearEvictionPolicy());
     }
 
     /**
@@ -233,24 +221,10 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether eviction is synchronized with near nodes.
-     */
-    public boolean evictNearSynchronized() {
-        return ccfg.isEvictNearSynchronized();
-    }
-
-    /**
      * @return Maximum eviction overflow ratio.
      */
     public float evictMaxOverflowRatio() {
         return ccfg.getEvictMaxOverflowRatio();
-    }
-
-    /**
-     * @return Partitioned cache mode.
-     */
-    public CacheDistributionMode partitionedTaxonomy() {
-        return ccfg.getDistributionMode();
     }
 
     /**

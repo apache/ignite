@@ -77,8 +77,9 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         ccfg1.setCacheMode(PARTITIONED);
         ccfg2.setCacheMode(PARTITIONED);
 
-        ccfg1.setDistributionMode(distrMode);
-        ccfg2.setDistributionMode(distrMode);
+        // TODO IGNITE-45.
+//        ccfg1.setDistributionMode(distrMode);
+//        ccfg2.setDistributionMode(distrMode);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 

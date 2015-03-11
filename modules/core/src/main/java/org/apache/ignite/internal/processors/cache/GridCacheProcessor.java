@@ -51,6 +51,7 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.management.*;
@@ -61,7 +62,6 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -194,21 +194,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAtomicityMode() == null)
             cfg.setAtomicityMode(ATOMIC);
 
-        if (cfg.getCacheMode() == PARTITIONED || cfg.getCacheMode() == REPLICATED) {
-            if (cfg.getDistributionMode() == null)
-                cfg.setDistributionMode(PARTITIONED_ONLY);
-
-            if (cfg.getDistributionMode() == PARTITIONED_ONLY ||
-                cfg.getDistributionMode() == CLIENT_ONLY) {
-                if (cfg.getNearEvictionPolicy() != null)
-                    U.quietAndWarn(log, "Ignoring near eviction policy since near cache is disabled.");
-            }
-
-            assert cfg.getDistributionMode() != null;
-        }
-        else
-            assert cfg.getCacheMode() == LOCAL;
-
         if (cfg.getWriteSynchronizationMode() == null)
             cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
 
@@ -284,9 +269,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             perf.add(msg, true);
 
         if (cfg.getCacheMode() == PARTITIONED) {
-            perf.add("Disable near cache (set 'partitionDistributionMode' to PARTITIONED_ONLY or CLIENT_ONLY)",
-                cfg.getDistributionMode() != NEAR_PARTITIONED &&
-                    cfg.getDistributionMode() != NEAR_ONLY);
+            perf.add("Disable near cache (set 'nearEnabled' to false)", cfg.getNearConfiguration() != null);
 
             if (cfg.getAffinity() != null)
                 perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);
@@ -332,11 +315,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "CacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
-            if (cc.getDistributionMode() == NEAR_PARTITIONED) {
-                U.warn(log, "NEAR_PARTITIONED distribution mode cannot be used with REPLICATED cache, " +
-                    "will be changed to PARTITIONED_ONLY [cacheName=" + cc.getName() + ']');
+            if (cc.getNearConfiguration() != null) {
+                U.warn(log, "Near cache cannot be used with REPLICATED cache, " +
+                    "will be ignored [cacheName=" + cc.getName() + ']');
 
-                cc.setDistributionMode(PARTITIONED_ONLY);
+                cc.setNearConfiguration(null);
             }
         }
 
@@ -492,11 +475,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void prepare(CacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
-        prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            prepare(cfg, nearCfg.getNearEvictionPolicy(), true);
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -525,11 +512,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cctx.config();
 
         cleanup(cfg, cfg.getEvictionPolicy(), false);
-        cleanup(cfg, cfg.getNearEvictionPolicy(), true);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.jta().tmLookup(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
 
         cctx.cleanup();
     }
@@ -629,7 +620,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             registeredCaches.put(cfg.getName(), desc);
 
-            ctx.discovery().addDynamicCacheFilter(cfg.getName(), cfg.getNodeFilter(), cfg.isNearEnabled(),
+            ctx.discovery().setCacheFilter(
+                cfg.getName(),
+                cfg.getNodeFilter(),
+                cfg.getNearConfiguration() != null,
                 cfg.getCacheMode() == LOCAL);
 
             sharedCtx.addCacheContext(cacheCtx);
@@ -1030,11 +1024,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx,
             sharedCtx,
             cfg,
+            ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),
 
-                /*
-                 * Managers in starting order!
-                 * ===========================
-                 */
+            /*
+             * Managers in starting order!
+             * ===========================
+             */
             evtMgr,
             swapMgr,
             serMgr,
@@ -1096,13 +1091,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else {
                     switch (cfg.getAtomicityMode()) {
                         case TRANSACTIONAL: {
-                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtColocatedCache(cacheCtx) :
+                            cache = cacheCtx.affinityNode() ?
+                                new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                             break;
                         }
                         case ATOMIC: {
-                            cache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                            cache = cacheCtx.affinityNode() ?
+                                new GridDhtAtomicCache(cacheCtx) :
                                 new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                             break;
@@ -1152,11 +1149,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx,
                 sharedCtx,
                 cfg,
+                ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),
 
-                    /*
-                     * Managers in starting order!
-                     * ===========================
-                     */
+                /*
+                 * Managers in starting order!
+                 * ===========================
+                 */
                 evtMgr,
                 swapMgr,
                 serMgr,
@@ -1180,9 +1178,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
 
-                    GridDhtCache dhtCache = !GridCacheUtils.isAffinityNode(cfg) ?
-                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx)) :
-                        new GridDhtCache(cacheCtx);
+                    GridDhtCache dhtCache = cacheCtx.affinityNode() ?
+                        new GridDhtCache(cacheCtx) :
+                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                     dhtCache.near(near);
 
@@ -1197,7 +1195,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridNearAtomicCache near = (GridNearAtomicCache)cache;
 
-                    GridDhtAtomicCache dhtCache = GridCacheUtils.isAffinityNode(cfg) ? new GridDhtAtomicCache(cacheCtx) :
+                    GridDhtAtomicCache dhtCache = cacheCtx.affinityNode() ?
+                        new GridDhtAtomicCache(cacheCtx) :
                         new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
 
                     dhtCache.near(near);
@@ -1390,25 +1389,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (req.isStart()) {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
-                        if (validateCfg && existing != null)
-                            checkCache(existing.cacheConfiguration(), ccfg, nodeId);
+                        if (existing != null) {
+                            if (validateCfg)
+                                checkCache(existing.cacheConfiguration(), ccfg, nodeId);
 
-                        if (existing == null) {
+                            if (existing.valid()) {
+                                existing.deploymentId(req.deploymentId());
+
+                                ctx.discovery().setCacheFilter(
+                                    req.cacheName(),
+                                    ccfg.getNodeFilter(),
+                                    ccfg.getNearConfiguration() != null,
+                                    ccfg.getCacheMode() == LOCAL);
+                            }
+                        }
+                        else
                             registeredCaches.put(req.cacheName(), new DynamicCacheDescriptor(
                                 ccfg,
                                 req.deploymentId()));
-                        }
-                        else
-                            existing.deploymentId(req.deploymentId());
-
-                        if (existing == null || existing.valid()) {
-                            ctx.discovery().addDynamicCacheFilter(req.cacheName(),
-                                ccfg.getNodeFilter(), ccfg.isNearEnabled(), ccfg.getCacheMode() == LOCAL);
-                        }
-                    }
-                    else if (req.isNearStart()) {
-                        // TODO IGNITE-45.
-                        //ctx.discovery().addDynamicCacheFilter(req.cacheName(),
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -1540,11 +1538,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
         for (DynamicCacheChangeRequest req : batch.requests()) {
+            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
+
             if (req.isStart()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
 
                 // Check if cache with the same name was concurrently started form different node.
-                if (registeredCaches.containsKey(ccfg.getName())) {
+                if (desc != null) {
                     // If local node initiated start, fail the start future.
                     DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingFuts.get(ccfg.getName());
 
@@ -1562,15 +1562,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
-                ctx.discovery().addDynamicCacheFilter(ccfg.getName(), ccfg.getNodeFilter(), ccfg.isNearEnabled(),
+                ctx.discovery().setCacheFilter(
+                    ccfg.getName(),
+                    ccfg.getNodeFilter(),
+                    ccfg.getNearConfiguration() != null,
                     ccfg.getCacheMode() == LOCAL);
 
                 assert old == null :
                     "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
             }
+            else if (req.isClientStart()) {
+                if (desc != null) {
+                    if (req.nearCacheCfg() != null)
+                        ctx.discovery().addNearNode(req.cacheName(), req.clientNodeId());
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Will not start client cache since cache is not registered: " + req.cacheName());
+                }
+            }
             else {
-                DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
-
                 if (desc == null) {
                     // If local node initiated start, fail the start future.
                     DynamicCacheStartFuture changeFut = (DynamicCacheStartFuture)pendingFuts.get(req.cacheName());
@@ -1587,7 +1598,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 desc.onCancelled();
 
-                ctx.discovery().removeDynamicCacheFilter(req.cacheName());
+                ctx.discovery().removeCacheFilter(req.cacheName());
             }
         }
     }
@@ -1673,10 +1684,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
-     * @param rmt Node.
+     * @param rmt Remote node ID.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, UUID rmt) throws IgniteCheckedException {
+    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, UUID rmt)
+        throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg, null);
         GridCacheAttributes locAttr = new GridCacheAttributes(locCfg, null);
 
@@ -1709,21 +1721,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
-
-            if (!skipStoreConsistencyCheck(locAttr, rmtAttr)) {
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
-                    locAttr.storeClassName(), rmtAttr.storeClassName(), true);
-
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "readThrough",
-                    "Read through enabled", locAttr.readThrough(), locAttr.readThrough(), true);
-
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeThrough",
-                    "Write through enabled", locAttr.writeThrough(), locAttr.writeThrough(), true);
-
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "loadPreviousValue",
-                    "Load previous value enabled", locAttr.loadPreviousValue(),
-                    locAttr.loadPreviousValue(), true);
-            }
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                 "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
@@ -1789,10 +1786,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),
                     true);
 
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictNearSynchronized",
-                    "Eviction near synchronized", locAttr.evictNearSynchronized(),
-                    rmtAttr.evictNearSynchronized(), true);
-
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
                     "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
                     rmtAttr.nearEvictionPolicyClassName(), false);
@@ -1835,16 +1828,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Checks if store check should be skipped for given nodes.
      *
-     * @param locAttr Local node attributes.
-     * @param rmtAttr Remote node attributes.
+     * @param cfg Cache configuration.
+     * @param rmtNode Remote node.
+     * @param locNode Local node.
      * @return {@code True} if store check should be skipped.
      */
-    private boolean skipStoreConsistencyCheck(GridCacheAttributes locAttr, GridCacheAttributes rmtAttr) {
+    private boolean skipStoreConsistencyCheck(CacheConfiguration cfg, ClusterNode rmtNode, ClusterNode locNode) {
         return
             // In atomic mode skip check if either local or remote node is client.
-            locAttr.atomicityMode() == ATOMIC &&
-                (locAttr.partitionedTaxonomy() == CLIENT_ONLY || locAttr.partitionedTaxonomy() == NEAR_ONLY ||
-                rmtAttr.partitionedTaxonomy() == CLIENT_ONLY || rmtAttr.partitionedTaxonomy() == NEAR_ONLY);
+            cfg.getAtomicityMode() == ATOMIC &&
+                (!ctx.discovery().cacheAffinityNode(rmtNode, cfg.getName()) ||
+                 !ctx.discovery().cacheAffinityNode(locNode, cfg.getName()));
     }
 
     /**
@@ -2034,12 +2028,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+        try {
+            IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
 
-        if (cache == null)
-            throw new IllegalArgumentException("Cache is not configured: " + name);
+            if (cache == null) {
+                if (!registeredCaches.containsKey(name))
+                    throw new IllegalArgumentException("Cache is not started: " + name);
 
-        return cache;
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(), null);
+
+                F.first(initiateCacheChanges(F.asList(req))).get();
+
+                cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+
+                if (cache == null)
+                    throw new IllegalArgumentException("Cache is not started: " + name);
+            }
+
+            return cache;
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
     }
 
     /**
@@ -2226,8 +2236,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ret.add(ccfg.getAffinityMapper());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
-        ret.add(ccfg.getNearEvictionPolicy());
         ret.add(ccfg.getInterceptor());
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg != null)
+            ret.add(nearCfg.getNearEvictionPolicy());
 
         Collections.addAll(ret, objs);
 

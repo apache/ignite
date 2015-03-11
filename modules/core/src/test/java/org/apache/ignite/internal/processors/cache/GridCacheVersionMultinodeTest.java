@@ -28,7 +28,6 @@ import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -44,7 +43,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     private CacheAtomicWriteOrderMode atomicWriteOrder;
 
     /** */
-    private CacheDistributionMode distrMode = PARTITIONED_ONLY;
+    private boolean near;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -65,9 +64,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
             ccfg.setAtomicWriteOrderMode(atomicWriteOrder);
         }
 
-        assert distrMode != null;
-
-        ccfg.setDistributionMode(distrMode);
+        ccfg.setNearConfiguration(near ? new NearCacheConfiguration() : null);
 
         return ccfg;
     }
@@ -107,7 +104,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     public void testVersionTxNearEnabled() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
-        distrMode = NEAR_PARTITIONED;
+        near = true;
 
         checkVersion();
     }
@@ -131,7 +128,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
         atomicWriteOrder = CLOCK;
 
-        distrMode = NEAR_PARTITIONED;
+        near = true;
 
         checkVersion();
     }
@@ -155,7 +152,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
         atomicWriteOrder = PRIMARY;
 
-        distrMode = NEAR_PARTITIONED;
+        near = true;
 
         checkVersion();
     }

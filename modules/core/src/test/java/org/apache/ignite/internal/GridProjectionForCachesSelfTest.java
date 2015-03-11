@@ -52,15 +52,16 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi());
 
-        if (gridName.equals(getTestGridName(0)))
-            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.PARTITIONED_ONLY));
-        else if (gridName.equals(getTestGridName(1)))
-            cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_ONLY));
-        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
-            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.CLIENT_ONLY),
-                cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_PARTITIONED));
-        else
-            cfg.setCacheConfiguration();
+        // TODO IGNITE-45.
+//        if (gridName.equals(getTestGridName(0)))
+//            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.PARTITIONED_ONLY));
+//        else if (gridName.equals(getTestGridName(1)))
+//            cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_ONLY));
+//        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
+//            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.CLIENT_ONLY),
+//                cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_PARTITIONED));
+//        else
+//            cfg.setCacheConfiguration();
 
         return cfg;
     }
@@ -80,13 +81,11 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName, CacheDistributionMode distributionMode) {
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(cacheName);
         cfg.setCacheMode(PARTITIONED);
-
-        cfg.setDistributionMode(distributionMode);
 
         cfg.setBackups(1);
 

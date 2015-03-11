@@ -119,7 +119,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDistributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
 
@@ -145,7 +145,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Cache atomicity mode.

@@ -36,11 +36,6 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     private static final int BACKUP_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.NEAR_PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }

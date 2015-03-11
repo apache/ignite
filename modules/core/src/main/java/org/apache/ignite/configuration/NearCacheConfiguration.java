@@ -36,10 +36,7 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean nearEnabled;
 
     /** Near cache eviction policy. */
-    private CacheEvictionPolicy nearEvictPlc;
-
-    /** Flag indicating whether eviction is synchronized with near nodes. */
-    private boolean evictNearSync = DFLT_EVICT_NEAR_SYNCHRONIZED;
+    private CacheEvictionPolicy<K, V> nearEvictPlc;
 
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
@@ -52,30 +49,15 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * @param cfg Configuration to copy.
+     * @param ccfg Configuration to copy.
      */
-    public NearCacheConfiguration(CompleteConfiguration<K, V> cfg) {
-        super(cfg);
+    public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
+        super(ccfg);
 
-        // Preserve alphabetic order.
-        if (cfg instanceof CacheConfiguration) {
-            CacheConfiguration ccfg = (CacheConfiguration)cfg;
-
-            evictNearSync = ccfg.isEvictNearSynchronized();
-            name = ccfg.getName();
-            nearEnabled = ccfg.isNearEnabled();
-            nearEvictPlc = ccfg.getNearEvictionPolicy();
-            nearStartSize = ccfg.getNearStartSize();
-        }
-        else if (cfg instanceof NearCacheConfiguration) {
-            NearCacheConfiguration ccfg = (NearCacheConfiguration)cfg;
-
-            evictNearSync = ccfg.isEvictNearSynchronized();
-            name = ccfg.getName();
-            nearEnabled = ccfg.isNearEnabled();
-            nearEvictPlc = ccfg.getNearEvictionPolicy();
-            nearStartSize = ccfg.getNearStartSize();
-        }
+        name = ccfg.getName();
+        nearEnabled = ccfg.isNearEnabled();
+        nearEvictPlc = ccfg.getNearEvictionPolicy();
+        nearStartSize = ccfg.getNearStartSize();
     }
 
     /**
@@ -117,40 +99,15 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return Near eviction policy.
      */
-    public CacheEvictionPolicy getNearEvictionPolicy() {
+    public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
     /**
      * @param nearEvictPlc Near eviction policy.
      */
-    public void setNearEvictionPolicy(CacheEvictionPolicy nearEvictPlc) {
+    public void setNearEvictionPolicy(CacheEvictionPolicy<K, V> nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
-    }
-
-    /**
-     * Gets flag indicating whether eviction on primary node is synchronized with
-     * near nodes where entry is kept. Default value is {@code true}.
-     * <p>
-     * Note that in most cases this property should be set to {@code true} to keep
-     * cache consistency. But there may be the cases when user may use some
-     * special near eviction policy to have desired control over near cache
-     * entry set.
-     *
-     * @return {@code true} If eviction is synchronized with near nodes in
-     *      partitioned cache, {@code false} if not.
-     */
-    public boolean isEvictNearSynchronized() {
-        return evictNearSync;
-    }
-
-    /**
-     * Sets flag indicating whether eviction is synchronized with near nodes.
-     *
-     * @param evictNearSync {@code true} if synchronized, {@code false} if not.
-     */
-    public void setEvictNearSynchronized(boolean evictNearSync) {
-        this.evictNearSync = evictNearSync;
     }
 
     /**
