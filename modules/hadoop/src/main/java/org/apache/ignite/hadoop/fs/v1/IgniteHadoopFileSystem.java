@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
  * <pre name="code" class="xml">
  *  &lt;property&gt;
  *      &lt;name&gt;fs.default.name&lt;/name&gt;
- *      &lt;value&gt;igfs://ipc&lt;/value&gt;
+ *      &lt;value&gt;igfs:///&lt;/value&gt;
  *  &lt;/property&gt;
  *
  *  &lt;property&gt;
