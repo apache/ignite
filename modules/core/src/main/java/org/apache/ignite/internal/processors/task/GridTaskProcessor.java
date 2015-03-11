@@ -152,8 +152,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     task.cancel();
 
-                    Throwable ex = new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " +
-                        task);
+                    Throwable ex =
+                        new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " + task);
 
                     task.finishTask(null, ex, false);
                 }
@@ -437,7 +437,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
-                    throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) [taskName=" +
+                    throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) " +
+                        "[taskName=" +
                         taskName + ", depCls=" + taskCls + ']');
             }
             catch (IgniteCheckedException e) {
@@ -453,8 +454,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(taskCls, U.detectClassLoader(taskCls));
 
                 if (dep == null)
-                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " +
-                        taskCls);
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task " +
+                        "(was task (re|un)deployed?): " + taskCls);
 
                 taskName = taskName(dep, taskCls, map);
             }
@@ -493,7 +494,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
-                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task " +
+                        "(was task (re|un)deployed?): " + cls);
 
                 taskName = taskName(dep, taskCls, map);
             }
@@ -685,7 +687,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             existingName = tasksMetaCache.putIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
-            throw new IgniteCheckedException("Task name hash collision for security-enabled node [taskName=" + taskName +
+            throw new IgniteCheckedException("Task name hash collision for security-enabled node " +
+                "[taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');
     }
 
