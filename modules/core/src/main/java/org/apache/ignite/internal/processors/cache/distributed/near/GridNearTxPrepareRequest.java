@@ -313,6 +313,9 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 34:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
                 writer.incrementState();
 
         }
@@ -404,6 +407,8 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 34:
+                topVer = reader.readMessage("topVer");
+
                 if (!reader.isLastRead())
                     return false;
 
