@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  *
  */
-public class DataStreamerProcessor<K, V> extends GridProcessorAdapter {
+public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -58,7 +58,7 @@ public class DataStreamerProcessor<K, V> extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public DataStreamerProcessor(GridKernalContext ctx) {
+    public DataStreamProcessor(GridKernalContext ctx) {
         super(ctx);
 
         ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {

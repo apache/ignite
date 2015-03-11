@@ -755,7 +755,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridTaskProcessor(ctx));
             startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
             startProcessor(new GridRestProcessor(ctx));
-            startProcessor(new DataStreamerProcessor(ctx));
+            startProcessor(new DataStreamProcessor(ctx));
             startProcessor(new GridStreamProcessor(ctx));
             startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
