@@ -47,8 +47,9 @@ public class GridDataLoadRequest implements Message {
     /** */
     private byte[] updaterBytes;
 
-    /** Entries to put. */
-    private byte[] colBytes;
+    /** Entries to update. */
+    @GridDirectCollection(IgniteDataLoaderEntry.class)
+    private Collection<IgniteDataLoaderEntry> entries;
 
     /** {@code True} to ignore deployment ownership. */
     private boolean ignoreDepOwnership;
@@ -88,7 +89,7 @@ public class GridDataLoadRequest implements Message {
      * @param resTopicBytes Response topic.
      * @param cacheName Cache name.
      * @param updaterBytes Cache updater.
-     * @param colBytes Collection bytes.
+     * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
      * @param depMode Deployment mode.
@@ -102,7 +103,7 @@ public class GridDataLoadRequest implements Message {
         byte[] resTopicBytes,
         @Nullable String cacheName,
         byte[] updaterBytes,
-        byte[] colBytes,
+        Collection<IgniteDataLoaderEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
         DeploymentMode depMode,
@@ -115,7 +116,7 @@ public class GridDataLoadRequest implements Message {
         this.resTopicBytes = resTopicBytes;
         this.cacheName = cacheName;
         this.updaterBytes = updaterBytes;
-        this.colBytes = colBytes;
+        this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
         this.depMode = depMode;
@@ -155,10 +156,10 @@ public class GridDataLoadRequest implements Message {
     }
 
     /**
-     * @return Collection bytes.
+     * @return Entries to update.
      */
-    public byte[] collectionBytes() {
-        return colBytes;
+    public Collection<IgniteDataLoaderEntry> entries() {
+        return entries;
     }
 
     /**
@@ -247,13 +248,13 @@ public class GridDataLoadRequest implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("colBytes", colBytes))
+                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -342,14 +343,6 @@ public class GridDataLoadRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                colBytes = reader.readByteArray("colBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
                 byte depModeOrd;
 
                 depModeOrd = reader.readByte("depMode");
@@ -358,6 +351,14 @@ public class GridDataLoadRequest implements Message {
                     return false;
 
                 depMode = DeploymentMode.fromOrdinal(depModeOrd);
+
+                reader.incrementState();
+
+            case 3:
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
 
                 reader.incrementState();
 

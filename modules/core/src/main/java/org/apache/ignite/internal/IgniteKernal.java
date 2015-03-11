@@ -37,6 +37,7 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -545,6 +545,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -664,12 +665,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 new IgniteExceptionRegistry(log),
                 utilityCachePool,
+                marshCachePool,
                 execSvc,
                 sysExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc);
+
+            cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             startProcessor(new ClusterProcessor(ctx));
 
@@ -743,7 +747,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-            startProcessor(createComponent(GridPortableProcessor.class, ctx));
+            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
             startProcessor(new GridQueryProcessor(ctx));
             startProcessor(new GridCacheProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
@@ -2601,6 +2605,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (comp != null)
             return comp;
+
+        if (cls.equals(IgniteCacheObjectProcessor.class))
+            return (T)new IgniteCacheObjectProcessorImpl(ctx);
 
         Class<T> implCls = null;
 

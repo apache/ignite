@@ -23,6 +23,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastream.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -31,18 +33,20 @@ import java.util.*;
 /**
  * Data center replication cache updater for data streamer.
  */
-public class IgniteDrDataStreamerCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V> {
+public class IgniteDrDataStreamerCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V>,
+    IgniteDataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public void update(IgniteCache<K, V> cache0, Collection<Map.Entry<K, V>> col) {
+    @Override public void update(IgniteCache<KeyCacheObject, CacheObject> cache0,
+        Collection<Map.Entry<KeyCacheObject, CacheObject>> col) {
         try {
             String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
             GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
             IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
-            GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
+            GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
             assert !F.isEmpty(col);
 
@@ -54,20 +58,24 @@ public class IgniteDrDataStreamerCacheUpdater<K, V> implements IgniteDataStreame
             if (!f.isDone())
                 f.get();
 
-            for (Map.Entry<K, V> entry0 : col) {
-                GridCacheRawVersionedEntry<K, V> entry = (GridCacheRawVersionedEntry<K, V>)entry0;
+            CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 
-                entry.unmarshal(ctx.config().getMarshaller());
+            for (Map.Entry<KeyCacheObject, CacheObject> entry0 : col) {
+                GridCacheRawVersionedEntry entry = (GridCacheRawVersionedEntry)entry0;
 
-                K key = entry.key();
+                entry.unmarshal(cacheObjCtx, ctx.config().getMarshaller());
+
+                KeyCacheObject key = entry.getKey();
 
                 // Ensure that updater to not receive special-purpose values for TTL and expire time.
                 assert entry.ttl() != CU.TTL_NOT_CHANGED && entry.ttl() != CU.TTL_ZERO && entry.ttl() >= 0;
                 assert entry.expireTime() != CU.EXPIRE_TIME_CALCULATE && entry.expireTime() >= 0;
 
-                GridCacheDrInfo<V> val = entry.value() != null ? entry.ttl() != CU.TTL_ETERNAL ?
-                    new GridCacheDrExpirationInfo<>(entry.value(), entry.version(), entry.ttl(), entry.expireTime()) :
-                    new GridCacheDrInfo<>(entry.value(), entry.version()) : null;
+                CacheObject cacheVal = entry.getValue();
+
+                GridCacheDrInfo val = cacheVal != null ? entry.ttl() != CU.TTL_ETERNAL ?
+                    new GridCacheDrExpirationInfo(cacheVal, entry.version(), entry.ttl(), entry.expireTime()) :
+                    new GridCacheDrInfo(cacheVal, entry.version()) : null;
 
                 if (val == null)
                     cache.removeAllConflict(Collections.singletonMap(key, entry.version()));

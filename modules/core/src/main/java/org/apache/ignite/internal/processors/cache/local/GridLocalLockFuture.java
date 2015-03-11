@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -37,7 +36,10 @@ import java.util.concurrent.atomic.*;
  * Cache lock future.
  */
 public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
-    implements GridCacheMvccFuture<K, V, Boolean> {
+    implements GridCacheMvccFuture<Boolean> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -58,7 +60,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
     /** Keys locked so far. */
     @GridToStringExclude
-    private List<GridLocalCacheEntry<K, V>> entries;
+    private List<GridLocalCacheEntry> entries;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -77,10 +79,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private long timeout;
 
     /** Filter. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private CacheEntryPredicate[] filter;
 
     /** Transaction. */
-    private IgniteTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx tx;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -95,11 +97,11 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      */
     GridLocalLockFuture(
         GridCacheContext<K, V> cctx,
-        Collection<? extends K> keys,
-        IgniteTxLocalEx<K, V> tx,
+        Collection<KeyCacheObject> keys,
+        IgniteTxLocalEx tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         assert keys != null;
         assert cache != null;
 
@@ -167,7 +169,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /**
      * @return Entries.
      */
-    List<GridLocalCacheEntry<K, V>> entries() {
+    List<GridLocalCacheEntry> entries() {
         return entries;
     }
 
@@ -190,7 +192,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @return {@code True} if locked.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
+    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check.
         return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId))) &&
             filter(cached); // If filter failed, lock is failed.
@@ -203,10 +205,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable GridCacheMvccCandidate<K> addEntry(GridLocalCacheEntry<K, V> entry)
+    @Nullable GridCacheMvccCandidate addEntry(GridLocalCacheEntry entry)
         throws GridCacheEntryRemovedException {
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
-        GridCacheMvccCandidate<K> c = entry.addLocal(
+        GridCacheMvccCandidate c = entry.addLocal(
             threadId,
             lockVer,
             timeout,
@@ -238,7 +240,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * Undoes all locks.
      */
     private void undoLocks() {
-        for (GridLocalCacheEntry<K, V> e : entries) {
+        for (GridLocalCacheEntry e : entries) {
             try {
                 e.removeLock(lockVer);
             }
@@ -270,7 +272,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param cached Entry to check.
      * @return {@code True} if filter passed.
      */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
+    private boolean filter(GridCacheEntryEx cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
                 if (log.isDebugEnabled())
@@ -297,7 +299,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         if (!isDone()) {
             for (int i = 0; i < entries.size(); i++) {
                 while (true) {
-                    GridCacheEntryEx<K, V> cached = entries.get(i);
+                    GridCacheEntryEx cached = entries.get(i);
 
                     try {
                         if (!locked(cached))
@@ -312,7 +314,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                             log.debug("Got removed entry in onOwnerChanged method (will retry): " + cached);
 
                         // Replace old entry with new one.
-                        entries.add(i, (GridLocalCacheEntry<K,V>)cache.entryEx(cached.key()));
+                        entries.add(i, (GridLocalCacheEntry)cache.entryEx(cached.key()));
                     }
                 }
             }
@@ -325,11 +327,11 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (!isDone()) {
             for (int i = 0; i < entries.size(); i++) {
                 while (true) {
-                    GridCacheEntryEx<K, V> cached = entries.get(i);
+                    GridCacheEntryEx cached = entries.get(i);
 
                     try {
                         if (!locked(cached))
@@ -344,7 +346,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                             log.debug("Got removed entry in onOwnerChanged method (will retry): " + cached);
 
                         // Replace old entry with new one.
-                        entries.add(i, (GridLocalCacheEntry<K,V>)cache.entryEx(cached.key()));
+                        entries.add(i, (GridLocalCacheEntry)cache.entryEx(cached.key()));
                     }
                 }
             }

@@ -60,7 +60,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
                 }
             }, 1);
 
-            GridCacheTtlManager<Object, Object> ttlMgr = g.internalCache().context().ttl();
+            GridCacheTtlManager ttlMgr = g.internalCache().context().ttl();
 
             for (int i = 0; i < 300; i++) {
                 U.sleep(1000);

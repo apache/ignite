@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -160,6 +159,16 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** {@inheritDoc} */

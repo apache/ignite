@@ -855,7 +855,6 @@ object VisorCacheCommand {
 
         cacheT += ("Concurrent Asynchronous Operations Number", cfg.maxConcurrentAsyncOperations())
         cacheT += ("Memory Mode", cfg.memoryMode())
-        cacheT += ("Keep Values Bytes", cfg.valueBytes())
         cacheT += ("Off-Heap Size", cfg.offsetHeapMaxMemory() match {
             case 0 => "UNLIMITED"
             case size if size < 0 => NA

@@ -33,7 +33,7 @@
     </parent>
 
     <properties>
-        <ignite.version>1.0.0-RC2-SNAPSHOT</ignite.version>
+        <ignite.version>1.0.0-RC3-SNAPSHOT</ignite.version>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -506,9 +506,39 @@
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
                         <version>0.11</version>
+                        <configuration>
+                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <licenses>
+                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
+                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
+                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
+                                    <fullText>
+                                        Licensed to the Apache Software Foundation (ASF) under one or more
+                                        contributor license agreements.  See the NOTICE file distributed with
+                                        this work for additional information regarding copyright ownership.
+                                        The ASF licenses this file to You under the Apache License, Version 2.0
+                                        (the "License"); you may not use this file except in compliance with
+                                        the License.  You may obtain a copy of the License at
+
+                                        http://www.apache.org/licenses/LICENSE-2.0
+
+                                        Unless required by applicable law or agreed to in writing, software
+                                        distributed under the License is distributed on an "AS IS" BASIS,
+                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                        See the License for the specific language governing permissions and
+                                        limitations under the License.
+                                    </fullText>
+                                </license>
+                            </licenses>
+                            <licenseFamilies>
+                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                                    <familyName>Ignite Apache License 2.0</familyName>
+                                </licenseFamily>
+                            </licenseFamilies>
+                        </configuration>
                         <executions>
                             <execution>
-                                <phase>verify</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
@@ -542,6 +572,7 @@
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
+                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
                                         <exclude>modules/winservice/IgniteService.sln</exclude>
                                         <exclude>modules/winservice/IgniteService/IgniteService.csproj</exclude>
@@ -552,6 +583,7 @@
                                         <exclude>ipc/shmem/config.guess</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.sub</exclude><!--own license-->
                                         <exclude>ipc/shmem/configure</exclude><!--own license-->
+                                        <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
                                         <exclude>ipc/shmem/configure.ac</exclude><!---->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
                                         <exclude>ipc/shmem/install-sh</exclude><!--own license-->
@@ -1335,7 +1367,7 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>process-resources</phase>
+                                <phase>process-classes</phase>
                                 <configuration>
                                     <target>
                                         <java

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -488,7 +490,92 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 88:
-                msg = new GridCacheValueBytes();
+                msg = new GridCacheReturn();
+
+                break;
+
+            case 89:
+                msg = new CacheObjectImpl();
+
+                break;
+
+            case 90:
+                msg = new KeyCacheObjectImpl();
+
+                break;
+
+            case 91:
+                msg = new GridCacheEntryInfo();
+
+                break;
+
+            case 92:
+                msg = new CacheEntryInfoCollection();
+
+                break;
+
+            case 93:
+                msg = new CacheInvokeDirectResult();
+
+                break;
+
+            case 94:
+                msg = new IgniteTxKey();
+
+                break;
+
+            case 95:
+                msg = new IgniteDataLoaderEntry();
+
+                break;
+
+            case 96:
+                msg = new CacheContinuousQueryEntry();
+
+                break;
+
+            case 97:
+                msg = new CacheEvictionEntry();
+
+                break;
+
+            case 98:
+                msg = new CacheEntryPredicateContainsValue();
+
+                break;
+
+            case 99:
+                msg = new CacheEntrySerializablePredicate();
+
+                break;
+
+            case 100:
+                msg = new IgniteTxEntry();
+
+                break;
+
+            case 101:
+                msg = new TxEntryValueHolder();
+
+                break;
+
+            case 102:
+                msg = new CacheVersionedValue();
+
+                break;
+
+            case 103:
+                msg = new GridCacheRawVersionedEntry<>();
+
+                break;
+
+            case 104:
+                msg = new GridCacheVersionEx();
+
+                break;
+
+            case 105:
+                msg = new CacheObjectByteArrayImpl();
 
                 break;
 

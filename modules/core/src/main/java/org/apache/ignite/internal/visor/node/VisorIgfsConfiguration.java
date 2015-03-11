@@ -22,11 +22,11 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**

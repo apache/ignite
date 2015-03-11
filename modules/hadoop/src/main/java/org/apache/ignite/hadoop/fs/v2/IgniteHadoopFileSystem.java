@@ -587,11 +587,13 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                 secondaryFs.renameInternal(toSecondary(src), toSecondary(dst));
             }
+            else {
+                if (clientLog.isLogEnabled())
+                    clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
 
-            rmtClient.rename(srcPath, dstPath);
+                rmtClient.rename(srcPath, dstPath);
+            }
 
-            if (clientLog.isLogEnabled())
-                clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
         }
         finally {
             leaveBusy();

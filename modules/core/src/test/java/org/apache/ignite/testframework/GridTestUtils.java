@@ -55,7 +55,7 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
-    private static final Map<Class<? extends Test>, String> addrs = new HashMap<>();
+    private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
     private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
@@ -401,7 +401,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast group.
      */
-    public static synchronized String getNextMulticastGroup(Class<? extends Test> cls) {
+    public static synchronized String getNextMulticastGroup(Class<?> cls) {
         String addrStr = addrs.get(cls);
 
         if (addrStr != null)
@@ -875,7 +875,7 @@ public final class GridTestUtils {
         for (Ignite g : Ignition.allGrids()) {
             GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
 
-            GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
+            GridDhtPartitionTopology top = dht(cache).topology();
 
             while (true) {
                 boolean wait = false;

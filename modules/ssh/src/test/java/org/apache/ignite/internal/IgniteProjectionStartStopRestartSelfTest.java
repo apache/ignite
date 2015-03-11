@@ -119,12 +119,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         G.setDaemon(true);
 
-        try {
-            ignite = G.start(CFG_NO_ATTR);
-        }
-        finally {
-            G.setDaemon(false);
-        }
+        ignite = G.start(CFG_NO_ATTR);
+
+        G.setDaemon(false);
 
         ignite.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -135,8 +132,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
                     if (joinedLatch != null)
                         joinedLatch.countDown();
-                }
-                else if (evt.type() == EVT_NODE_LEFT) {
+                } else if (evt.type() == EVT_NODE_LEFT) {
                     leftCnt.incrementAndGet();
 
                     if (leftLatch != null)
@@ -150,29 +146,25 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        try {
-            if (!ignite.cluster().nodes().isEmpty()) {
-                leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
+        if (!ignite.cluster().nodes().isEmpty()) {
+            leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
 
-                ignite.cluster().stopNodes();
+            ignite.cluster().stopNodes();
 
-                assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-            }
-
-            boolean wasEmpty = ignite.cluster().nodes().isEmpty();
-
-            joinedCnt.set(0);
-            leftCnt.set(0);
-
-            joinedLatch = null;
-            leftLatch = null;
-
-            assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped" +
-                "[nodes=" + ignite.cluster().nodes() + ']';
+            assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         }
-        finally {
-            G.stop(true);
-        }
+
+        boolean wasEmpty = ignite.cluster().nodes().isEmpty();
+
+        G.stop(true);
+
+        joinedCnt.set(0);
+        leftCnt.set(0);
+
+        joinedLatch = null;
+        leftLatch = null;
+
+        assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped [nodes=" + ignite.cluster().nodes() + ']';
     }
 
     /** {@inheritDoc} */

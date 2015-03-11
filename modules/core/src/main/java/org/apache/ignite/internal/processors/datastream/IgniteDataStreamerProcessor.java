@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -139,15 +140,14 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name ({@code null} for default cache).
-     * @param compact {@code true} if data streamer should transfer data in compact format.
-     * @return Data streamer.
+     * @return Data loader.
      */
-    public IgniteDataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName, boolean compact) {
+    public IgniteDataStreamerImpl<K, V> dataLoader(@Nullable String cacheName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data streamer (grid is stopping).");
 
         try {
-            final IgniteDataStreamerImpl<K, V> ldr = new IgniteDataStreamerImpl<>(ctx, cacheName, flushQ, compact);
+            final IgniteDataStreamerImpl<K, V> ldr = new IgniteDataStreamerImpl<>(ctx, cacheName, flushQ);
 
             ldrs.add(ldr);
 
@@ -167,14 +167,6 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @param cacheName Cache name ({@code null} for default cache).
-     * @return Data streamer.
-     */
-    public IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
-        return dataStreamer(cacheName, true);
     }
 
     /**
@@ -233,11 +225,9 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
                 clsLdr = dep.classLoader();
             }
 
-            Collection<Map.Entry<K, V>> col;
             IgniteDataStreamer.Updater<K, V> updater;
 
             try {
-                col = marsh.unmarshal(req.collectionBytes(), clsLdr);
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
             }
             catch (IgniteCheckedException e) {
@@ -248,7 +238,9 @@ public class IgniteDataStreamerProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            IgniteDataStreamerUpdateJob<K, V> job = new IgniteDataStreamerUpdateJob<>(ctx,
+            Collection<IgniteDataLoaderEntry> col = req.entries();
+
+            IgniteDataStreamerUpdateJob job = new IgniteDataStreamerUpdateJob(ctx,
                 log,
                 req.cacheName(),
                 col,

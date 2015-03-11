@@ -127,14 +127,7 @@ public class IgniteDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            Marshaller marsh = g0.configuration().getMarshaller();
-
-            if (marsh instanceof OptimizedMarshaller)
-                assertTrue(((OptimizedMarshaller)marsh).isRequireSerializable());
-            else
-                fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
-
-            IgniteDataStreamer<Integer, String> dataLdr = g0.dataStreamer(null);
+            IgniteDataStreamerImpl<Integer, String> dataLdr = g0.dataStreamer(null);
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 

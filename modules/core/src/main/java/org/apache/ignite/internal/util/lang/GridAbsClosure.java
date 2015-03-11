@@ -19,8 +19,6 @@ package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.lang.*;
 
-import java.io.*;
-
 /**
  * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure
  * that has {@code void} return type and no arguments (free variables).

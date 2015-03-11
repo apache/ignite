@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs;
 
+import org.jetbrains.annotations.*;
+
 /**
  * {@code IGFS} exception indicating that file system structure was modified concurrently. This error
  * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
@@ -26,11 +28,30 @@ public class IgfsConcurrentModificationException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception.
+     * Constructor.
      *
-     * @param path Affected path.
+     * @param msg Message.
      */
-    public IgfsConcurrentModificationException(IgfsPath path) {
-        super("File system entry has been modified concurrently: " + path, null);
+    public IgfsConcurrentModificationException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cause Cause.
+     */
+    public IgfsConcurrentModificationException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     */
+    public IgfsConcurrentModificationException(@Nullable String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }

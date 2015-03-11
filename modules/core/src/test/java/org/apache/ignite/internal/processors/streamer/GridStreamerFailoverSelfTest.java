@@ -162,7 +162,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, 1);
+            }, 1, "restarter");
 
             final Collection<Object> failed = new ConcurrentLinkedQueue<>();
 

@@ -165,7 +165,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             for (int g = 0; g < GRID_CNT; g++) {
                 info("Will check grid: " + g);
 
-                GridCacheEntryEx<Object, Object> testEntry =
+                GridCacheEntryEx testEntry =
                     ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
 
                 info("Entry: " + testEntry);

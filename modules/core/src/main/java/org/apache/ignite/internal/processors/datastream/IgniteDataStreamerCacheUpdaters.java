@@ -93,7 +93,7 @@ public class IgniteDataStreamerCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Individual<K, V> implements IgniteDataStreamer.Updater<K, V> {
+    private static class Individual<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -120,7 +120,7 @@ public class IgniteDataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class Batched<K, V> implements IgniteDataStreamer.Updater<K, V> {
+    private static class Batched<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -160,7 +160,7 @@ public class IgniteDataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements IgniteDataStreamer.Updater<K, V> {
+    private static class BatchedSorted<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -195,5 +195,12 @@ public class IgniteDataStreamerCacheUpdaters {
 
             updateAll(cache, rmvAll, putAll);
         }
+    }
+
+    /**
+     * Marker interface for updaters which do not need to unwrap cache objects.
+     */
+    public static interface InternalUpdater {
+        // No-op.
     }
 }

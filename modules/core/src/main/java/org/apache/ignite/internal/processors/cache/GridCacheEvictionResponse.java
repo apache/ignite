@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Cache eviction response.
  */
-public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheEvictionResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,13 +39,8 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** Rejected keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<K> rejectedKeys = new HashSet<>();
-
-    /** Serialized rejected keys. */
-    @GridToStringExclude
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> rejectedKeyBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private Collection<KeyCacheObject> rejectedKeys = new HashSet<>();
 
     /** Flag to indicate whether request processing has finished with error. */
     private boolean err;
@@ -78,17 +73,17 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        rejectedKeyBytes = marshalCollection(rejectedKeys, ctx);
+        prepareMarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        rejectedKeys = unmarshalCollection(rejectedKeyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(rejectedKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /**
@@ -101,7 +96,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Rejected keys.
      */
-    Collection<K> rejectedKeys() {
+    Collection<KeyCacheObject> rejectedKeys() {
         return rejectedKeys;
     }
 
@@ -110,7 +105,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
      *
      * @param key Evicted key.
      */
-    void addRejected(K key) {
+    void addRejected(KeyCacheObject key) {
         assert key != null;
 
         rejectedKeys.add(key);
@@ -156,7 +151,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("rejectedKeys", rejectedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -194,7 +189,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 reader.incrementState();
 
             case 5:
-                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", MessageCollectionItemType.BYTE_ARR);
+                rejectedKeys = reader.readCollection("rejectedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
