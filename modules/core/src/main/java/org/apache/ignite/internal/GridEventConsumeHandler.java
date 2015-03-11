@@ -152,7 +152,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                     }
                                 }
 
-                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false);
+                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false, false);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);
@@ -282,6 +282,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** {@inheritDoc} */

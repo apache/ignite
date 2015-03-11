@@ -52,19 +52,19 @@ public class GridCacheSharedContext<K, V> {
     private List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
     /** Cache transaction manager. */
-    private IgniteTxManager<K, V> txMgr;
+    private IgniteTxManager txMgr;
 
     /** Partition exchange manager. */
     private GridCachePartitionExchangeManager<K, V> exchMgr;
 
     /** Version manager. */
-    private GridCacheVersionManager<K, V> verMgr;
+    private GridCacheVersionManager verMgr;
 
     /** Lock manager. */
-    private GridCacheMvccManager<K, V> mvccMgr;
+    private GridCacheMvccManager mvccMgr;
 
     /** IO Manager. */
-    private GridCacheIoManager<K, V> ioMgr;
+    private GridCacheIoManager ioMgr;
 
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
@@ -85,12 +85,12 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
-        IgniteTxManager<K, V> txMgr,
-        GridCacheVersionManager<K, V> verMgr,
-        GridCacheMvccManager<K, V> mvccMgr,
+        IgniteTxManager txMgr,
+        GridCacheVersionManager verMgr,
+        GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
-        GridCacheIoManager<K, V> ioMgr
+        GridCacheIoManager ioMgr
     ) {
         this.kernalCtx = kernalCtx;
         this.mvccMgr = add(mvccMgr);
@@ -110,8 +110,8 @@ public class GridCacheSharedContext<K, V> {
      *
      * @return Collection of all cache contexts.
      */
-    public Collection<GridCacheContext<K, V>> cacheContexts() {
-        return ctxMap.values();
+    public Collection<GridCacheContext> cacheContexts() {
+        return (Collection)ctxMap.values();
     }
 
     /**
@@ -261,7 +261,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Cache transaction manager.
      */
-    public IgniteTxManager<K, V> tm() {
+    public IgniteTxManager tm() {
         return txMgr;
     }
 
@@ -275,21 +275,21 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Lock order manager.
      */
-    public GridCacheVersionManager<K, V> versions() {
+    public GridCacheVersionManager versions() {
         return verMgr;
     }
 
     /**
      * @return Lock manager.
      */
-    public GridCacheMvccManager<K, V> mvcc() {
+    public GridCacheMvccManager mvcc() {
         return mvccMgr;
     }
 
     /**
      * @return IO manager.
      */
-    public GridCacheIoManager<K, V> io() {
+    public GridCacheIoManager io() {
         return ioMgr;
     }
 
@@ -404,7 +404,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
+        GridCompoundFuture f = new GridCompoundFuture();
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
@@ -421,12 +421,18 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
-    public boolean txCompatible(IgniteInternalTx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
+    public boolean txCompatible(IgniteInternalTx tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.system() ^ tx.system())
             return false;
 
         for (Integer cacheId : activeCacheIds) {
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
+
+            // System transactions may sap only one cache.
+            if (cacheCtx.system()) {
+                if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
+                    return false;
+            }
 
             // Check that caches have the same store.
             if (activeCacheCtx.store().store() != cacheCtx.store().store())
@@ -468,7 +474,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to close.
      * @throws IgniteCheckedException If failed.
      */
-    public void endTx(IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
+    public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
@@ -483,7 +489,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx<K, V> tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())
@@ -505,7 +511,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to rollback.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
+    public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {

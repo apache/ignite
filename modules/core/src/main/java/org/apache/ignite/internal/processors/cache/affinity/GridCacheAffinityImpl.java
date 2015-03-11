@@ -148,14 +148,8 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (cctx.portableEnabled()) {
-            try {
-                key = (K)cctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 
         return cctx.config().getAffinityMapper().affinityKey(key);
     }

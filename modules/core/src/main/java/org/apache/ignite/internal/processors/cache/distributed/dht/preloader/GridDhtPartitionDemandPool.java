@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 @SuppressWarnings("NonConstantFieldWithUpperCaseName")
 public class GridDhtPartitionDemandPool<K, V> {
     /** Dummy message to wake up a blocking queue if a node leaves. */
-    private final SupplyMessage<K, V> DUMMY_TOP = new SupplyMessage<>();
+    private final SupplyMessage DUMMY_TOP = new SupplyMessage();
 
     /** */
     private final GridCacheContext<K, V> cctx;
@@ -71,7 +71,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private final Collection<DemandWorker> dmdWorkers;
 
     /** Preload predicate. */
-    private IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /** Future for preload mode {@link org.apache.ignite.cache.CachePreloadMode#SYNC}. */
     @GridToStringInclude
@@ -93,7 +93,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     private AtomicReference<GridTimeoutObject> lastTimeoutObj = new AtomicReference<>();
 
     /** Last exchange future. */
-    private volatile GridDhtPartitionsExchangeFuture<K, V> lastExchangeFut;
+    private volatile GridDhtPartitionsExchangeFuture lastExchangeFut;
 
     /**
      * @param cctx Cache context.
@@ -173,7 +173,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      * @param preloadPred Preload predicate.
      */
-    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
         this.preloadPred = preloadPred;
     }
 
@@ -203,13 +203,13 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (obj != null)
             cctx.time().removeTimeoutObject(obj);
 
-        final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
+        final GridDhtPartitionsExchangeFuture exchFut = lastExchangeFut;
 
         if (exchFut != null) {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+            exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
@@ -262,7 +262,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param msg Message to check.
      * @return {@code True} if dummy message.
      */
-    private boolean dummyTopology(SupplyMessage<K, V> msg) {
+    private boolean dummyTopology(SupplyMessage msg) {
         return msg == DUMMY_TOP;
     }
 
@@ -352,13 +352,13 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (obj != null)
                 cctx.time().removeTimeoutObject(obj);
 
-            final GridDhtPartitionsExchangeFuture<K, V> exchFut = lastExchangeFut;
+            final GridDhtPartitionsExchangeFuture exchFut = lastExchangeFut;
 
             assert exchFut != null : "Delaying preload process without topology event.";
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
@@ -402,7 +402,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         private final LinkedBlockingDeque<GridDhtPreloaderAssignments<K, V>> assignQ = new LinkedBlockingDeque<>();
 
         /** Message queue. */
-        private final LinkedBlockingDeque<SupplyMessage<K, V>> msgQ =
+        private final LinkedBlockingDeque<SupplyMessage> msgQ =
             new LinkedBlockingDeque<>();
 
         /** Counter. */
@@ -444,7 +444,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         /**
          * @param msg Message.
          */
-        private void addMessage(SupplyMessage<K, V> msg) {
+        private void addMessage(SupplyMessage msg) {
             if (!enterBusy())
                 return;
 
@@ -482,10 +482,14 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code False} if partition has become invalid during preloading.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, AffinityTopologyVersion topVer)
-            throws IgniteCheckedException {
+        private boolean preloadEntry(
+            ClusterNode pick, 
+            int p, 
+            GridCacheEntryInfo entry, 
+            AffinityTopologyVersion topVer
+        ) throws IgniteCheckedException {
             try {
-                GridCacheEntryEx<K, V> cached = null;
+                GridCacheEntryEx cached = null;
 
                 try {
                     cached = cctx.dht().entryEx(entry.key());
@@ -507,7 +511,6 @@ public class GridDhtPartitionDemandPool<K, V> {
                     if (preloadPred == null || preloadPred.apply(entry)) {
                         if (cached.initialValue(
                             entry.value(),
-                            entry.valueBytes(),
                             entry.version(),
                             entry.ttl(),
                             entry.expireTime(),
@@ -570,9 +573,13 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
-        private Set<Integer> demandFromNode(ClusterNode node, final AffinityTopologyVersion topVer, GridDhtPartitionDemandMessage<K, V> d,
-            GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, IgniteCheckedException {
-            GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+        private Set<Integer> demandFromNode(
+            ClusterNode node, 
+            final AffinityTopologyVersion topVer, 
+            GridDhtPartitionDemandMessage d,
+            GridDhtPartitionsExchangeFuture exchFut
+        ) throws InterruptedException, IgniteCheckedException {
+            GridDhtPartitionTopology top = cctx.dht().topology();
 
             cntr++;
 
@@ -590,9 +597,9 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (isCancelled() || topologyChanged())
                 return missed;
 
-            cctx.io().addOrderedHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage<K, V>>() {
-                @Override public void apply(UUID nodeId, GridDhtPartitionSupplyMessage<K, V> msg) {
-                    addMessage(new SupplyMessage<>(nodeId, msg));
+            cctx.io().addOrderedHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage>() {
+                @Override public void apply(UUID nodeId, GridDhtPartitionSupplyMessage msg) {
+                    addMessage(new SupplyMessage(nodeId, msg));
                 }
             });
 
@@ -605,7 +612,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     retry = false;
 
                     // Create copy.
-                    d = new GridDhtPartitionDemandMessage<>(d, remaining);
+                    d = new GridDhtPartitionDemandMessage(d, remaining);
 
                     long timeout = GridDhtPartitionDemandPool.this.timeout.get();
 
@@ -620,7 +627,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     // While.
                     // =====
                     while (!isCancelled() && !topologyChanged()) {
-                        SupplyMessage<K, V> s = poll(msgQ, timeout, this);
+                        SupplyMessage s = poll(msgQ, timeout, this);
 
                         // If timed out.
                         if (s == null) {
@@ -635,17 +642,17 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 cctx.io().removeOrderedHandler(d.topic());
 
                                 // Must create copy to be able to work with IO manager thread local caches.
-                                d = new GridDhtPartitionDemandMessage<>(d, remaining);
+                                d = new GridDhtPartitionDemandMessage(d, remaining);
 
                                 // Create new topic.
                                 d.topic(topic(++cntr));
 
                                 // Create new ordered listener.
                                 cctx.io().addOrderedHandler(d.topic(),
-                                    new CI2<UUID, GridDhtPartitionSupplyMessage<K, V>>() {
+                                    new CI2<UUID, GridDhtPartitionSupplyMessage>() {
                                         @Override public void apply(UUID nodeId,
-                                            GridDhtPartitionSupplyMessage<K, V> msg) {
-                                            addMessage(new SupplyMessage<>(nodeId, msg));
+                                            GridDhtPartitionSupplyMessage msg) {
+                                            addMessage(new SupplyMessage(nodeId, msg));
                                         }
                                     });
 
@@ -677,7 +684,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         if (log.isDebugEnabled())
                             log.debug("Received supply message: " + s);
 
-                        GridDhtPartitionSupplyMessage<K, V> supply = s.supply();
+                        GridDhtPartitionSupplyMessage supply = s.supply();
 
                         // Check whether there were class loading errors on unmarshal
                         if (supply.classError() != null) {
@@ -691,11 +698,11 @@ public class GridDhtPartitionDemandPool<K, V> {
                         }
 
                         // Preload.
-                        for (Map.Entry<Integer, Collection<GridCacheEntryInfo<K, V>>> e : supply.infos().entrySet()) {
+                        for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
                             int p = e.getKey();
 
                             if (cctx.affinity().localNode(p, topVer)) {
-                                GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
+                                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                                 assert part != null;
 
@@ -711,7 +718,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         Collection<Integer> invalidParts = new GridLeanSet<>();
 
                                         // Loop through all received entries and try to preload them.
-                                        for (GridCacheEntryInfo<K, V> entry : e.getValue()) {
+                                        for (GridCacheEntryInfo entry : e.getValue().infos()) {
                                             if (!invalidParts.contains(p)) {
                                                 if (!part.preloadingPermitted(entry.key(), entry.version())) {
                                                     if (log.isDebugEnabled())
@@ -800,7 +807,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          */
         private void drainQueue() throws InterruptedException {
             while (!msgQ.isEmpty()) {
-                SupplyMessage<K, V> msg = msgQ.take();
+                SupplyMessage msg = msgQ.take();
 
                 if (log.isDebugEnabled())
                     log.debug("Drained supply message: " + msg);
@@ -810,6 +817,25 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
+                if (!CU.isMarshallerCache(cctx.name())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
+
+                    try {
+                        cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
+                                "[cacheName=" + cctx.name() + ']');
+
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
+                    }
+                }
+
                 int preloadOrder = cctx.config().getPreloadOrder();
 
                 if (preloadOrder > 0) {
@@ -836,7 +862,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     }
                 }
 
-                GridDhtPartitionsExchangeFuture<K, V> exchFut = null;
+                GridDhtPartitionsExchangeFuture exchFut = null;
 
                 boolean stopEvtFired = false;
 
@@ -886,7 +912,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 if (topologyChanged() || isCancelled())
                                     break; // For.
 
-                                GridDhtPartitionDemandMessage<K, V> d = assigns.remove(node);
+                                GridDhtPartitionDemandMessage d = assigns.remove(node);
 
                                 // If another thread is already processing this message,
                                 // move to the next node.
@@ -961,7 +987,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      *
      * @param lastFut Last future to set.
      */
-    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         lastExchangeFut = lastFut;
     }
 
@@ -969,9 +995,9 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param exchFut Exchange future.
      * @return Assignments of partitions to nodes.
      */
-    GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         // No assignments for disabled preloader.
-        GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+        GridDhtPartitionTopology top = cctx.dht().topology();
 
         if (!cctx.preloadEnabled())
             return new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
@@ -998,7 +1024,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             // If partition belongs to local node.
             if (cctx.affinity().localNode(p, topVer)) {
-                GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
+                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                 assert part != null;
                 assert part.id() == p;
@@ -1021,10 +1047,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                 else {
                     ClusterNode n = F.first(picked);
 
-                    GridDhtPartitionDemandMessage<K, V> msg = assigns.get(n);
+                    GridDhtPartitionDemandMessage msg = assigns.get(n);
 
                     if (msg == null) {
-                        assigns.put(n, msg = new GridDhtPartitionDemandMessage<>(
+                        assigns.put(n, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             exchFut.exchangeId().topologyVersion(),
                             cctx.cacheId()));
@@ -1052,8 +1078,6 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param workers List of workers.
          */
         private SyncFuture(Collection<DemandWorker> workers) {
-            super(cctx.kernalContext());
-
             assert workers.size() == poolSize();
 
             remaining = Collections.synchronizedList(new LinkedList<>(workers));
@@ -1089,12 +1113,12 @@ public class GridDhtPartitionDemandPool<K, V> {
     /**
      * Supply message wrapper.
      */
-    private static class SupplyMessage<K, V> {
+    private static class SupplyMessage {
         /** Sender ID. */
         private UUID sndId;
 
         /** Supply message. */
-        private GridDhtPartitionSupplyMessage<K, V> supply;
+        private GridDhtPartitionSupplyMessage supply;
 
         /**
          * Dummy constructor.
@@ -1107,7 +1131,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param sndId Sender ID.
          * @param supply Supply message.
          */
-        SupplyMessage(UUID sndId, GridDhtPartitionSupplyMessage<K, V> supply) {
+        SupplyMessage(UUID sndId, GridDhtPartitionSupplyMessage supply) {
             this.sndId = sndId;
             this.supply = supply;
         }
@@ -1122,7 +1146,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         /**
          * @return Message.
          */
-        GridDhtPartitionSupplyMessage<K, V> supply() {
+        GridDhtPartitionSupplyMessage supply() {
             return supply;
         }
 

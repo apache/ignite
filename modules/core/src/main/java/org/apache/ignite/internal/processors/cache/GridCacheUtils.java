@@ -70,6 +70,9 @@ public class GridCacheUtils {
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
+    /** Marshaller system cache name. */
+    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 
@@ -95,9 +98,9 @@ public class GridCacheUtils {
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Per-thread generated UID store. */
-    private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
-        @Override protected String initialValue() {
-            return UUID.randomUUID().toString();
+    private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
+        @Override protected UUID initialValue() {
+            return UUID.randomUUID();
         }
     };
 
@@ -130,14 +133,29 @@ public class GridCacheUtils {
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
 
-    /** Always false predicat array. */
-    private static final IgnitePredicate[] ALWAYS_FALSE = new IgnitePredicate[] {
-        new P1() {
-            @Override public boolean apply(Object e) {
+    /** Empty predicate array. */
+    private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
+
+    /** */
+    private static final CacheEntryPredicate ALWAYS_FALSE0 = new CacheEntrySerializablePredicate(
+        new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
                 return false;
             }
         }
-    };
+    );
+
+    /** */
+    private static final CacheEntryPredicate ALWAYS_TRUE0 = new CacheEntrySerializablePredicate(
+        new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                return true;
+            }
+        }
+    );
+
+    /** */
+    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
     private static final IgnitePredicate READ_FILTER = new P1<Object>() {
@@ -202,20 +220,9 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key bytes. */
-    private static final IgniteClosure tx2keyBytes = new C1<IgniteTxEntry, byte[]>() {
-        @Nullable @Override public byte[] apply(IgniteTxEntry e) {
-            return e.keyBytes();
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry to key converter.";
-        }
-    };
-
     /** Transaction entry to key. */
-    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, Object>() {
-        @Override public Object apply(GridCacheEntryEx e) {
+    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, KeyCacheObject>() {
+        @Override public KeyCacheObject apply(GridCacheEntryEx e) {
             return e.key();
         }
 
@@ -247,7 +254,7 @@ public class GridCacheUtils {
      *
      * @return ID for this thread.
      */
-    public static String uuid() {
+    public static UUID uuid() {
         return UUIDS.get();
     }
 
@@ -302,14 +309,12 @@ public class GridCacheUtils {
     /**
      * @param ctx Cache context.
      * @param meta Meta name.
-     * @param <K> Key type.
-     * @param <V> Value type.
      * @return Filter for entries with meta.
      */
-    public static <K, V> IgnitePredicate<K> keyHasMeta(final GridCacheContext<K, V> ctx, final String meta) {
-        return new P1<K>() {
-            @Override public boolean apply(K k) {
-                GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
+    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final UUID meta) {
+        return new P1<KeyCacheObject>() {
+            @Override public boolean apply(KeyCacheObject k) {
+                GridCacheEntryEx e = ctx.cache().peekEx(k);
 
                 return e != null && e.hasMeta(meta);
             }
@@ -319,23 +324,21 @@ public class GridCacheUtils {
     /**
      * @param err If {@code true}, then throw {@link GridCacheFilterFailedException},
      *      otherwise return {@code val} passed in.
-     * @param <T> Return type.
      * @return Always return {@code null}.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static <T> T failed(boolean err) throws GridCacheFilterFailedException {
-        return failed(err, (T)null);
+    @Nullable public static CacheObject failed(boolean err) throws GridCacheFilterFailedException {
+        return failed(err, null);
     }
 
     /**
      * @param err If {@code true}, then throw {@link GridCacheFilterFailedException},
      *      otherwise return {@code val} passed in.
      * @param val Value for which evaluation happened.
-     * @param <T> Return type.
      * @return Always return {@code val} passed in or throw exception.
      * @throws GridCacheFilterFailedException If {@code err} flag is {@code true}.
      */
-    @Nullable public static <T> T failed(boolean err, T val) throws GridCacheFilterFailedException {
+    @Nullable public static CacheObject failed(boolean err, CacheObject val) throws GridCacheFilterFailedException {
         if (err)
             throw new GridCacheFilterFailedException(val);
 
@@ -424,7 +427,7 @@ public class GridCacheUtils {
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridDhtLocalPartition<K, V>, GridDhtPartitionState> part2state() {
+    public static <K, V> IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
         return PART2STATE;
     }
 
@@ -432,7 +435,7 @@ public class GridCacheUtils {
      * @return Not evicted partitions.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgnitePredicate<GridDhtLocalPartition<K, V>> notEvicted() {
+    public static <K, V> IgnitePredicate<GridDhtLocalPartition> notEvicted() {
         return PART_NOT_EVICTED;
     }
 
@@ -710,74 +713,103 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Always false filter.
+     * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])ALWAYS_FALSE;
+    public static CacheEntryPredicate[] empty0() {
+        return EMPTY_FILTER0;
+    }
+
+    /**
+     * @return Always false filter.
+     */
+    public static CacheEntryPredicate alwaysFalse0() {
+        return ALWAYS_FALSE0;
+    }
+
+    /**
+     * @return Always false filter.
+     */
+    public static CacheEntryPredicate alwaysTrue0() {
+        return ALWAYS_TRUE0;
+    }
+
+    /**
+     * @return Always false filter.
+     */
+    public static CacheEntryPredicate[] alwaysFalse0Arr() {
+        return ALWAYS_FALSE0_ARR;
+    }
+
+    /**
+     * @param p Predicate.
+     * @return {@code True} if always false filter.
+     */
+    public static boolean isAlwaysFalse0(@Nullable CacheEntryPredicate[] p) {
+        return p != null && p.length == 1 && p[0]  == ALWAYS_FALSE0;
+    }
+
+    /**
+     * @param p Predicate.
+     * @return {@code True} if always false filter.
+     */
+    public static boolean isAlwaysTrue0(@Nullable CacheEntryPredicate[] p) {
+        return p != null && p.length == 1 && p[0]  == ALWAYS_TRUE0;
     }
 
     /**
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, K> tx2key() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, K>)tx2key;
+    public static <K, V> IgniteClosure<IgniteTxEntry, K> tx2key() {
+        return (IgniteClosure<IgniteTxEntry, K>)tx2key;
     }
 
     /**
      * @return Closure that converts tx entry collection to key collection.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>> txCol2Key() {
-        return (IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>>)txCol2key;
-    }
-
-    /**
-     * @return Closure that converts tx entry to key.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, byte[]> tx2keyBytes() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, byte[]>)tx2keyBytes;
+    public static <K, V> IgniteClosure<Collection<IgniteTxEntry>, Collection<K>> txCol2Key() {
+        return (IgniteClosure<Collection<IgniteTxEntry>, Collection<K>>)txCol2key;
     }
 
     /**
      * @return Converts transaction entry to cache entry.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
-        return (IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
+    public static <K, V> IgniteClosure<IgniteTxEntry, GridCacheEntryEx> tx2entry() {
+        return (IgniteClosure<IgniteTxEntry, GridCacheEntryEx>)tx2entry;
     }
 
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
 
     /**
      * @return Closure that converts entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntryEx<K, V>, K> entry2Key() {
-        return (IgniteClosure<GridCacheEntryEx<K, V>, K>)entry2key;
+    public static IgniteClosure<GridCacheEntryEx, KeyCacheObject> entry2Key() {
+        return entry2key;
     }
 
     /**
      * @return Closure that converts entry info to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntryInfo<K, V>, K> info2Key() {
-        return (IgniteClosure<GridCacheEntryInfo<K, V>, K>)info2key;
+    public static <K, V> IgniteClosure<GridCacheEntryInfo, K> info2Key() {
+        return (IgniteClosure<GridCacheEntryInfo, K>)info2key;
     }
 
     /**
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> reads() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry> reads() {
         return READ_FILTER;
     }
 
@@ -785,7 +817,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> writes() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
     }
 
@@ -808,6 +840,23 @@ public class GridCacheUtils {
                 return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
             }
         };
+    }
+
+    /**
+     * @param keyType Key type.
+     * @param valType Value type.
+     * @return Type filter.
+     */
+    public static CacheEntryPredicate typeFilter0(final Class<?> keyType, final Class<?> valType) {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                Object val = CU.value(peekVisibleValue(e), e.context(), false);
+
+                return val == null ||
+                    valType.isAssignableFrom(val.getClass()) &&
+                    keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
+            }
+        });
     }
 
     /**
@@ -1164,7 +1213,7 @@ public class GridCacheUtils {
         assert ctx != null;
         assert prj != null;
 
-        ctx.tm().txContextReset();
+        ctx.tm().resetContext();
 
         return prj.txStartEx(concurrency, isolation);
     }
@@ -1181,15 +1230,6 @@ public class GridCacheUtils {
             ", isolation=" + tx.isolation() + ", state=" + tx.state() + ", invalidate=" + tx.isInvalidate() +
             ", rollbackOnly=" + tx.isRollbackOnly() + ", nodeId=" + tx.nodeId() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
-    }
-
-    /**
-     * @param ctx Cache context.
-     */
-    public static void resetTxContext(GridCacheSharedContext ctx) {
-        assert ctx != null;
-
-        ctx.tm().txContextReset();
     }
 
     /**
@@ -1466,7 +1506,15 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is marshaller system cache.
+     */
+    public static boolean isMarshallerCache(String cacheName) {
+        return MARSH_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
         return UTILITY_CACHE_NAME.equals(cacheName);
@@ -1474,7 +1522,7 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is security system cache.
+     * @return {@code True} if this is atomics system cache.
      */
     public static boolean isAtomicsCache(String cacheName) {
         return ATOMICS_CACHE_NAME.equals(cacheName);
@@ -1485,7 +1533,8 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
+        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+            isAtomicsCache(cacheName);
     }
 
     /**
@@ -1617,7 +1666,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteInternalTx tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 
@@ -1694,17 +1743,17 @@ public class GridCacheUtils {
      * @throws ClassNotFoundException If class not found.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
+    @Nullable public static <K, V> CacheEntryPredicate[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        IgnitePredicate<Cache.Entry<K, V>>[] arr = null;
+        CacheEntryPredicate[] arr = null;
 
         if (len > 0) {
-            arr = new IgnitePredicate[len];
+            arr = new CacheEntryPredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<Cache.Entry<K, V>>)in.readObject();
+                arr[i] = (CacheEntryPredicate)in.readObject();
         }
 
         return arr;
@@ -1715,7 +1764,23 @@ public class GridCacheUtils {
      * @param n Node.
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary(
+    public static CacheEntryPredicate cachePrimary(
+        final CacheAffinity aff,
+        final ClusterNode n
+    ) {
+        return new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                return aff.isPrimary(n, e.key().value(e.context().cacheObjectContext(), false));
+            }
+        };
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param n Node.
+     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     */
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
         final CacheAffinity<K> aff,
         final ClusterNode n
     ) {
@@ -1732,7 +1797,7 @@ public class GridCacheUtils {
      */
     @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
-            return new CacheWriterException(e);
+            return new CacheWriterException(U.convertExceptionNoWrap(e));
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
@@ -1745,5 +1810,15 @@ public class GridCacheUtils {
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
         return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
+    }
+
+    /**
+     * @param cacheObj Cache object.
+     * @param ctx Cache context.
+     * @param cpy Copy flag.
+     * @return Cache object value.
+     */
+    @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
+        return cacheObj != null ? cacheObj.<T>value(ctx.cacheObjectContext(), cpy) : null;
     }
 }

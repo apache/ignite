@@ -1192,6 +1192,9 @@ public class IgnitionEx {
         /** Utility cache executor service. */
         private ExecutorService utilityCacheExecSvc;
 
+        /** Marshaller cache executor service. */
+        private ExecutorService marshCacheExecSvc;
+
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
@@ -1412,19 +1415,15 @@ public class IgnitionEx {
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
+            marshCacheExecSvc = new IgniteThreadPoolExecutor(
+                "marshaller-cache-" + cfg.getGridName(),
+                DFLT_SYSTEM_CORE_THREAD_CNT,
+                DFLT_SYSTEM_MAX_THREAD_CNT,
+                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
-
-            try {
-                // Use reflection to avoid loading undesired classes.
-                Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
-
-                helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
-                    String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
 
             boolean started = false;
 
@@ -1434,8 +1433,8 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, igfsExecSvc,
-                    restExecSvc,
+                grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
+                    igfsExecSvc, restExecSvc,
                     new CA() {
                         @Override public void apply() {
                         startLatch.countDown();
@@ -1705,11 +1704,15 @@ public class IgnitionEx {
                             "\" because it is reserved for internal purposes.");
 
                     if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
-                            "\" because this prefix is reserved for internal purposes.");
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
+                            "\" because it is reserved for internal purposes.");
+
+                    if (CU.isMarshallerCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
+                            "\" because it is reserved for internal purposes.");
                 }
 
-                int addCacheCnt = 1; // Always add utility cache.
+                int addCacheCnt = 2; // Always add marshaller and utility caches.
 
                 if (hasHadoop)
                     addCacheCnt++;
@@ -1719,7 +1722,7 @@ public class IgnitionEx {
 
                 copies = new CacheConfiguration[cacheCfgs.length + addCacheCnt];
 
-                int cloneIdx = 1;
+                int cloneIdx = 2;
 
                 if (hasHadoop)
                     copies[cloneIdx++] = CU.hadoopSystemCache();
@@ -1731,7 +1734,7 @@ public class IgnitionEx {
                     copies[cloneIdx++] = new CacheConfiguration(ccfg);
             }
             else {
-                int cacheCnt = 1; // Always add utility cache.
+                int cacheCnt = 2; // Always add marshaller and utility caches.
 
                 if (hasHadoop)
                     cacheCnt++;
@@ -1741,7 +1744,7 @@ public class IgnitionEx {
 
                 copies = new CacheConfiguration[cacheCnt];
 
-                int cacheIdx = 1;
+                int cacheIdx = 2;
 
                 if (hasHadoop)
                     copies[cacheIdx++] = CU.hadoopSystemCache();
@@ -1750,8 +1753,9 @@ public class IgnitionEx {
                     copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
             }
 
-            // Always add utility cache.
-            copies[0] = utilitySystemCache(clientDisco);
+            // Always add marshaller and utility caches.
+            copies[0] = marshallerSystemCache(clientDisco);
+            copies[1] = utilitySystemCache(clientDisco);
 
             cfg.setCacheConfiguration(copies);
         }
@@ -1891,6 +1895,30 @@ public class IgnitionEx {
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to create logger.", e);
             }
+        }
+
+        /**
+         * Creates marshaller system cache configuration.
+         *
+         * @param client If {@code true} creates client-only cache configuration.
+         * @return Marshaller system cache configuration.
+         */
+        private static CacheConfiguration marshallerSystemCache(boolean client) {
+            CacheConfiguration cache = new CacheConfiguration();
+
+            cache.setName(CU.MARSH_CACHE_NAME);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(TRANSACTIONAL);
+            cache.setSwapEnabled(false);
+            cache.setQueryIndexEnabled(false);
+            cache.setPreloadMode(SYNC);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+
+            if (client)
+                cache.setDistributionMode(CLIENT_ONLY);
+
+            return cache;
         }
 
         /**
@@ -2068,6 +2096,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
             utilityCacheExecSvc = null;
+
+            U.shutdownNow(getClass(), marshCacheExecSvc, log);
+
+            marshCacheExecSvc = null;
         }
 
         /**

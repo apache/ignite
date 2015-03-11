@@ -295,7 +295,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, -1);
@@ -333,10 +333,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
-                        GridCacheEntryEx<Integer, Integer> entry = cache0.peekEx(key);
+                        GridCacheEntryEx entry = cache0.peekEx(key);
 
                         assertNotNull("Missing entry for key: " + key, entry);
-                        assertEquals((Integer)(key < 100 ? -1 : key), entry.rawGetOrUnmarshal(false));
+                        assertEquals((key < 100 ? -1 : key),
+                            CU.value(entry.rawGetOrUnmarshal(false), cache0.context(), false));
                     }
                 }
             }
@@ -871,6 +872,51 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         }
         finally {
             storeMap = null;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomUserUpdater() throws Exception {
+        useCache = true;
+
+        try {
+            Ignite ignite = startGrid(1);
+
+            startGrid(2);
+            startGrid(3);
+
+            try (IgniteDataLoader<String, TestObject> ldr = ignite.dataLoader(null)) {
+                ldr.allowOverwrite(true);
+
+                ldr.updater(new IgniteDataLoader.Updater<String, TestObject>() {
+                    @Override public void update(IgniteCache<String, TestObject> cache,
+                        Collection<Map.Entry<String, TestObject>> entries) {
+                        for (Map.Entry<String, TestObject> e : entries) {
+                            assertTrue(e.getKey() instanceof String);
+                            assertTrue(e.getValue() instanceof TestObject);
+
+                            cache.put(e.getKey(), new TestObject(e.getValue().val + 1));
+                        }
+                    }
+                });
+
+                for (int i = 0; i < 100; i++)
+                    ldr.addData(String.valueOf(i), new TestObject(i));
+            }
+
+            IgniteCache<String, TestObject> cache = ignite.jcache(null);
+
+            for (int i = 0; i < 100; i++) {
+                TestObject val = cache.get(String.valueOf(i));
+
+                assertNotNull(val);
+                assertEquals(i + 1, val.val);
+            }
+        }
+        finally {
+            stopAllGrids();
         }
     }
 

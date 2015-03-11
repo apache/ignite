@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.*;
@@ -1243,13 +1244,13 @@ public class HadoopExternalCommunication {
                     log.debug("Accepted connection, initiating handshake: " + ses);
 
                 // Server initiates handshake.
-                ses.send(locIdMsg).listenAsync(new CI1<GridNioFuture<?>>() {
-                    @Override public void apply(GridNioFuture<?> fut) {
+                ses.send(locIdMsg).listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             // Make sure there were no errors.
                             fut.get();
                         }
-                        catch (IgniteCheckedException | IOException e) {
+                        catch (IgniteCheckedException e) {
                             log.warning("Failed to send handshake message, will close session: " + ses, e);
 
                             ses.close();

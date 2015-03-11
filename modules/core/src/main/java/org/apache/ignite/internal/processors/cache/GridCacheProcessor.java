@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -62,12 +61,14 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -139,7 +140,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     @SuppressWarnings("unchecked")
-    private void initialize(CacheConfiguration cfg) throws IgniteCheckedException {
+    private void initialize(CacheConfiguration cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -184,7 +185,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg.setBackups(Integer.MAX_VALUE);
 
         if (cfg.getAffinityMapper() == null)
-            cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+            cfg.setAffinityMapper(cacheObjCtx.defaultAffMapper());
 
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
 
@@ -580,8 +581,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (IgniteComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
+        sysCaches.add(CU.MARSH_CACHE_NAME);
         sysCaches.add(CU.UTILITY_CACHE_NAME);
-
         sysCaches.add(CU.ATOMICS_CACHE_NAME);
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
@@ -596,8 +597,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName());
+
             // Initialize defaults.
-            initialize(cfg);
+            initialize(cfg, cacheObjCtx);
 
             cfgs[i] = cfg; // Replace original configuration value.
 
@@ -612,7 +615,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "assign unique name to each cache).");
             }
 
-            GridCacheContext cacheCtx = createCache(cfg);
+            GridCacheContext cacheCtx = createCache(cfg, cacheObjCtx); // TODO IGNITE-45
 
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cfg, IgniteUuid.randomUuid());
 
@@ -662,6 +665,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
+
+        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+            }
+        });
+
+        if (log.isDebugEnabled())
+            log.debug("Started cache processor.");
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
@@ -1912,9 +1924,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (qryMgr != null) {
                 try {
-                    Object key = cctx.marshaller().unmarshal(keyBytes, cctx.shared().deploy().globalLoader());
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    qryMgr.remove(key, keyBytes);
+                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
@@ -1993,6 +2005,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> publicCache() {
         return publicCache(null);
+    }
+
+    /**
+     * @return Marshaller system cache.
+     */
+    public GridCacheAdapter<Integer, String> marshallerCache() {
+        return internalCache(CU.MARSH_CACHE_NAME);
     }
 
     /**
@@ -2174,9 +2193,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param ldr Class loader.
      */
     public void onUndeployed(ClassLoader ldr) {
-        if (!ctx.isStopping())
-            for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(ldr);
+        if (!ctx.isStopping()) {
+            for (GridCacheAdapter<?, ?> cache : caches.values()) {
+                // Do not notify system caches.
+                if (!cache.context().system() && !CU.isAtomicsCache(cache.context().name()))
+                    cache.onUndeploy(ldr);
+            }
+        }
     }
 
     /**
@@ -2297,12 +2320,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         private String cacheName;
 
         /**
-         * @param ctx Kernal context.
          */
-        private DynamicCacheStartFuture(GridKernalContext ctx, String cacheName, IgniteUuid deploymentId) {
-            // Start future can be completed from discovery thread, notification must NOT be sync.
-            super(ctx, false);
-
+        private DynamicCacheStartFuture(String cacheName, IgniteUuid deploymentId) {
             this.deploymentId = deploymentId;
             this.cacheName = cacheName;
         }

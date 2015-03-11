@@ -79,33 +79,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
-            true);
-
-        GridRestCacheRequest req = new GridRestCacheRequest();
-
-        req.command(GridRestCommand.CACHE_GET);
-
-        req.key("k1");
-
-        try {
-            hnd.handleAsync(req).get();
-
-            fail("Expected exception not thrown.");
-        }
-        catch (IgniteCheckedException e) {
-            info("Got expected exception: " + e);
-        }
-    }
-
-    /**
-     * Tests the cache failure during the execution of the CACHE_GET command.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCacheGetFailsAsyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
-            false);
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync");
 
         GridRestCacheRequest req = new GridRestCacheRequest();
 
@@ -215,21 +189,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         /** */
         private final String failMtd;
 
-        /** */
-        private final boolean sync;
-
         /**
          * Constructor.
-         *
-         * @param ctx Context.
+         *  @param ctx Context.
          * @param failMtd Method to fail.
-         * @param sync Sync notification flag.
          */
-        TestableCacheCommandHandler(final GridKernalContext ctx, final String failMtd, final boolean sync) {
+        TestableCacheCommandHandler(final GridKernalContext ctx, final String failMtd) {
             super(ctx);
 
             this.failMtd = failMtd;
-            this.sync = sync;
         }
 
         /**
@@ -245,10 +213,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
-                            IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(ctx,
+                            IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(
                                 new IgniteCheckedException("Operation failed"));
-
-                            fut.syncNotify(sync);
 
                             return fut;
                         }

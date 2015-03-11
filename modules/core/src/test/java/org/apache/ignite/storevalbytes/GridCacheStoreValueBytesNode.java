@@ -112,8 +112,6 @@ public class GridCacheStoreValueBytesNode {
 
         cacheCfg.setCacheMode(PARTITIONED);
 
-        cacheCfg.setStoreValueBytes(storeValBytes);
-
         cacheCfg.setBackups(1);
 
         // TODO IGNITE-45.

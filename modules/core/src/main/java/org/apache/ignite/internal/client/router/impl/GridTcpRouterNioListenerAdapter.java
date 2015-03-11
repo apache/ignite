@@ -101,7 +101,7 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
 
             try {
                 client.forwardMessage(routerMsg, routerMsg.destinationId(), ses.<Byte>meta(MARSHALLER_ID.ordinal()))
-                    .listenAsync(new GridClientFutureListener() {
+                    .listen(new GridClientFutureListener() {
                         @Override public void onDone(GridClientFuture fut) {
                             try {
                                 GridRouterResponse res = (GridRouterResponse)fut.get();

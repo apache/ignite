@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
  * <pre name="code" class="xml">
  *  &lt;property&gt;
  *      &lt;name&gt;fs.default.name&lt;/name&gt;
- *      &lt;value&gt;igfs://ipc&lt;/value&gt;
+ *      &lt;value&gt;igfs:///&lt;/value&gt;
  *  &lt;/property&gt;
  *
  *  &lt;property&gt;
@@ -694,11 +694,19 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 return secondaryFs.rename(toSecondary(src), toSecondary(dst));
             }
             else {
-                // Will throw exception if failed.
-                rmtClient.rename(srcPath, dstPath);
-
                 if (clientLog.isLogEnabled())
                     clientLog.logRename(srcPath, mode, dstPath);
+
+                try {
+                    rmtClient.rename(srcPath, dstPath);
+                }
+                catch (IOException ioe) {
+                    // Log the exception before rethrowing since it may be ignored:
+                    LOG.warn("Failed to rename [srcPath=" + srcPath + ", dstPath=" + dstPath + ", mode=" + mode + ']',
+                        ioe);
+
+                    throw ioe;
+                }
 
                 return true;
             }

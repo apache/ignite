@@ -139,19 +139,18 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name ({@code null} for default cache).
-     * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public IgniteDataLoaderImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
+    public IgniteDataLoaderImpl<K, V> dataLoader(@Nullable String cacheName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
         try {
-            final IgniteDataLoaderImpl<K, V> ldr = new IgniteDataLoaderImpl<>(ctx, cacheName, flushQ, compact);
+            final IgniteDataLoaderImpl<K, V> ldr = new IgniteDataLoaderImpl<>(ctx, cacheName, flushQ);
 
             ldrs.add(ldr);
 
-            ldr.internalFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            ldr.internalFuture().listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 
@@ -167,14 +166,6 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * @param cacheName Cache name ({@code null} for default cache).
-     * @return Data loader.
-     */
-    public IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
-        return dataLoader(cacheName, true);
     }
 
     /**
@@ -233,11 +224,9 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                 clsLdr = dep.classLoader();
             }
 
-            Collection<Map.Entry<K, V>> col;
             IgniteDataLoader.Updater<K, V> updater;
 
             try {
-                col = marsh.unmarshal(req.collectionBytes(), clsLdr);
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
             }
             catch (IgniteCheckedException e) {
@@ -248,7 +237,9 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            GridDataLoadUpdateJob<K, V> job = new GridDataLoadUpdateJob<>(ctx,
+            Collection<IgniteDataLoaderEntry> col = req.entries();
+
+            GridDataLoadUpdateJob job = new GridDataLoadUpdateJob(ctx,
                 log,
                 req.cacheName(),
                 col,

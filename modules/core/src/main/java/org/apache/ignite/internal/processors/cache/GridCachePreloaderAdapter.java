@@ -45,7 +45,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     private final IgniteInternalFuture finFut;
 
     /** Preload predicate. */
-    protected IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
+    protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
      * @param cctx Cache context.
@@ -58,7 +58,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
         log = cctx.logger(getClass());
         aff = cctx.config().getAffinity();
 
-        finFut = new GridFinishedFuture(cctx.kernalContext());
+        finFut = new GridFinishedFuture();
     }
 
     /** {@inheritDoc} */
@@ -87,12 +87,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
         this.preloadPred = preloadPred;
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPredicate() {
+    @Override public IgnitePredicate<GridCacheEntryInfo> preloadPredicate() {
         return preloadPred;
     }
 
@@ -112,8 +112,8 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(Collection<? extends K> keys, AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>(cctx.kernalContext());
+    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+        return new GridFinishedFuture<>();
     }
 
     /** {@inheritDoc} */
@@ -126,12 +126,12 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
         // No-op.
     }
 
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
 

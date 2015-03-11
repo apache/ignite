@@ -33,18 +33,6 @@
             </bean>
         </property>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="true"/>
-
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.loadtests.communication.GridTestMessage</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
         <!-- Various optimisations. -->
         <property name="peerClassLoadingEnabled" value="false"/>
         <property name="connectorConfiguration"><null/></property>

@@ -157,7 +157,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);
 
-                    fut.listenAsync(new CIX1<IgniteFuture<Boolean>>() {
+                    fut.listen(new CIX1<IgniteFuture<Boolean>>() {
                         @Override public void applyx(IgniteFuture<Boolean> f) {
                             try {
                                 assert f.get();

@@ -200,10 +200,12 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
             info("New node cache size: " + size);
 
             if (size != ENTRY_CNT) {
-                Iterable<Integer> keySet = new TreeSet<>(((IgniteKernal)grid(1))
-                    .<Integer, Integer>cache(null).keySet());
+                Set<Integer> keySet = new TreeSet<>();
 
                 int next = 0;
+
+                for (IgniteCache.Entry<Integer, Integer> e : grid(1).<Integer, Integer>jcache(null).localEntries())
+                    keySet.add(e.getKey());
 
                 for (Integer i : keySet) {
                     while (next < i)

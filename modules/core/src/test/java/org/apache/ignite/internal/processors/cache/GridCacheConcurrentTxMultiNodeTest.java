@@ -578,20 +578,20 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                             GridDhtCacheAdapter<CacheAffinityKey<String>, Object> dht = near.dht();
 
                             for (CacheAffinityKey<String> k : keys) {
-                                GridNearCacheEntry<?, ?> nearEntry = near.peekExx(k);
-                                GridDhtCacheEntry<?, ?> dhtEntry = dht.peekExx(k);
+                                GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
+                                GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
                                 X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
                                 X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
 
-                                GridCacheMvccCandidate<?> nearCand =
+                                GridCacheMvccCandidate nearCand =
                                     nearEntry == null ? null : F.first(nearEntry.localCandidates());
 
                                 if (nearCand != null)
                                     X.println("Near futures: " +
                                         nearEntry.context().mvcc().futures(nearCand.version()));
 
-                                GridCacheMvccCandidate<?> dhtCand =
+                                GridCacheMvccCandidate dhtCand =
                                     dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
 
                                 if (dhtCand != null)

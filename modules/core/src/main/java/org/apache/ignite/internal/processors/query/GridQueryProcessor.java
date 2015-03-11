@@ -45,7 +45,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
 
@@ -193,10 +193,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
-            return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
         if (desc == null || !desc.registered())
-            return new GridFinishedFuture<Void>(ctx);
+            return new GridFinishedFuture<Void>();
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
@@ -236,7 +236,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
         try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
+            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
                 fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
@@ -291,12 +291,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 String typeName = rslvr.resolveTypeName(key, val);
 
                 if (typeName != null)
-                    id = new TypeId(space, ctx.portable().typeId(typeName));
+                    id = new TypeId(space, ctx.cacheObjects().typeId(typeName));
             }
 
             if (id == null) {
-                if (ctx.portable().isPortableObject(val)) {
-                    int typeId = ctx.portable().typeId(val);
+                if (ctx.cacheObjects().isPortableObject(val)) {
+                    int typeId = ctx.cacheObjects().typeId(val);
 
                     String typeName = portableName(typeId);
 
@@ -328,8 +328,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.keyClass(keyCls);
                         d.valueClass(valCls);
 
-                        if (ctx.portable().isPortableObject(key)) {
-                            int typeId = ctx.portable().typeId(key);
+                        if (ctx.cacheObjects().isPortableObject(key)) {
+                            int typeId = ctx.cacheObjects().typeId(key);
 
                             String typeName = portableName(typeId);
 
@@ -349,8 +349,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 processClassMeta(true, d.keyCls, keyMeta, d);
                         }
 
-                        if (ctx.portable().isPortableObject(val)) {
-                            int typeId = ctx.portable().typeId(val);
+                        if (ctx.cacheObjects().isPortableObject(val)) {
+                            int typeId = ctx.cacheObjects().typeId(val);
 
                             String typeName = portableName(typeId);
 
@@ -652,7 +652,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (qryCfg != null && ccfg.getTypeMetadata() != null) {
                     for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
-                        portableIds.put(ctx.portable().typeId(meta.getValueType()), meta.getValueType());
+                        portableIds.put(ctx.cacheObjects().typeId(meta.getValueType()), meta.getValueType());
                 }
             }
 
@@ -678,7 +678,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (qryCfg != null && ccfg.getTypeMetadata() != null) {
                     for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
-                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getValueType())), meta);
+                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType())), meta);
                 }
             }
 
@@ -1385,11 +1385,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (obj == null)
                 return null;
 
-            if (!ctx.portable().isPortableObject(obj))
+            if (!ctx.cacheObjects().isPortableObject(obj))
                 throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
-            return ctx.portable().field(obj, propName);
+            return ctx.cacheObjects().field(obj, propName);
         }
 
         /** {@inheritDoc} */

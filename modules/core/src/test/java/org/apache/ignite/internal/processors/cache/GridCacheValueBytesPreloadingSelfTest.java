@@ -35,6 +35,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /** Memory mode. */
     private CacheMemoryMode memMode;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -55,7 +56,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setNearConfiguration(null);
-        ccfg.setStoreValueBytes(true);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);

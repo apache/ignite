@@ -21,12 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 
-import javax.cache.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -43,13 +40,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     private IgniteInternalFuture<?> fut;
 
     /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheLocalQueryFuture() {
-        // No-op.
-    }
-
-    /**
      * @param ctx Context.
      * @param qry Query.
      */
@@ -63,7 +53,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
      * Executes query runnable.
      */
     void execute() {
-        fut = ctx.closure().runLocalSafe(run, true);
+        fut = cctx.kernalContext().closure().runLocalSafe(run, true);
     }
 
     /** {@inheritDoc} */
@@ -112,9 +102,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
-            IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
-                F.<Cache.Entry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
-
             Marshaller marsh = cctx.marshaller();
 
             IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
@@ -125,12 +112,11 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
             return new GridCacheQueryInfo(
                 true,
-                prjPred,
                 trans,
                 rdc,
                 qry.query(),
                 GridCacheLocalQueryFuture.this,
-                ctx.localNodeId(),
+                cctx.localNodeId(),
                 cctx.io().nextIoId(),
                 qry.query().includeMetadata(),
                 true,

@@ -291,7 +291,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                     System.gc();
 
                     for (WeakReference<?> ref : refs)
-                        assertNull(ref.get());
+                        assertNull("" + ref.get(), ref.get());
                 }
             });
         }

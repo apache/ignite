@@ -147,14 +147,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Internal task flag. */
-    private final GridThreadLocal<Boolean> internal = new GridThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> internal = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** Current session. */
-    private final GridThreadLocal<ComputeTaskSession> currentSess = new GridThreadLocal<>();
+    private final ThreadLocal<ComputeTaskSession> currentSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.

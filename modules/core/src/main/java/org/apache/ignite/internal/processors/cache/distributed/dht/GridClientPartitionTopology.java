@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Partition topology for node which does not have any local partitions.
  */
 @GridToStringExclude
-public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopology<K, V> {
+public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -45,7 +45,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     private static final boolean FULL_MAP_DEBUG = false;
 
     /** Cache shared context. */
-    private GridCacheSharedContext<K, V> cctx;
+    private GridCacheSharedContext cctx;
 
     /** Cache ID. */
     private int cacheId;
@@ -79,7 +79,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param cacheId Cache ID.
      * @param exchId Exchange ID.
      */
-    public GridClientPartitionTopology(GridCacheSharedContext<K, V> cctx, int cacheId,
+    public GridClientPartitionTopology(GridCacheSharedContext cctx, int cacheId,
         GridDhtPartitionExchangeId exchId) {
         this.cctx = cctx;
         this.cacheId = cacheId;
@@ -128,7 +128,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
 
     /** {@inheritDoc} */
     @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+        GridDhtPartitionsExchangeFuture exchFut) {
         lock.writeLock().lock();
 
         try {
@@ -255,7 +255,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition<K, V> localPartition(int p, AffinityTopologyVersion topVer, boolean create)
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException {
         if (!create)
             return null;
@@ -265,29 +265,29 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> localPartition(K key, boolean create) {
+    @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
         return localPartition(1, AffinityTopologyVersion.NONE, create);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridDhtLocalPartition<K, V>> localPartitions() {
+    @Override public List<GridDhtLocalPartition> localPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions() {
+    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry<K, V> e) {
+    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
         assert false : "Entry should not be added to client topology: " + e;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onRemoved(GridDhtCacheEntry<K, V> e) {
+    @Override public void onRemoved(GridDhtCacheEntry e) {
         assert false : "Entry should not be removed from client topology: " + e;
     }
 
@@ -710,14 +710,14 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean own(GridDhtLocalPartition<K, V> part) {
+    @Override public boolean own(GridDhtLocalPartition part) {
         assert false : "Client topology should never own a partition: " + part;
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
+    @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
         lock.writeLock().lock();

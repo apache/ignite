@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Affinity assignment request.
  */
-public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, V> {
+public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

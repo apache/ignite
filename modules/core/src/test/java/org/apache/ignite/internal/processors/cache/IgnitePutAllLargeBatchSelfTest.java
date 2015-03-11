@@ -190,8 +190,8 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
                 for (int i = 0; i < keyCnt; i++) {
                     if (cacheAdapter.isNear()) {
-                        GridDhtCacheEntry<Object, Object> entry = ((GridNearCacheAdapter<Object, Object>)cacheAdapter)
-                            .dht().peekExx(i);
+                        GridDhtCacheEntry entry = (GridDhtCacheEntry)
+                            ((GridNearCacheAdapter<Object, Object>)cacheAdapter).dht().peekEx(i);
 
                         if (entry != null) {
                             assertFalse(entry.lockedByAny());
@@ -200,7 +200,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
                         }
                     }
 
-                    GridCacheEntryEx<Object, Object> entry = cacheAdapter.peekEx(i);
+                    GridCacheEntryEx entry = cacheAdapter.peekEx(i);
 
                     if (entry != null) {
                         assertFalse(entry.lockedByAny());

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -414,7 +414,7 @@ public final class HadoopIgfsInputStream extends InputStream implements Seekable
      */
     private static class FetchBufferPart {
         /** Read future. */
-        private GridPlainFuture<byte[]> readFut;
+        private IgniteInternalFuture<byte[]> readFut;
 
         /** Position of cached chunk in file. */
         private long pos;
@@ -429,7 +429,7 @@ public final class HadoopIgfsInputStream extends InputStream implements Seekable
          * @param pos Read position.
          * @param len Chunk length.
          */
-        private FetchBufferPart(GridPlainFuture<byte[]> readFut, long pos, int len) {
+        private FetchBufferPart(IgniteInternalFuture<byte[]> readFut, long pos, int len) {
             this.readFut = readFut;
             this.pos = pos;
             this.len = len;

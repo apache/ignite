@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -50,7 +51,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
     /** */
-    private GridDhtPartitionTopology<K, V> top;
+    private GridDhtPartitionTopology top;
 
     /** Topology version. */
     private final GridAtomicLong topVer = new GridAtomicLong();
@@ -71,7 +72,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
     /** Pending affinity assignment futures. */
-    private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture<K, V>> pendingAssignmentFetchFuts =
+    private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
         new ConcurrentHashMap8<>();
 
     /** Discovery listener. */
@@ -103,7 +104,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                     e.topologyVersion() + ", curVer=" + topVer.get() + ']';
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
-                    for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+                    for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                         fut.onNodeLeft(e.eventNode().id());
                 }
             }
@@ -121,7 +122,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
         top = cctx.dht().topology();
 
-        startFut = new GridFutureAdapter<>(cctx.kernalContext(), false);
+        startFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -130,29 +131,29 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             log.debug("Starting DHT preloader...");
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysRequest.class,
-            new MessageHandler<GridDhtForceKeysRequest<K, V>>() {
-                @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest<K, V> msg) {
+            new MessageHandler<GridDhtForceKeysRequest>() {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysResponse.class,
-            new MessageHandler<GridDhtForceKeysResponse<K, V>>() {
-                @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse<K, V> msg) {
+            new MessageHandler<GridDhtForceKeysResponse>() {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
                     processForceKeyResponse(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
-            new MessageHandler<GridDhtAffinityAssignmentRequest<K, V>>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest<K, V> msg) {
+            new MessageHandler<GridDhtAffinityAssignmentRequest>() {
+                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
                     processAffinityAssignmentRequest(node, msg);
                 }
             });
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentResponse.class,
-            new MessageHandler<GridDhtAffinityAssignmentResponse<K, V>>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> msg) {
+            new MessageHandler<GridDhtAffinityAssignmentResponse>() {
+                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentResponse msg) {
                     processAffinityAssignmentResponse(node, msg);
                 }
             });
@@ -190,7 +191,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred) {
+    @Override public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
         super.preloadPredicate(preloadPred);
 
         assert supplyPool != null && demandPool != null : "preloadPredicate may be called only after start()";
@@ -229,7 +230,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (cctx.config().getPreloadPartitionedDelay() >= 0) {
                 U.log(log, "Starting preloading in " + cctx.config().getPreloadMode() + " mode: " + cctx.name());
 
-                demandPool.syncFuture().listenAsync(new CI1<Object>() {
+                demandPool.syncFuture().listen(new CI1<Object>() {
                     @Override public void apply(Object t) {
                         U.log(log, "Completed preloading in " + cctx.config().getPreloadMode() + " mode " +
                             "[cache=" + cctx.name() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
@@ -247,12 +248,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut) {
+    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         demandPool.updateLastExchangeFuture(lastFut);
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
         return demandPool.assign(exchFut);
     }
 
@@ -277,8 +278,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to add.
      */
-    public void addDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
-        GridDhtAssignmentFetchFuture<K, V> old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
+    public void addDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
+        GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
 
         assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
     }
@@ -287,7 +288,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to remove.
      */
-    public void removeDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture<K, V> fut) {
+    public void removeDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
         boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
 
         assert rmv : "Failed to remove assignment fetch future: " + topVer;
@@ -317,13 +318,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node originated request.
      * @param msg Force keys message.
      */
-    private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest<K, V> msg) {
+    private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest msg) {
         IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
 
         if (fut.isDone())
             processForceKeysRequest0(node, msg);
         else
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> t) {
                     processForceKeysRequest0(node, msg);
                 }
@@ -334,28 +335,28 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node originated request.
      * @param msg Force keys message.
      */
-    private void processForceKeysRequest0(ClusterNode node, GridDhtForceKeysRequest<K, V> msg) {
+    private void processForceKeysRequest0(ClusterNode node, GridDhtForceKeysRequest msg) {
         if (!enterBusy())
             return;
 
         try {
             ClusterNode loc = cctx.localNode();
 
-            GridDhtForceKeysResponse<K, V> res = new GridDhtForceKeysResponse<>(
+            GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 cctx.cacheId(),
                 msg.futureId(),
                 msg.miniId());
 
-            for (K k : msg.keys()) {
+            for (KeyCacheObject k : msg.keys()) {
                 int p = cctx.affinity().partition(k);
 
-                GridDhtLocalPartition<K, V> locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
+                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 // If this node is no longer an owner.
                 if (locPart == null && !top.owners(p).contains(loc))
                     res.addMissed(k);
 
-                GridCacheEntryEx<K, V> entry;
+                GridCacheEntryEx entry;
 
                 if (cctx.isSwapOrOffheapEnabled()) {
                     entry = cctx.dht().entryEx(k, true);
@@ -369,7 +370,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 // after the message was received. In that case, we are
                 // confident that primary node knows of any changes to the key.
                 if (entry != null) {
-                    GridCacheEntryInfo<K, V> info = entry.info();
+                    GridCacheEntryInfo info = entry.info();
 
                     if (info != null && !info.isNew())
                         res.addInfo(info);
@@ -400,7 +401,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node.
      * @param msg Message.
      */
-    private void processForceKeyResponse(ClusterNode node, GridDhtForceKeysResponse<K, V> msg) {
+    private void processForceKeyResponse(ClusterNode node, GridDhtForceKeysResponse msg) {
         if (!enterBusy())
             return;
 
@@ -423,13 +424,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param req Request.
      */
     private void processAffinityAssignmentRequest(final ClusterNode node,
-        final GridDhtAffinityAssignmentRequest<K, V> req) {
+        final GridDhtAffinityAssignmentRequest req) {
         final AffinityTopologyVersion topVer = req.topologyVersion();
 
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
@@ -439,7 +440,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 try {
                     cctx.io().send(node,
-                        new GridDhtAffinityAssignmentResponse<K, V>(cctx.cacheId(), topVer, assignment), AFFINITY_POOL);
+                        new GridDhtAffinityAssignmentResponse(cctx.cacheId(), topVer, assignment), AFFINITY_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
@@ -452,11 +453,11 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param node Node.
      * @param res Response.
      */
-    private void processAffinityAssignmentResponse(ClusterNode node, GridDhtAffinityAssignmentResponse<K, V> res) {
+    private void processAffinityAssignmentResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
 
-        for (GridDhtAssignmentFetchFuture<K, V> fut : pendingAssignmentFetchFuts.values())
+        for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
             fut.onResponse(node, res);
     }
 
@@ -466,7 +467,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param part Evicted partition.
      * @param updateSeq Update sequence.
      */
-    public void onPartitionEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
+    public void onPartitionEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         if (!enterBusy())
             return;
 
@@ -489,7 +490,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @return Future for request.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public GridDhtFuture<Object> request(Collection<? extends K> keys, AffinityTopologyVersion topVer) {
+    @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
@@ -498,20 +499,25 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             fut.init();
         else {
             if (topReadyFut == null)
-                startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                startFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
-                        fut.init();
+                        cctx.kernalContext().closure().runLocalSafe(
+                            new GridPlainRunnable() {
+                                @Override public void run() {
+                                    fut.init();
+                                }
+                            });
                     }
                 });
             else {
-                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
+                GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>();
 
                 compound.add((IgniteInternalFuture<Object>)startFut);
                 compound.add((IgniteInternalFuture<Object>)topReadyFut);
 
                 compound.markInitialized();
 
-                compound.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                compound.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> syncFut) {
                         fut.init();
                     }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
@@ -245,7 +244,8 @@ public class IgfsServer {
 
                     if (first) { // First message must be HANDSHAKE.
                         if (reqId != 0 || ordinal != IgfsIpcCommand.HANDSHAKE.ordinal()) {
-                            U.warn(log, "Handshake failed.");
+                            if (log.isDebugEnabled())
+                                log.debug("IGFS IPC handshake failed [reqId=" + reqId + ", ordinal=" + ordinal + ']');
 
                             return;
                         }
@@ -288,7 +288,7 @@ public class IgfsServer {
                             }
                         }
                         else {
-                            fut.listenAsync(new CIX1<IgniteInternalFuture<IgfsMessage>>() {
+                            fut.listen(new CIX1<IgniteInternalFuture<IgfsMessage>>() {
                                 @Override public void applyx(IgniteInternalFuture<IgfsMessage> fut) {
                                     IgfsMessage res;
 

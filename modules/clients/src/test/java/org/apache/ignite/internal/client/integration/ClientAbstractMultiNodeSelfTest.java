@@ -711,19 +711,19 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 
-            IgniteTxManager<Object, Object> tm = cacheCtx.tm();
+            IgniteTxManager tm = cacheCtx.tm();
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
             IgniteInternalTx t = tm.tx(v);
 
-            if (t.hasWriteKey(cacheCtx.txKey("x1")))
+            if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x1"))))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());
-            else if (t.hasWriteKey(cacheCtx.txKey("x2")))
-                assertTrue("Invalid tx flags: " + t, t.syncCommit());
-            else if (t.hasWriteKey(cacheCtx.txKey("x3")))
+            else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x2"))))
+            assertTrue("Invalid tx flags: " + t, t.syncCommit());
+            else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x3"))))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());
-            else if (t.hasWriteKey(cacheCtx.txKey("x4")))
+            else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
                 assertTrue("Invalid tx flags: " + t, t.syncCommit());
         }
     }

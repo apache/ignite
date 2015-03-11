@@ -83,8 +83,6 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
 
             cc.setBackups(1);
 
-            cc.setStoreValueBytes(true);
-
             cfg.setCacheSanityCheckEnabled(false);
             cfg.setCacheConfiguration(cc);
         }

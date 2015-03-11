@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -55,7 +55,7 @@ public interface HadoopIgfsEx extends HadoopIgfs {
      * @param outLen Output length.
      * @return Read data.
      */
-    public GridPlainFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
+    public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
         @Nullable final byte[] outBuf, final int outOff, final int outLen);
 
     /**

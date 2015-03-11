@@ -50,12 +50,12 @@ public class HadoopSetup {
         X.println(
             "   __________  ________________ ",
             "  /  _/ ___/ |/ /  _/_  __/ __/ ",
-            " _/ // (_ /    // /  / / / _/   ",
+            " _/ // (7 7    // /  / / / _/   ",
             "/___/\\___/_/|_/___/ /_/ /___/  ",
             "                for Apache Hadoop        ",
-            "  ");
-
-        println("Version " + ACK_VER_STR);
+            " ",
+            "ver. " + ACK_VER_STR,
+            COPYRIGHT);
 
         configureHadoop();
     }

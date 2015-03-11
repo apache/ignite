@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * DHT atomic cache entry.
  */
-public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
+public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
     /**
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
@@ -36,8 +36,15 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    public GridDhtAtomicCacheEntry(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridDhtAtomicCacheEntry(GridCacheContext ctx,
+        AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, topVer, key, hash, val, next, ttl, hdrId);
     }
 

@@ -20,7 +20,6 @@ package org.apache.ignite.lang;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,14 +30,9 @@ import java.util.concurrent.atomic.*;
  * 10x time faster for ID creation. It uses extra memory for 8-byte counter additionally to
  * internal UUID.
  */
-public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable,
-    OptimizedMarshallable {
+public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** VM ID. */
     public static final UUID VM_ID = UUID.randomUUID();
@@ -154,11 +148,6 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
      */
     public long localId() {
         return locId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Cache entry for colocated cache.
  */
-public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
+public class GridDhtColocatedCacheEntry extends GridDhtCacheEntry {
     /**
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
@@ -36,8 +36,15 @@ public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    public GridDhtColocatedCacheEntry(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridDhtColocatedCacheEntry(GridCacheContext ctx,
+        AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId
+    ) {
         super(ctx, topVer, key, hash, val, next, ttl, hdrId);
     }
 

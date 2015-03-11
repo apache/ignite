@@ -37,6 +37,7 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -546,6 +546,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -665,12 +666,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 new IgniteExceptionRegistry(log),
                 utilityCachePool,
+                marshCachePool,
                 execSvc,
                 sysExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
                 restExecSvc);
+
+            cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             startProcessor(new ClusterProcessor(ctx));
 
@@ -750,7 +754,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-            startProcessor(createComponent(GridPortableProcessor.class, ctx));
+            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
             startProcessor(new GridQueryProcessor(ctx));
             startProcessor(new GridCacheProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
@@ -1125,22 +1129,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : F.view(System.getProperties(), new P1<Object>() {
-                @Override public boolean apply(Object o) {
-                    String name = (String)o;
-
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorRequiredProperty(name);
-                }
-            }).entrySet()) {
+            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
-                Object val = ctx.nodeAttribute(key);
+                if (incProps == null || U.containsStringArray(incProps, key, true) ||
+                    U.isVisorRequiredProperty(key)) {
+                    Object val = ctx.nodeAttribute(key);
 
-                if (val != null && !val.equals(e.getValue()))
-                    U.warn(log, "System property will override environment variable with the same name: " + key);
+                    if (val != null && !val.equals(e.getValue()))
+                        U.warn(log, "System property will override environment variable with the same name: " + key);
 
-                ctx.addNodeAttribute(key, e.getValue());
+                    ctx.addNodeAttribute(key, e.getValue());
+                }
             }
 
             if (log.isDebugEnabled())
@@ -1921,8 +1921,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isDebugEnabled())
-            for (Object key : U.asIterable(System.getProperties().keys()))
-                log.debug("System property [" + key + '=' + System.getProperty((String)key) + ']');
+            for (Map.Entry<Object, Object> entry : snapshot().entrySet())
+                log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
 
     /**
@@ -2650,6 +2650,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (comp != null)
             return comp;
+
+        if (cls.equals(IgniteCacheObjectProcessor.class))
+            return (T)new IgniteCacheObjectProcessorImpl(ctx);
 
         Class<T> implCls = null;
 

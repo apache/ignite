@@ -270,7 +270,9 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
          * @param err Error.
          */
         public void onError(K key, Throwable err) {
+            this.keys = Collections.singletonList(key);
 
+            onDone(err);
         }
 
         /**

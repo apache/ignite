@@ -21,7 +21,6 @@ import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 import java.util.logging.*;
@@ -204,7 +203,7 @@ public class GridClientFutureAdapter<R> extends AbstractQueuedSynchronizer imple
      *
      * @param lsnrs Listeners to be registered.
      */
-    @Override public void listenAsync(final GridClientFutureListener<R>... lsnrs) {
+    @Override public void listen(final GridClientFutureListener<R>... lsnrs) {
         assert lsnrs != null;
 
         for (GridClientFutureListener<R> lsnr : lsnrs)
@@ -212,26 +211,6 @@ public class GridClientFutureAdapter<R> extends AbstractQueuedSynchronizer imple
 
         if (isDone())
             fireDone();
-    }
-
-    /**
-     * Removes listeners registered before.
-     *
-     * @param lsnrs Listeners to be removed.
-     */
-    @Override public void stopListenAsync(GridClientFutureListener<R>... lsnrs) {
-        Collection<GridClientFutureListener<R>> lsnrsCol = lsnrs == null ? null : Arrays.asList(lsnrs);
-
-        for (Iterator<DoneCallback> it = cbs.iterator(); it.hasNext();) {
-            DoneCallback cb = it.next();
-
-            if (cb.lsnr == null)
-                continue;
-
-            // Remove all listeners, if passed listeners collection is 'null'.
-            if (lsnrsCol == null || lsnrsCol.contains(cb.lsnr))
-                it.remove();
-        }
     }
 
     /**

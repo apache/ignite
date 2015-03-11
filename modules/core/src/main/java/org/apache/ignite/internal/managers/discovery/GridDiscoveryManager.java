@@ -150,7 +150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapterEx<DiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
+    private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -982,7 +982,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         long topVer = topologyVersion();
 
         if (topVer >= awaitVer)
-            return new GridFinishedFuture<>(ctx, topVer);
+            return new GridFinishedFuture<>(topVer);
 
         DiscoTopologyFuture fut = new DiscoTopologyFuture(ctx, awaitVer);
 
@@ -1753,6 +1753,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Topology await version. */
         private long awaitVer;
 
@@ -1766,8 +1769,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param awaitVer Await version.
          */
         private DiscoTopologyFuture(GridKernalContext ctx, long awaitVer) {
-            super(ctx);
-
+            this.ctx = ctx;
             this.awaitVer = awaitVer;
         }
 

@@ -82,14 +82,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         return marsh;
     }
 
-    /**
-     * @param ses Session.
-     * @return Whether portable marshaller is used.
-     */
-    boolean portableMode(GridNioSession ses) {
-        return ctx.portable().isPortable(marshaller(ses));
-    }
-
     /** {@inheritDoc} */
     @Override public String name() {
         return "TCP binary";
@@ -159,7 +151,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller());
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
-        marshMap.put((byte)0, ctx.portable().portableMarshaller());
 
         lsnr.marshallers(marshMap);
     }

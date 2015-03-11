@@ -29,6 +29,7 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.marshaller.jdk.*;
 
 import java.io.*;
 import java.util.*;
@@ -58,7 +59,17 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(true);
+        // TODO: IGNITE-404: Uncomment when fixed.
+        //cfg.setExternalExecution(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new JdkMarshaller());
 
         return cfg;
     }

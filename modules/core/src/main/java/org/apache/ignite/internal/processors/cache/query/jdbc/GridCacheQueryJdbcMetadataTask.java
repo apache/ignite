@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -76,13 +75,9 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements OptimizedMarshallable {
+    private static class JdbcDriverMetadataJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** Cache name. */
         private final String cacheName;
@@ -100,11 +95,6 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
          */
         private JdbcDriverMetadataJob(@Nullable String cacheName) {
             this.cacheName = cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */

@@ -121,6 +121,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before 1st removeAll().");
 
+        cache1.clear();
         cache1.removeAll();
 
         // Fix for tests where mapping was removed at primary node
@@ -135,6 +136,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before 2nd removeAll().");
 
+        cache2.clear();
         cache2.removeAll();
 
         // Fix for tests where mapping was removed at primary node

@@ -29,7 +29,7 @@ import java.nio.*;
 /**
  * DHT transaction finish response.
  */
-public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishResponse<K, V> {
+public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Partition supply message.
  */
-public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,16 +54,8 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     private Collection<Integer> missed;
 
     /** Entries. */
-    @GridDirectTransient
-    private Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos = new HashMap<>();
-
-    /** Cache entries in serialized form. */
-    @GridToStringExclude
-    @GridDirectTransient
-    private Map<Integer, Collection<byte[]>> infoBytesMap = new HashMap<>();
-
-    /** */
-    private byte[] infoBytes;
+    @GridDirectMap(keyType = int.class, valueType = CacheEntryInfoCollection.class)
+    private Map<Integer, CacheEntryInfoCollection> infos = new HashMap<>();
 
     /** Message size. */
     @GridDirectTransient
@@ -72,6 +64,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
+     * @param cacheId Cache ID.
      */
     GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId) {
         assert workerId >= 0;
@@ -145,10 +138,13 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
             msgSize += 4;
 
             // If partition is empty, we need to add it.
-            Collection<byte[]> serInfo = infoBytesMap.get(p);
+            if (!infos.containsKey(p)) {
+                CacheEntryInfoCollection infoCol = new CacheEntryInfoCollection();
 
-            if (serInfo == null)
-                infoBytesMap.put(p, new LinkedList<byte[]>());
+                infoCol.init();
+
+                infos.put(p, infoCol);
+            }
         }
     }
 
@@ -173,7 +169,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Entries.
      */
-    Map<Integer, Collection<GridCacheEntryInfo<K, V>>> infos() {
+    Map<Integer, CacheEntryInfoCollection> infos() {
         return infos;
     }
 
@@ -190,24 +186,24 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    void addEntry(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert info != null;
 
         marshalInfo(info, ctx);
 
-        byte[] bytes = CU.marshal(ctx, info);
+        msgSize += info.marshalledSize(ctx);
 
-        msgSize += bytes.length;
+        CacheEntryInfoCollection infoCol = infos.get(p);
 
-        Collection<byte[]> serInfo = infoBytesMap.get(p);
-
-        if (serInfo == null) {
+        if (infoCol == null) {
             msgSize += 4;
 
-            infoBytesMap.put(p, serInfo = new LinkedList<>());
+            infos.put(p, infoCol = new CacheEntryInfoCollection());
+
+            infoCol.init();
         }
 
-        serInfo.add(bytes);
+        infoCol.add(info);
     }
 
     /**
@@ -216,52 +212,41 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    void addEntry0(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert info != null;
-        assert info.keyBytes() != null;
-        assert info.valueBytes() != null || info.value() instanceof byte[] :
-            "Missing value bytes with invalid value: " + info.value();
+        assert (info.key() != null || info.keyBytes() != null);
+        assert info.value() != null;
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);
 
-        byte[] bytes = CU.marshal(ctx, info);
+        msgSize += info.marshalledSize(ctx);
 
-        msgSize += bytes.length;
+        CacheEntryInfoCollection infoCol = infos.get(p);
 
-        Collection<byte[]> serInfo = infoBytesMap.get(p);
-
-        if (serInfo == null) {
+        if (infoCol == null) {
             msgSize += 4;
 
-            infoBytesMap.put(p, serInfo = new LinkedList<>());
+            infos.put(p, infoCol = new CacheEntryInfoCollection());
+
+            infoCol.init();
         }
 
-        serInfo.add(bytes);
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        infoBytes = ctx.marshaller().marshal(infoBytesMap);
+        infoCol.add(info);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        infoBytesMap = ctx.marshaller().unmarshal(infoBytes, ldr);
+        GridCacheContext cacheCtx = ctx.cacheContext(cacheId);
 
-        GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
+        for (CacheEntryInfoCollection col : infos().values()) {
+            List<GridCacheEntryInfo>  entries = col.infos();
 
-        for (Map.Entry<Integer, Collection<byte[]>> e : infoBytesMap.entrySet()) {
-            Collection<GridCacheEntryInfo<K, V>> entries = unmarshalCollection(e.getValue(), ctx, ldr);
-
-            unmarshalInfos(entries, cacheCtx, ldr);
-
-            infos.put(e.getKey(), entries);
+            for (int i = 0; i < entries.size(); i++)
+                entries.get(i).unmarshal(cacheCtx, ldr);
         }
     }
 
@@ -269,7 +254,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @return Number of entries in message.
      */
     public int size() {
-        return infos.isEmpty() ? infoBytesMap.size() : infos.size();
+        return infos.size();
     }
 
     /** {@inheritDoc} */
@@ -294,7 +279,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("infoBytes", infoBytes))
+                if (!writer.writeMap("infos", infos, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -348,7 +333,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 reader.incrementState();
 
             case 4:
-                infoBytes = reader.readByteArray("infoBytes");
+                infos = reader.readMap("infos", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 
 import java.math.*;
@@ -144,13 +143,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverJob extends ComputeJobAdapter implements OptimizedMarshallable {
+    private static class JdbcDriverJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** Arguments. */
         private final Map<String, Object> args;
@@ -176,11 +171,6 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
             this.args = args;
             this.first = first;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */

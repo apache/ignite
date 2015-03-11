@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Cache affinity manager.
  */
-public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Factor for maximum number of attempts to calculate all partition affinity keys. */
     private static final int MAX_PARTITION_KEY_ATTEMPT_RATIO = 10;
 
@@ -122,7 +122,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = aff.readyFuture(topVer);
 
-        return fut != null ? fut : new GridFinishedFutureEx<>(topVer);
+        return fut != null ? fut : new GridFinishedFuture<>(topVer);
     }
 
     /**
@@ -212,7 +212,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param key Key.
      * @return Partition.
      */
-    public <T> int partition(T key) {
+    public <T> int partition(Object key) {
         return aff.partition(key);
     }
 
@@ -221,7 +221,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Affinity nodes.
      */
-    public List<ClusterNode> nodes(K key, AffinityTopologyVersion topVer) {
+    public List<ClusterNode> nodes(Object key, AffinityTopologyVersion topVer) {
         return nodes(partition(key), topVer);
     }
 
@@ -242,7 +242,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Primary node for given key.
      */
-    @Nullable public ClusterNode primary(K key, AffinityTopologyVersion topVer) {
+    @Nullable public ClusterNode primary(Object key, AffinityTopologyVersion topVer) {
         return primary(partition(key), topVer);
     }
 
@@ -266,7 +266,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code True} if checked node is primary for given key.
      */
-    public boolean primary(ClusterNode n, K key, AffinityTopologyVersion topVer) {
+    public boolean primary(ClusterNode n, Object key, AffinityTopologyVersion topVer) {
         return F.eq(primary(key, topVer), n);
     }
 
@@ -285,7 +285,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Backup nodes.
      */
-    public Collection<ClusterNode> backups(K key, AffinityTopologyVersion topVer) {
+    public Collection<ClusterNode> backups(Object key, AffinityTopologyVersion topVer) {
         return backups(partition(key), topVer);
     }
 
@@ -310,10 +310,10 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return Nodes for the keys.
      */
-    public Collection<ClusterNode> remoteNodes(Iterable<? extends K> keys, AffinityTopologyVersion topVer) {
+    public Collection<ClusterNode> remoteNodes(Iterable keys, AffinityTopologyVersion topVer) {
         Collection<Collection<ClusterNode>> colcol = new GridLeanSet<>();
 
-        for (K key : keys)
+        for (Object key : keys)
             colcol.add(nodes(key, topVer));
 
         return F.view(F.flatCollections(colcol), F.remoteNodes(cctx.localNodeId()));
@@ -324,7 +324,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code true} if given key belongs to local node.
      */
-    public boolean localNode(K key, AffinityTopologyVersion topVer) {
+    public boolean localNode(Object key, AffinityTopologyVersion topVer) {
         return localNode(partition(key), topVer);
     }
 
@@ -358,7 +358,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version.
      * @return {@code true} if given key belongs to specified node.
      */
-    public boolean belongs(ClusterNode node, K key, AffinityTopologyVersion topVer) {
+    public boolean belongs(ClusterNode node, Object key, AffinityTopologyVersion topVer) {
         assert node != null;
 
         return belongs(node, partition(key), topVer);

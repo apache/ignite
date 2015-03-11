@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Update future for atomic cache.
  */
-public interface GridCacheAtomicFuture<K, R> extends GridCacheFuture<R> {
+public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return {@code True} if partition exchange should wait for this future to complete.
      */
@@ -38,7 +38,7 @@ public interface GridCacheAtomicFuture<K, R> extends GridCacheFuture<R> {
     /**
      * @return Future keys.
      */
-    public Collection<? extends K> keys();
+    public Collection<?> keys();
 
     /**
      * Checks if timeout occurred.

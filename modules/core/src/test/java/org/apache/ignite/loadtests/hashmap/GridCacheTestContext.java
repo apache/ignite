@@ -47,29 +47,28 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             ctx,
             new GridCacheSharedContext<>(
                 ctx,
-                new IgniteTxManager<K, V>(),
-                new GridCacheVersionManager<K, V>(),
-                new GridCacheMvccManager<K, V>(),
+                new IgniteTxManager(),
+                new GridCacheVersionManager(),
+                new GridCacheMvccManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
-                new GridCacheIoManager<K, V>()
+                new GridCacheIoManager()
             ),
             defaultCacheConfiguration(),
             true,
-            new GridCacheEventManager<K, V>(),
-            new GridCacheSwapManager<K, V>(false),
-            new IgniteCacheOsSerializationManager<K, V>(),
-            new GridCacheStoreManager<K, V>(null,
+            new GridCacheEventManager(),
+            new GridCacheSwapManager(false),
+            new GridCacheStoreManager(null,
                 new IdentityHashMap<CacheStore, ThreadLocal>(),
                 null,
                 new CacheConfiguration()),
-            new GridCacheEvictionManager<K, V>(),
+            new GridCacheEvictionManager(),
             new GridCacheLocalQueryManager<K, V>(),
-            new CacheContinuousQueryManager<K, V>(),
-            new GridCacheAffinityManager<K, V>(),
-            new CacheDataStructuresManager<K, V>(),
-            new GridCacheTtlManager<K, V>(),
-            new GridOsCacheDrManager<K, V>(),
-            new CacheNoopJtaManager<K, V>());
+            new CacheContinuousQueryManager(),
+            new GridCacheAffinityManager(),
+            new CacheDataStructuresManager(),
+            new GridCacheTtlManager(),
+            new GridOsCacheDrManager(),
+            new CacheNoopJtaManager());
     }
 }
