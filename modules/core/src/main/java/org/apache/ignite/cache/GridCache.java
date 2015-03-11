@@ -199,7 +199,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
-     * {@link CacheConfiguration#getRebalancePartitionedDelay()} configuration parameter has non-zero value.
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
      * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
      * happens.
@@ -207,12 +207,12 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
      * usually make sure that new nodes get placed on the same place of consistent hash ring as
      * the left nodes, and that nodes are restarted before
-     * {@link CacheConfiguration#getRebalancePartitionedDelay() rebalanceDelay} expires. To place nodes
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
      * {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalancePartitionedDelay()} for more information on how to configure
+     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
      * @return Future that will be completed when rebalancing is finished.

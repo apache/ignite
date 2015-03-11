@@ -1873,7 +1873,7 @@ public class IgnitionEx {
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
             cache.setQueryIndexEnabled(false);
-            cache.setPreloadMode(SYNC);
+            cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
 

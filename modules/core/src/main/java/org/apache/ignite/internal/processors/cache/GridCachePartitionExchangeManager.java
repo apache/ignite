@@ -851,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                            long delay = cacheCtx.config().getRebalancePartitionedDelay();
+                            long delay = cacheCtx.config().getRebalanceDelay();
 
                             GridDhtPreloaderAssignments<K, V> assigns = null;
 

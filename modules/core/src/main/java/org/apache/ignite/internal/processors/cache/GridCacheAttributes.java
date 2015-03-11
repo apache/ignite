@@ -390,14 +390,7 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating if cached values should be additionally stored in serialized form.
-     */
-    public boolean storeValueBytes() {
-        return storeValBytes;
-    }
-
-    /**
-     * @return Preload batch size.
+     * @return Rebalance batch size.
      */
     public int rebalanceBatchSize() {
         return rebalanceBatchSize;

@@ -74,7 +74,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setRebalancePartitionedDelay(delay);
+        cc.setRebalanceDelay(delay);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);

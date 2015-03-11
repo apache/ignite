@@ -330,7 +330,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
-        long delay = cctx.config().getRebalancePartitionedDelay();
+        long delay = cctx.config().getRebalanceDelay();
 
         if (delay == 0 || force) {
             assert assigns != null;

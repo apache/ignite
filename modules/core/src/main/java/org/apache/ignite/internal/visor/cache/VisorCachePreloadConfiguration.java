@@ -58,7 +58,7 @@ public class VisorCachePreloadConfiguration implements Serializable {
         cfg.mode = ccfg.getRebalanceMode();
         cfg.batchSize = ccfg.getRebalanceBatchSize();
         cfg.threadPoolSize = ccfg.getRebalanceThreadPoolSize();
-        cfg.partitionedDelay = ccfg.getRebalancePartitionedDelay();
+        cfg.partitionedDelay = ccfg.getRebalanceDelay();
         cfg.throttle = ccfg.getRebalanceThrottle();
         cfg.timeout = ccfg.getRebalanceTimeout();
 

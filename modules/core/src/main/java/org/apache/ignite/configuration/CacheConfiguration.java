@@ -382,7 +382,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearEvictPlc = cc.getNearEvictionPolicy();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
-        rebalanceDelay = cc.getRebalancePartitionedDelay();
+        rebalanceDelay = cc.getRebalanceDelay();
         rebalanceOrder = cc.getRebalanceOrder();
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
@@ -1321,7 +1321,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
      * and don't want to repartition and rebalance until all nodes are started.
      * <p>
-     * Delayed rebalancing is applied to {@link CacheMode#PARTITIONED} caches only.
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
@@ -1338,16 +1337,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *      start rebalancing manually, or positive value to specify delay in milliseconds
      *      after which rebalancing should start automatically.
      */
-    public long getRebalancePartitionedDelay() {
+    public long getRebalanceDelay() {
         return rebalanceDelay;
     }
 
     /**
-     * Sets rebalance delay (see {@link #getRebalancePartitionedDelay()} for more information).
+     * Sets rebalance delay (see {@link #getRebalanceDelay()} for more information).
      *
      * @param rebalanceDelay Rebalance delay to set.
      */
-    public void setRebalancePartitionedDelay(long rebalanceDelay) {
+    public void setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
     }
 

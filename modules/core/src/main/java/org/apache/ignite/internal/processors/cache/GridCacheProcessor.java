@@ -374,7 +374,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + cc.getName());
 
-        long delay = cc.getRebalancePartitionedDelay();
+        long delay = cc.getRebalanceDelay();
 
         if (delay != 0) {
             if (cc.getCacheMode() != PARTITIONED)
@@ -1321,7 +1321,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cfg.getRebalanceMode() == SYNC) {
                 if (cfg.getCacheMode() == REPLICATED ||
-                    (cfg.getCacheMode() == PARTITIONED && cfg.getRebalancePartitionedDelay() >= 0))
+                    (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0))
                     cache.preloader().syncFuture().get();
             }
         }
