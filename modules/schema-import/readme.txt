@@ -1,5 +1,5 @@
 Apache Ignite Schema Import Module
-------------------------------
+------------------------------------------
 
 Ignite ships with its own database schema mapping wizard which provides automatic support for integrating with
 persistence stores. This utility automatically connects to the underlying database and generates all the required
