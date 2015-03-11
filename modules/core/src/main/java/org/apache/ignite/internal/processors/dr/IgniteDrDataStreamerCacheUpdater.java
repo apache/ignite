@@ -23,7 +23,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.datastream.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -33,7 +32,7 @@ import java.util.*;
 /**
  * Data center replication cache updater for data streamer.
  */
-public class IgniteDrDataStreamerCacheUpdater<K, V> implements IgniteDataStreamer.Updater<K, V>,
+public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Updater<KeyCacheObject, CacheObject>,
     IgniteDataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;

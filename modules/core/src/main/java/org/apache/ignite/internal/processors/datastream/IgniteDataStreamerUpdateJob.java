@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.datastream;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -146,6 +145,6 @@ class IgniteDataStreamerUpdateJob implements GridPlainCallable<Object> {
      * @return {@code True} if need to unwrap internal entries.
      */
     private boolean unwrapEntries() {
-        return !(updater instanceof GridDataLoadCacheUpdaters.InternalUpdater);
+        return !(updater instanceof IgniteDataStreamerCacheUpdaters.InternalUpdater);
     }
 }

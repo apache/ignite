@@ -882,10 +882,10 @@ public class IgniteDataStreamerProcessorSelfTest extends GridCommonAbstractTest 
             startGrid(2);
             startGrid(3);
 
-            try (IgniteDataLoader<String, TestObject> ldr = ignite.dataLoader(null)) {
+            try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
-                ldr.updater(new IgniteDataLoader.Updater<String, TestObject>() {
+                ldr.updater(new IgniteDataStreamer.Updater<String, TestObject>() {
                     @Override public void update(IgniteCache<String, TestObject> cache,
                         Collection<Map.Entry<String, TestObject>> entries) {
                         for (Map.Entry<String, TestObject> e : entries) {

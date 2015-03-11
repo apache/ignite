@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
-import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -1354,7 +1353,7 @@ public class IgniteDataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, D
      * Isolated updater which only loads entry initial value.
      */
     private static class IsolatedUpdater implements Updater<KeyCacheObject, CacheObject>,
-        GridDataLoadCacheUpdaters.InternalUpdater {
+        IgniteDataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
