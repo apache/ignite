@@ -28,7 +28,7 @@ import static org.apache.ignite.events.EventType.*;
  * Cache entry for local caches.
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
-public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
+public class GridLocalCacheEntry extends GridCacheMapEntry {
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
@@ -38,8 +38,14 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param ttl  Time to live.
      * @param hdrId Header id.
      */
-    public GridLocalCacheEntry(GridCacheContext<K, V> ctx, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridLocalCacheEntry(GridCacheContext ctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, key, hash, val, next, ttl, hdrId);
     }
 
@@ -60,27 +66,27 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public GridCacheMvccCandidate<K> addLocal(
+    @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         long timeout,
         boolean reenter,
         boolean tx,
         boolean implicitSingle) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev;
-        GridCacheMvccCandidate<K> cand;
-        GridCacheMvccCandidate<K> owner;
+        GridCacheMvccCandidate prev;
+        GridCacheMvccCandidate cand;
+        GridCacheMvccCandidate owner;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {
             checkObsolete();
 
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
-                mvcc = new GridCacheMvcc<>(cctx);
+                mvcc = new GridCacheMvcc(cctx);
 
                 mvccExtras(mvcc);
             }
@@ -127,12 +133,12 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param cand Candidate.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyLocal(GridCacheMvccCandidate<K> cand) {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheMvccCandidate cand) {
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.localOwner();
@@ -154,12 +160,12 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param ver Candidate version.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> readyLocal(GridCacheVersion ver) {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.localOwner();
@@ -177,8 +183,8 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> cand = addLocal(
+    @Override public boolean tmLock(IgniteInternalTx tx, long timeout) throws GridCacheEntryRemovedException {
+        GridCacheMvccCandidate cand = addLocal(
             tx.threadId(),
             tx.xidVersion(),
             timeout,
@@ -201,12 +207,12 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      *
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate<K> recheck() {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+    @Nullable public GridCacheMvccCandidate recheck() {
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.localOwner();
@@ -227,7 +233,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param prev Previous owner.
      * @param owner Current owner.
      */
-    private void checkOwnerChanged(GridCacheMvccCandidate<K> prev, GridCacheMvccCandidate<K> owner) {
+    private void checkOwnerChanged(GridCacheMvccCandidate prev, GridCacheMvccCandidate owner) {
         assert !Thread.holdsLock(this);
 
         if (owner != prev) {
@@ -241,7 +247,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     /**
      * @param owner Starting candidate in the chain.
      */
-    private void checkThreadChain(GridCacheMvccCandidate<K> owner) {
+    private void checkThreadChain(GridCacheMvccCandidate owner) {
         assert !Thread.holdsLock(this);
 
         assert owner != null;
@@ -249,13 +255,12 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             owner;
 
         if (owner.next() != null) {
-            for (GridCacheMvccCandidate<K> cand = owner.next(); cand != null; cand = cand.next()) {
+            for (GridCacheMvccCandidate cand = owner.next(); cand != null; cand = cand.next()) {
                 assert cand.local();
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
-                    GridLocalCacheEntry<K, V> e =
-                        (GridLocalCacheEntry<K, V>)cctx.cache().peekEx(cand.key());
+                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx.cache().peekEx(cand.key());
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.
@@ -273,7 +278,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      *
      * @param tx Transaction to unlock.
      */
-    @Override public void txUnlock(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 
@@ -290,14 +295,14 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @param threadId Thread ID.
      */
     void releaseLocal(long threadId) {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.localOwner();
@@ -331,18 +336,18 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      * @throws GridCacheEntryRemovedException If the entry was removed by version other
      *      than one passed in.
      */
-    void removeLock(GridCacheMvccCandidate<K> cand) throws GridCacheEntryRemovedException {
+    void removeLock(GridCacheMvccCandidate cand) throws GridCacheEntryRemovedException {
         removeLock(cand.version());
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeLock(GridCacheVersion ver) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
-        GridCacheMvccCandidate<K> doomed;
+        GridCacheMvccCandidate doomed;
 
-        V val;
+        CacheObject val;
         boolean hasVal;
 
         synchronized (this) {
@@ -351,7 +356,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
             if (obsoleteVer != null && !obsoleteVer.equals(ver))
                 checkObsolete();
 
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             doomed = mvcc == null ? null : mvcc.candidate(ver);
 

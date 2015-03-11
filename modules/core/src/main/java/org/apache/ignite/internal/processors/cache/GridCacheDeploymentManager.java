@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -33,7 +34,6 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -240,60 +240,12 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void onUndeploy0(final ClassLoader ldr, final GridCacheContext<K, V> cacheCtx) {
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
-        Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<Cache.Entry<K, V>>() {
-                @Override public boolean apply(Cache.Entry<K, V> e) {
-                    return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
-                        undeploy(e, cacheCtx.cache());
-                }
+        Collection<KeyCacheObject> keys = new ArrayList<>();
 
-                /**
-                 * @param e Entry.
-                 * @param cache Cache.
-                 * @return {@code True} if entry should be undeployed.
-                 */
-                private boolean undeploy(Cache.Entry<K, V> e, GridCacheAdapter<K, V> cache) {
-                    K k = e.getKey();
+        addEntries(ldr, keys, cache);
 
-                    GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());
-
-                    if (entry == null)
-                        return false;
-
-                    V v;
-
-                    try {
-                        v = entry.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        return false;
-                    }
-                    catch (IgniteException ignore) {
-                        // Peek can throw runtime exception if unmarshalling failed.
-                        return true;
-                    }
-
-                    assert k != null : "Key cannot be null for cache entry: " + e;
-
-                    ClassLoader keyLdr = U.detectObjectClassLoader(k);
-                    ClassLoader valLdr = U.detectObjectClassLoader(v);
-
-                    boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Finished examining entry [entryCls=" + e.getClass() +
-                            ", key=" + k + ", keyCls=" + k.getClass() +
-                            ", valCls=" + (v != null ? v.getClass() : "null") +
-                            ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
-
-                    return res;
-                }
-            }));
-
-        Collection<K> keys = new ArrayList<>();
-
-        for (K k : keySet)
-            keys.add(k);
+        if (cache.isNear())
+            addEntries(ldr, keys, (((GridNearCacheAdapter)cache).dht()));
 
         if (log.isDebugEnabled())
             log.debug("Finished searching keys for undeploy [keysCnt=" + keys.size() + ']');
@@ -329,6 +281,72 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         // Avoid class caching issues inside classloader.
         globalLdr = new CacheClassLoader();
+    }
+
+    /**
+     * @param ldr Class loader.
+     * @param keys Keys.
+     * @param cache Cache.
+     */
+    private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
+        GridCacheContext cacheCtx = cache.context();
+
+        for (GridCacheEntryEx e : (Collection<GridCacheEntryEx>)cache.entries()) {
+            boolean undeploy = cacheCtx.isNear() ?
+                undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
+                undeploy(ldr, e, cacheCtx.cache());
+
+            if (undeploy)
+                keys.add(e.key());
+        }
+    }
+
+    /**
+     * @param ldr Class loader.
+     * @param e Entry.
+     * @param cache Cache.
+     * @return {@code True} if need to undeploy.
+     */
+    private boolean undeploy(ClassLoader ldr, GridCacheEntryEx e, GridCacheAdapter cache) {
+        KeyCacheObject key = e.key();
+
+        GridCacheEntryEx entry = cache.peekEx(key);
+
+        if (entry == null)
+            return false;
+
+        Object key0;
+        Object val0;
+
+        try {
+            CacheObject v = entry.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+
+            key0 = key.value(cache.context().cacheObjectContext(), false);
+
+            assert key0 != null : "Key cannot be null for cache entry: " + e;
+
+            val0 = CU.value(v, cache.context(), false);
+        }
+        catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
+        catch (IgniteException ignore) {
+            // Peek can throw runtime exception if unmarshalling failed.
+            return true;
+        }
+
+        ClassLoader keyLdr = U.detectObjectClassLoader(key0);
+        ClassLoader valLdr = U.detectObjectClassLoader(val0);
+
+        boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
+
+        if (log.isDebugEnabled())
+            log.debug("Finished examining entry [entryCls=" + e.getClass() +
+                ", key=" + key0 + ", keyCls=" + key0.getClass() +
+                ", valCls=" + (val0 != null ? val0.getClass() : "null") +
+                ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
+
+        return res;
     }
 
     /**

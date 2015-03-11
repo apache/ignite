@@ -35,6 +35,9 @@ public class DirectMessageWriterState {
     /** Current position. */
     private int pos;
 
+    /**
+     *
+     */
     public DirectMessageWriterState() {
         stack = new int[INIT_SIZE];
 

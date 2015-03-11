@@ -28,12 +28,12 @@ import java.util.*;
 /**
  * Extras where attributes, MVCC and TTL are set.
  */
-public class GridCacheAttributesMvccTtlEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheAttributesMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
     private GridLeanMap<UUID, Object> attrData;
 
     /** MVCC. */
-    private GridCacheMvcc<K> mvcc;
+    private GridCacheMvcc mvcc;
 
     /** TTL. */
     private long ttl;
@@ -49,7 +49,7 @@ public class GridCacheAttributesMvccTtlEntryExtras<K> extends GridCacheEntryExtr
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
-    public GridCacheAttributesMvccTtlEntryExtras(GridLeanMap<UUID, Object> attrData, GridCacheMvcc<K> mvcc, long ttl,
+    public GridCacheAttributesMvccTtlEntryExtras(GridLeanMap<UUID, Object> attrData, GridCacheMvcc mvcc, long ttl,
         long expireTime) {
         assert attrData != null;
         assert mvcc != null;
@@ -67,35 +67,35 @@ public class GridCacheAttributesMvccTtlEntryExtras<K> extends GridCacheEntryExtr
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 
             return this;
         }
         else
-            return new GridCacheMvccTtlEntryExtras<>(mvcc, ttl ,expireTime);
+            return new GridCacheMvccTtlEntryExtras(mvcc, ttl ,expireTime);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvcc<K> mvcc() {
+    @Override public GridCacheMvcc mvcc() {
         return mvcc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(@Nullable GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(@Nullable GridCacheMvcc mvcc) {
         if (mvcc != null) {
             this.mvcc = mvcc;
 
             return this;
         }
         else
-            return new GridCacheAttributesTtlEntryExtras<>(attrData, ttl, expireTime);
+            return new GridCacheAttributesTtlEntryExtras(attrData, ttl, expireTime);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
-        return obsoleteVer != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras<>(attrData, mvcc, obsoleteVer,
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+        return obsoleteVer != null ? new GridCacheAttributesMvccObsoleteTtlEntryExtras(attrData, mvcc, obsoleteVer,
             ttl, expireTime) : this;
     }
 
@@ -110,7 +110,7 @@ public class GridCacheAttributesMvccTtlEntryExtras<K> extends GridCacheEntryExtr
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
         if (ttl != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;
@@ -118,7 +118,7 @@ public class GridCacheAttributesMvccTtlEntryExtras<K> extends GridCacheEntryExtr
             return this;
         }
         else
-            return new GridCacheAttributesMvccEntryExtras<>(attrData, mvcc);
+            return new GridCacheAttributesMvccEntryExtras(attrData, mvcc);
     }
 
     /** {@inheritDoc} */

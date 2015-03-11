@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +35,7 @@ import java.util.*;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,11 +67,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     private int txSize;
 
     /** Group lock key. */
-    @GridDirectTransient
     private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    private byte[] grpLockKeyBytes;
 
     /** System transaction flag. */
     private boolean sys;
@@ -240,23 +235,19 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (grpLockKey != null && grpLockKeyBytes == null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(grpLockKey, ctx);
-
-            grpLockKeyBytes = CU.marshal(ctx, grpLockKey);
-        }
+        if (grpLockKey != null)
+            grpLockKey.prepareMarshal(ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
+        if (grpLockKey != null)
+            grpLockKey.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -299,7 +290,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
+                if (!writer.writeMessage("grpLockKey", grpLockKey))
                     return false;
 
                 writer.incrementState();
@@ -395,7 +386,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 reader.incrementState();
 
             case 12:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+                grpLockKey = reader.readMessage("grpLockKey");
 
                 if (!reader.isLastRead())
                     return false;

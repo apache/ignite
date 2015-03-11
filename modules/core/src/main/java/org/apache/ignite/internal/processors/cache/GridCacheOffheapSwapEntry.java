@@ -38,7 +38,7 @@ import sun.misc.*;
  *     <li>Key classloader UUID</li>
  * </ul>
  */
-public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
+public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -52,10 +52,10 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     private final GridCacheVersion ver;
 
     /** */
-    private V val;
+    private CacheObject val;
 
     /** */
-    private final boolean valIsByteArr;
+    private final byte type;
 
     /**
      * @param ptr Value pointer.
@@ -75,11 +75,11 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        valIsByteArr = UNSAFE.getByte(readPtr) != 0;
+        type = UNSAFE.getByte(readPtr + 4);
 
         valPtr = readPtr;
 
-        assert (ptr + size) > (UNSAFE.getInt(valPtr + 1) + valPtr + 5);
+        assert (ptr + size) > (UNSAFE.getInt(valPtr) + valPtr + 5);
     }
 
     /**
@@ -97,7 +97,7 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
 
         ptr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        assert (ptr + size) > (UNSAFE.getInt(ptr + 1) + ptr + 5);
+        assert (ptr + size) > (UNSAFE.getInt(ptr) + ptr + 5);
 
         return ptr;
     }
@@ -143,18 +143,18 @@ public class GridCacheOffheapSwapEntry<V> implements GridCacheSwapEntry<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
+    @Override public CacheObject value() {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void value(V val) {
+    @Override public void value(CacheObject val) {
         this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valueIsByteArray() {
-        return valIsByteArr;
+    @Override public byte type() {
+        return type;
     }
 
     /** {@inheritDoc} */

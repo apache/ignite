@@ -25,8 +25,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -36,14 +34,16 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.apache.ignite.streamer.*;
 
-import javax.management.*;
-import javax.cache.processor.*;
+import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
-import javax.cache.event.*;
+import javax.cache.processor.*;
+import javax.management.*;
 import java.lang.management.*;
 import java.util.*;
 

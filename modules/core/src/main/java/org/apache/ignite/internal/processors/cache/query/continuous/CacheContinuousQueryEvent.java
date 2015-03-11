@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -30,43 +31,47 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final GridCacheContext cctx;
+
     /** Entry. */
     @GridToStringExclude
-    private final CacheContinuousQueryEntry<K, V> e;
+    private final CacheContinuousQueryEntry e;
 
     /**
-     * @param source Source cache.
-     * @param eventType Event type.
+     * @param src Source cache.
+     * @param cctx Cache context.
      * @param e Entry.
      */
-    CacheContinuousQueryEvent(Cache source, EventType eventType, CacheContinuousQueryEntry<K, V> e) {
-        super(source, eventType);
+    CacheContinuousQueryEvent(Cache src, GridCacheContext cctx, CacheContinuousQueryEntry e) {
+        super(src, e.eventType());
 
-        assert e != null;
-
+        this.cctx = cctx;
         this.e = e;
     }
 
     /**
      * @return Entry.
      */
-    CacheContinuousQueryEntry<K, V> entry() {
+    CacheContinuousQueryEntry entry() {
         return e;
     }
 
     /** {@inheritDoc} */
-    @Override public K getKey() {
-        return e.key();
+    @Override
+    public K getKey() {
+        return e.key().value(cctx.cacheObjectContext(), false);
     }
 
     /** {@inheritDoc} */
     @Override public V getValue() {
-        return e.value();
+        return CU.value(e.value(), cctx, false);
     }
 
     /** {@inheritDoc} */
-    @Override public V getOldValue() {
-        return e.oldValue();
+    @Override
+    public V getOldValue() {
+        return CU.value(e.oldValue(), cctx, false);
     }
 
     /** {@inheritDoc} */
@@ -84,7 +89,10 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheContinuousQueryEvent.class, this, "key", e.key(), "newVal", e.value(), "oldVal",
-            e.oldValue(), "cacheName", e.cacheName());
+        return S.toString(CacheContinuousQueryEvent.class, this,
+            "evtType", getEventType(),
+            "key", getKey(),
+            "newVal", getValue(),
+            "oldVal", getOldValue());
     }
 }

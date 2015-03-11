@@ -470,23 +470,14 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         cache.putx(1, new ObjectValue("test", 1));
         cache.putx(2, new ObjectValue("test", 2));
 
-        P2<Integer, ObjectValue> p = new P2<Integer, ObjectValue>() {
-            @Override public boolean apply(Integer key, ObjectValue val) {
-                return val.intVal == 1;
-            }
-        };
-
-        CacheProjection<Integer, ObjectValue> cachePrj = ((IgniteKernal)grid(0))
-            .<Integer, ObjectValue>cache(null).projection(p);
-
         CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
-            cachePrj.queries().createFullTextQuery(ObjectValue.class, "test");
+            cache.queries().createFullTextQuery(ObjectValue.class, "test");
 
         CacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute();
 
         assert iter != null;
 
-        int expCnt = 1;
+        int expCnt = 2;
 
         for (int i = 0; i < expCnt; i++)
             assert iter.next() != null;
@@ -848,34 +839,6 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testReduceQueryOnProjection() throws Exception {
-        CacheProjection<String, Integer> c = ((IgniteKernal)ignite).cache(null);
-
-        assert c.putx("key1", 1);
-        assert c.putx("key2", 2);
-        assert c.putx("key3", 3);
-        assert c.putx("key4", 4);
-        assert c.putx("key5", 5);
-
-        // Filter values less than 3.
-        P2<String, Integer> p = new P2<String, Integer>() {
-            @Override public boolean apply(String key, Integer val) {
-                return val > 3;
-            }
-        };
-
-        CacheProjection<String, Integer> cachePrj = ((IgniteKernal)ignite).<String, Integer>cache(null).projection(p);
-
-        CacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
-
-        Collection<Integer> res = q.execute(new SumRemoteReducer()).get();
-
-        assertEquals(9, F.sumInt(res));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testEmptyObject() throws Exception {
         GridCache<EmptyObject, EmptyObject> cache = ((IgniteKernal)ignite).cache(null);
 
@@ -1160,7 +1123,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        assertTrue(val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$16"));
+        assertTrue("Unexpected name: " + val.getClass().getName(),
+            val.getClass().getName().endsWith("GridCacheAbstractQuerySelfTest$14"));
 
         assertTrue(cache.putx(1, val));
 
@@ -1173,7 +1137,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(1, res.size());
 
         CacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
-            "select field1 from GridCacheAbstractQuerySelfTest_16");
+            "select field1 from GridCacheAbstractQuerySelfTest_14");
 
         fieldsQry.enableDedup(true);
 

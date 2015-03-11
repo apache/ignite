@@ -42,7 +42,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static IgniteLogger log;
 
     /** */
-    private Set<IgniteInternalTx<K, V>> remainingTxs;
+    private Set<IgniteInternalTx> remainingTxs;
 
     /**
      * @param cctx Cache context.
@@ -55,7 +55,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /**
      * @param tx Transaction to add.
      */
-    public void addTx(IgniteInternalTx<K, V> tx) {
+    public void addTx(IgniteInternalTx tx) {
         if (remainingTxs == null)
             remainingTxs = new GridConcurrentHashSet<>();
 
@@ -74,7 +74,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
         else {
             assert !remainingTxs.isEmpty();
 
-            for (final IgniteInternalTx<K, V> tx : remainingTxs) {
+            for (final IgniteInternalTx tx : remainingTxs) {
                 if (!tx.done()) {
                     tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> t) {
