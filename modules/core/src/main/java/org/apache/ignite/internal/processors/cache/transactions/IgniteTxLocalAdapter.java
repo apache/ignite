@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -2096,7 +2096,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         resolveTaskName(),
                                         null);
                                 }
-                                catch (ClusterTopologyException e) {
+                                catch (ClusterTopologyCheckedException e) {
                                     entry.context().evicts().touch(entry, topologyVersion());
 
                                     throw e;

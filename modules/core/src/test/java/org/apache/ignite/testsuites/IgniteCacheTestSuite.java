@@ -399,6 +399,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
         suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
 
+        // TODO: IGNITE-477.
+        // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
+
         return suite;
     }
 }
