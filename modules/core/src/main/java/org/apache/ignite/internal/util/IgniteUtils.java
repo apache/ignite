@@ -301,6 +301,10 @@ public abstract class IgniteUtils {
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap8<>();
+
     /**
      * Initializes enterprise check.
      */
@@ -516,6 +520,9 @@ public abstract class IgniteUtils {
         }
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+
+        // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
+        System.setProperty("http.strictPostRedirect", "true");
     }
 
     /**
@@ -3046,7 +3053,7 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "libs").isDirectory() ||
+                !new File(cur, "modules").isDirectory() ||
                 !new File(cur, "config").isDirectory())
                 continue;
 
@@ -3170,14 +3177,7 @@ public abstract class IgniteUtils {
         if (file.exists())
             return file;
 
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
+        return null;
     }
 
     /**
@@ -3214,9 +3214,6 @@ public abstract class IgniteUtils {
     @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
-
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
 
         if (f != null) {
             try {
@@ -5371,7 +5368,7 @@ public abstract class IgniteUtils {
      * @return Top level user class.
      */
     public static GridPeerDeployAware detectPeerDeployAware(GridPeerDeployAware obj) {
-        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridIdentityHashSet<>(3));
+        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridLeanIdentitySet<>());
 
         // Pass in obj.getClass() to avoid infinite recursion.
         return p != null ? p : peerDeployAware(obj.getClass());
@@ -7904,14 +7901,49 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
-        throws ClassNotFoundException {
-        if (clsName == null)
-            return null;
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
 
-        return cls != null ? cls : Class.forName(clsName, true, ldr);
+        if (cls != null)
+            return cls;
+
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        cls = ldrMap.get(clsName);
+
+        if (cls == null) {
+            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
+    }
+
+    /**
+     * Clears class cache for provided loader.
+     *
+     * @param ldr Class loader.
+     */
+    public static void clearClassCache(ClassLoader ldr) {
+        classCache.remove(ldr);
+    }
+
+    /**
+     * Completely clears class cache.
+     */
+    public static void clearClassCache() {
+        classCache.clear();
     }
 
     /**

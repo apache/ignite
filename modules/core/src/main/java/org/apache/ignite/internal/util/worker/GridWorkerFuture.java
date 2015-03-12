@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.future.*;
  */
 public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private GridWorker w;
 
     /** {@inheritDoc} */

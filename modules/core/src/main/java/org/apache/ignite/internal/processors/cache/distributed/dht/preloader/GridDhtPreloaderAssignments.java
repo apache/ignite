@@ -27,13 +27,13 @@ import java.util.concurrent.*;
  * Partition to node assignments.
  */
 public class GridDhtPreloaderAssignments<K, V> extends
-    ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage<K, V>> {
+    ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Exchange future. */
     @GridToStringExclude
-    private final GridDhtPartitionsExchangeFuture<K, V> exchFut;
+    private final GridDhtPartitionsExchangeFuture exchFut;
 
     /** Last join order. */
     private final long topVer;
@@ -42,7 +42,7 @@ public class GridDhtPreloaderAssignments<K, V> extends
      * @param exchFut Exchange future.
      * @param topVer Last join order.
      */
-    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture<K, V> exchFut, long topVer) {
+    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture exchFut, long topVer) {
         assert exchFut != null;
         assert topVer > 0;
 
@@ -53,7 +53,7 @@ public class GridDhtPreloaderAssignments<K, V> extends
     /**
      * @return Exchange future.
      */
-    GridDhtPartitionsExchangeFuture<K, V> exchangeFuture() {
+    GridDhtPartitionsExchangeFuture exchangeFuture() {
         return exchFut;
     }
 

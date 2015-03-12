@@ -28,15 +28,15 @@ import java.util.*;
 /**
  * Grid cache transaction read or write set.
  */
-public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry<K, V>> implements Externalizable {
+public class IgniteTxMap extends AbstractMap<IgniteTxKey, IgniteTxEntry> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Base transaction map. */
-    private Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> txMap;
+    private Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Entry set. */
-    private Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> entrySet;
+    private Set<Entry<IgniteTxKey, IgniteTxEntry>> entrySet;
 
     /** Cached size. */
     private int size = -1;
@@ -48,7 +48,7 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
     private boolean sealed;
 
     /** Filter. */
-    private IgnitePredicate<IgniteTxEntry<K, V>> filter;
+    private IgnitePredicate<IgniteTxEntry> filter;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -61,8 +61,8 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
      * @param txMap Transaction map.
      * @param filter Filter.
      */
-    public IgniteTxMap(Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> txMap,
-        IgnitePredicate<IgniteTxEntry<K, V>> filter) {
+    public IgniteTxMap(Map<IgniteTxKey, IgniteTxEntry> txMap,
+        IgnitePredicate<IgniteTxEntry> filter) {
         this.txMap = txMap;
         this.filter = filter;
     }
@@ -72,7 +72,7 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
      *
      * @return This map for chaining.
      */
-    IgniteTxMap<K, V> seal() {
+    IgniteTxMap seal() {
         sealed = true;
 
         return this;
@@ -86,16 +86,16 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> entrySet() {
+    @Override public Set<Entry<IgniteTxKey, IgniteTxEntry>> entrySet() {
         if (entrySet == null) {
-            entrySet = new GridSerializableSet<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>>() {
-                private Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> set = txMap.entrySet();
+            entrySet = new GridSerializableSet<Entry<IgniteTxKey, IgniteTxEntry>>() {
+                private Set<Entry<IgniteTxKey, IgniteTxEntry>> set = txMap.entrySet();
 
-                @Override public Iterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> iterator() {
-                    return new GridSerializableIterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>>() {
-                        private Iterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> it = set.iterator();
+                @Override public Iterator<Entry<IgniteTxKey, IgniteTxEntry>> iterator() {
+                    return new GridSerializableIterator<Entry<IgniteTxKey, IgniteTxEntry>>() {
+                        private Iterator<Entry<IgniteTxKey, IgniteTxEntry>> it = set.iterator();
 
-                        private Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> cur;
+                        private Entry<IgniteTxKey, IgniteTxEntry> cur;
 
                         // Constructor.
                         {
@@ -106,11 +106,11 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
                             return cur != null;
                         }
 
-                        @Override public Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> next() {
+                        @Override public Entry<IgniteTxKey, IgniteTxEntry> next() {
                             if (cur == null)
                                 throw new NoSuchElementException();
 
-                            Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> e = cur;
+                            Entry<IgniteTxKey, IgniteTxEntry> e = cur;
 
                             advance();
 
@@ -125,7 +125,7 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
                             cur = null;
 
                             while (cur == null && it.hasNext()) {
-                                Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> e = it.next();
+                                Entry<IgniteTxKey, IgniteTxEntry> e = it.next();
 
                                 if (filter.apply(e.getValue()))
                                     cur = e;
@@ -164,14 +164,14 @@ public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public IgniteTxEntry<K, V> get(Object key) {
-        IgniteTxEntry<K, V> e = txMap.get(key);
+    @Override public IgniteTxEntry get(Object key) {
+        IgniteTxEntry e = txMap.get(key);
 
         return e == null ? null : filter.apply(e) ? e : null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry<K, V> remove(Object key) {
+    @Override public IgniteTxEntry remove(Object key) {
         throw new UnsupportedOperationException();
     }
 

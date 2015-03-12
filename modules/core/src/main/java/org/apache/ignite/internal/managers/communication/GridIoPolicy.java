@@ -40,7 +40,10 @@ public enum GridIoPolicy {
     AFFINITY_POOL,
 
     /** Utility cache execution pool. */
-    UTILITY_CACHE_POOL;
+    UTILITY_CACHE_POOL,
+
+    /** Marshaller cache execution pool. */
+    MARSH_CACHE_POOL;
 
     /** Enum values. */
     private static final GridIoPolicy[] VALS = values();

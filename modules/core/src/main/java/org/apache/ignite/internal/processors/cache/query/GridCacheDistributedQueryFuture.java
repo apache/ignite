@@ -32,6 +32,9 @@ import java.util.concurrent.*;
  */
 public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutureAdapter<K, V, R> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long reqId;
 
     /** */
@@ -90,7 +93,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 subgrid.clear();
             }
 
-            final GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(cctx.cacheId(), reqId, fields());
+            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(), reqId, fields());
 
             // Process cancel query directly (without sending) for local node,
             cctx.closures().callLocalSafe(new Callable<Object>() {

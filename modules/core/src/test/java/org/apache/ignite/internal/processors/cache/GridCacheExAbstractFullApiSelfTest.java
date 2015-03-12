@@ -64,7 +64,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
 
             GridCache<String, Integer> cache = cache();
 
-            try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
 
                 for (int i = 0; i < 1000; i++) {

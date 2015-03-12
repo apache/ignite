@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
 /**
  * Detached cache entry.
  */
-public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     /**
      * @param ctx Cache context.
      * @param key Cache key.
@@ -37,8 +37,8 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
      * @param ttl Time to live.
      * @param hdrId Header ID.
      */
-    public GridDhtDetachedCacheEntry(GridCacheContext<K, V> ctx, K key, int hash, V val,
-        GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+    public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
+        GridCacheMapEntry next, long ttl, int hdrId) {
         super(ctx, key, hash, val, next, ttl, hdrId);
     }
 
@@ -46,45 +46,39 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
      * Sets value to detached entry so it can be retrieved in transactional gets.
      *
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ver Version.
      * @throws IgniteCheckedException If value unmarshalling failed.
      */
-    public void resetFromPrimary(V val, byte[] valBytes, GridCacheVersion ver)
+    public void resetFromPrimary(CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
-       if (valBytes != null && val == null)
-            val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-
-        value(val, valBytes);
+        value(val);
 
         this.ver = ver;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
+    @Nullable @Override public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected void value(@Nullable V val, @Nullable byte[] valBytes) {
+    @Override protected void value(@Nullable CacheObject val) {
         this.val = val;
-        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheValueBytes valueBytesUnlocked() {
-        return (val != null && val instanceof byte[]) ? GridCacheValueBytes.plain(val) :
-            valBytes == null ? GridCacheValueBytes.nil() : GridCacheValueBytes.marshaled(valBytes);
+    @Override protected CacheObject valueBytesUnlocked() {
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(V val, byte[] valBytes, long expireTime,
-        GridCacheVersion ver, V old) throws IgniteCheckedException {
+    @Override protected void updateIndex(CacheObject val, long expireTime,
+        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary nodes.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(V val) throws IgniteCheckedException {
+    @Override protected void clearIndex(CacheObject val) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 

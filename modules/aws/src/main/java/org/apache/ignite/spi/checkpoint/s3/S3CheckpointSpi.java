@@ -458,7 +458,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
             InputStream in = obj.getObjectContent();
 
             try {
-                return ignite.configuration().getMarshaller().unmarshal(in, U.gridClassLoader());
+                return S3CheckpointData.fromStream(in);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to unmarshal S3CheckpointData [bucketName=" +
+                    bucketName + ", key=" + key + ']', e);
             }
             finally {
                 U.closeQuiet(in);
@@ -486,7 +490,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
         if (log.isDebugEnabled())
             log.debug("Writing data to S3 [bucket=" + bucketName + ", key=" + data.getKey() + ']');
 
-        byte[] buf = ignite.configuration().getMarshaller().marshal(data);
+        byte[] buf = data.toBytes();
 
         ObjectMetadata meta = new ObjectMetadata();
 

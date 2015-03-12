@@ -37,7 +37,7 @@ public class GridCachePartitionedBasicOpSelfTest extends GridCacheBasicOpAbstrac
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(2);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         c.setCacheConfiguration(cc);

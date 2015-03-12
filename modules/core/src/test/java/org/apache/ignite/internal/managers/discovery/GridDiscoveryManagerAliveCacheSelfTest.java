@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -83,7 +83,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setDistributionMode(NEAR_PARTITIONED);
-        cCfg.setPreloadMode(SYNC);
+        cCfg.setRebalanceMode(SYNC);
         cCfg.setQueryIndexEnabled(false);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 

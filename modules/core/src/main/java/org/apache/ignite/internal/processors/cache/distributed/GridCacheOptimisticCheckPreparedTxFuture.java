@@ -39,6 +39,9 @@ import java.util.concurrent.atomic.*;
  */
 public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {
+    /** */         
+    private static final long serialVersionUID = 0L;
+    
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -55,7 +58,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
-    private final IgniteInternalTx<K, V> tx;
+    private final IgniteInternalTx tx;
 
     /** All involved nodes. */
     private final Map<UUID, ClusterNode> nodes;
@@ -73,7 +76,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx<K, V> tx,
+    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx tx,
         UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
         super(cctx.kernalContext(), CU.boolReducer());
 
@@ -150,9 +153,10 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                     add(fut);
 
-                    GridCacheOptimisticCheckPreparedTxRequest<K, V>
-                        req = new GridCacheOptimisticCheckPreparedTxRequest<>(tx,
-                        nodeTransactions(id), futureId(), fut.futureId());
+                    GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(tx,
+                        nodeTransactions(id),
+                        futureId(),
+                        fut.futureId());
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -172,7 +176,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
+                GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
                     tx, nodeTransactions(nodeId), futureId(), fut.futureId());
 
                 try {
@@ -216,7 +220,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param nodeId Node ID.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse res) {
         if (!isDone()) {
             for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
@@ -315,6 +319,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      *
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Mini future ID. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
@@ -364,7 +371,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         /**
          * @param res Result callback.
          */
-        private void onResult(GridCacheOptimisticCheckPreparedTxResponse<K, V> res) {
+        private void onResult(GridCacheOptimisticCheckPreparedTxResponse res) {
             onDone(res.success());
         }
 

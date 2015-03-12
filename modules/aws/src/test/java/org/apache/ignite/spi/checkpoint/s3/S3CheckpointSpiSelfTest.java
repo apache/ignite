@@ -62,7 +62,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
 
         AmazonS3 s3 = new AmazonS3Client(cred);
 
-        String bucketName = S3CheckpointSpi.BUCKET_NAME_PREFIX + "test";
+        String bucketName = S3CheckpointSpi.BUCKET_NAME_PREFIX + "test-bucket";
 
         try {
             ObjectListing list = s3.listObjects(bucketName);

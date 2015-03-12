@@ -77,12 +77,12 @@ public class GridDhtTxMapping<K, V> {
      *
      * @param mappings Mappings.
      */
-    public void initLast(Collection<GridDistributedTxMapping<K, V>> mappings) {
+    public void initLast(Collection<GridDistributedTxMapping> mappings) {
         assert this.mappings.size() == mappings.size();
 
         int idx = 0;
 
-        for (GridDistributedTxMapping<?, ?> map : mappings) {
+        for (GridDistributedTxMapping map : mappings) {
             TxMapping mapping = this.mappings.get(idx);
 
             map.lastBackups(lastBackups(mapping, idx));

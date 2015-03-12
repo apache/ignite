@@ -46,7 +46,7 @@
 
                     <property name="backups" value="1"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -64,7 +64,7 @@
 
                     <property name="backups" value="1"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -78,7 +78,7 @@
 
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
             </list>
         </property>

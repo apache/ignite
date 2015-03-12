@@ -702,7 +702,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<Entry<K, V>> entrySetx(IgnitePredicate<Entry<K, V>>... filter) {
+    public Set<Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1373,7 +1373,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 (CacheProjection<K1, V1>)(prj != null ? prj : delegate),
                 (GridCacheContext<K1, V1>)ctx,
                 null,
-                null,
                 prj != null ? prj.flags() : null,
                 prj != null ? prj.subjectId() : null,
                 true,
@@ -1415,7 +1414,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             GridCacheProjectionImpl<K, V> prj0 = new GridCacheProjectionImpl<>(
                 (prj != null ? prj : delegate),
                 ctx,
-                null,
                 null,
                 res,
                 prj != null ? prj.subjectId() : null,
@@ -1466,6 +1464,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         prj = (GridCacheProjectionImpl<K, V>)in.readObject();
 
         gate = ctx.gate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> rebalance() {
+        ctx.preloader().forcePreload();
+
+        return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
     }
 
     /** {@inheritDoc} */

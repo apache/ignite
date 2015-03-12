@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -81,7 +81,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(PARTITIONED);
-        dfltCacheCfg.setPreloadMode(ASYNC);
+        dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
 
@@ -89,14 +89,14 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
 
         namedCacheCfg.setCacheMode(PARTITIONED);
-        namedCacheCfg.setPreloadMode(ASYNC);
+        namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
         namedCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
-            dfltCacheCfg.setPreloadMode(SYNC);
+            dfltCacheCfg.setRebalanceMode(SYNC);
         else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
         else if (gridName.contains(WRONG_AFFINITY_GRID_NAME)) {

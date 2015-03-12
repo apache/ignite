@@ -119,7 +119,7 @@ public class CachePopularNumbersExample {
 
                 try {
                     List<List<?>> results = new ArrayList<>(cache.queryFields(
-                        sql("select _key, _val from Long order by _val desc limit ?").setArgs(cnt)).getAll());
+                        sql("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt)).getAll());
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
@@ -141,7 +141,7 @@ public class CachePopularNumbersExample {
      * Increments value for key.
      */
     private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
-        /** */
+        /** Process entries to increase value by entry key. */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();
