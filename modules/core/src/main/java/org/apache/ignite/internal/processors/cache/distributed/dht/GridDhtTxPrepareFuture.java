@@ -928,7 +928,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
-                        catch (ClusterTopologyException e) {
+                        catch (ClusterTopologyCheckedException e) {
                             fut.onResult(e);
                         }
                         catch (IgniteCheckedException e) {
