@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -27,6 +28,9 @@ import java.lang.reflect.*;
  * Bean contains {@link Field} and {@link Annotation} for that class field.
  */
 class GridResourceField {
+    /** */
+    static final GridResourceField[] EMPTY_ARRAY = new GridResourceField[0];
+
     /** Field where resource should be injected. */
     private final Field field;
 
@@ -39,12 +43,14 @@ class GridResourceField {
      * @param field Field where resource should be injected.
      * @param ann Resource annotation.
      */
-    GridResourceField(Field field, Annotation ann) {
+    GridResourceField(Field field, @Nullable Annotation ann) {
         assert field != null;
         assert ann != null || GridResourceUtils.mayRequireResources(field);
 
         this.field = field;
         this.ann = ann;
+
+        field.setAccessible(true);
     }
 
     /**
@@ -63,6 +69,13 @@ class GridResourceField {
      */
     public Annotation getAnnotation() {
         return ann;
+    }
+
+    /**
+     * Return {@code true} if field contains object that should be process too.
+     */
+    public boolean processFieldValue() {
+        return ann == null;
     }
 
     /** {@inheritDoc} */

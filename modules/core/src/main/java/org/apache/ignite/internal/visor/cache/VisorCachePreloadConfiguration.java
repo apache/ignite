@@ -31,7 +31,7 @@ public class VisorCachePreloadConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache preload mode. */
-    private CachePreloadMode mode;
+    private CacheRebalanceMode mode;
 
     /** Preload thread pool size. */
     private int threadPoolSize;
@@ -55,12 +55,12 @@ public class VisorCachePreloadConfiguration implements Serializable {
     public static VisorCachePreloadConfiguration from(CacheConfiguration ccfg) {
         VisorCachePreloadConfiguration cfg = new VisorCachePreloadConfiguration();
 
-        cfg.mode = ccfg.getPreloadMode();
-        cfg.batchSize = ccfg.getPreloadBatchSize();
-        cfg.threadPoolSize = ccfg.getPreloadThreadPoolSize();
-        cfg.partitionedDelay = ccfg.getPreloadPartitionedDelay();
-        cfg.throttle = ccfg.getPreloadThrottle();
-        cfg.timeout = ccfg.getPreloadTimeout();
+        cfg.mode = ccfg.getRebalanceMode();
+        cfg.batchSize = ccfg.getRebalanceBatchSize();
+        cfg.threadPoolSize = ccfg.getRebalanceThreadPoolSize();
+        cfg.partitionedDelay = ccfg.getRebalanceDelay();
+        cfg.throttle = ccfg.getRebalanceThrottle();
+        cfg.timeout = ccfg.getRebalanceTimeout();
 
         return cfg;
     }
@@ -68,7 +68,7 @@ public class VisorCachePreloadConfiguration implements Serializable {
     /**
      * @return Cache preload mode.
      */
-    public CachePreloadMode mode() {
+    public CacheRebalanceMode mode() {
         return mode;
     }
 

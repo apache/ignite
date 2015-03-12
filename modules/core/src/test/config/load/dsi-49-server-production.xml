@@ -42,7 +42,7 @@
                     <property name="name" value="PARTITIONED_CACHE"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="startSize" value="500000"/>
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="evictionPolicy">
                         <bean
@@ -72,7 +72,7 @@
                     <property name="name" value="REPLICATED_CACHE"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="startSize" value="200"/>
-                    <property name="preloadMode" value="NONE"/>
+                    <property name="rebalanceMode" value="NONE"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="swapEnabled" value="false"/>
                     <property name="indexFixedTyping" value="false"/>

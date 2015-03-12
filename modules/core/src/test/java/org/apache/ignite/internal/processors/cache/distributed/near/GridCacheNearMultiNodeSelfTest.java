@@ -387,7 +387,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                GridDhtCacheEntry<Integer, String> entry = dht(primaryGrid(2)).peekExx(2);
+                GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
                     assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
@@ -627,8 +627,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Near entry.
      */
-    @Nullable private GridNearCacheEntry<Integer, String> nearEntry(int idx, int key) {
-        return this.<Integer, String>near(idx).peekExx(key);
+    @Nullable private GridNearCacheEntry nearEntry(int idx, int key) {
+        return (GridNearCacheEntry)near(idx).peekEx(key);
     }
 
     /**
@@ -670,7 +670,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         try {
             long topVer = grid(0).cluster().topologyVersion();
 
-            GridNearCacheEntry<Integer, String> nearEntry1 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry1 = nearEntry(0, key);
 
             info("Peeked entry after lock [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry1 + ']');
 
@@ -682,7 +682,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             cache.put(key, val);
 
-            GridNearCacheEntry<Integer, String> nearEntry2 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry2 = nearEntry(0, key);
 
             info("Peeked entry after put [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry2 + ']');
 
@@ -695,7 +695,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, dht(0).peek(key));
             assertEquals(val, dht(1).peek(key));
 
-            GridNearCacheEntry<Integer, String> nearEntry3 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry3 = nearEntry(0, key);
 
             info("Peeked entry after peeks [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry3 + ']');
 

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -41,7 +41,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
     private boolean replicatedAffinity = true;
 
     /** */
-    private CachePreloadMode preloadMode = SYNC;
+    private CacheRebalanceMode preloadMode = SYNC;
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
@@ -76,7 +76,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 }
             });
 
-        cacheCfg.setPreloadMode(preloadMode);
+        cacheCfg.setRebalanceMode(preloadMode);
 
         return cacheCfg;
     }
@@ -118,7 +118,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         for (Object key : g2Keys)
             g2.jcache(null).put(key, "changed val");
 
-        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, g2Keys);
     }

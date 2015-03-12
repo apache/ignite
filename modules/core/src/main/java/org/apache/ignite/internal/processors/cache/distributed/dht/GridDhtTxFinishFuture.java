@@ -60,7 +60,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** Transaction. */
     @GridToStringExclude
-    private GridDhtTxLocalAdapter<K, V> tx;
+    private GridDhtTxLocalAdapter tx;
 
     /** Commit flag. */
     private boolean commit;
@@ -70,10 +70,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     private AtomicReference<Throwable> err = new AtomicReference<>(null);
 
     /** DHT mappings. */
-    private Map<UUID, GridDistributedTxMapping<K, V>> dhtMap;
+    private Map<UUID, GridDistributedTxMapping> dhtMap;
 
     /** Near mappings. */
-    private Map<UUID, GridDistributedTxMapping<K, V>> nearMap;
+    private Map<UUID, GridDistributedTxMapping> nearMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -83,7 +83,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
+    public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
         this.cctx = cctx;
@@ -189,7 +189,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
         if (!isDone()) {
             for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -274,8 +274,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nearMap Near map.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean finish(Map<UUID, GridDistributedTxMapping<K, V>> dhtMap,
-        Map<UUID, GridDistributedTxMapping<K, V>> nearMap) {
+    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap,
+        Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
 
@@ -284,12 +284,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
 
         // Create mini futures.
-        for (GridDistributedTxMapping<K, V> dhtMapping : dhtMap.values()) {
+        for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
             ClusterNode n = dhtMapping.node();
 
             assert !n.isLocal();
 
-            GridDistributedTxMapping<K, V> nearMapping = nearMap.get(n.id());
+            GridDistributedTxMapping nearMapping = nearMap.get(n.id());
 
             if (dhtMapping.empty() && nearMapping != null && nearMapping.empty())
                 // Nothing to send.
@@ -299,7 +299,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             add(fut); // Append new future.
 
-            GridDhtTxFinishRequest<K, V> req = new GridDhtTxFinishRequest<>(
+            GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
                 fut.futureId(),
@@ -341,7 +341,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             }
         }
 
-        for (GridDistributedTxMapping<K, V> nearMapping : nearMap.values()) {
+        for (GridDistributedTxMapping nearMapping : nearMap.values()) {
             if (!dhtMap.containsKey(nearMapping.node().id())) {
                 if (nearMapping.empty())
                     // Nothing to send.
@@ -351,7 +351,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
                 add(fut); // Append new future.
 
-                GridDhtTxFinishRequest<K, V> req = new GridDhtTxFinishRequest<>(
+                GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                     tx.nearNodeId(),
                     futId,
                     fut.futureId(),
@@ -418,17 +418,17 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         /** DHT mapping. */
         @GridToStringInclude
-        private GridDistributedTxMapping<K, V> dhtMapping;
+        private GridDistributedTxMapping dhtMapping;
 
         /** Near mapping. */
         @GridToStringInclude
-        private GridDistributedTxMapping<K, V> nearMapping;
+        private GridDistributedTxMapping nearMapping;
 
         /**
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
-        MiniFuture(GridDistributedTxMapping<K, V> dhtMapping, GridDistributedTxMapping<K, V> nearMapping) {
+        MiniFuture(GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
             assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
 
             this.dhtMapping = dhtMapping;
@@ -474,7 +474,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param res Result callback.
          */
-        void onResult(GridDhtTxFinishResponse<K, V> res) {
+        void onResult(GridDhtTxFinishResponse res) {
             if (log.isDebugEnabled())
                 log.debug("Transaction synchronously completed on node [node=" + node() + ", res=" + res + ']');
 

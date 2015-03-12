@@ -36,7 +36,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests cross cache queries.
@@ -91,7 +91,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         cc.setName(name);
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setEvictNearSynchronized(false);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -169,23 +169,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                 "group by f.productId, p.name").get()) {
             X.println("___ -> " + o);
         }
-    }
-
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        fillCaches();
-
-        CacheProjection<Integer, FactPurchase> prj = ((IgniteKernal)ignite)
-            .<Integer, FactPurchase>cache("partitioned").projection(
-            new IgnitePredicate<Cache.Entry<Integer, FactPurchase>>() {
-                @Override public boolean apply(Cache.Entry<Integer, FactPurchase> e) {
-                    return e.getKey() > 12;
-                }
-            });
-
-        List<Map.Entry<Integer, FactPurchase>> res = body(prj);
-
-        check(res);
     }
 
     /**

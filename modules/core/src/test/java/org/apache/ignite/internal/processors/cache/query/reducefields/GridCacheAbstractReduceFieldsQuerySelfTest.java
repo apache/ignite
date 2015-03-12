@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
@@ -40,7 +41,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -87,7 +88,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setAtomicityMode(atomicityMode());
         cache.setDistributionMode(distributionMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
@@ -217,26 +218,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //        assertNotNull("Average", avg);
 //        assertEquals("Average", 25, avg.intValue());
 //    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOnProjection() throws Exception {
-        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
-            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
-                return val.orgId == 1;
-            }
-        };
-
-        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
-            ((IgniteKernal)grid(0)).<CacheAffinityKey<String>, Person>cache(null).projection(p);
-
-        CacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
-
-        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
-
-        assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
-    }
 
 //    /**
 //     * @throws Exception If failed.

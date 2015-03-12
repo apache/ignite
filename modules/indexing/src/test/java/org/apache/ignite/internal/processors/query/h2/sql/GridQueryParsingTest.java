@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -40,7 +39,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -77,7 +76,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cc.setDistributionMode(PARTITIONED_ONLY);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(false);
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
