@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Job to put entries to cache on affinity node.
  */
-class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
+class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     /** */
     private final GridKernalContext ctx;
 
@@ -40,7 +40,7 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
     private final String cacheName;
 
     /** Entries to put. */
-    private final Collection<IgniteDataLoaderEntry> col;
+    private final Collection<DataStreamerEntry> col;
 
     /** {@code True} to ignore deployment ownership. */
     private final boolean ignoreDepOwnership;
@@ -49,7 +49,7 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
     private final boolean skipStore;
 
     /** */
-    private final IgniteDataLoader.Updater updater;
+    private final IgniteDataStreamer.Updater updater;
 
     /**
      * @param ctx Context.
@@ -60,14 +60,14 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
      * @param skipStore Skip store flag.
      * @param updater Updater.
      */
-    GridDataLoadUpdateJob(
+    DataStreamerUpdateJob(
         GridKernalContext ctx,
         IgniteLogger log,
         @Nullable String cacheName,
-        Collection<IgniteDataLoaderEntry> col,
+        Collection<DataStreamerEntry> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDataLoader.Updater<?, ?> updater) {
+        IgniteDataStreamer.Updater<?, ?> updater) {
         this.ctx = ctx;
         this.log = log;
 
@@ -109,7 +109,7 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
         try {
             final GridCacheContext cctx = cache.context();
 
-            for (IgniteDataLoaderEntry e : col) {
+            for (DataStreamerEntry e : col) {
                 e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                 CacheObject val = e.getValue();
@@ -119,8 +119,8 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
             }
 
             if (unwrapEntries()) {
-                Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<IgniteDataLoaderEntry, Map.Entry>() {
-                    @Override public Map.Entry apply(IgniteDataLoaderEntry e) {
+                Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
+                    @Override public Map.Entry apply(DataStreamerEntry e) {
                         return e.toEntry(cctx);
                     }
                 });
@@ -145,6 +145,6 @@ class GridDataLoadUpdateJob implements GridPlainCallable<Object> {
      * @return {@code True} if need to unwrap internal entries.
      */
     private boolean unwrapEntries() {
-        return !(updater instanceof GridDataLoadCacheUpdaters.InternalUpdater);
+        return !(updater instanceof DataStreamerCacheUpdaters.InternalUpdater);
     }
 }

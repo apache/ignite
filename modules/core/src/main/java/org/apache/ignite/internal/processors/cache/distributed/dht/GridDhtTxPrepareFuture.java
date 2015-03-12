@@ -735,9 +735,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             // We are holding transaction-level locks for entries here, so we can get next write version.
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
-
             onEntriesLocked();
+
+            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             {
                 Map<UUID, GridDistributedTxMapping> futDhtMap = new HashMap<>();
@@ -928,7 +928,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
-                        catch (ClusterTopologyException e) {
+                        catch (ClusterTopologyCheckedException e) {
                             fut.onResult(e);
                         }
                         catch (IgniteCheckedException e) {

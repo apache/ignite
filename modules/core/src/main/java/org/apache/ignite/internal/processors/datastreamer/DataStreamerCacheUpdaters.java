@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,15 +27,15 @@ import java.util.*;
 /**
  * Bundled factory for cache updaters.
  */
-public class GridDataLoadCacheUpdaters {
+public class DataStreamerCacheUpdaters {
     /** */
-    private static final IgniteDataLoader.Updater INDIVIDUAL = new Individual();
+    private static final IgniteDataStreamer.Updater INDIVIDUAL = new Individual();
 
     /** */
-    private static final IgniteDataLoader.Updater BATCHED = new Batched();
+    private static final IgniteDataStreamer.Updater BATCHED = new Batched();
 
     /** */
-    private static final IgniteDataLoader.Updater BATCHED_SORTED = new BatchedSorted();
+    private static final IgniteDataStreamer.Updater BATCHED_SORTED = new BatchedSorted();
 
     /**
      * Updates cache using independent {@link org.apache.ignite.cache.GridCache#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} and
@@ -44,7 +44,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Single updater.
      */
-    public static <K, V> IgniteDataLoader.Updater<K, V> individual() {
+    public static <K, V> IgniteDataStreamer.Updater<K, V> individual() {
         return INDIVIDUAL;
     }
 
@@ -55,7 +55,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched updater.
      */
-    public static <K, V> IgniteDataLoader.Updater<K, V> batched() {
+    public static <K, V> IgniteDataStreamer.Updater<K, V> batched() {
         return BATCHED;
     }
 
@@ -66,7 +66,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched sorted updater.
      */
-    public static <K extends Comparable<?>, V> IgniteDataLoader.Updater<K, V> batchedSorted() {
+    public static <K extends Comparable<?>, V> IgniteDataStreamer.Updater<K, V> batchedSorted() {
         return BATCHED_SORTED;
     }
 
@@ -93,7 +93,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Individual<K, V> implements IgniteDataLoader.Updater<K, V>, InternalUpdater {
+    private static class Individual<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -120,7 +120,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class Batched<K, V> implements IgniteDataLoader.Updater<K, V>, InternalUpdater {
+    private static class Batched<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -160,7 +160,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements IgniteDataLoader.Updater<K, V>, InternalUpdater {
+    private static class BatchedSorted<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -1670,7 +1670,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                             if (entry.modified()) {
                                 writeObj0 = cctx.unwrapTemporary(entry.getValue());
-                                writeObj = cctx.toCacheObject(updated0);
+                                writeObj = cctx.toCacheObject(writeObj0);
                             }
                             else {
                                 writeObj = oldVal;

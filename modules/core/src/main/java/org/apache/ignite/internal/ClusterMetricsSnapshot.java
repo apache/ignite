@@ -85,7 +85,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*sent bytes count*/ +
         4/*received messages count*/ +
         8/*received bytes count*/ +
-        4/*outbound messages queue size*/;
+        4/*outbound messages queue size*/ + 
+        4/*total nodes*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -243,6 +244,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private int outMesQueueSize = -1;
 
+    /** */
+    private int totalNodes = -1;
+
     /**
      * Create empty snapshot.
      */
@@ -314,6 +318,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         rcvdBytesCnt = 0;
         outMesQueueSize = 0;
         heapTotal = 0;
+        totalNodes = nodes.size();
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -925,6 +930,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return outMesQueueSize;
     }
 
+    /** {@inheritDoc} */
+    @Override public int getTotalNodes() {
+        return totalNodes;
+    }
+
     /**
      * Sets available processors.
      *
@@ -1151,6 +1161,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets total number of nodes.
+     *
+     * @param totalNodes Total number of nodes.
+     */
+    public void setTotalNodes(int totalNodes) {
+        this.totalNodes = totalNodes;
+    }
+
+    /**
      * @param neighborhood Cluster neighborhood.
      * @return CPU count.
      */
@@ -1286,6 +1305,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         off = U.intToBytes(metrics.getReceivedMessagesCount(), data, off);
         off = U.longToBytes(metrics.getReceivedBytesCount(), data, off);
         off = U.intToBytes(metrics.getOutboundMessagesQueueSize(), data, off);
+        off = U.intToBytes(metrics.getTotalNodes(), data, off);
 
         assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
                 (off - start) + ']';
@@ -1508,6 +1528,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         off += 8;
 
         metrics.setOutboundMessagesQueueSize(U.bytesToInt(data, off));
+
+        off += 4;
+
+        metrics.setTotalNodes(U.bytesToInt(data, off));
 
         off += 4;
 

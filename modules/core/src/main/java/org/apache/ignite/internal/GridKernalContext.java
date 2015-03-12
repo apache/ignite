@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -243,11 +243,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridSegmentationProcessor segmentation();
 
     /**
-     * Gets data loader processor.
+     * Gets data streamer processor.
      *
-     * @return Data loader processor.
+     * @return Data streamer processor.
      */
-    public <K, V> GridDataLoaderProcessor<K, V> dataLoad();
+    public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
      * Gets file system processor.

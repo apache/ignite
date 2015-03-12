@@ -81,10 +81,12 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         igfsCfg.setMetaCacheName("partitioned");
         igfsCfg.setName("igfs");
 
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "shmem");
-            put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
-        }});
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -25,8 +26,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
-
-import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 
 /**
  * IGFS endpoint abstraction.
@@ -148,7 +147,7 @@ public class HadoopIgfsEndpoint {
         int port;
 
         if (tokens.length == 1)
-            port = DFLT_IPC_PORT;
+            port = IgfsIpcEndpointConfiguration.DFLT_PORT;
         else if (tokens.length == 2) {
             String portStr = tokens[1];
 

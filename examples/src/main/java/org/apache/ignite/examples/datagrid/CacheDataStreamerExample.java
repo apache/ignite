@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
 
 /**
- * Demonstrates how cache can be populated with data utilizing {@link IgniteDataLoader} API.
- * {@link IgniteDataLoader} is a lot more efficient to use than standard
+ * Demonstrates how cache can be populated with data utilizing {@link IgniteDataStreamer} API.
+ * {@link IgniteDataStreamer} is a lot more efficient to use than standard
  * {@code put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
@@ -32,7 +32,7 @@ import org.apache.ignite.examples.*;
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-cache.xml} configuration.
  */
-public class CacheDataLoaderExample {
+public class CacheDataStreamerExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
@@ -53,7 +53,7 @@ public class CacheDataLoaderExample {
 
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache data loader example started.");
+            System.out.println(">>> Cache data streamer example started.");
 
             // Clean up caches on all nodes before run.
             ignite.jcache(CACHE_NAME).clear();
@@ -63,13 +63,13 @@ public class CacheDataLoaderExample {
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
+            try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(CACHE_NAME)) {
                 // Configure loader.
-                ldr.perNodeBufferSize(1024);
-                ldr.perNodeParallelLoadOperations(8);
+                stmr.perNodeBufferSize(1024);
+                stmr.perNodeParallelOperations(8);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
-                    ldr.addData(i, Integer.toString(i));
+                    stmr.addData(i, Integer.toString(i));
 
                     // Print out progress while loading cache.
                     if (i > 0 && i % 10000 == 0)

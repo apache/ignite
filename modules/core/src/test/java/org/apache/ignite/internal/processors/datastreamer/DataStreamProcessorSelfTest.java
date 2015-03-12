@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -37,7 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -53,7 +52,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  *
  */
-public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
+public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap;
 
@@ -125,7 +124,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     public void testPartitioned() throws Exception {
         mode = PARTITIONED;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -135,7 +134,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         mode = PARTITIONED;
         nearEnabled = false;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -144,7 +143,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     public void testReplicated() throws Exception {
         mode = REPLICATED;
 
-        checkDataLoader();
+        checkDataStreamer();
     }
 
     /**
@@ -154,7 +153,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            checkDataLoader();
+            checkDataStreamer();
 
             assert false;
         }
@@ -168,7 +167,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private void checkDataLoader() throws Exception {
+    private void checkDataStreamer() throws Exception {
         try {
             Ignite g1 = startGrid(1);
 
@@ -177,9 +176,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
             startGrid(3);
 
-            final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
+            final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -208,7 +207,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             l1.await();
 
-            // This will wait until data loader finishes loading.
+            // This will wait until data streamer finishes loading.
             stopGrid(getTestGridName(1), false);
 
             f1.get();
@@ -219,9 +218,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             assertEquals(total, s2 + s3);
 
-            final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
+            final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
-            rmvLdr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -266,7 +265,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     public void testPartitionedIsolated() throws Exception {
         mode = PARTITIONED;
 
-        checkIsolatedDataLoader();
+        checkIsolatedDataStreamer();
     }
 
     /**
@@ -275,13 +274,13 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     public void testReplicatedIsolated() throws Exception {
         mode = REPLICATED;
 
-        checkIsolatedDataLoader();
+        checkIsolatedDataStreamer();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkIsolatedDataLoader() throws Exception {
+    private void checkIsolatedDataStreamer() throws Exception {
         try {
             useCache = true;
 
@@ -299,7 +298,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             final int cnt = 40_000;
             final int threads = 10;
 
-            try (final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null)) {
+            try (final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null)) {
                 final AtomicInteger idxGen = new AtomicInteger();
 
                 IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
@@ -344,7 +343,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test primitive arrays can be passed into data loader.
+     * Test primitive arrays can be passed into data streamer.
      *
      * @throws Exception If failed.
      */
@@ -360,7 +359,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 new byte[] {1}, new boolean[] {true, false}, new char[] {2, 3}, new short[] {3, 4},
                 new int[] {4, 5}, new long[] {5, 6}, new float[] {6, 7}, new double[] {7, 8});
 
-            IgniteDataLoader<Object, Object> dataLdr = g1.dataLoader(null);
+            IgniteDataStreamer<Object, Object> dataLdr = g1.dataStreamer(null);
 
             for (int i = 0, size = arrays.size(); i < 1000; i++) {
                 Object arr = arrays.get(i % size);
@@ -418,9 +417,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             Ignite g1 = grid(1);
 
             // Get and configure loader.
-            final IgniteDataLoader<Integer, Integer> ldr = g1.dataLoader(null);
+            final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(GridDataLoadCacheUpdaters.<Integer, Integer>individual());
+            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.
@@ -520,7 +519,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            IgniteDataLoader<Object, Object> ldr = g1.dataLoader(null);
+            IgniteDataStreamer<Object, Object> ldr = g1.dataStreamer(null);
 
             ldr.close(false);
 
@@ -539,7 +538,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             try {
                 // Create another loader.
-                ldr = g1.dataLoader("UNKNOWN_CACHE");
+                ldr = g1.dataStreamer("UNKNOWN_CACHE");
 
                 assert false;
             }
@@ -554,7 +553,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             ldr.future().get();
 
             // Create another loader.
-            ldr = g1.dataLoader(null);
+            ldr = g1.dataStreamer(null);
 
             // Cancel with future.
             ldr.future().cancel();
@@ -580,7 +579,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             }
 
             // Create another loader.
-            ldr = g1.dataLoader(null);
+            ldr = g1.dataStreamer(null);
 
             // This will close loader.
             stopGrid(getTestGridName(1), false);
@@ -678,7 +677,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteCache<Integer, Integer> c = g.jcache(null);
 
-            final IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            final IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(null);
 
             ldr.perNodeBufferSize(10);
 
@@ -730,7 +729,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Integer> c = g.jcache(null);
 
-            IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(null);
 
             ldr.perNodeBufferSize(10);
 
@@ -777,7 +776,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             assertTrue(c.localSize() == 0);
 
-            IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
+            IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(null);
 
             ldr.perNodeBufferSize(10);
             ldr.autoFlushFrequency(3000);
@@ -822,7 +821,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++)
                 storeMap.put(i, i);
 
-            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+            try (IgniteDataStreamer<Object, Object> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
                 assertFalse(ldr.skipStore());
@@ -840,7 +839,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 1000; i < 2000; i++)
                 assertEquals(i, storeMap.get(i));
 
-            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+            try (IgniteDataStreamer<Object, Object> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
                 ldr.skipStore(true);
@@ -883,10 +882,10 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             startGrid(2);
             startGrid(3);
 
-            try (IgniteDataLoader<String, TestObject> ldr = ignite.dataLoader(null)) {
+            try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
-                ldr.updater(new IgniteDataLoader.Updater<String, TestObject>() {
+                ldr.updater(new IgniteDataStreamer.Updater<String, TestObject>() {
                     @Override public void update(IgniteCache<String, TestObject> cache,
                         Collection<Map.Entry<String, TestObject>> entries) {
                         for (Map.Entry<String, TestObject> e : entries) {

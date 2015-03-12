@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Data loader future.
+ * Data streamer future.
  */
-class GridDataLoaderFuture extends GridFutureAdapter<Object> {
+class DataStreamerFuture extends GridFutureAdapter<Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Data loader. */
     @GridToStringExclude
-    private IgniteDataLoaderImpl dataLdr;
+    private DataStreamerImpl dataLdr;
 
     /**
-     * @param ctx Context.
-     * @param dataLdr Data loader.
+     * @param dataLdr Data streamer.
      */
-    GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
+    DataStreamerFuture(DataStreamerImpl dataLdr) {
         assert dataLdr != null;
 
         this.dataLdr = dataLdr;
@@ -57,6 +55,6 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDataLoaderFuture.class, this, super.toString());
+        return S.toString(DataStreamerFuture.class, this, super.toString());
     }
 }

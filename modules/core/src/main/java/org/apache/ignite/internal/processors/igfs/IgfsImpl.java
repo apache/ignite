@@ -1142,7 +1142,7 @@ public final class IgfsImpl implements IgfsEx {
                             "directory): " + path);
 
                     // Remove old file from the tree.
-                    // Only one file is deleted, so we use internal data loader.
+                    // Only one file is deleted, so we use internal data streamer.
                     deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
