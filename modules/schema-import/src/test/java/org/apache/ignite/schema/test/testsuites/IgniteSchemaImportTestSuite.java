@@ -15,37 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.visor.plugin;
+package org.apache.ignite.schema.test.testsuites;
 
-import ro.fortsoft.pf4j.*;
+import junit.framework.*;
+import org.apache.ignite.schema.test.generator.*;
+import org.apache.ignite.schema.test.parser.*;
 
 /**
- * Base class for Visor plugins.
+ * Ignite Schema Import Utility Tests.
  */
-public abstract class VisorPlugin extends Plugin {
+public class IgniteSchemaImportTestSuite {
     /**
-     * Constructor to be used by plugin manager for plugin instantiation.
-     * Your plugins have to provide constructor with this exact signature to
-     * be successfully loaded by manager.
-     *
-     * @param wrapper A wrapper over plugin instance.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    protected VisorPlugin(PluginWrapper wrapper) {
-        super(wrapper);
-    }
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Apache Schema Import Utility Test Suite");
 
-    /**
-     * @return Plugin name.
-     */
-    public abstract String name();
+        suite.addTestSuite(PojoGeneratorTest.class);
+        suite.addTestSuite(XmlGeneratorTest.class);
+        suite.addTestSuite(DbMetadataParserTest.class);
 
-    /** {@inheritDoc} */
-    @Override public void start() throws PluginException {
-        log.info("Plugin Started: " + name());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws PluginException {
-        log.info("Plugin stopped: " + name());
+        return suite;
     }
 }
