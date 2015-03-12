@@ -115,7 +115,7 @@ object ScalarCachePopularNumbersExample extends App {
      */
     def query(cnt: Int) {
         val results = cache$[Int, Long](CACHE_NAME).get
-            .sqlFields(clause = "select _key, _val from Long order by _val desc limit " + cnt)
+            .sqlFields(clause = "select _key, _val from Long order by _val desc, _key limit " + cnt)
             .getAll
 
         results.foreach(res => println(res.get(0) + "=" + res.get(1)))
