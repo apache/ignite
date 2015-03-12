@@ -26,10 +26,10 @@ import org.apache.ignite.lang.*;
  * Demonstrates a simple usage of distributed atomic sequence.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public final class IgniteAtomicSequenceExample {
     /** Number of retries */
@@ -42,7 +42,7 @@ public final class IgniteAtomicSequenceExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic sequence example started.");
 
