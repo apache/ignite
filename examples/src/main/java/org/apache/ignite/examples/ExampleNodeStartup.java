@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Starts up an empty node with example compute configuration.
  */
-public class ComputeNodeStartup {
+public class ExampleNodeStartup {
     /**
      * Start up an empty node with example compute configuration.
      *
