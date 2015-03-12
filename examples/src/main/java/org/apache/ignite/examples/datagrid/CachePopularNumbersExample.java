@@ -141,7 +141,7 @@ public class CachePopularNumbersExample {
      * Increments value for key.
      */
     private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
-        /** */
+        /** Process entries to increase value by entry key. */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();
