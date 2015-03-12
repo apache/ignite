@@ -51,7 +51,7 @@
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
 
-                <property name="preloadMode" value="SYNC"/>
+                <property name="rebalanceMode" value="SYNC"/>
             </bean>
         </property>
 

@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * GG-4368
@@ -62,7 +62,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         cc.setEvictNearSynchronized(false);

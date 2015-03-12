@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Checks ordered preloading.
@@ -80,8 +80,8 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
 
         cfg.setName(name);
         cfg.setCacheMode(cacheMode);
-        cfg.setPreloadOrder(preloadOrder);
-        cfg.setPreloadMode(ASYNC);
+        cfg.setRebalanceOrder(preloadOrder);
+        cfg.setRebalanceMode(ASYNC);
 
         return cfg;
     }

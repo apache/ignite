@@ -104,6 +104,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
+        assertTrue(ccfg.isCopyOnRead());
+
         assertNotNull(interceptor);
 
         ccfg.setInterceptor(interceptor);

@@ -135,8 +135,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param obj Cache object.
      * @return Field value from object.
      */
-    @Nullable protected abstract Object extractField(String cacheName, String typeName, String fieldName, Object obj)
-        throws CacheException;
+    @Nullable protected abstract Object extractField(@Nullable String cacheName, String typeName, String fieldName,
+        Object obj) throws CacheException;
 
     /**
      * Construct object from query result.
@@ -149,8 +149,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String cacheName, String typeName, Collection<CacheTypeFieldMetadata> fields,
-        Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException;
+    protected abstract <R> R buildObject(@Nullable String cacheName, String typeName,
+        Collection<CacheTypeFieldMetadata> fields, Map<String, Integer> loadColIdxs, ResultSet rs)
+        throws CacheLoaderException;
 
     /**
      * Extract key type id from key object.
@@ -477,13 +478,21 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
-                .getTypeMetadata();
+            CacheConfiguration ccfg = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            Collection<CacheTypeMetadata> types = ccfg.getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
 
-            for (CacheTypeMetadata type : types)
+            for (CacheTypeMetadata type : types) {
+                Object keyTypeId = keyTypeId(type.getKeyType());
+
+                if (entryMappings.containsKey(keyTypeId))
+                    throw new CacheException("Key type must be unique in type metadata [cache name=" + cacheName +
+                        ", key type=" + type.getKeyType() + "]");
+
                 entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(cacheName, dialect, type));
+            }
 
             Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
 
@@ -1312,20 +1321,22 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
          */
-        public EntryMapping(String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
+        public EntryMapping(@Nullable String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
             this.cacheName = cacheName;
 
             this.dialect = dialect;
 
             this.typeMeta = typeMeta;
 
-            final Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
+            Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
 
             Collection<CacheTypeFieldMetadata> valFields = typeMeta.getValueFields();
 
+            keyCols = databaseColumns(keyFields);
+
             uniqValFields = F.view(valFields, new IgnitePredicate<CacheTypeFieldMetadata>() {
                 @Override public boolean apply(CacheTypeFieldMetadata col) {
-                    return !keyFields.contains(col);
+                    return !keyCols.contains(col.getDatabaseName());
                 }
             });
 
@@ -1334,8 +1345,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             String tblName = typeMeta.getDatabaseTable();
 
             fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
-
-            keyCols = databaseColumns(keyFields);
 
             Collection<String> uniqValCols = databaseColumns(uniqValFields);
 

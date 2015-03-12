@@ -735,9 +735,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         try {
             // We are holding transaction-level locks for entries here, so we can get next write version.
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
-
             onEntriesLocked();
+
+            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             {
                 Map<UUID, GridDistributedTxMapping> futDhtMap = new HashMap<>();
@@ -928,7 +928,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
-                        catch (ClusterTopologyException e) {
+                        catch (ClusterTopologyCheckedException e) {
                             fut.onResult(e);
                         }
                         catch (IgniteCheckedException e) {
@@ -1214,7 +1214,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 long topVer = tx.topologyVersion();
 
-                boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+                boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
                 for (GridCacheEntryInfo info : res.preloadEntries()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(info.cacheId());
@@ -1229,7 +1229,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                 info.ttl(), info.expireTime(), true, topVer, drType)) {
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null);
                             }
 

@@ -58,18 +58,16 @@ public class CacheStoreLoadDataExample {
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            ignite.compute(ignite.cluster().forCacheNodes(null)).broadcast(new IgniteCallable<Object>() {
-                @Override public Object call() throws Exception {
+            ignite.compute(ignite.cluster().forCacheNodes(null)).broadcast(new IgniteRunnable() {
+                @Override public void run() {
                     // Load cache from persistent store.
-                    cache.loadCache(null, 0, ENTRY_COUNT);
-
-                    return null;
+                    cache.loadCache(null, ENTRY_COUNT);
                 }
             });
 
             long end = System.currentTimeMillis();
 
-            System.out.println(">>> Loaded " + ENTRY_COUNT + " keys with backups in " + (end - start) + "ms.");
+            System.out.println(">>> Loaded " + cache.size() +" keys with backups in " + (end - start) + "ms.");
         }
     }
 }

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -200,7 +200,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridDataLoaderProcessor dataLdrProc;
+    private DataStreamProcessor dataLdrProc;
 
     /** */
     @GridToStringInclude
@@ -457,8 +457,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             affProc = (GridAffinityProcessor)comp;
         else if (comp instanceof GridRestProcessor)
             restProc = (GridRestProcessor)comp;
-        else if (comp instanceof GridDataLoaderProcessor)
-            dataLdrProc = (GridDataLoaderProcessor)comp;
+        else if (comp instanceof DataStreamProcessor)
+            dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
@@ -671,8 +671,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
-        return (GridDataLoaderProcessor<K, V>)dataLdrProc;
+    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+        return (DataStreamProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */

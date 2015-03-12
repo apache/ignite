@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.h2.constant.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -30,6 +32,20 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30 * 1000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "true");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
     }
 
     /**

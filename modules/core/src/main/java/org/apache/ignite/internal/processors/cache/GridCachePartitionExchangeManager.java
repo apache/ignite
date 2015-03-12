@@ -824,11 +824,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (cacheCtx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (cacheCtx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
                                         DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                                        cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
+                                        cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_REBALANCE_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                                     }
                                 }
@@ -851,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                            long delay = cacheCtx.config().getPreloadPartitionedDelay();
+                            long delay = cacheCtx.config().getRebalanceDelay();
 
                             GridDhtPreloaderAssignments<K, V> assigns = null;
 

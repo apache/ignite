@@ -19,7 +19,7 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.*;
+import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -31,7 +31,7 @@ import java.util.*;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC
- * transaction with cache transactions and maps {@link UUID} to {@link Person}.
+ * transaction with cache transactions and maps {@link Long} to {@link Person}.
  *
  */
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
