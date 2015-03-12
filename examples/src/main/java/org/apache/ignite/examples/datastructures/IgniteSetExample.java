@@ -59,11 +59,11 @@ public class IgniteSetExample {
             cfg.setName(CACHE_NAME);
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            NearCacheConfiguration<Integer, String> nearCache = new NearCacheConfiguration<>();
+            NearCacheConfiguration<Integer, String> nearCacheCfg = new NearCacheConfiguration<>();
 
-            nearCache.setNearEnabled(true);
+            nearCacheCfg.setNearEnabled(true);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCache)) {
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCacheCfg)) {
                 // Make set name.
                 String setName = UUID.randomUUID().toString();
 

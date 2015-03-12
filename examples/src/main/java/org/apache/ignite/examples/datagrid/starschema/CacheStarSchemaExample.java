@@ -20,8 +20,8 @@ package org.apache.ignite.examples.datagrid.starschema;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.datagrid.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -46,17 +46,17 @@ import static org.apache.ignite.cache.query.Query.*;
  * in various ways.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class CacheStarSchemaExample {
     /** Partitioned cache name. */
-    private static final String PARTITIONED_CACHE_NAME = "partitioned";
+    private static final String PARTITIONED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Partitioned";
 
     /** Replicated cache name. */
-    private static final String REPLICATED_CACHE_NAME = "replicated";
+    private static final String REPLICATED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Replicated";
 
     /** ID generator. */
     private static int idGen = (int)System.currentTimeMillis();
@@ -73,42 +73,50 @@ public class CacheStarSchemaExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        Ignite ignite = Ignition.start("examples/config/example-cache.xml");
+        Ignite ignite = Ignition.start("examples/config/example-compute.xml");
 
         System.out.println();
         System.out.println(">>> Cache star schema example started.");
 
-        // Clean up caches on all nodes before run.
-        ignite.jcache(PARTITIONED_CACHE_NAME).clear();
-        ignite.jcache(REPLICATED_CACHE_NAME).clear();
+        CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>();
 
-        try {
-            populateDimensions();
-            populateFacts();
+        factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        factCacheCfg.setName(PARTITIONED_CACHE_NAME);
 
-            queryStorePurchases();
-            queryProductPurchases();
-        }
-        finally {
-            Ignition.stop(false);
+        CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
+
+        dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        dimCacheCfg.setName(REPLICATED_CACHE_NAME);
+
+        try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
+            IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
+            try {
+                populateDimensions(dimCache);
+                populateFacts(factCache);
+
+                queryStorePurchases(factCache);
+                queryProductPurchases(factCache);
+            }
+            finally {
+                Ignition.stop(false);
+            }
         }
     }
 
     /**
      * Populate cache with {@code 'dimensions'} which in our case are
      * {@link DimStore} and {@link DimProduct} instances.
+     * @param dimCache Cache to populate.
      *
      * @throws IgniteException If failed.
      */
-    private static void populateDimensions() throws IgniteException {
-        IgniteCache<Integer, Object> cache = Ignition.ignite().jcache(REPLICATED_CACHE_NAME);
-
+    private static void populateDimensions(IgniteCache<Integer, Object> dimCache) throws IgniteException {
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
 
         // Populate stores.
-        cache.put(store1.getId(), store1);
-        cache.put(store2.getId(), store2);
+        dimCache.put(store1.getId(), store1);
+        dimCache.put(store2.getId(), store2);
 
         dataStore.put(store1.getId(), store1);
         dataStore.put(store2.getId(), store2);
@@ -119,7 +127,7 @@ public class CacheStarSchemaExample {
 
             DimProduct product = new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10);
 
-            cache.put(id, product);
+            dimCache.put(id, product);
 
             dataProduct.put(id, product);
         }
@@ -127,12 +135,11 @@ public class CacheStarSchemaExample {
 
     /**
      * Populate cache with {@code 'facts'}, which in our case are {@link FactPurchase} objects.
+     * @param factCache Cache to populate.
      *
      * @throws IgniteException If failed.
      */
-    private static void populateFacts() throws IgniteException {
-        IgniteCache<Integer, Object> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
-
+    private static void populateFacts(IgniteCache<Integer, FactPurchase> factCache) throws IgniteException {
         for (int i = 0; i < 100; i++) {
             int id = idGen++;
 
@@ -148,9 +155,7 @@ public class CacheStarSchemaExample {
      * between {@link DimStore} objects stored in {@code 'replicated'} cache and
      * {@link FactPurchase} objects stored in {@code 'partitioned'} cache.
      */
-    private static void queryStorePurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
-
+    private static void queryStorePurchases(IgniteCache<Integer, FactPurchase> factCache) {
         // All purchases for store1.
         // ========================
 
@@ -171,9 +176,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryProductPurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
-
+    private static void queryProductPurchases(IgniteCache<Integer, FactPurchase> factCache) {
         // All purchases for certain product made at store2.
         // =================================================
 
