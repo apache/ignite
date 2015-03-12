@@ -875,8 +875,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally(Set<K> keys) {
-        cache.clearLocally(keys);
+    @Override public void clearLocallyAll(Set<K> keys) {
+        cache.clearLocallyAll(keys);
     }
 
     /** {@inheritDoc} */
@@ -890,8 +890,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(Set<K> keys) throws IgniteCheckedException {
-        cache.clear(keys);
+    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
+        cache.clearAll(keys);
     }
 
     /** {@inheritDoc} */

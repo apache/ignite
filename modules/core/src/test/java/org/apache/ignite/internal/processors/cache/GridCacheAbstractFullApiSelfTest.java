@@ -4098,92 +4098,121 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testLocalClearKey() throws Exception {
-        testLocalClearKey(false, Arrays.asList("key25"));
-    }
+        addKeys();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalClearKeyAsync() throws Exception {
-        testLocalClearKey(true, Arrays.asList("key25"));
+        String keyToRemove = "key" + 25;
+
+        Ignite g = primaryIgnite(keyToRemove);
+
+        g.<String, Integer>jcache(null).localClear(keyToRemove);
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+
+            if (keyToRemove.equals(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLocalClearKeys() throws Exception {
-        testLocalClearKey(false, Arrays.asList("key25", "key100", "key150"));
-    }
+        Map<String, List<String>> keys = addKeys();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalClearKeysAsync() throws Exception {
-        testLocalClearKey(true, Arrays.asList("key25", "key100", "key150"));
+        Ignite g = grid(0);
+
+        Set<String> keysToRemove = new HashSet<>();
+
+        for (int i = 0; i < gridCount(); ++i) {
+            List<String> gridKeys = keys.get(grid(i).name());
+
+            if (gridKeys.size() > 2) {
+                keysToRemove.add(gridKeys.get(0));
+
+                keysToRemove.add(gridKeys.get(1));
+
+                g = grid(i);
+
+                break;
+            }
+        }
+
+        g.<String, Integer>jcache(null).localClearAll(keysToRemove);
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+
+            if (keysToRemove.contains(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLocalClear() throws Exception {
-        testLocalClearKey(false, null);
-    }
+        Map<String, List<String>> keys = addKeys();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalClearAsync() throws Exception {
-        testLocalClearKey(true, null);
-    }
+        Set<String> keysToRemove = new HashSet<>();
 
-    /**
-     * @param async If {@code true} uses async method.
-     * @throws Exception If failed.
-     */
-    protected void testLocalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
-        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
-        // because some of them were blocked due to having readers.
-        for (int i = 0; i < 500; ++i) {
-            Ignite g = primaryIgnite("key" + i);
+        Ignite g = grid(0);
 
-            g.jcache(null).put("key" + i, "value" + i);
+        for (int i = 0; i < gridCount(); ++i) {
+            List<String> gridKeys = keys.get(grid(i).name());
+
+            if (gridKeys.size() > 0) {
+                keysToRemove.addAll(gridKeys);
+
+                g = grid(i);
+
+                break;
+            }
         }
 
-        if (async) {
-            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
-
-            if (keysToRemove == null)
-                asyncCache.localClear();
-            else if (keysToRemove.size() == 1)
-                asyncCache.localClear(F.first(keysToRemove));
-            else
-                asyncCache.localClearAll(new HashSet(keysToRemove));
-
-            asyncCache.future().get();
-        }
-        else {
-            if (keysToRemove == null)
-                jcache().localClear();
-            else if (keysToRemove.size() == 1)
-                jcache().localClear(F.first(keysToRemove));
-            else
-                jcache().localClearAll(new HashSet(keysToRemove));
-        }
+        g.jcache(null).localClear();
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
-            boolean found = false;
+            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
 
-            for (int j = 0; j < gridCount(); j++)
-                if (jcache(j).localPeek(key) != null)
-                    found = true;
-
-            if (keysToRemove == null || keysToRemove.contains(key))
+            if (keysToRemove.contains(key))
                 assertFalse("Found removed key " + key, found);
             else
                 assertTrue("Not found key " + key, found);
         }
+
+        assertEquals(0, g.jcache(null).localSize());
+    }
+
+    private Map<String, List<String>> addKeys() {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
+        // because some of them were blocked due to having readers.
+        Map<String, List<String>> keys = new HashMap<>();
+
+        for (int i = 0; i < gridCount(); ++i)
+            keys.put(grid(i).name(), new ArrayList<String>());
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            Ignite g = primaryIgnite(key);
+
+            g.jcache(null).put(key, "value" + i);
+
+            keys.get(g.name()).add(key);
+        }
+
+        return keys;
     }
 
     /**
@@ -4247,8 +4276,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             boolean found = false;
 
             for (int j = 0; j < gridCount(); j++)
-                if (jcache(j).localPeek(key) != null)
+                if (jcache(j).localPeek(key) != null) {
                     found = true;
+
+                    info("Found key " + key + " on node " + j);
+                }
 
             if (!keysToRemove.contains(key))
                 assertTrue("Not found key " + key, found);

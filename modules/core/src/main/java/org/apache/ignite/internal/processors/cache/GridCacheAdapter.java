@@ -1339,7 +1339,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally(Set<K> keys) {
+    @Override public void clearLocallyAll(Set<K> keys) {
         clearLocally0(keys);
     }
 
@@ -1444,11 +1444,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(Set<K> keys) throws IgniteCheckedException {
+    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
         // Clear local cache synchronously.
-        clearLocally(keys);
+        clearLocallyAll(keys);
 
-        clearRemotes(0, new GlobalClearKeySetCallable<K>(name(), keys));
+        clearRemotes(0, new GlobalClearKeySetCallable(name(), keys));
     }
 
     /** {@inheritDoc} */
@@ -1458,7 +1458,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
-        return clearAsync(new GlobalClearKeySetCallable<K>(name(), keys));
+        return clearAsync(new GlobalClearKeySetCallable(name(), keys));
     }
 
     /** {@inheritDoc} */
@@ -5624,7 +5624,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * Global clear keys.
      */
     @GridInternal
-    private static class GlobalClearKeySetCallable<K> extends GlobalClearCallable {
+    private static class GlobalClearKeySetCallable<K, V> extends GlobalClearCallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -5650,7 +5650,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ((IgniteEx)ignite).cachex(cacheName).clearLocally(keys);
+            ((IgniteEx)ignite).<K, V>cachex(cacheName).clearLocallyAll(keys);
 
             return null;
         }

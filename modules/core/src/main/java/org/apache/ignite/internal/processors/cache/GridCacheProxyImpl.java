@@ -1312,11 +1312,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally(Set<K> keys) {
+    @Override public void clearLocallyAll(Set<K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clearLocally(keys);
+            delegate.clearLocallyAll(keys);
         }
         finally {
             gate.leave(prev);
@@ -1336,11 +1336,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(Set<K> keys) throws IgniteCheckedException {
+    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clear(keys);
+            delegate.clearAll(keys);
         }
         finally {
             gate.leave(prev);
