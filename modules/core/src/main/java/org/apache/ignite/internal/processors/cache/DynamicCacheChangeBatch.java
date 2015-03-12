@@ -24,6 +24,9 @@ import java.util.*;
  * Cache change batch.
  */
 public class DynamicCacheChangeBatch implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 

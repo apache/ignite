@@ -29,6 +29,9 @@ import java.util.*;
  * Cache start/stop request.
  */
 public class DynamicCacheChangeRequest implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
