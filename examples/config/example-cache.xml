@@ -140,8 +140,8 @@
         <!-- Initial cache size. -->
         <property name="startSize" value="3000000"/>
 
-        <!-- Set synchronous preloading (default is asynchronous). -->
-        <property name="preloadMode" value="SYNC"/>
+        <!-- Set synchronous rebalancing (default is asynchronous). -->
+        <property name="rebalanceMode" value="SYNC"/>
 
         <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>

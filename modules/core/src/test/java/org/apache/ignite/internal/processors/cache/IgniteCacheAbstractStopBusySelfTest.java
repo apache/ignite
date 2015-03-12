@@ -100,7 +100,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         if (gridName.endsWith(String.valueOf(CLN_GRD)))
             cacheCfg.setDistributionMode(CacheDistributionMode.CLIENT_ONLY);
 
-        cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
+        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 

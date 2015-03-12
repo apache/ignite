@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
@@ -50,7 +50,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         return cc;
     }

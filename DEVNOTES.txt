@@ -1,7 +1,16 @@
 Maven Build Instructions
 ========================
-TODO:
+To build Ignite project (without running tests) use:
+
+mvn clean package -DskipTests
+
+and look for ignite-fabric-<version>.zip at ./target directory.
+
 
 Apache RAT Instructions
 =======================
-TODO:
+To check license headers use:
+
+mvn clean validate -Pcheck-licenses
+
+for more information (exclude list and etc.) see "check-licenses" profile (at root pom.xml).

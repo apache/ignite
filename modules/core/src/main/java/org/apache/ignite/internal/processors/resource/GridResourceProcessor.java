@@ -141,19 +141,19 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     public void invokeAnnotated(GridDeployment dep, Object target, Class<? extends Annotation> annCls)
         throws IgniteCheckedException {
         if (target != null) {
-            Collection<Method> mtds = getMethodsWithAnnotation(dep, target.getClass(), annCls);
+            GridResourceMethod[] rsrcMtds = ioc.getMethodsWithAnnotation(dep, target.getClass(), annCls);
 
-            if (mtds != null) {
-                for (Method mtd : mtds) {
-                    try {
-                        mtd.setAccessible(true);
+            for (GridResourceMethod rsrcMtd : rsrcMtds) {
+                Method mtd = rsrcMtd.getMethod();
 
-                        mtd.invoke(target);
-                    }
-                    catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
-                        throw new IgniteCheckedException("Failed to invoke annotated method [job=" + target + ", mtd=" + mtd +
-                            ", ann=" + annCls + ']', e);
-                    }
+                try {
+                    mtd.setAccessible(true);
+
+                    mtd.invoke(target);
+                }
+                catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
+                    throw new IgniteCheckedException("Failed to invoke annotated method [job=" + target + ", mtd=" + mtd +
+                        ", ann=" + annCls + ']', e);
                 }
             }
         }
@@ -567,35 +567,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         // Basic injection don't cache anything. Use null as a key.
         ioc.inject(target, annCls, new GridResourceBasicInjector<>(rsrc), null, null);
-    }
-
-    /**
-     * Gets list of methods in specified class annotated with specified annotation.
-     *
-     * @param dep Class deployment.
-     * @param rsrcCls Class to find methods in.
-     * @param annCls Annotation to find annotated methods with.
-     * @return List of annotated methods.
-     */
-    @Nullable public Collection<Method> getMethodsWithAnnotation(GridDeployment dep, Class<?> rsrcCls,
-        Class<? extends Annotation> annCls) {
-        assert dep != null;
-        assert rsrcCls != null;
-        assert annCls != null;
-
-        List<GridResourceMethod> mtds = ioc.getMethodsWithAnnotation(dep, rsrcCls, annCls);
-
-        assert mtds != null;
-
-        if (!mtds.isEmpty()) {
-            return F.viewReadOnly(mtds, new C1<GridResourceMethod, Method>() {
-                @Override public Method apply(GridResourceMethod rsrcMtd) {
-                    return rsrcMtd.getMethod();
-                }
-            });
-        }
-
-        return null;
     }
 
     /**

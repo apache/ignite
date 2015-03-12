@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -75,7 +75,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(getCacheMode());
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
@@ -104,7 +104,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         Ignite g2 = startGrid("g2");
 
-        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, U.toIntList(new int[]{1, 2, 3}));
     }
@@ -119,7 +119,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         for (Event evt : evts) {
             CacheEvent cacheEvt = (CacheEvent)evt;
-            assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
+            assertEquals(EVT_CACHE_REBALANCE_OBJECT_LOADED, cacheEvt.type());
             assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());

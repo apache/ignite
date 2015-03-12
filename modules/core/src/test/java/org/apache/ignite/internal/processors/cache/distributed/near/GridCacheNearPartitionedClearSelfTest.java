@@ -33,7 +33,7 @@ import javax.cache.configuration.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -84,7 +84,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setDistributionMode(NEAR_PARTITIONED);
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(BACKUP_CNT);
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));

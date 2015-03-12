@@ -534,7 +534,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
         boolean swap = cctx.isSwapOrOffheapEnabled();
 
-        boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+        boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
         for (Iterator<GridDhtCacheEntry> it = map.values().iterator(); it.hasNext();) {
             GridDhtCacheEntry cached = it.next();
@@ -548,7 +548,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                         if (rec)
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), (IgniteUuid)null,
-                                null, EVT_CACHE_PRELOAD_OBJECT_UNLOADED, null, false, cached.rawGet(),
+                                null, EVT_CACHE_REBALANCE_OBJECT_UNLOADED, null, false, cached.rawGet(),
                                 cached.hasValue(), null, null, null);
                     }
                 }

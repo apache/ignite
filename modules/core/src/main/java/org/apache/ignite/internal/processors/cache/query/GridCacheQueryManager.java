@@ -745,8 +745,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         injectResources(keyValFilter);
 
-        final CachePeekMode[] peekModes = {CachePeekMode.ONHEAP};
-
         final GridDhtCacheAdapter dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
 
         final ExpiryPolicy plc = cctx.expiry();
@@ -789,7 +787,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     V val;
 
                     try {
-                        val = prj.localPeek(key, peekModes, expiryPlc);
+                        val = prj.localPeek(key, CachePeekModes.ONHEAP_ONLY, expiryPlc);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())

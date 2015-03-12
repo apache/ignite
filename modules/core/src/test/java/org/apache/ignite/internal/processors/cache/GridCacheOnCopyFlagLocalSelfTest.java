@@ -25,8 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-public class GridCacheOnCopyFlagLocalSelfTest extends
-    GridCacheOnCopyFlagAbstractSelfTest {
+public class GridCacheOnCopyFlagLocalSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
