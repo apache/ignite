@@ -21,11 +21,37 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 /**
- * Default conflict resolver.
+ * Cache version conflict resolver.
  */
-public class GridCacheVersionConflictResolver extends GridCacheVersionAbstractConflictResolver {
-    /** {@inheritDoc} */
-    @Override protected <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
+public class CacheVersionConflictResolver {
+    /**
+     * Resolve the conflict.
+     *
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @param atomicVerComparator Whether to use atomic version comparator.
+     * @return Conflict resolution context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <K, V> GridCacheVersionConflictContext<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
+        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
+
+        resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
+
+        return ctx;
+    }
+
+    /**
+     * Internal conflict resolution routine.
+     *
+     * @param ctx Context.
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @param atomicVerComparator Whether to use atomic version comparator.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator) throws IgniteCheckedException {
         if (newEntry.dataCenterId() != oldEntry.dataCenterId())

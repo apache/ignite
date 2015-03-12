@@ -22,11 +22,11 @@ import org.apache.ignite.internal.processors.cache.version.*;
 /**
  * Stub conflict resolver manager.
  */
-public class CacheStubConflictResolverManager<K ,V> extends CacheConflictResolverManager<K ,V> {
+public class CacheStubConflictManager<K ,V> extends CacheConflictManager<K ,V> {
     /**
      * @return Cache conflict resolver.
      */
-    @Override public GridCacheVersionAbstractConflictResolver conflictResolver() {
+    @Override public CacheVersionConflictResolver conflictResolver() {
         return null;
     }
 }

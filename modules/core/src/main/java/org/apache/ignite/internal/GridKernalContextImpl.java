@@ -800,8 +800,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             return (T)new GridOsCacheDrManager();
         else if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
-        else if (cls.equals(CacheConflictResolverManager.class))
-            return (T)new CacheStubConflictResolverManager<>();
+        else if (cls.equals(CacheConflictManager.class))
+            return (T)new CacheStubConflictManager<>();
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

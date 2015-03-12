@@ -135,7 +135,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheJtaManagerAdapter jtaMgr;
 
     /** Conflict resolver manager. */
-    private CacheConflictResolverManager rslvrMgr;
+    private CacheConflictManager rslvrMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -189,7 +189,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
     /** Conflict resolver. */
-    private GridCacheVersionAbstractConflictResolver conflictRslvr;
+    private CacheVersionConflictResolver conflictRslvr;
 
     /** */
     private CacheObjectContext cacheObjCtx;
@@ -239,7 +239,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictResolverManager<K, V> rslvrMgr) {
+        CacheConflictManager<K, V> rslvrMgr) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;

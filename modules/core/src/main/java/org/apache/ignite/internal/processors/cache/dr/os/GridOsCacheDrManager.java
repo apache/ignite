@@ -64,11 +64,6 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersionAbstractConflictResolver conflictResolver() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void replicate(KeyCacheObject key,
         @Nullable CacheObject val,
         long ttl,
