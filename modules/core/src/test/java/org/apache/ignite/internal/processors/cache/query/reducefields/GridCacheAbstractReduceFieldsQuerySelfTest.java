@@ -41,7 +41,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -88,7 +88,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setAtomicityMode(atomicityMode());
         cache.setDistributionMode(distributionMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);

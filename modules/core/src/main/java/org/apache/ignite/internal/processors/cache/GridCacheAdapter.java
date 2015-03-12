@@ -4121,9 +4121,34 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
+     *
+     */
+    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy() {
+        return F.iterator(iterator(),
+            new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
+                private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(ctx.expiry());
+
+                @Override public Cache.Entry<K, V> apply(Cache.Entry<K, V> lazyEntry) {
+                    try {
+                        V val = localPeek(lazyEntry.getKey(), CachePeekModes.ONHEAP_ONLY, expiryPlc);
+
+                        return new CacheEntryImpl<>(lazyEntry.getKey(), val);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw CU.convertToCacheException(e);
+                    }
+                }
+            }, false
+        );
+    }
+
+    /**
      * @return Distributed ignite cache iterator.
      */
     public Iterator<Cache.Entry<K, V>> igniteIterator() {
+        if (!ctx.isSwapOrOffheapEnabled() && ctx.kernalContext().discovery().size() == 1)
+            return localIteratorHonorExpirePolicy();
+
         CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
             .keepAll(false)
             .execute();

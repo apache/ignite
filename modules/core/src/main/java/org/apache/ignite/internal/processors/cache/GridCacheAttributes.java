@@ -67,14 +67,14 @@ public class GridCacheAttributes implements Externalizable {
     /** Default lock timeout. */
     private long dfltLockTimeout;
 
-    /** Cache preload mode. */
-    private CachePreloadMode preloadMode;
+    /** Cache rebalance mode. */
+    private CacheRebalanceMode rebalanceMode;
 
     /** Partitioned cache mode. */
     private CacheDistributionMode partDistro;
 
-    /** Preload batch size. */
-    private int preloadBatchSize;
+    /** Rebalance batch size. */
+    private int rebalanceBatchSize;
 
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
@@ -161,8 +161,8 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
-        preloadBatchSize = cfg.getPreloadBatchSize();
-        preloadMode = cfg.getPreloadMode();
+        rebalanceBatchSize = cfg.getRebalanceBatchSize();
+        rebalanceMode = cfg.getRebalanceMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
         swapEnabled = cfg.isSwapEnabled();
@@ -249,10 +249,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Preload mode.
+     * @return Rebalance mode.
      */
-    public CachePreloadMode cachePreloadMode() {
-        return preloadMode;
+    public CacheRebalanceMode cacheRebalanceMode() {
+        return rebalanceMode;
     }
 
     /**
@@ -390,10 +390,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Preload batch size.
+     * @return Rebalance batch size.
      */
-    public int preloadBatchSize() {
-        return preloadBatchSize;
+    public int rebalanceBatchSize() {
+        return rebalanceBatchSize;
     }
 
     /**
@@ -486,8 +486,8 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum(out, partDistro);
-        out.writeInt(preloadBatchSize);
-        U.writeEnum(out, preloadMode);
+        out.writeInt(rebalanceBatchSize);
+        U.writeEnum(out, rebalanceMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
         out.writeBoolean(swapEnabled);
@@ -527,8 +527,8 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
-        preloadBatchSize = in.readInt();
-        preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
+        rebalanceBatchSize = in.readInt();
+        rebalanceMode = CacheRebalanceMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
         swapEnabled = in.readBoolean();

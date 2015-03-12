@@ -15,36 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.jdk8.backport.*;
-
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Concurrent map factory.
+ *
  */
-public class GridConcurrentFactory {
-    /** Default concurrency level. */
-    private static final int CONCURRENCY_LEVEL = IgniteSystemProperties.getInteger(IGNITE_MAP_CONCURRENCY_LEVEL, 256);
-
-    /**
-     * Ensure singleton.
-     */
-    private GridConcurrentFactory() {
-        // No-op.
-    }
-
-    /**
-     * Creates concurrent map with default concurrency level.
-     *
-     * @return New concurrent map.
-     */
-    public static <K, V> ConcurrentMap<K, V> newMap() {
-        return new ConcurrentHashMap8<>(16 * CONCURRENCY_LEVEL, 0.75f, CONCURRENCY_LEVEL);
-    }
-
+public class CachePeekModes {
+    /** */
+    public static final CachePeekMode[] ONHEAP_ONLY = {CachePeekMode.ONHEAP};
 }

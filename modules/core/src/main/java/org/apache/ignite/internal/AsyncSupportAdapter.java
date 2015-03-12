@@ -69,6 +69,18 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <R> IgniteFuture<R> future() {
+        return future(true);
+    }
+
+    /**
+     * Gets and optionally resets future for previous asynchronous operation.
+     *
+     * @param reset Specifies whether to reset future.
+     *
+     * @return Future for previous asynchronous operation.
+     */
+    @SuppressWarnings("unchecked")
+    public <R> IgniteFuture<R> future(boolean reset) {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
@@ -77,7 +89,8 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
 
-        curFut.set(null);
+        if (reset)
+            curFut.set(null);
 
         return (IgniteFuture<R>)fut;
     }

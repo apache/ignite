@@ -28,7 +28,7 @@ import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -53,7 +53,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setBackups(1);
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
         ccfg.setDistributionMode(distributionMode());
 
         cfg.setCacheConfiguration(ccfg);

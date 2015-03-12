@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
@@ -46,13 +46,13 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -83,9 +83,9 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setPreloadBatchSize(preloadBatchSize);
+        cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
+        cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);

@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
@@ -60,13 +60,13 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -109,9 +109,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadBatchSize(preloadBatchSize);
+        cacheCfg.setRebalanceBatchSize(preloadBatchSize);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(preloadMode);
+        cacheCfg.setRebalanceMode(preloadMode);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
 
@@ -145,7 +145,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if synchronous preloading.
      */
     private boolean isSync(GridCache<?, ?> c) {
-        return c.configuration().getPreloadMode() == SYNC;
+        return c.configuration().getRebalanceMode() == SYNC;
     }
 
     /**
@@ -269,14 +269,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 futs.add(waitForLocalEvent(last.events(), new P1<Event>() {
                     @Override public boolean apply(Event e) {
-                        CachePreloadingEvent evt = (CachePreloadingEvent)e;
+                        CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
 
                         ClusterNode node = evt.discoveryNode();
 
-                        return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
+                        return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
                             evt.discoveryEventType() == EVT_NODE_LEFT;
                     }
-                }, EVT_CACHE_PRELOAD_STOPPED));
+                }, EVT_CACHE_REBALANCE_STOPPED));
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
@@ -452,7 +452,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                         return true;
                     }
-                }, EVTS_CACHE_PRELOAD);
+                }, EVTS_CACHE_REBALANCE);
 
             list.add(g);
         }
@@ -536,14 +536,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<Event>() {
                             @Override public boolean apply(Event e) {
-                                CachePreloadingEvent evt = (CachePreloadingEvent)e;
+                                CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
 
                                 ClusterNode node = evt.discoveryNode();
 
-                                return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
+                                return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
                                     evt.discoveryEventType() == EVT_NODE_LEFT;
                             }
-                        }, EVT_CACHE_PRELOAD_STOPPED));
+                        }, EVT_CACHE_REBALANCE_STOPPED));
 
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
@@ -618,7 +618,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
         ClusterNode loc = ignite.cluster().localNode();
 
-        boolean sync = cache.getConfiguration(CacheConfiguration.class).getPreloadMode() == SYNC;
+        boolean sync = cache.getConfiguration(CacheConfiguration.class).getRebalanceMode() == SYNC;
 
         for (int i = 0; i < cnt; i++) {
             Collection<ClusterNode> nodes = ignite.cluster().nodes();

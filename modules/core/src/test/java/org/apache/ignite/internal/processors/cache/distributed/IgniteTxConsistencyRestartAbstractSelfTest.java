@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -75,7 +75,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         ccfg.setCacheMode(cacheMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setDistributionMode(partitionDistributionMode());
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
 
         if (cacheMode() == CacheMode.PARTITIONED)
             ccfg.setBackups(1);
