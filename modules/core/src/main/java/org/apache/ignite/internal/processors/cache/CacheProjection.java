@@ -1265,9 +1265,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to clearLocally.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}

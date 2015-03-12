@@ -4194,6 +4194,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, g.jcache(null).localSize());
     }
 
+    /**
+     * Add 500 keys to cache only on primaries nodes.
+     *
+     * @return Map grid's name to its primary keys.
+     */
     private Map<String, List<String>> addKeys() {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
@@ -4245,6 +4250,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @param async If {@code true} uses async method.
+     * @param keysToRemove Keys to remove.
      * @throws Exception If failed.
      */
     protected void testGlobalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
