@@ -92,7 +92,8 @@ For more details please refer to IgniteFS documentation.
 To run Apache Hadoop jobs with Ignite cluster you need to configure `core-site.xml` and `mapred-site.xml` at 
 `$HADOOP_HOME/etc/hadoop` directory the same way as it is done in templates shipped with the Accelerator. 
 The setup tool `bin/setup-hadoop.{sh|bat}` will ask you to replace those files with Ignite templates or 
-you can find these templates at `docs/core-site.ignite.xml` and `docs/mapred-site.ignite.xml` respectively and perform the needed configuration manually.
+you can find these templates at `config/hadoop/core-site.ignite.xml` and `config/hadoop/mapred-site.ignite.xml`
+respectively and perform the needed configuration manually.
 
 Apache Hadoop client will need to have Ignite jar files in classpath, the setup tool will care of that as well.
 

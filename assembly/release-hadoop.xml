@@ -35,20 +35,20 @@
 
     <files>
         <file>
-            <source>docs/hadoop_readme.pdf</source>
-            <outputDirectory>/docs</outputDirectory>
+            <source>modules/hadoop/docs/hadoop_readme.pdf</source>
+            <outputDirectory>.</outputDirectory>
         </file>
         <file>
-            <source>docs/core-site.ignite.xml</source>
-            <outputDirectory>/docs</outputDirectory>
+            <source>modules/hadoop/config/core-site.ignite.xml</source>
+            <outputDirectory>/config/hadoop</outputDirectory>
         </file>
         <file>
-            <source>docs/mapred-site.ignite.xml</source>
-            <outputDirectory>/docs</outputDirectory>
+            <source>modules/hadoop/config/mapred-site.ignite.xml</source>
+            <outputDirectory>/config/hadoop</outputDirectory>
         </file>
         <file>
-            <source>docs/hive-site.ignite.xml</source>
-            <outputDirectory>/docs</outputDirectory>
+            <source>modules/hadoop/config/hive-site.ignite.xml</source>
+            <outputDirectory>/config/hadoop</outputDirectory>
         </file>
     </files>
 
