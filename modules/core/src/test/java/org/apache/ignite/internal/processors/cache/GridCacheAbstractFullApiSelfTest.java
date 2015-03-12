@@ -4093,4 +4093,167 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(100);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKey() throws Exception {
+        testLocalClearKey(false, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKeyAsync() throws Exception {
+        testLocalClearKey(true, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKeys() throws Exception {
+        testLocalClearKey(false, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKeysAsync() throws Exception {
+        testLocalClearKey(true, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClear() throws Exception {
+        testLocalClearKey(false, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearAsync() throws Exception {
+        testLocalClearKey(true, null);
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    protected void testLocalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
+        // because some of them were blocked due to having readers.
+        for (int i = 0; i < 500; ++i) {
+            Ignite g = primaryIgnite("key" + i);
+
+            g.jcache(null).put("key" + i, "value" + i);
+        }
+
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+            if (keysToRemove == null)
+                asyncCache.localClear();
+            else if (keysToRemove.size() == 1)
+                asyncCache.localClear(F.first(keysToRemove));
+            else
+                asyncCache.localClearAll(new HashSet(keysToRemove));
+
+            asyncCache.future().get();
+        }
+        else {
+            if (keysToRemove == null)
+                jcache().localClear();
+            else if (keysToRemove.size() == 1)
+                jcache().localClear(F.first(keysToRemove));
+            else
+                jcache().localClearAll(new HashSet(keysToRemove));
+        }
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = false;
+
+            for (int j = 0; j < gridCount(); j++)
+                if (jcache(j).localPeek(key) != null)
+                    found = true;
+
+            if (keysToRemove == null || keysToRemove.contains(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKey() throws Exception {
+        testGlobalClearKey(false, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeyAsync() throws Exception {
+        testGlobalClearKey(true, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeys() throws Exception {
+        testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeysAsync() throws Exception {
+        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    protected void testGlobalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
+        // because some of them were blocked due to having readers.
+        for (int i = 0; i < 500; ++i)
+            grid(0).jcache(null).put("key" + i, "value" + i);
+
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+            if (keysToRemove.size() == 1)
+                asyncCache.clear(F.first(keysToRemove));
+            else
+                asyncCache.clearAll(new HashSet(keysToRemove));
+
+            asyncCache.future().get();
+        }
+        else {
+            if (keysToRemove.size() == 1)
+                jcache().clear(F.first(keysToRemove));
+            else
+                jcache().clearAll(new HashSet(keysToRemove));
+        }
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = false;
+
+            for (int j = 0; j < gridCount(); j++)
+                if (jcache(j).localPeek(key) != null)
+                    found = true;
+
+            if (!keysToRemove.contains(key))
+                assertTrue("Not found key " + key, found);
+            else
+                assertFalse("Found removed key " + key, found);
+        }
+    }
 }
