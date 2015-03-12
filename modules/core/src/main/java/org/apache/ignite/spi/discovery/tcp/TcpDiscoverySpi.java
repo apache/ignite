@@ -1458,6 +1458,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             }
                         }
                         catch (IgniteSpiException e) {
+                            e.printStackTrace();
+
                             ex = e;
                         }
                     }

@@ -89,8 +89,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         txSerEnabled = cctx.gridConfig().getTransactionConfiguration().isTxSerializableEnabled();
 
-        dataCenterId = cctx.dataCenterId();
-
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
@@ -105,6 +103,17 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         cctx.gridEvents().removeLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
+    }
+
+    /**
+     * Sets data center ID.
+     *
+     * @param dataCenterId Data center ID.
+     */
+    public void dataCenterId(byte dataCenterId) {
+        this.dataCenterId = dataCenterId;
+
+        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
     }
 
     /**

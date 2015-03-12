@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -99,8 +98,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private GridNearTxLocal tx;
 
     /** Topology snapshot to operate on. */
-    private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
-        new AtomicReference<>();
+    private AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>();
 
     /** Map of current values. */
     private Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
@@ -286,7 +284,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(new AffinityTopologyVersion(topSnapshot.get().topologyVersion()));
+                cand.topologyVersion(new AffinityTopologyVersion(topVer.get().topologyVersion()));
             }
         }
         else {
@@ -305,12 +303,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(new AffinityTopologyVersion(topSnapshot.get().topologyVersion()));
+                cand.topologyVersion(new AffinityTopologyVersion(topVer.get().topologyVersion()));
             }
             else
                 cand = cand.reenter();
 
-            cctx.mvcc().addExplicitLock(threadId, cand, topSnapshot.get());
+            cctx.mvcc().addExplicitLock(threadId, cand, topVer.get());
         }
 
         return cand;
@@ -519,12 +517,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     void map() {
         // Obtain the topology version to use.
-        GridDiscoveryTopologySnapshot snapshot = tx != null ? tx.topologySnapshot() :
-            cctx.mvcc().lastExplicitLockTopologySnapshot(threadId);
+        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersionSnapshot() :
+            cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
-        if (snapshot != null) {
+        if (topVer != null) {
             // Continue mapping on the same topology version as it was before.
-            topSnapshot.compareAndSet(null, snapshot);
+            this.topVer.compareAndSet(null, topVer);
 
             map(keys);
 
@@ -543,40 +541,33 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     private void mapOnTopology() {
         // We must acquire topology snapshot from the topology version future.
+        cctx.topology().readLock();
+
         try {
-            cctx.topology().readLock();
+            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
-            try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            if (fut.isDone()) {
+                AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (fut.isDone()) {
-                    GridDiscoveryTopologySnapshot snapshot = fut.topologySnapshot();
+                if (tx != null)
+                    tx.topologyVersion(topVer);
 
-                    if (tx != null) {
-                        tx.topologyVersion(new AffinityTopologyVersion(snapshot.topologyVersion()));
-                        tx.topologySnapshot(snapshot);
-                    }
+                this.topVer.compareAndSet(null, topVer);
 
-                    topSnapshot.compareAndSet(null, snapshot);
+                map(keys);
 
-                    map(keys);
-
-                    markInitialized();
-                }
-                else {
-                    fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                            mapOnTopology();
-                        }
-                    });
-                }
+                markInitialized();
             }
-            finally {
-                cctx.topology().readUnlock();
+            else {
+                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                        mapOnTopology();
+                    }
+                });
             }
         }
-        catch (IgniteCheckedException e) {
-            onDone(e);
+        finally {
+            cctx.topology().readUnlock();
         }
     }
 
@@ -589,11 +580,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     private void map(Collection<KeyCacheObject> keys) {
         try {
-            GridDiscoveryTopologySnapshot snapshot = topSnapshot.get();
+            AffinityTopologyVersion topVer = this.topVer.get();
 
-            assert snapshot != null;
-
-            final AffinityTopologyVersion topVer = new AffinityTopologyVersion(snapshot.topologyVersion());
+            assert topVer != null;
 
             assert topVer.topologyVersion() > 0;
 

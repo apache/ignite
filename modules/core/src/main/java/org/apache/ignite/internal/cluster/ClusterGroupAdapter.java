@@ -333,7 +333,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         guard();
 
         try {
+            if (p != null)
+                ctx.resource().injectGeneric(p);
+
             return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

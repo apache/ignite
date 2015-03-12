@@ -2258,7 +2258,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, null).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2273,14 +2273,37 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         @Nullable NearCacheConfiguration<K, V> nearCfg) {
-        // TODO: implement.
-        return null;
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, nearCfg).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            unguard();
+        }
+
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
-        // TODO: implement.
-        return null;
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, nearCfg).get();
+
+            return ctx.cache().publicJCache(nearCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

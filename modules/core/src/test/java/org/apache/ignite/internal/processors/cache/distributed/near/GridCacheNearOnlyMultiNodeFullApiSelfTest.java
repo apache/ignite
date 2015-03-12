@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -58,15 +57,21 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         super.beforeTestsStarted();
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (cnt.getAndIncrement() == 0) {
             info("Use grid '" + gridName + "' as near-only.");
 
-            return null;
+            cfg.setClientMode(true);
         }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicWriteOrderMode(PRIMARY);
@@ -77,7 +82,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            if (!cache(i).affinityNode()) {
+            if (ignite(i).configuration().isClientMode()) {
+                ignite(i).createCache(new NearCacheConfiguration<>());
+
                 nearIdx = i;
 
                 break;
@@ -94,15 +101,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
-
-        for (int i = 0; i < gridCount(); i++) {
-            ClusterNode node = grid(i).localNode();
-
-            GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
-
-            info("Cache attributes for node [nodeId=" + node.id() + ", attrs=" +
-                Arrays.asList(nodeAttrs) + ']');
-        }
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {

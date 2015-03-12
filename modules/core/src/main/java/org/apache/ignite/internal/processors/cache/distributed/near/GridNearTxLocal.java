@@ -50,13 +50,10 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated user transaction.
  */
+@SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Topology snapshot on which this tx was started. */
-    private final AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
-        new AtomicReference<>();
 
     /** DHT mappings. */
     private ConcurrentMap<UUID, GridDistributedTxMapping> mappings =
@@ -595,23 +592,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 }
             }
         }
-    }
-
-    /**
-     * @return Topology snapshot on which this tx was started.
-     */
-    public GridDiscoveryTopologySnapshot topologySnapshot() {
-        return topSnapshot.get();
-    }
-
-    /**
-     * Sets topology snapshot on which this tx was started.
-     *
-     * @param topSnapshot Topology snapshot.
-     * @return {@code True} if topology snapshot was set by this call.
-     */
-    public boolean topologySnapshot(GridDiscoveryTopologySnapshot topSnapshot) {
-        return this.topSnapshot.compareAndSet(null, topSnapshot);
     }
 
     /** {@inheritDoc} */

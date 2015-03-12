@@ -43,7 +43,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -77,7 +76,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +103,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < gridCount(); i++) {
+            info("Checking grid: " + i);
+
             while (true) {
                 try {
                     final int fi = i;
@@ -241,7 +242,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         CacheStore<?, ?> store = cacheStore();
 
         if (store != null) {
-            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cfg.setCacheStoreFactory(new TestStoreFactory());
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
@@ -290,7 +291,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Write through storage emulator.
      */
-    protected CacheStore<?, ?> cacheStore() {
+    protected static CacheStore<?, ?> cacheStore() {
         return new CacheStoreAdapter<Object, Object>() {
             @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
                 Object... args) {
@@ -594,6 +595,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer reduce() {
             return sum;
+        }
+    }
+
+    /**
+     * Serializable factory.
+     */
+    private static class TestStoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return cacheStore();
         }
     }
 }

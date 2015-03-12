@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -330,10 +329,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                             return;
                         }
 
-                        GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
-
                         tx.topologyVersion(topFut.topologyVersion());
-                        tx.topologySnapshot(snapshot);
 
                         // Make sure to add future before calling prepare.
                         cctx.mvcc().addFuture(this);
@@ -342,17 +338,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
                     catch (TransactionTimeoutException | TransactionOptimisticException e) {
                         onError(cctx.localNodeId(), null, e);
-                    }
-                    catch (IgniteCheckedException e) {
-                        tx.setRollbackOnly();
-
-                        String msg = "Failed to prepare transaction (will attempt rollback): " + this;
-
-                        U.error(log, msg, e);
-
-                        tx.rollbackAsync();
-
-                        onError(null, null, new IgniteTxRollbackCheckedException(msg, e));
                     }
                 }
                 else {
@@ -454,10 +439,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         Iterable<IgniteTxEntry> writes
     ) throws IgniteCheckedException {
         assert tx.optimistic();
-
-        GridDiscoveryTopologySnapshot snapshot = tx.topologySnapshot();
-
-        assert snapshot != null;
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 

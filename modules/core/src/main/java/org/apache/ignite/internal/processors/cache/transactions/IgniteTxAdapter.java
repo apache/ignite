@@ -45,7 +45,6 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 import static org.apache.ignite.transactions.TransactionState.*;
@@ -515,6 +514,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             return cctx.exchange().topologyVersion();
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersionSnapshot() {
+        AffinityTopologyVersion ret = topVer.get();
+
+        return AffinityTopologyVersion.NONE.equals(ret) ? null : ret;
     }
 
     /** {@inheritDoc} */
@@ -1741,6 +1747,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public AffinityTopologyVersion topologyVersion() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public AffinityTopologyVersion topologyVersionSnapshot() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

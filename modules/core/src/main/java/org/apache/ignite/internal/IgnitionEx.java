@@ -1915,6 +1915,7 @@ public class IgnitionEx {
                 cache.setPreloadMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
                 cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+                cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
                 return cache;
             }

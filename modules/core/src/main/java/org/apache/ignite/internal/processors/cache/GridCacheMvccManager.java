@@ -736,14 +736,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param threadId Thread ID.
      * @param cand Candidate to add.
-     * @param snapshot Topology snapshot.
+     * @param topVer Topology version.
      */
-    public void addExplicitLock(long threadId, GridCacheMvccCandidate cand, GridDiscoveryTopologySnapshot snapshot) {
+    public void addExplicitLock(long threadId, GridCacheMvccCandidate cand, AffinityTopologyVersion topVer) {
         while (true) {
             GridCacheExplicitLockSpan span = pendingExplicit.get(cand.threadId());
 
             if (span == null) {
-                span = new GridCacheExplicitLockSpan(snapshot, cand);
+                span = new GridCacheExplicitLockSpan(topVer, cand);
 
                 GridCacheExplicitLockSpan old = pendingExplicit.putIfAbsent(threadId, span);
 
@@ -754,7 +754,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             }
 
             // Either span was not empty, or concurrent put did not succeed.
-            if (span.addCandidate(snapshot, cand))
+            if (span.addCandidate(topVer, cand))
                 break;
             else
                 pendingExplicit.remove(threadId, span);
@@ -887,10 +887,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param threadId Thread ID.
      * @return Topology snapshot for last acquired and not released lock.
      */
-    @Nullable public GridDiscoveryTopologySnapshot lastExplicitLockTopologySnapshot(long threadId) {
+    @Nullable public AffinityTopologyVersion lastExplicitLockTopologyVersion(long threadId) {
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
-        return span != null ? span.topologySnapshot() : null;
+        return span != null ? span.topologyVersion() : null;
     }
 
     /** {@inheritDoc} */
@@ -944,9 +944,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
-            GridDiscoveryTopologySnapshot snapshot = span.topologySnapshot();
+            AffinityTopologyVersion snapshot = span.topologyVersion();
 
-            if (snapshot != null && snapshot.topologyVersion() < topVer.topologyVersion())
+            if (snapshot != null && snapshot.compareTo(topVer) < 0)
                 res.add(span.releaseFuture());
         }
 

@@ -254,6 +254,11 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public AffinityTopologyVersion topologyVersion();
 
     /**
+     * @return Topology version snapshot.
+     */
+    public AffinityTopologyVersion topologyVersionSnapshot();
+
+    /**
      * @return Flag indicating whether transaction is implicit with only one key.
      */
     public boolean implicitSingle();

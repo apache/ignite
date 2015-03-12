@@ -431,6 +431,7 @@ public class IgniteConfiguration {
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
+        clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
