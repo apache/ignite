@@ -296,8 +296,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        cctx.gridEvents().record(new CachePreloadingEvent(cctx.name(), cctx.localNode(),
-            "Cache preloading event.", type, part, discoNode, discoType, discoTs));
+        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
+            "Cache rebalancing event.", type, part, discoNode, discoType, discoTs));
     }
 
     /**
@@ -306,12 +306,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param part Partition.
      */
     public void addUnloadEvent(int part) {
-        if (!cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_UNLOADED))
+        if (!cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
             LT.warn(log, null, "Added event without checking if event is recordable: " +
-                U.gridEventName(EVT_CACHE_PRELOAD_PART_UNLOADED));
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
 
-        cctx.gridEvents().record(new CachePreloadingEvent(cctx.name(), cctx.localNode(),
-            "Cache unloading event.", EVT_CACHE_PRELOAD_PART_UNLOADED, part, null, 0, 0));
+        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
+            "Cache unloading event.", EVT_CACHE_REBALANCE_PART_UNLOADED, part, null, 0, 0));
     }
 
     /**

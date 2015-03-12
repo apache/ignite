@@ -38,7 +38,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -82,12 +82,12 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
-        //cacheCfg.setPreloadThreadPoolSize(1);
+        //cacheCfg.setRebalanceThreadPoolSize(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -255,7 +255,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                         return true;
                     }
-                }, EVTS_CACHE_PRELOAD);
+                }, EVTS_CACHE_REBALANCE);
 
             list.add(g);
         }

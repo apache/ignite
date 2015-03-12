@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -55,7 +55,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     protected int backups = DFLT_BACKUPS;
@@ -76,7 +76,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static volatile int idx = -1;
 
     /** Preload mode. */
-    protected CachePreloadMode preloadMode = ASYNC;
+    protected CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     protected int preloadBatchSize = DFLT_BATCH_SIZE;

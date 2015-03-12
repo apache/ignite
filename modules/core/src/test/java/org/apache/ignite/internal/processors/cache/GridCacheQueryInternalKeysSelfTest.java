@@ -30,7 +30,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Cache query internal keys self test.
@@ -57,7 +57,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
         cc.setQueryIndexEnabled(false);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         return cc;
     }

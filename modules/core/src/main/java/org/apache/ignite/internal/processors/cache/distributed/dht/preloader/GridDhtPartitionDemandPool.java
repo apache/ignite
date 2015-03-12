@@ -72,7 +72,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /** Preload predicate. */
     private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
-    /** Future for preload mode {@link org.apache.ignite.cache.CachePreloadMode#SYNC}. */
+    /** Future for preload mode {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC}. */
     @GridToStringInclude
     private SyncFuture syncFut;
 
@@ -107,7 +107,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
         log = cctx.logger(getClass());
 
-        poolSize = cctx.preloadEnabled() ? cctx.config().getPreloadThreadPoolSize() : 0;
+        poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
 
         if (poolSize > 0) {
             barrier = new CyclicBarrier(poolSize);
@@ -128,7 +128,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             syncFut.onDone();
         }
 
-        timeout = new AtomicLong(cctx.config().getPreloadTimeout());
+        timeout = new AtomicLong(cctx.config().getRebalanceTimeout());
     }
 
     /**
@@ -161,7 +161,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @return Future for {@link org.apache.ignite.cache.CachePreloadMode#SYNC} mode.
+     * @return Future for {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC} mode.
      */
     IgniteInternalFuture<?> syncFuture() {
         return syncFut;
@@ -206,7 +206,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
         if (exchFut != null) {
             if (log.isDebugEnabled())
-                log.debug("Forcing preload event for future: " + exchFut);
+                log.debug("Forcing rebalance event for future: " + exchFut);
 
             exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                 @Override public void apply(IgniteInternalFuture<Long> t) {
@@ -215,7 +215,7 @@ public class GridDhtPartitionDemandPool<K, V> {
             });
         }
         else if (log.isDebugEnabled())
-            log.debug("Ignoring force preload request (no topology event happened yet).");
+            log.debug("Ignoring force rebalance request (no topology event happened yet).");
     }
 
     /**
@@ -330,7 +330,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assigns);
 
-        long delay = cctx.config().getPreloadPartitionedDelay();
+        long delay = cctx.config().getRebalanceDelay();
 
         if (delay == 0 || force) {
             assert assigns != null;
@@ -353,7 +353,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             final GridDhtPartitionsExchangeFuture exchFut = lastExchangeFut;
 
-            assert exchFut != null : "Delaying preload process without topology event.";
+            assert exchFut != null : "Delaying rebalance process without topology event.";
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
@@ -469,7 +469,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             // Grow by 50% only if another thread didn't do it already.
             if (GridDhtPartitionDemandPool.this.timeout.compareAndSet(timeout, newTimeout))
-                U.warn(log, "Increased preloading message timeout from " + timeout + "ms to " +
+                U.warn(log, "Increased rebalancing message timeout from " + timeout + "ms to " +
                     newTimeout + "ms.");
         }
 
@@ -490,12 +490,12 @@ public class GridDhtPartitionDemandPool<K, V> {
                     cached = cctx.dht().entryEx(entry.key());
 
                     if (log.isDebugEnabled())
-                        log.debug("Preloading key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
+                        log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
 
                     if (cctx.dht().isIgfsDataCache() &&
                         cctx.dht().igfsDataSpaceUsed() > cctx.dht().igfsDataSpaceMax()) {
-                        LT.error(log, null, "Failed to preload IGFS data cache (IGFS space size exceeded maximum " +
-                            "value, will ignore preload entries): " + name());
+                        LT.error(log, null, "Failed to rebalance IGFS data cache (IGFS space size exceeded maximum " +
+                            "value, will ignore rebalance entries): " + name());
 
                         if (cached.markObsoleteIfEmpty(null))
                             cached.context().cache().removeIfObsolete(cached.key());
@@ -515,26 +515,26 @@ public class GridDhtPartitionDemandPool<K, V> {
                         )) {
                             cctx.evicts().touch(cached, topVer); // Start tracking.
 
-                            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED) && !cached.isInternal())
+                            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                                 cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, entry.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                     false, null, null, null);
                         }
                         else if (log.isDebugEnabled())
-                            log.debug("Preloading entry is already in cache (will ignore) [key=" + cached.key() +
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
                                 ", part=" + p + ']');
                     }
                     else if (log.isDebugEnabled())
-                        log.debug("Preload predicate evaluated to false for entry (will ignore): " + entry);
+                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
-                        log.debug("Entry has been concurrently removed while preloading (will ignore) [key=" +
+                        log.debug("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
                             cached.key() + ", part=" + p + ']');
                 }
                 catch (GridDhtInvalidPartitionException ignored) {
                     if (log.isDebugEnabled())
-                        log.debug("Partition became invalid during preloading (will ignore): " + p);
+                        log.debug("Partition became invalid during rebalancing (will ignore): " + p);
 
                     return false;
                 }
@@ -543,7 +543,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                 throw e;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteCheckedException("Failed to cache preloaded entry (will stop preloading) [local=" +
+                throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                     cctx.nodeId() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
             }
 
@@ -624,7 +624,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         if (s == null) {
                             if (msgQ.isEmpty()) { // Safety check.
                                 U.warn(log, "Timed out waiting for partitions to load, will retry in " + timeout +
-                                    " ms (you may need to increase 'networkTimeout' or 'preloadBatchSize'" +
+                                    " ms (you may need to increase 'networkTimeout' or 'rebalanceBatchSize'" +
                                     " configuration properties).");
 
                                 growTimeout(timeout);
@@ -740,10 +740,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                                             top.own(part);
 
                                             if (log.isDebugEnabled())
-                                                log.debug("Finished preloading partition: " + part);
+                                                log.debug("Finished rebalancing partition: " + part);
 
-                                            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_LOADED))
-                                                preloadEvent(p, EVT_CACHE_PRELOAD_PART_LOADED,
+                                            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
+                                                preloadEvent(p, EVT_CACHE_REBALANCE_PART_LOADED,
                                                     exchFut.discoveryEvent());
                                         }
                                     }
@@ -756,14 +756,14 @@ public class GridDhtPartitionDemandPool<K, V> {
                                     remaining.remove(p);
 
                                     if (log.isDebugEnabled())
-                                        log.debug("Skipping loading partition (state is not MOVING): " + part);
+                                        log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                                 }
                             }
                             else {
                                 remaining.remove(p);
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Skipping loading partition (it does not belong on current node): " + p);
+                                    log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
                             }
                         }
 
@@ -808,6 +808,8 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
+                int rebalanceOrder = cctx.config().getRebalanceOrder();
+
                 if (!CU.isMarshallerCache(cctx.name())) {
                     if (log.isDebugEnabled())
                         log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
@@ -827,29 +829,27 @@ public class GridDhtPartitionDemandPool<K, V> {
                     }
                 }
 
-                int preloadOrder = cctx.config().getPreloadOrder();
-
-                if (preloadOrder > 0) {
-                    IgniteInternalFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(preloadOrder);
+                if (rebalanceOrder > 0) {
+                    IgniteInternalFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(rebalanceOrder);
 
                     try {
                         if (fut != null) {
                             if (log.isDebugEnabled())
-                                log.debug("Waiting for dependant caches preload [cacheName=" + cctx.name() +
-                                    ", preloadOrder=" + preloadOrder + ']');
+                                log.debug("Waiting for dependant caches rebalance [cacheName=" + cctx.name() +
+                                    ", rebalanceOrder=" + rebalanceOrder + ']');
 
                             fut.get();
                         }
                     }
                     catch (IgniteInterruptedCheckedException ignored) {
                         if (log.isDebugEnabled())
-                            log.debug("Failed to wait for ordered preload future (grid is stopping): " +
-                                "[cacheName=" + cctx.name() + ", preloadOrder=" + preloadOrder + ']');
+                            log.debug("Failed to wait for ordered rebalance future (grid is stopping): " +
+                                "[cacheName=" + cctx.name() + ", rebalanceOrder=" + rebalanceOrder + ']');
 
                         return;
                     }
                     catch (IgniteCheckedException e) {
-                        throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
+                        throw new Error("Ordered rebalance future should never fail: " + e.getMessage(), e);
                     }
                 }
 
@@ -862,10 +862,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                         barrier.await();
 
                         if (id == 0 && exchFut != null && !exchFut.dummy() &&
-                            cctx.events().isRecordable(EVT_CACHE_PRELOAD_STOPPED)) {
+                            cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED)) {
 
                             if (!cctx.isReplicated() || !stopEvtFired) {
-                                preloadEvent(EVT_CACHE_PRELOAD_STOPPED, exchFut.discoveryEvent());
+                                preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
 
                                 stopEvtFired = true;
                             }
@@ -926,7 +926,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 }
                                 catch (ClusterTopologyCheckedException e) {
                                     if (log.isDebugEnabled())
-                                        log.debug("Node left during preloading (will retry) [node=" + node.id() +
+                                        log.debug("Node left during rebalancing (will retry) [node=" + node.id() +
                                             ", msg=" + e.getMessage() + ']');
 
                                     resync = true;
@@ -934,7 +934,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                     break; // For.
                                 }
                                 catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to receive partitions from node (preloading will not " +
+                                    U.error(log, "Failed to receive partitions from node (rebalancing will not " +
                                         "fully finish) [node=" + node.id() + ", msg=" + d + ']', e);
                                 }
                             }
@@ -990,7 +990,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = cctx.dht().topology();
 
-        if (!cctx.preloadEnabled())
+        if (!cctx.rebalanceEnabled())
             return new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
         int partCnt = cctx.affinity().partitions();

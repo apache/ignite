@@ -25,7 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -78,7 +78,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setPreloadMode(SYNC);
+        cfg.setRebalanceMode(SYNC);
 
         return cfg;
     }

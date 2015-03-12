@@ -21,7 +21,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -46,7 +46,7 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);
-        cfg.setPreloadMode(SYNC);
+        cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;

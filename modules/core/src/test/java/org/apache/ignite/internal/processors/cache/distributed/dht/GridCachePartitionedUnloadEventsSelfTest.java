@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -60,7 +60,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         return cacheCfg;
@@ -92,12 +92,12 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Thread.sleep(5000);
 
         Collection<Event> objEvts =
-            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
         checkObjectUnloadEvents(objEvts, g1, g2Keys);
 
         Collection <Event> partEvts =
-            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
+            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
 
         checkPartitionUnloadEvents(partEvts, g1, dht(g2.jcache(null)).topology().localPartitions());
     }
@@ -113,7 +113,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         for (Event evt : evts) {
             CacheEvent cacheEvt = ((CacheEvent)evt);
 
-            assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
+            assertEquals(EVT_CACHE_REBALANCE_OBJECT_UNLOADED, cacheEvt.type());
             assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
@@ -131,7 +131,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         assertEquals(parts.size(), evts.size());
 
         for (Event evt : evts) {
-            CachePreloadingEvent unloadEvt = (CachePreloadingEvent)evt;
+            CacheRebalancingEvent unloadEvt = (CacheRebalancingEvent)evt;
 
             final int part = unloadEvt.partition();
 
