@@ -85,13 +85,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
     /** Map of proxies. */
-    private final Map<String, GridCache<?, ?>> proxies;
-
-    /** Map of proxies. */
     private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
     /** Map of public proxies, i.e. proxies which could be returned to the user. */
-    private final Map<String, GridCache<?, ?>> publicProxies;
+    private volatile List<GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
     private final NavigableMap<Integer, IgniteInternalFuture<?>> preloadFuts;
@@ -127,8 +124,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         super(ctx);
 
         caches = new LinkedHashMap<>();
-        proxies = new HashMap<>();
-        publicProxies = new HashMap<>();
         jCacheProxies = new HashMap<>();
         preloadFuts = new TreeMap<>();
 
@@ -639,8 +634,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
 
-            proxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
-
             jCacheProxies.put(e.getKey(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
 
@@ -696,8 +689,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 startCache(cache);
 
-                proxies.put(name, new GridCacheProxyImpl(ctx, cache, null));
-
                 jCacheProxies.put(name, new IgniteCacheProxy(ctx, cache, null, false));
             }
         }
@@ -707,14 +698,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.marshallerContext().onMarshallerCacheReady(ctx);
             }
         });
-
-        // Internal caches which should not be returned to user.
-        for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
-            GridCacheAdapter cache = e.getValue();
-
-            if (!sysCaches.contains(e.getKey()))
-                publicProxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
-        }
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -769,9 +752,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (String cacheName : stopSeq) {
+        for (String cacheName : stopSeq)
             stopCache(caches.get(cacheName), cancel);
-        }
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
@@ -1991,14 +1973,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        return (GridCache<K, V>)proxies.get(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+
+        return jcache == null ? null : jcache.legacyProxy();
     }
 
     /**
      * @return All configured cache instances.
      */
     public Collection<GridCache<?, ?>> caches() {
-        return proxies.values();
+        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, GridCache<?, ?>>() {
+            @Override public GridCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
+                return entries.legacyProxy();
+            }
+        });
     }
 
     /**
@@ -2060,12 +2048,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        GridCache<K, V> cache = (GridCache<K, V>)publicProxies.get(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
-        if (cache == null)
+        if (jcache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
-        return cache;
+        return jcache.legacyProxy();
     }
 
     /**
@@ -2129,7 +2117,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return All configured public cache instances.
      */
     public Collection<GridCache<?, ?>> publicCaches() {
-        return publicProxies.values();
+        List<GridCache<?, ?>> res = publicProxies;
+
+        if (res == null) {
+            res = new ArrayList<>(jCacheProxies.size());
+
+            for (IgniteCacheProxy<?, ?> proxy : jCacheProxies.values()) {
+                if (!sysCaches.contains(proxy.getName()))
+                    res.add(proxy.legacyProxy());
+            }
+
+            publicProxies = res;
+        }
+
+        return res;
     }
 
     /**
