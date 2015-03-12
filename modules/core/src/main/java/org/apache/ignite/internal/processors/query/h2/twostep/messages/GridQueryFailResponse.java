@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Error message.
  */
-public class GridQueryFailResponse implements Serializable {
+public class GridQueryFailResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,6 +34,13 @@ public class GridQueryFailResponse implements Serializable {
 
     /** */
     private String errMsg;
+
+    /**
+     * Default constructor.
+     */
+    public GridQueryFailResponse() {
+        // No-op.
+    }
 
     /**
      * @param qryReqId Query request ID.
@@ -60,5 +68,73 @@ public class GridQueryFailResponse implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryFailResponse.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeString("errMsg", errMsg))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("qryReqId", qryReqId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                errMsg = reader.readString("errMsg");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                qryReqId = reader.readLong("qryReqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 91;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 }

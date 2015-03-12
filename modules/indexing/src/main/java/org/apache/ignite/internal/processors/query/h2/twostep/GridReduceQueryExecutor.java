@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.command.ddl.*;
 import org.h2.command.dml.Query;
 import org.h2.engine.*;
@@ -51,7 +52,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Reduce query executor.
  */
-public class GridReduceQueryExecutor {
+public class GridReduceQueryExecutor implements GridMessageListener {
     /** */
     private GridKernalContext ctx;
 
@@ -108,35 +109,34 @@ public class GridReduceQueryExecutor {
 
         // TODO handle node failure.
 
-        ctx.io().addUserMessageListener(GridTopic.TOPIC_QUERY, new IgniteBiPredicate<UUID, Object>() {
-            @Override public boolean apply(UUID nodeId, Object msg) {
-                try {
-                    assert msg != null;
-
-                    ClusterNode node = ctx.discovery().node(nodeId);
-
-                    boolean processed = true;
-
-                    if (msg instanceof GridQueryNextPageResponse)
-                        onNextPage(node, (GridQueryNextPageResponse)msg);
-                    else if (msg instanceof GridQueryFailResponse)
-                        onFail(node, (GridQueryFailResponse)msg);
-                    else
-                        processed = false;
-
-                    if (processed && log.isDebugEnabled())
-                        log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
-                }
-                catch(Throwable th) {
-                    U.error(log, "Failed to process message: " + msg, th);
-                }
-
-                return true;
-            }
-        });
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
 
         h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
             " FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMessage(UUID nodeId, Object msg) {
+        try {
+            assert msg != null;
+
+            ClusterNode node = ctx.discovery().node(nodeId);
+
+            boolean processed = true;
+
+            if (msg instanceof GridQueryNextPageResponse)
+                onNextPage(node, (GridQueryNextPageResponse)msg);
+            else if (msg instanceof GridQueryFailResponse)
+                onFail(node, (GridQueryFailResponse)msg);
+            else
+                processed = false;
+
+            if (processed && log.isDebugEnabled())
+                log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+        }
+        catch(Throwable th) {
+            U.error(log, "Failed to process message: " + msg, th);
+        }
     }
 
     /**
@@ -174,8 +174,12 @@ public class GridReduceQueryExecutor {
         idx.addPage(new GridResultPage(node.id(), msg, false) {
             @Override public void fetchNextPage() {
                 try {
-                    ctx.io().sendUserMessage(F.asList(node), new GridQueryNextPageRequest(qryReqId, qry, pageSize),
-                        GridTopic.TOPIC_QUERY, false, 0);
+                    GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+
+                    if (node.isLocal())
+                        h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                    else
+                        ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -231,8 +235,8 @@ public class GridReduceQueryExecutor {
         runs.put(qryReqId, r);
 
         try {
-            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries()),
-                GridTopic.TOPIC_QUERY, false, 0);
+            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries(),
+                ctx.config().getMarshaller().marshal(qry.mapQueries())));
 
             r.latch.await();
 
@@ -245,7 +249,7 @@ public class GridReduceQueryExecutor {
 
             for (GridMergeTable tbl : r.tbls) {
                 if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
-                    ctx.io().sendUserMessage(nodes, new GridQueryCancelRequest(qryReqId), GridTopic.TOPIC_QUERY, false, 0);
+                    send(nodes, new GridQueryCancelRequest(qryReqId));
 
 //                dropTable(r.conn, tbl.getName()); TODO
             }
@@ -266,6 +270,34 @@ public class GridReduceQueryExecutor {
 
             curFunTbl.remove();
         }
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param msg Message.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void send(Collection<ClusterNode> nodes, Message msg) throws IgniteCheckedException {
+        for (ClusterNode node : nodes) {
+            if (node.isLocal()) {
+                ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
+
+                for (ClusterNode node0 : nodes) {
+                    if (node0 != node)
+                        remotes.add(node0);
+                }
+
+                ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+
+                // Local node goes the last to allow parallel execution.
+                h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg);
+
+                return;
+            }
+        }
+
+        // All the given nodes are remotes.
+        ctx.io().send(nodes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }
 
     /**

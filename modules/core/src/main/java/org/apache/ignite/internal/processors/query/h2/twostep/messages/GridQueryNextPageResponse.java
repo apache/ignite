@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Next page response.
  */
-public class GridQueryNextPageResponse implements Externalizable {
+public class GridQueryNextPageResponse implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -124,5 +126,115 @@ public class GridQueryNextPageResponse implements Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryNextPageResponse.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("allRows", allRows))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt("page", page))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeInt("qry", qry))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeLong("qryReqId", qryReqId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeByteArray("rows", rows))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                allRows = reader.readInt("allRows");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                page = reader.readInt("page");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                qry = reader.readInt("qry");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                qryReqId = reader.readLong("qryReqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                rows = reader.readByteArray("rows");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 93;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
     }
 }

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
@@ -489,6 +490,31 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 88:
                 msg = new GridCacheValueBytes();
+
+                break;
+
+            case 90:
+                msg = new GridQueryCancelRequest();
+
+                break;
+
+            case 91:
+                msg = new GridQueryFailResponse();
+
+                break;
+
+            case 92:
+                msg = new GridQueryNextPageRequest();
+
+                break;
+
+            case 93:
+                msg = new GridQueryNextPageResponse();
+
+                break;
+
+            case 94:
+                msg = new GridQueryRequest();
 
                 break;
 

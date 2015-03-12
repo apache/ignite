@@ -18,15 +18,23 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Cancel request.
  */
-public class GridQueryCancelRequest implements Serializable {
+public class GridQueryCancelRequest implements Message {
     /** */
     private long qryReqId;
+
+    /**
+     * Default constructor.
+     */
+    public GridQueryCancelRequest() {
+        // No-op.
+    }
 
     /**
      * @param qryReqId Query request ID.
@@ -45,5 +53,59 @@ public class GridQueryCancelRequest implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryCancelRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeLong("qryReqId", qryReqId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                qryReqId = reader.readLong("qryReqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 90;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 1;
     }
 }

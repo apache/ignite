@@ -1017,6 +1017,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return ((Number)iter.next().get(0)).longValue();
     }
 
+    /**
+     * @return Map query executor.
+     */
+    public GridMapQueryExecutor mapQueryExecutor() {
+        return mapQryExec;
+    }
+
+    /**
+     * @return Reduce query executor.
+     */
+    public GridReduceQueryExecutor reduceQueryExecutor() {
+        return rdcQryExec;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("NonThreadSafeLazyInitialization")
     @Override public void start(GridKernalContext ctx) throws IgniteCheckedException {
