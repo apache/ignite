@@ -29,6 +29,9 @@ import static org.apache.ignite.configuration.CacheConfiguration.*;
  * Client cache configuration.
  */
 public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache name. */
     private String name;
 
