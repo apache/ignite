@@ -4250,8 +4250,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     protected void testGlobalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
-        for (int i = 0; i < 500; ++i)
-            grid(0).jcache(null).put("key" + i, "value" + i);
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            Ignite g = primaryIgnite(key);
+
+            g.jcache(null).put(key, "value" + i);
+        }
 
         if (async) {
             IgniteCache<String, Integer> asyncCache = jcache().withAsync();
@@ -4276,11 +4281,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             boolean found = false;
 
             for (int j = 0; j < gridCount(); j++)
-                if (jcache(j).localPeek(key) != null) {
+                if (jcache(j).localPeek(key) != null)
                     found = true;
-
-                    info("Found key " + key + " on node " + j);
-                }
 
             if (!keysToRemove.contains(key))
                 assertTrue("Not found key " + key, found);
