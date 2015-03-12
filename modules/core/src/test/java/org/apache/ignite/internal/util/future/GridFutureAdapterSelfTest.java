@@ -21,13 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.closure.*;
-import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -115,7 +113,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testListenSyncNotify() throws Exception {
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>(new GridTestKernalContext(log), true);
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
         int lsnrCnt = 10;
 
@@ -126,7 +124,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         for (int i = 0; i < lsnrCnt; i++) {
-            fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+            fut.listen(new CI1<IgniteInternalFuture<String>>() {
                 @Override public void apply(IgniteInternalFuture<String> t) {
                     if (Thread.currentThread() != runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
@@ -147,7 +145,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         err.set(null);
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+        fut.listen(new CI1<IgniteInternalFuture<String>>() {
             @Override public void apply(IgniteInternalFuture<String> t) {
                 if (Thread.currentThread() != runThread)
                     err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
@@ -165,7 +163,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testListenAsyncNotify() throws Exception {
+    public void testListenNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
         ctx.setExecutorService(Executors.newFixedThreadPool(1));
@@ -176,7 +174,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         ctx.start();
 
         try {
-            GridFutureAdapter<String> fut = new GridFutureAdapter<>(ctx, false);
+            GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
             int lsnrCnt = 10;
 
@@ -184,14 +182,10 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             final Thread runThread = Thread.currentThread();
 
-            final AtomicReference<Exception> err = new AtomicReference<>();
-
             for (int i = 0; i < lsnrCnt; i++) {
-                fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+                fut.listen(new CI1<IgniteInternalFuture<String>>() {
                     @Override public void apply(IgniteInternalFuture<String> t) {
-                        if (Thread.currentThread() == runThread)
-                            err.compareAndSet(null, new Exception("Wrong notification thread: " +
-                                Thread.currentThread()));
+                        assert Thread.currentThread() == runThread;
 
                         latch.countDown();
                     }
@@ -202,26 +196,19 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            if (err.get() != null)
-                throw err.get();
-
             final CountDownLatch doneLatch = new CountDownLatch(1);
 
-            err.set(null);
-
-            fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+            fut.listen(new CI1<IgniteInternalFuture<String>>() {
                 @Override public void apply(IgniteInternalFuture<String> t) {
-                    if (Thread.currentThread() == runThread)
-                        err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
+                    assert Thread.currentThread() == runThread;
 
                     doneLatch.countDown();
                 }
             });
 
-            doneLatch.await();
+            assert doneLatch.getCount() == 0;
 
-            if (err.get() != null)
-                throw err.get();
+            doneLatch.await();
         }
         finally {
             ctx.stop(false);
@@ -253,7 +240,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         try {
             // Test result returned.
 
-            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ctx);
+            GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
             IgniteInternalFuture<Object> chain = fut.chain(passThrough);
 
             assertFalse(fut.isDone());
@@ -274,7 +261,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             // Test exception re-thrown.
 
-            fut = new GridFutureAdapter<>(ctx);
+            fut = new GridFutureAdapter<>();
             chain = fut.chain(passThrough);
 
             fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
@@ -290,7 +277,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             // Test error re-thrown.
 
-            fut = new GridFutureAdapter<>(ctx);
+            fut = new GridFutureAdapter<>();
             chain = fut.chain(passThrough);
 
             try {
@@ -363,79 +350,5 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSerialization() throws Exception {
-        GridFutureAdapter<Object> unfinished = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> finished = new GridFutureAdapter<>();
-        GridFutureAdapter<Object> cancelled = new GridFutureAdapter<>();
-
-        finished.onDone("Finished");
-
-        cancelled.onCancelled();
-
-        GridByteArrayOutputStream baos = new GridByteArrayOutputStream();
-
-        ObjectOutputStream out = new ObjectOutputStream(baos);
-
-        out.writeObject(unfinished);
-        out.writeObject(finished);
-        out.writeObject(cancelled);
-
-        out.close();
-
-        ObjectInputStream in = new ObjectInputStream(new GridByteArrayInputStream(baos.internalArray(),
-            0, baos.size()));
-
-        unfinished = (GridFutureAdapter<Object>)in.readObject();
-        finished = (GridFutureAdapter<Object>)in.readObject();
-        cancelled = (GridFutureAdapter<Object>)in.readObject();
-
-        try {
-            unfinished.get();
-
-            assert false;
-        }
-        catch (IllegalStateException e) {
-            info("Caught expected exception: " + e);
-        }
-
-        try {
-            unfinished.get(1000);
-
-            assert false;
-        }
-        catch (IllegalStateException e) {
-            info("Caught expected exception: " + e);
-        }
-
-        Object o = finished.get();
-
-        assertEquals("Finished", o);
-
-        o = finished.get(1000);
-
-        assertEquals("Finished", o);
-
-        try {
-            cancelled.get();
-
-            assert false;
-        }
-        catch (IgniteFutureCancelledCheckedException e) {
-            info("Caught expected exception: " + e);
-        }
-
-        try {
-            cancelled.get(1000);
-
-            assert false;
-        }
-        catch (IgniteFutureCancelledCheckedException e) {
-            info("Caught expected exception: " + e);
-        }
     }
 }

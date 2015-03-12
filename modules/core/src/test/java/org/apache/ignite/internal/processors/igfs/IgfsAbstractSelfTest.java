@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -47,6 +47,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 /**
  * Test fo regular igfs operations.
  */
+@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
@@ -67,16 +68,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Primary file system REST endpoint configuration map. */
-    protected static final Map<String, String> PRIMARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "10500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration PRIMARY_REST_CFG;
 
     /** Secondary file system REST endpoint configuration map. */
-    protected static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** Directory. */
     protected static final IgfsPath DIR = new IgfsPath("/dir");
@@ -125,6 +120,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** Memory mode. */
     protected final CacheMemoryMode memoryMode;
+
+    static {
+        PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        PRIMARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        PRIMARY_REST_CFG.setPort(10500);
+
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /**
      * Constructor.
@@ -182,7 +189,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
@@ -240,8 +247,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param task Task to execute.
      * @return Result.
      */
-    protected static <T> GridPlainFuture<T> execute(final Callable<T> task) {
-        final GridPlainFutureAdapter<T> fut = new GridPlainFutureAdapter<>();
+    protected static <T> IgniteInternalFuture<T> execute(final Callable<T> task) {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<>();
 
         new Thread(new Runnable() {
             @Override public void run() {
@@ -692,25 +699,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeleteDirectoryNotEmpty() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
-        // We have different results for dual and non-dual modes.
-        if (dual)
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    igfs.delete(SUBDIR, false);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                igfs.delete(SUBDIR, false);
 
-                    return null;
-                }
-            }, IgniteCheckedException.class, "Failed to delete the path due to secondary file system exception:");
-        else {
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    igfs.delete(SUBDIR, false);
-
-                    return null;
-                }
-            }, IgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
-                   "recursive flag is not set)");
-        }
+                return null;
+            }
+        }, IgfsDirectoryNotEmptyException.class, "Failed to remove directory (directory is not empty and " +
+            "recursive flag is not set)");
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
     }
@@ -878,7 +874,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsFileNotFoundException.class, "File not found: " + FILE);
+        }, IgfsPathNotFoundException.class, "File not found: " + FILE);
     }
 
     /**
@@ -1525,7 +1521,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1540,7 +1536,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1575,7 +1571,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1590,7 +1586,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1639,7 +1635,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1654,7 +1650,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1695,7 +1691,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1710,7 +1706,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1755,7 +1751,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1770,7 +1766,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1911,6 +1907,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param createCnt How many file creations to perform.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
@@ -2444,14 +2441,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param igfs IGFS.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public static void clear(IgniteFileSystem igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgfsPath, IgfsFileWorker> workerMap =
-            (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
+        Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
 
         for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();

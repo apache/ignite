@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -83,6 +82,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Utility cache pool. */
     private ExecutorService utilityCachePool;
 
+    /** Marshaller cache pool. */
+    private ExecutorService marshCachePool;
+
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
 
@@ -112,14 +114,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Lock to sync maps access. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** Message cache. */
-    private ThreadLocal<IgniteBiTuple<Object, byte[]>> cacheMsg =
-        new GridThreadLocal<IgniteBiTuple<Object, byte[]>>() {
-            @Nullable @Override protected IgniteBiTuple<Object, byte[]> initialValue() {
-                return null;
-            }
-        };
-
     /** Fully started flag. When set to true, can send and receive messages. */
     private volatile boolean started;
 
@@ -128,14 +122,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         new GridBoundedConcurrentLinkedHashSet<>(MAX_CLOSED_TOPICS, MAX_CLOSED_TOPICS, 0.75f, 256,
             PER_SEGMENT_Q_OPTIMIZED_RMV);
 
-    /** Workers count. */
-    private final LongAdder workersCnt = new LongAdder();
-
     /** */
     private MessageFactory msgFactory;
 
     /** */
     private MessageFormatter formatter;
+
+    /** Stopping flag. */
+    private boolean stopping;
 
     /**
      * @param ctx Grid kernal context.
@@ -188,6 +182,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         sysPool = ctx.getSystemExecutorService();
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
+        marshCachePool = ctx.marshallerCachePool();
         affPool = Executors.newFixedThreadPool(1);
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
@@ -388,36 +383,44 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         // No more communication messages.
         getSpi().setListener(null);
 
-        busyLock.writeLock();
-
-        U.shutdownNow(getClass(), affPool, log);
-
         boolean interrupted = false;
 
-        while (workersCnt.sum() != 0) {
+        // Busy wait is intentional.
+        while (true) {
             try {
-                Thread.sleep(200);
+                if (busyLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
+                    break;
+                else
+                    Thread.sleep(200);
             }
-            catch (InterruptedException ignored) {
+            catch (InterruptedException ignore) {
+                // Preserve interrupt status & ignore.
+                // Note that interrupted flag is cleared.
                 interrupted = true;
             }
         }
 
-        if (interrupted)
-            Thread.currentThread().interrupt();
+        try {
+            if (interrupted)
+                Thread.currentThread().interrupt();
 
-        GridEventStorageManager evtMgr = ctx.event();
+            U.shutdownNow(getClass(), affPool, log);
 
-        if (evtMgr != null && discoLsnr != null)
-            evtMgr.removeLocalEventListener(discoLsnr);
+            GridEventStorageManager evtMgr = ctx.event();
+
+            if (evtMgr != null && discoLsnr != null)
+                evtMgr.removeLocalEventListener(discoLsnr);
+
+            stopping = true;
+        }
+        finally {
+            busyLock.writeUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
-
-        // Clear cache.
-        cacheMsg.set(null);
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -433,14 +436,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert nodeId != null;
         assert msg != null;
 
-        if (!busyLock.tryReadLock()) {
-            if (log.isDebugEnabled())
-                log.debug("Received communication message while stopping grid.");
-
-            return;
-        }
+        busyLock.readLock();
 
         try {
+            if (stopping) {
+                if (log.isDebugEnabled())
+                    log.debug("Received communication message while stopping (will ignore) [nodeId=" +
+                        nodeId + ", msg=" + msg + ']');
+
+                return;
+            }
+
             // Check discovery.
             ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -498,7 +504,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case SYSTEM_POOL:
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
-                case UTILITY_CACHE_POOL: {
+                case UTILITY_CACHE_POOL:
+                case MARSH_CACHE_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
@@ -534,10 +541,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return mgmtPool;
             case AFFINITY_POOL:
                 return affPool;
+
             case UTILITY_CACHE_POOL:
                 assert utilityCachePool != null : "Utility cache pool is not configured.";
 
                 return utilityCachePool;
+
+            case MARSH_CACHE_POOL:
+                assert marshCachePool != null : "Marshaller cache pool is not configured.";
+
+                return marshCachePool;
 
             default: {
                 assert false : "Invalid communication policy: " + plc;
@@ -558,10 +571,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final GridIoMessage msg,
         final IgniteRunnable msgC
     ) {
-        workersCnt.increment();
-
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -578,8 +589,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -610,10 +619,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         GridIoPolicy plc,
         final IgniteRunnable msgC
     ) {
-        workersCnt.increment();
-
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -621,8 +628,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -806,13 +811,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return;
         }
 
-        // Set is not reserved and new worker should be submitted.
-        workersCnt.increment();
-
         final GridCommunicationMessageSet msgSet0 = set;
 
-        Runnable c = new GridWorker(ctx.gridName(), "msg-worker", log) {
-            @Override protected void body() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
                     threadProcessingMessage(true);
 
@@ -820,8 +822,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
                 finally {
                     threadProcessingMessage(false);
-
-                    workersCnt.decrement();
 
                     msgC.run();
                 }
@@ -1321,26 +1321,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (msgSets != null) {
             final GridMessageListener lsnrs0 = lsnrs;
 
-            boolean success = true;
-
             try {
                 for (final GridCommunicationMessageSet msgSet : msgSets) {
-                    success = false;
-
-                    workersCnt.increment();
-
-                    pool(msgSet.policy()).execute(new GridWorker(ctx.gridName(), "msg-worker", log) {
-                        @Override protected void body() {
-                            try {
+                    pool(msgSet.policy()).execute(
+                        new Runnable() {
+                            @Override public void run() {
                                 unwindMessageSet(msgSet, lsnrs0);
                             }
-                            finally {
-                                workersCnt.decrement();
-                            }
-                        }
-                    });
-
-                    success = true;
+                        });
                 }
             }
             catch (RejectedExecutionException e) {
@@ -1350,11 +1338,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 for (GridCommunicationMessageSet msgSet : msgSets)
                     unwindMessageSet(msgSet, lsnr);
-            }
-            finally {
-                // Decrement for last runnable submission of which failed.
-                if (!success)
-                    workersCnt.decrement();
             }
         }
     }

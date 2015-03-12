@@ -16,6 +16,9 @@
 # limitations under the License.
 #
 
+# Remember visor tester command line parameters
+ARGS=$@
+
 #
 # Import common functions.
 #
@@ -110,13 +113,13 @@ case $osname in
         "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" \
         -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" \
         -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
-        org.apache.ignite.visor.commands.VisorConsole
+        org.apache.ignite.visor.commands.VisorConsole ${ARGS}
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DIGNITE_UPDATE_NOTIFIER=false \
         -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
         ${JVM_XOPTS} -cp "${CP}" \
-        org.apache.ignite.visor.commands.VisorConsole
+        org.apache.ignite.visor.commands.VisorConsole ${ARGS}
     ;;
 esac
 

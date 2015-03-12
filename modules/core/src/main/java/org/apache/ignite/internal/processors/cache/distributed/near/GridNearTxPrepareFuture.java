@@ -24,24 +24,23 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -51,13 +50,16 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  *
  */
-public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
+public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
+    implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    private static IgniteLogger log;
 
     /** Context. */
     private GridCacheSharedContext<K, V> cctx;
@@ -67,10 +69,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
     /** Transaction. */
     @GridToStringExclude
-    private GridNearTxLocal<K, V> tx;
-
-    /** Logger. */
-    private IgniteLogger log;
+    private GridNearTxLocal tx;
 
     /** Error. */
     @GridToStringExclude
@@ -83,26 +82,19 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private GridDhtTxMapping<K, V> txMapping;
 
     /** */
-    private Collection<IgniteTxKey<K>> lockKeys = new GridConcurrentHashSet<>();
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxPrepareFuture() {
-        // No-op.
-    }
+    private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
     /**
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridNearTxLocal<K, V> tx) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx<K, V>, IgniteInternalTx<K, V>>() {
-            @Override public boolean collect(IgniteInternalTx<K, V> e) {
+    public GridNearTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridNearTxLocal tx) {
+        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx, IgniteInternalTx>() {
+            @Override public boolean collect(IgniteInternalTx e) {
                 return true;
             }
 
-            @Override public IgniteInternalTx<K, V> reduce() {
+            @Override public IgniteInternalTx reduce() {
                 // Nothing to aggregate.
                 return tx;
             }
@@ -116,7 +108,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         futId = IgniteUuid.randomUuid();
 
-        log = U.logger(ctx, logRef, GridNearTxPrepareFuture.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFuture.class);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +123,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
@@ -196,7 +189,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param mappings Remaining mappings.
      * @param e Error.
      */
-    void onError(@Nullable UUID nodeId, @Nullable Iterable<GridDistributedTxMapping<K, V>> mappings, Throwable e) {
+    void onError(@Nullable UUID nodeId, @Nullable Iterable<GridDistributedTxMapping> mappings, Throwable e) {
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
@@ -249,9 +242,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteInternalTx<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<IgniteInternalTx> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -266,7 +259,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx<K, V> t, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
         // If locks were not acquired yet, delay completion.
         if (isDone() || (err == null && !checkLocks()))
             return false;
@@ -362,11 +355,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
                 }
                 else {
-                    topFut.syncNotify(false);
-
-                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> t) {
-                            prepare();
+                            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                                @Override
+                                public void run() {
+                                    prepare();
+                                }
+                            });
                         }
                     });
                 }
@@ -388,24 +384,24 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (tx.activeCacheIds().isEmpty())
             return cctx.exchange().lastTopologyFuture();
 
-        GridCacheContext<K, V> nonLocalCtx = null;
+        GridCacheContext<K, V> nonLocCtx = null;
 
         for (int cacheId : tx.activeCacheIds()) {
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (!cacheCtx.isLocal()) {
-                nonLocalCtx = cacheCtx;
+                nonLocCtx = cacheCtx;
 
                 break;
             }
         }
 
-        if (nonLocalCtx == null)
+        if (nonLocCtx == null)
             return cctx.exchange().lastTopologyFuture();
 
-        nonLocalCtx.topology().readLock();
+        nonLocCtx.topology().readLock();
 
-        return nonLocalCtx.topology().topologyVersionFuture();
+        return nonLocCtx.topology().topologyVersionFuture();
     }
 
     /**
@@ -438,7 +434,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         try {
             prepare(
-                tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry<K, V>>emptyList(),
+                tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry>emptyList(),
                 tx.writeEntries());
 
             markInitialized();
@@ -454,8 +450,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @throws IgniteCheckedException If transaction is group-lock and some key was mapped to to the local node.
      */
     private void prepare(
-        Iterable<IgniteTxEntry<K, V>> reads,
-        Iterable<IgniteTxEntry<K, V>> writes
+        Iterable<IgniteTxEntry> reads,
+        Iterable<IgniteTxEntry> writes
     ) throws IgniteCheckedException {
         assert tx.optimistic();
 
@@ -469,7 +465,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         txMapping = new GridDhtTxMapping<>();
 
-        ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings =
+        ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings =
             new ConcurrentLinkedDeque8<>();
 
         if (!F.isEmpty(reads) || !F.isEmpty(writes)) {
@@ -486,10 +482,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         }
 
         // Assign keys to primary nodes.
-        GridDistributedTxMapping<K, V> cur = null;
+        GridDistributedTxMapping cur = null;
 
-        for (IgniteTxEntry<K, V> read : reads) {
-            GridDistributedTxMapping<K, V> updated = map(read, topVer, cur, false);
+        for (IgniteTxEntry read : reads) {
+            GridDistributedTxMapping updated = map(read, topVer, cur, false);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -505,8 +501,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             }
         }
 
-        for (IgniteTxEntry<K, V> write : writes) {
-            GridDistributedTxMapping<K, V> updated = map(write, topVer, cur, true);
+        for (IgniteTxEntry write : writes) {
+            GridDistributedTxMapping updated = map(write, topVer, cur, true);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -546,14 +542,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      *
      */
     private void preparePessimistic() {
-        Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping<K, V>> mappings = new HashMap<>();
+        Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
         long topVer = tx.topologyVersion();
 
         txMapping = new GridDhtTxMapping<>();
 
-        for (IgniteTxEntry<K, V> txEntry : tx.allEntries()) {
-            GridCacheContext<K, V> cacheCtx = txEntry.context();
+        for (IgniteTxEntry txEntry : tx.allEntries()) {
+            GridCacheContext cacheCtx = txEntry.context();
 
             List<ClusterNode> nodes = cacheCtx.affinity().nodes(txEntry.key(), topVer);
 
@@ -563,10 +559,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
             IgniteBiTuple<ClusterNode, Boolean> key = F.t(primary, near);
 
-            GridDistributedTxMapping<K, V> nodeMapping = mappings.get(key);
+            GridDistributedTxMapping nodeMapping = mappings.get(key);
 
             if (nodeMapping == null) {
-                nodeMapping = new GridDistributedTxMapping<>(primary);
+                nodeMapping = new GridDistributedTxMapping(primary);
 
                 nodeMapping.near(cacheCtx.isNear());
 
@@ -584,10 +580,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         checkOnePhase();
 
-        for (final GridDistributedTxMapping<K, V> m : mappings.values()) {
+        for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();
 
-            GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
+            GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                 futId,
                 tx.topologyVersion(),
                 tx,
@@ -605,7 +601,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 tx.subjectId(),
                 tx.taskNameHash());
 
-            for (IgniteTxEntry<K, V> txEntry : m.writes()) {
+            for (IgniteTxEntry txEntry : m.writes()) {
                 if (txEntry.op() == TRANSFORM)
                     req.addDhtVersion(txEntry.txKey(), null);
             }
@@ -617,8 +613,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             add(fut);
 
             if (node.isLocal()) {
-                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse<K, V>>() {
-                    @Override public void apply(GridNearTxPrepareResponse<K, V> res) {
+                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
+                    @Override public void apply(GridNearTxPrepareResponse res) {
                         fut.onResult(node.id(), res);
                     }
                 });
@@ -664,11 +660,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      *
      * @param mappings Queue of mappings.
      */
-    private void proceedPrepare(final ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings) {
+    private void proceedPrepare(final ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings) {
         if (isDone())
             return;
 
-        final GridDistributedTxMapping<K, V> m = mappings.poll();
+        final GridDistributedTxMapping m = mappings.poll();
 
         if (m == null)
             return;
@@ -677,7 +673,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         final ClusterNode n = m.node();
 
-        GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
+        GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
             futId,
             tx.topologyVersion(),
             tx,
@@ -695,7 +691,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.subjectId(),
             tx.taskNameHash());
 
-        for (IgniteTxEntry<K, V> txEntry : m.writes()) {
+        for (IgniteTxEntry txEntry : m.writes()) {
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.txKey(), null);
         }
@@ -723,8 +719,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            cctx.tm().txHandler().prepareTx(n.id(), tx, req, new CI1<GridNearTxPrepareResponse<K, V>>() {
-                @Override public void apply(GridNearTxPrepareResponse<K, V> res) {
+            cctx.tm().txHandler().prepareTx(n.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
+                @Override public void apply(GridNearTxPrepareResponse res) {
                     fut.onResult(n.id(), res);
                 }
             });
@@ -750,13 +746,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @throws IgniteCheckedException If transaction is group-lock and local node is not primary for key.
      * @return Mapping.
      */
-    private GridDistributedTxMapping<K, V> map(
-        IgniteTxEntry<K, V> entry,
+    private GridDistributedTxMapping map(
+        IgniteTxEntry entry,
         long topVer,
-        GridDistributedTxMapping<K, V> cur,
+        GridDistributedTxMapping cur,
         boolean waitLock
     ) throws IgniteCheckedException {
-        GridCacheContext<K, V> cacheCtx = entry.context();
+        GridCacheContext cacheCtx = entry.context();
 
         List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
 
@@ -778,11 +774,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
-            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
+            entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer));
         else if (!cacheCtx.isLocal())
-            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
+            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true));
         else
-            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
+            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
             if (waitLock && entry.explicitVersion() == null) {
@@ -792,7 +788,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
-            cur = new GridDistributedTxMapping<>(primary);
+            cur = new GridDistributedTxMapping(primary);
 
             // Initialize near flag right away.
             cur.near(cacheCtx.isNear());
@@ -805,14 +801,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (cacheCtx.isNear()) {
             while (true) {
                 try {
-                    GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
+                    GridNearCacheEntry cached = (GridNearCacheEntry)entry.cached();
 
                     cached.dhtNodeId(tx.xidVersion(), primary.id());
 
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()), entry.keyBytes());
+                    entry.cached(cacheCtx.near().entryEx(entry.key()));
                 }
             }
         }
@@ -829,7 +825,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -838,29 +834,22 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         /** Keys. */
         @GridToStringInclude
-        private GridDistributedTxMapping<K, V> m;
+        private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
         private AtomicBoolean rcvRes = new AtomicBoolean(false);
 
         /** Mappings to proceed prepare. */
-        private ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public MiniFuture() {
-            // No-op.
-        }
+        private ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings;
 
         /**
          * @param m Mapping.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridDistributedTxMapping<K, V> m,
-            ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings) {
-            super(cctx.kernalContext());
-
+        MiniFuture(
+            GridDistributedTxMapping m,
+            ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings
+        ) {
             this.m = m;
             this.mappings = mappings;
         }
@@ -882,7 +871,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @return Keys.
          */
-        public GridDistributedTxMapping<K, V> mapping() {
+        public GridDistributedTxMapping mapping() {
             return m;
         }
 
@@ -923,7 +912,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
          * @param nodeId Failed node ID.
          * @param res Result callback.
          */
-        void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
+        void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
 
@@ -935,29 +924,29 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 else {
                     assert F.isEmpty(res.invalidPartitions());
 
-                    for (Map.Entry<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : res.ownedValues().entrySet()) {
-                        IgniteTxEntry<K, V> txEntry = tx.entry(entry.getKey());
+                    for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
+                        IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
                         assert txEntry != null;
 
-                        GridCacheContext<K, V> cacheCtx = txEntry.context();
+                        GridCacheContext cacheCtx = txEntry.context();
 
                         while (true) {
                             try {
                                 if (cacheCtx.isNear()) {
-                                    GridNearCacheEntry<K, V> nearEntry = (GridNearCacheEntry<K, V>)txEntry.cached();
+                                    GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                                    GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
+                                    CacheVersionedValue tup = entry.getValue();
 
-                                    nearEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion(),
-                                        tup.get1(), m.node().id());
+                                    nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
+                                        tup.version(), m.node().id());
                                 }
                                 else if (txEntry.cached().detached()) {
-                                    GridDhtDetachedCacheEntry<K, V> detachedEntry = (GridDhtDetachedCacheEntry<K, V>)txEntry.cached();
+                                    GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                                    GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
+                                    CacheVersionedValue tup = entry.getValue();
 
-                                    detachedEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion());
+                                    detachedEntry.resetFromPrimary(tup.value(), tx.xidVersion());
                                 }
 
                                 break;
@@ -976,8 +965,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     tx.implicitSingleResult(res.returnValue());
 
-                    for (IgniteTxKey<K> key : res.filterFailedKeys()) {
-                        IgniteTxEntry<K, V> txEntry = tx.entry(key);
+                    for (IgniteTxKey key : res.filterFailedKeys()) {
+                        IgniteTxEntry txEntry = tx.entry(key);
 
                         assert txEntry != null : "Missing tx entry for write key: " + key;
 

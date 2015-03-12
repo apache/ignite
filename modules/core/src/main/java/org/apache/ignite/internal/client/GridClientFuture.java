@@ -57,12 +57,5 @@ public interface GridClientFuture<R> {
      *
      * @param lsnrs Listeners to be registered.
      */
-    public void listenAsync(GridClientFutureListener<R>... lsnrs);
-
-    /**
-     * Removes listeners registered before.
-     *
-     * @param lsnrs Listeners to be removed.
-     */
-    public void stopListenAsync(GridClientFutureListener<R>... lsnrs);
+    public void listen(GridClientFutureListener<R>... lsnrs);
 }

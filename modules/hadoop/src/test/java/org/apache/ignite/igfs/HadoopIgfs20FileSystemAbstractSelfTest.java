@@ -107,7 +107,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract Map<String, String>  primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
 
     /**
      * Gets secondary file system URI path.
@@ -128,7 +128,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
      *
      * @return Secondary IPC endpoint configuration.
      */
-    protected abstract Map<String, String>  secondaryIpcEndpointConfiguration();
+    protected abstract IgfsIpcEndpointConfiguration secondaryIpcEndpointConfiguration();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

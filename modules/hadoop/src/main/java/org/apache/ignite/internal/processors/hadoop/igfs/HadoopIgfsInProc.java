@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -296,7 +297,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
+    @Override public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate delegate, long pos, int len,
         @Nullable byte[] outBuf, int outOff, int outLen) {
         IgfsInputStreamAdapter stream = delegate.target();
 
@@ -323,7 +324,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 stream.readFully(pos, res, 0, len);
             }
 
-            return new GridPlainFutureAdapter<>(res);
+            return new GridFinishedFuture<>(res);
         }
         catch (IllegalStateException | IOException e) {
             HadoopIgfsStreamEventListener lsnr = lsnrs.get(delegate);
@@ -331,7 +332,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
             if (lsnr != null)
                 lsnr.onError(e.getMessage());
 
-            return new GridPlainFutureAdapter<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

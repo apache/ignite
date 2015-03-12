@@ -36,6 +36,9 @@ public final class GridCacheXAResource implements XAResource {
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** */
+    private static IgniteLogger log;
+
+    /** */
     private static final Xid[] NO_XID = new Xid[] {};
 
     /** Context. */
@@ -43,9 +46,6 @@ public final class GridCacheXAResource implements XAResource {
 
     /** Cache transaction. */
     private IgniteInternalTx cacheTx;
-
-    /** */
-    private IgniteLogger log;
 
     /** */
     private Xid xid;
@@ -61,7 +61,8 @@ public final class GridCacheXAResource implements XAResource {
         this.cctx = cctx;
         this.cacheTx = cacheTx;
 
-        log = U.logger(cctx.kernalContext(), logRef, GridCacheXAResource.class);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheXAResource.class);
     }
 
     /** {@inheritDoc} */

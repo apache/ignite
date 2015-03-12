@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Get response.
  */
-public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
+public class GridNearGetResponse extends GridCacheMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -50,11 +50,8 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** Result. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<GridCacheEntryInfo<K, V>> entries;
-
-    /** */
-    private byte[] entriesBytes;
+    @GridDirectCollection(GridCacheEntryInfo.class)
+    private Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
@@ -122,14 +119,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /**
      * @return Entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> entries() {
-        return entries;
+    public Collection<GridCacheEntryInfo> entries() {
+        return entries != null ? entries : Collections.<GridCacheEntryInfo>emptyList();
     }
 
     /**
      * @param entries Entries.
      */
-    public void entries(Collection<GridCacheEntryInfo<K, V>> entries) {
+    public void entries(Collection<GridCacheEntryInfo> entries) {
         this.entries = entries;
     }
 
@@ -172,13 +169,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (entries != null) {
-            marshalInfos(entries, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            entriesBytes = ctx.marshaller().marshal(entries);
+        if (entries != null) {
+            for (GridCacheEntryInfo info : entries)
+                info.marshal(cctx);
         }
 
         if (err != null)
@@ -186,13 +184,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entriesBytes != null) {
-            entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId());
 
-            unmarshalInfos(entries, ctx.cacheContext(cacheId()), ldr);
+        if (entries != null) {
+            for (GridCacheEntryInfo info : entries)
+                info.unmarshal(cctx, ldr);
         }
 
         if (errBytes != null)
@@ -215,7 +214,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("entriesBytes", entriesBytes))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -273,7 +272,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (reader.state()) {
             case 3:
-                entriesBytes = reader.readByteArray("entriesBytes");
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

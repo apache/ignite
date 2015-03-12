@@ -27,13 +27,6 @@ import static org.apache.ignite.cache.CacheMode.*;
  *
  */
 public class GridCachePartitionedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /**
-     *
-     */
-    public GridCachePartitionedLocalStoreSelfTest() {
-        super();
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode getDistributionMode() {
         return PARTITIONED_ONLY;

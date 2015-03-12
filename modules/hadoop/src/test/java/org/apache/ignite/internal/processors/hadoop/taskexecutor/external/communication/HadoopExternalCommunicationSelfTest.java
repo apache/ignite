@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -53,7 +53,7 @@ public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest 
     private void checkSimpleMessageSending(boolean useShmem) throws Exception {
         UUID parentNodeId = UUID.randomUUID();
 
-        Marshaller marsh = new OptimizedMarshaller();
+        Marshaller marsh = new JdkMarshaller();
 
         IgniteLogger log = log();
 

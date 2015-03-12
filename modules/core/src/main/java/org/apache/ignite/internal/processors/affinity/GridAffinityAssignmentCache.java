@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -93,6 +92,10 @@ public class GridAffinityAssignmentCache {
         CacheAffinityKeyMapper affMapper,
         int backups)
     {
+        assert ctx != null;
+        assert aff != null;
+        assert affMapper != null;
+
         this.ctx = ctx;
         this.aff = aff;
         this.affMapper = affMapper;
@@ -263,7 +266,7 @@ public class GridAffinityAssignmentCache {
         }
 
         GridFutureAdapter<Long> fut = F.addIfAbsent(readyFuts, topVer,
-            new AffinityReadyFuture(ctx.kernalContext(), topVer));
+            new AffinityReadyFuture(topVer));
 
         aff = head.get();
 
@@ -296,15 +299,6 @@ public class GridAffinityAssignmentCache {
      * @return Partition.
      */
     public int partition(Object key) {
-        if (ctx.portableEnabled()) {
-            try {
-                key = ctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
-
         return aff.partition(affinityKey(key));
     }
 
@@ -316,6 +310,9 @@ public class GridAffinityAssignmentCache {
      * @return Affinity key.
      */
     private Object affinityKey(Object key) {
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(ctx.cacheObjectContext(), false);
+
         return (key instanceof GridCacheInternal ? ctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
@@ -436,18 +433,8 @@ public class GridAffinityAssignmentCache {
         private long reqTopVer;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
          */
-        public AffinityReadyFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
-         */
-        private AffinityReadyFuture(GridKernalContext ctx, long reqTopVer) {
-            super(ctx);
-
+        private AffinityReadyFuture(long reqTopVer) {
             this.reqTopVer = reqTopVer;
         }
 

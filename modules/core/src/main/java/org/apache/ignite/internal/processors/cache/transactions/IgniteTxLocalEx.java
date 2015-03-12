@@ -25,14 +25,13 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 
 /**
  * Local transaction API.
  */
-public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
+public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @return Minimum version involved in transaction.
      */
@@ -61,7 +60,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     /**
      * @return Group lock entry if this is a group-lock transaction.
      */
-    @Nullable public IgniteTxEntry<K, V> groupLockEntry();
+    @Nullable public IgniteTxEntry groupLockEntry();
 
     /**
      * @param cacheCtx Cache context.
@@ -69,14 +68,17 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param cached Cached entry if this method is called from entry wrapper.
      *      Cached entry is passed if and only if there is only one key in collection of keys.
      * @param deserializePortable Deserialize portable flag.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects
      * @return Future for this get.
      */
-    public IgniteInternalFuture<Map<K, V>> getAllAsync(
-        GridCacheContext<K, V> cacheCtx,
-        Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached,
+    public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
+        GridCacheContext cacheCtx,
+        Collection<KeyCacheObject> keys,
+        @Nullable GridCacheEntryEx cached,
         boolean deserializePortable,
-        boolean skipVals);
+        boolean skipVals,
+        boolean keepCacheObjects);
 
     /**
      * @param cacheCtx Cache context.
@@ -87,13 +89,13 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param ttl Time to live for entry. If negative, leave unchanged.
      * @return Future for put operation.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> putAllAsync(
-        GridCacheContext<K, V> cacheCtx,
+    public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
+        GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
-        @Nullable GridCacheEntryEx<K, V> cached,
+        @Nullable GridCacheEntryEx cached,
         long ttl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -101,8 +103,8 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param invokeArgs Optional arguments for entry processor.
      * @return Transform operation future.
      */
-    public <T> IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
-        GridCacheContext<K, V> cacheCtx,
+    public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
+        GridCacheContext cacheCtx,
         Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
 
@@ -114,12 +116,12 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param filter Filter.
      * @return Future for asynchronous remove.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> removeAllAsync(
-        GridCacheContext<K, V> cacheCtx,
+    public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
+        GridCacheContext cacheCtx,
         Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached,
+        @Nullable GridCacheEntryEx cached,
         boolean retval,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -127,8 +129,8 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @return Future for DR put operation.
      */
     public IgniteInternalFuture<?> putAllDrAsync(
-        GridCacheContext<K, V> cacheCtx,
-        Map<? extends K, GridCacheDrInfo<V>> drMap);
+        GridCacheContext cacheCtx,
+        Map<KeyCacheObject, GridCacheDrInfo> drMap);
 
     /**
      * @param cacheCtx Cache context.
@@ -136,8 +138,8 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @return Future for asynchronous remove.
      */
     public IgniteInternalFuture<?> removeAllDrAsync(
-        GridCacheContext<K, V> cacheCtx,
-        Map<? extends K, GridCacheVersion> drMap);
+        GridCacheContext cacheCtx,
+        Map<KeyCacheObject, GridCacheVersion> drMap);
 
     /**
      * Performs keys locking for affinity-based group lock transactions.
@@ -146,7 +148,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @param keys Keys to lock.
      * @return Lock future.
      */
-    public IgniteInternalFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
+    public <K> IgniteInternalFuture<?> groupLockAsync(GridCacheContext cacheCtx, Collection<K> keys);
 
     /**
      * @return {@code True} if keys from the same partition are allowed to be enlisted in group-lock transaction.
@@ -156,7 +158,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     /**
      * @return Return value for
      */
-    public GridCacheReturn<V> implicitSingleResult();
+    public GridCacheReturn implicitSingleResult();
 
     /**
      * Finishes transaction (either commit or rollback).
@@ -178,11 +180,11 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
      * @return Future with {@code True} value if loading took place.
      */
     public IgniteInternalFuture<Boolean> loadMissing(
-        GridCacheContext<K, V> cacheCtx,
+        GridCacheContext cacheCtx,
         boolean readThrough,
         boolean async,
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         boolean deserializePortable,
         boolean skipVals,
-        IgniteBiInClosure<K, V> c);
+        IgniteBiInClosure<KeyCacheObject, Object> c);
 }

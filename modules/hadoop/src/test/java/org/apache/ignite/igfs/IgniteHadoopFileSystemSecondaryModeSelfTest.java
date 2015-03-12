@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.hadoop.fs.*;
 import org.apache.ignite.hadoop.fs.v1.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -91,10 +92,13 @@ public class IgniteHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstr
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(mode);
         igfsCfg.setPathModes(pathModes);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", "10500");
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(10500);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         igfsCfg.setManagementPort(-1);
         igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
@@ -158,10 +162,13 @@ public class IgniteHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstr
         igfsCfg.setName("igfs-secondary");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", "11500");
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(11500);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

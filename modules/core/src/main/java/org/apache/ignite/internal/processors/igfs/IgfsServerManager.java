@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -30,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.*;
+import static org.apache.ignite.igfs.IgfsIpcEndpointType.*;
 
 /**
  * IGFS server manager.
@@ -50,26 +52,23 @@ public class IgfsServerManager extends IgfsManager {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         FileSystemConfiguration igfsCfg = igfsCtx.configuration();
-        Map<String,String> cfg = igfsCfg.getIpcEndpointConfiguration();
 
-        if (F.isEmpty(cfg)) {
-            // Set default configuration.
-            cfg = new HashMap<>();
+        if (igfsCfg.isIpcEndpointEnabled()) {
+            IgfsIpcEndpointConfiguration ipcCfg = igfsCfg.getIpcEndpointConfiguration();
 
-            cfg.put("type", U.isWindows() ? "tcp" : "shmem");
-            cfg.put("port", String.valueOf(DFLT_IPC_PORT));
+            if (ipcCfg == null)
+                ipcCfg = new IgfsIpcEndpointConfiguration();
+
+            bind(ipcCfg, /*management*/false);
         }
 
-        if (igfsCfg.isIpcEndpointEnabled())
-            bind(cfg, /*management*/false);
-
         if (igfsCfg.getManagementPort() >= 0) {
-            cfg = new HashMap<>();
+            IgfsIpcEndpointConfiguration mgmtIpcCfg = new IgfsIpcEndpointConfiguration();
 
-            cfg.put("type", "tcp");
-            cfg.put("port", String.valueOf(igfsCfg.getManagementPort()));
+            mgmtIpcCfg.setType(TCP);
+            mgmtIpcCfg.setPort(igfsCfg.getManagementPort());
 
-            bind(cfg, /*management*/true);
+            bind(mgmtIpcCfg, /*management*/true);
         }
 
         if (bindWorker != null)
@@ -84,7 +83,7 @@ public class IgfsServerManager extends IgfsManager {
      * @param mgmt {@code True} if endpoint is management.
      * @throws IgniteCheckedException If failed.
      */
-    private void bind(final Map<String,String> endpointCfg, final boolean mgmt) throws IgniteCheckedException {
+    private void bind(final IgfsIpcEndpointConfiguration endpointCfg, final boolean mgmt) throws IgniteCheckedException {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
@@ -155,7 +154,7 @@ public class IgfsServerManager extends IgfsManager {
     @SuppressWarnings("BusyWait")
     private class BindWorker extends GridWorker {
         /** Configurations to bind. */
-        private Collection<IgniteBiTuple<Map<String, String>, Boolean>> bindCfgs = new LinkedList<>();
+        private Collection<IgniteBiTuple<IgfsIpcEndpointConfiguration, Boolean>> bindCfgs = new LinkedList<>();
 
         /**
          * Constructor.
@@ -170,7 +169,7 @@ public class IgfsServerManager extends IgfsManager {
          * @param cfg Configuration.
          * @param mgmt Management flag.
          */
-        public void addConfiguration(Map<String, String> cfg, boolean mgmt) {
+        public void addConfiguration(IgfsIpcEndpointConfiguration cfg, boolean mgmt) {
             bindCfgs.add(F.t(cfg, mgmt));
         }
 
@@ -181,10 +180,10 @@ public class IgfsServerManager extends IgfsManager {
             while (!isCancelled()) {
                 Thread.sleep(REBIND_INTERVAL);
 
-                Iterator<IgniteBiTuple<Map<String, String>, Boolean>> it = bindCfgs.iterator();
+                Iterator<IgniteBiTuple<IgfsIpcEndpointConfiguration, Boolean>> it = bindCfgs.iterator();
 
                 while (it.hasNext()) {
-                    IgniteBiTuple<Map<String, String>, Boolean> cfg = it.next();
+                    IgniteBiTuple<IgfsIpcEndpointConfiguration, Boolean> cfg = it.next();
 
                     IgfsServer ipcSrv = new IgfsServer(igfsCtx, cfg.get1(), cfg.get2());
 

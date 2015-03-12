@@ -91,7 +91,9 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
                 ctx,
                 cfg,
                 new HadoopJobTracker(),
-                cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
+                new HadoopEmbeddedTaskExecutor(),
+                // TODO: IGNITE-404: Uncomment when fixed.
+                //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
                 new HadoopShuffle());
 
 

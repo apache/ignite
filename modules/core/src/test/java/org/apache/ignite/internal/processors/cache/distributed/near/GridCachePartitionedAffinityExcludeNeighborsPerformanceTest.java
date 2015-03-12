@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Partitioned affinity test.
@@ -73,7 +73,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
 
         cc.setAffinity(aff);
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
 
         c.setCacheConfiguration(cc);
 

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -117,7 +117,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setPreloadMode(NONE);
+            cc.setRebalanceMode(NONE);
 
             c.setCacheConfiguration(cc);
         }
@@ -581,20 +581,20 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                             GridDhtCacheAdapter<CacheAffinityKey<String>, Object> dht = near.dht();
 
                             for (CacheAffinityKey<String> k : keys) {
-                                GridNearCacheEntry<?, ?> nearEntry = near.peekExx(k);
-                                GridDhtCacheEntry<?, ?> dhtEntry = dht.peekExx(k);
+                                GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
+                                GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
                                 X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
                                 X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
 
-                                GridCacheMvccCandidate<?> nearCand =
+                                GridCacheMvccCandidate nearCand =
                                     nearEntry == null ? null : F.first(nearEntry.localCandidates());
 
                                 if (nearCand != null)
                                     X.println("Near futures: " +
                                         nearEntry.context().mvcc().futures(nearCand.version()));
 
-                                GridCacheMvccCandidate<?> dhtCand =
+                                GridCacheMvccCandidate dhtCand =
                                     dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
 
                                 if (dhtCand != null)

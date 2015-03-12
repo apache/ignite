@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
  * @param <K> Key type.
  * @param <V> Value type.
  */
-interface GridLocalLockCallback<K, V> {
+interface GridLocalLockCallback {
     /**
      * Called when entry lock ownership changes. This call
      * happens outside of synchronization so external callbacks
@@ -33,6 +33,7 @@ interface GridLocalLockCallback<K, V> {
      * @param prev Previous candidate.
      * @param owner Current candidate.
      */
-    public void onOwnerChanged(GridLocalCacheEntry<K, V> entry, GridCacheMvccCandidate<K> prev,
-        GridCacheMvccCandidate<K> owner);
+    public void onOwnerChanged(GridLocalCacheEntry entry,
+        GridCacheMvccCandidate prev,
+        GridCacheMvccCandidate owner);
 }

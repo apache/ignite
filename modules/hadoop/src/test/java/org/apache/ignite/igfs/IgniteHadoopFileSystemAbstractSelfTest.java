@@ -25,7 +25,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.hadoop.fs.*;
-import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.hadoop.fs.v1.*;
 import org.apache.ignite.internal.processors.hadoop.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.*;
@@ -75,10 +75,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
 
     /** Secondary endpoint configuration. */
-    protected static final Map<String, String> SECONDARY_ENDPOINT_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_ENDPOINT_CFG;
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -115,6 +112,13 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** Primary file system configuration. */
     protected Configuration primaryFsCfg;
+
+    static {
+        SECONDARY_ENDPOINT_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_ENDPOINT_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_ENDPOINT_CFG.setPort(11500);
+    }
 
     /** File statuses comparator. */
     private static final Comparator<FileStatus> STATUS_COMPARATOR = new Comparator<FileStatus>() {
@@ -260,7 +264,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract Map<String, String> primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
 
     /** {@inheritDoc} */
     @Override public String getTestGridName() {

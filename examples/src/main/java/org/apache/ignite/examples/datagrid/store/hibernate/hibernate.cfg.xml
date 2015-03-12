@@ -26,9 +26,6 @@
 -->
 <hibernate-configuration>
     <session-factory>
-        <!-- Show SQL. -->
-        <property name="show_sql">true</property>
-
         <!-- Database connection settings (private in-memory database). -->
         <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
 

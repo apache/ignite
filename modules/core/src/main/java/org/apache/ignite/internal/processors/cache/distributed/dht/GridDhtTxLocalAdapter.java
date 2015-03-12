@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -34,7 +35,6 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -45,16 +45,16 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated user transaction.
  */
-public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K, V> {
+public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping<K, V>> nearMap =
+    protected Map<UUID, GridDistributedTxMapping> nearMap =
         new ConcurrentHashMap8<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping<K, V>> dhtMap =
+    protected Map<UUID, GridDistributedTxMapping> dhtMap =
         new ConcurrentHashMap8<>();
 
     /** Mapped flag. */
@@ -90,11 +90,12 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param partLock If this is a group-lock transaction and the whole partition should be locked.
      */
     protected GridDhtTxLocalAdapter(
-        GridCacheSharedContext<K, V> cctx,
+        GridCacheSharedContext cctx,
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -106,8 +107,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, sys, concurrency, isolation, timeout, invalidate, storeEnabled,
-            txSize, grpLockKey, partLock, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, invalidate,
+            storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
 
@@ -140,8 +141,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @return {@code True} if reader was added as a result of this call.
      */
     @Nullable protected abstract IgniteInternalFuture<Boolean> addReader(long msgId,
-        GridDhtCacheEntry<K, V> cached,
-        IgniteTxEntry<K, V> entry,
+        GridDhtCacheEntry cached,
+        IgniteTxEntry entry,
         long topVer);
 
     /**
@@ -195,21 +196,21 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                 return;
             }
 
-            Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtEntryMap = null;
-            Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
+            Map<ClusterNode, List<GridDhtCacheEntry>> dhtEntryMap = null;
+            Map<ClusterNode, List<GridDhtCacheEntry>> nearEntryMap = null;
 
-            for (IgniteTxEntry<K, V> e : allEntries()) {
+            for (IgniteTxEntry e : allEntries()) {
                 assert e.cached() != null;
 
-                GridCacheContext<K, V> cacheCtx = e.cached().context();
+                GridCacheContext cacheCtx = e.cached().context();
 
                 if (cacheCtx.isNear())
                     continue;
 
                 if (e.cached().obsolete()) {
-                    GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key());
+                    GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
 
-                    e.cached(cached, cached.keyBytes());
+                    e.cached(cached);
                 }
 
                 if (e.cached().detached() || e.cached().isLocal())
@@ -226,15 +227,15 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                                 nearEntryMap = new GridLeanMap<>();
 
                             cacheCtx.dhtMap(nearNodeId(), topologyVersion(),
-                                (GridDhtCacheEntry<K, V>)e.cached(), log, dhtEntryMap, nearEntryMap);
+                                (GridDhtCacheEntry)e.cached(), log, dhtEntryMap, nearEntryMap);
                         }
 
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        GridCacheEntryEx<K, V> cached = cacheCtx.cache().entryEx(e.key());
+                        GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
 
-                        e.cached(cached, cached.keyBytes());
+                        e.cached(cached);
                     }
                 }
             }
@@ -252,7 +253,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     /**
      * @return DHT map.
      */
-    Map<UUID, GridDistributedTxMapping<K, V>> dhtMap() {
+    Map<UUID, GridDistributedTxMapping> dhtMap() {
         mapExplicitLocks();
 
         return dhtMap;
@@ -261,7 +262,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     /**
      * @return Near map.
      */
-    Map<UUID, GridDistributedTxMapping<K, V>> nearMap() {
+    Map<UUID, GridDistributedTxMapping> nearMap() {
         mapExplicitLocks();
 
         return nearMap;
@@ -271,7 +272,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param nodeId Node ID.
      * @return Mapping.
      */
-    GridDistributedTxMapping<K, V> dhtMapping(UUID nodeId) {
+    GridDistributedTxMapping dhtMapping(UUID nodeId) {
         return dhtMap.get(nodeId);
     }
 
@@ -279,35 +280,35 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param nodeId Node ID.
      * @return Mapping.
      */
-    GridDistributedTxMapping<K, V> nearMapping(UUID nodeId) {
+    GridDistributedTxMapping nearMapping(UUID nodeId) {
         return nearMap.get(nodeId);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    void addDhtNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings) {
+    void addDhtNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
         addMapping(mappings, dhtMap);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    void addNearNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings) {
+    void addNearNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
         addMapping(mappings, nearMap);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    public void addDhtMapping(Map<UUID, GridDistributedTxMapping<K, V>> mappings) {
+    public void addDhtMapping(Map<UUID, GridDistributedTxMapping> mappings) {
         addMapping0(mappings, dhtMap);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    public void addNearMapping(Map<UUID, GridDistributedTxMapping<K, V>> mappings) {
+    public void addNearMapping(Map<UUID, GridDistributedTxMapping> mappings) {
         addMapping0(mappings, nearMap);
     }
     /**
@@ -323,7 +324,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param entry Entry to remove.
      * @return {@code True} if was removed.
      */
-    boolean removeDhtMapping(UUID nodeId, GridCacheEntryEx<K, V> entry) {
+    boolean removeDhtMapping(UUID nodeId, GridCacheEntryEx entry) {
         return removeMapping(nodeId, entry, dhtMap);
     }
 
@@ -332,7 +333,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param entry Entry to remove.
      * @return {@code True} if was removed.
      */
-    boolean removeNearMapping(UUID nodeId, GridCacheEntryEx<K, V> entry) {
+    boolean removeNearMapping(UUID nodeId, GridCacheEntryEx entry) {
         return removeMapping(nodeId, entry, nearMap);
     }
 
@@ -342,18 +343,18 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param map Map to remove from.
      * @return {@code True} if was removed.
      */
-    private boolean removeMapping(UUID nodeId, @Nullable GridCacheEntryEx<K, V> entry,
-        Map<UUID, GridDistributedTxMapping<K, V>> map) {
+    private boolean removeMapping(UUID nodeId, @Nullable GridCacheEntryEx entry,
+        Map<UUID, GridDistributedTxMapping> map) {
         if (entry != null) {
             if (log.isDebugEnabled())
                 log.debug("Removing mapping for entry [nodeId=" + nodeId + ", entry=" + entry + ']');
 
-            IgniteTxEntry<K, V> txEntry = txMap.get(entry.txKey());
+            IgniteTxEntry txEntry = txMap.get(entry.txKey());
 
             if (txEntry == null)
                 return false;
 
-            GridDistributedTxMapping<K, V> m = map.get(nodeId);
+            GridDistributedTxMapping m = map.get(nodeId);
 
             boolean ret = m != null && m.removeEntry(txEntry);
 
@@ -371,22 +372,22 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param dst Transaction mappings.
      */
     private void addMapping(
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> mappings,
-        Map<UUID, GridDistributedTxMapping<K, V>> dst
+        Map<ClusterNode, List<GridDhtCacheEntry>> mappings,
+        Map<UUID, GridDistributedTxMapping> dst
     ) {
-        for (Map.Entry<ClusterNode, List<GridDhtCacheEntry<K, V>>> mapping : mappings.entrySet()) {
+        for (Map.Entry<ClusterNode, List<GridDhtCacheEntry>> mapping : mappings.entrySet()) {
             ClusterNode n = mapping.getKey();
 
-            GridDistributedTxMapping<K, V> m = dst.get(n.id());
+            GridDistributedTxMapping m = dst.get(n.id());
 
-            List<GridDhtCacheEntry<K, V>> entries = mapping.getValue();
+            List<GridDhtCacheEntry> entries = mapping.getValue();
 
-            for (GridDhtCacheEntry<K, V> entry : entries) {
-                IgniteTxEntry<K, V> txEntry = txMap.get(entry.txKey());
+            for (GridDhtCacheEntry entry : entries) {
+                IgniteTxEntry txEntry = txMap.get(entry.txKey());
 
                 if (txEntry != null) {
                     if (m == null)
-                        dst.put(n.id(), m = new GridDistributedTxMapping<>(n));
+                        dst.put(n.id(), m = new GridDistributedTxMapping(n));
 
                     m.add(txEntry);
                 }
@@ -399,23 +400,23 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param dst Map to add to.
      */
     private void addMapping0(
-        Map<UUID, GridDistributedTxMapping<K, V>> mappings,
-        Map<UUID, GridDistributedTxMapping<K, V>> dst
+        Map<UUID, GridDistributedTxMapping> mappings,
+        Map<UUID, GridDistributedTxMapping> dst
     ) {
-        for (Map.Entry<UUID, GridDistributedTxMapping<K, V>> entry : mappings.entrySet()) {
-            GridDistributedTxMapping<K, V> targetMapping = dst.get(entry.getKey());
+        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
+            GridDistributedTxMapping targetMapping = dst.get(entry.getKey());
 
             if (targetMapping == null)
                 dst.put(entry.getKey(), entry.getValue());
             else {
-                for (IgniteTxEntry<K, V> txEntry : entry.getValue().entries())
+                for (IgniteTxEntry txEntry : entry.getValue().entries())
                     targetMapping.add(txEntry);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext<K, V> ctx, int part) {
+    @Override public void addInvalidPartition(GridCacheContext ctx, int part) {
         assert false : "DHT transaction encountered invalid partition [part=" + part + ", tx=" + this + ']';
     }
 
@@ -425,7 +426,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @return Future for active transactions for the time when reader was added.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry<K, V> e) throws IgniteCheckedException {
+    @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry e) throws IgniteCheckedException {
         init();
 
         TransactionState state = state();
@@ -437,18 +438,17 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
         checkInternal(e.txKey());
 
-        GridCacheContext<K, V> cacheCtx = e.context();
+        GridCacheContext cacheCtx = e.context();
 
-        GridDhtCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+        GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
-            IgniteTxEntry<K, V> entry = txMap.get(e.txKey());
+            IgniteTxEntry entry = txMap.get(e.txKey());
 
             if (entry != null) {
                 entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
                 entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
                 entry.entryProcessors(e.entryProcessors());
-                entry.valueBytes(e.valueBytes());
                 entry.ttl(e.ttl());
                 entry.filters(e.filters());
                 entry.expiry(e.expiry());
@@ -461,22 +461,9 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
                 addActiveCache(dhtCache.context());
 
-                while (true) {
-                    GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(entry.key(), topologyVersion());
+                GridDhtCacheEntry cached = dhtCache.entryExx(entry.key(), topologyVersion());
 
-                    try {
-                        // Set key bytes to avoid serializing in future.
-                        cached.keyBytes(entry.keyBytes());
-
-                        entry.cached(cached, entry.keyBytes());
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry when adding to dht tx (will retry): " + cached);
-                    }
-                }
+                entry.cached(cached);
 
                 GridCacheVersion explicit = entry.explicitVersion();
 
@@ -500,7 +487,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(cacheCtx, ex.partition());
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), true);
+            return new GridFinishedFuture<>(true);
         }
     }
 
@@ -514,9 +501,9 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    IgniteInternalFuture<GridCacheReturn<V>> lockAllAsync(
-        GridCacheContext<K, V> cacheCtx,
-        List<GridCacheEntryEx<K, V>> entries,
+    IgniteInternalFuture<GridCacheReturn> lockAllAsync(
+        GridCacheContext cacheCtx,
+        List<GridCacheEntryEx> entries,
         boolean onePhaseCommit,
         long msgId,
         final boolean read,
@@ -526,36 +513,36 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             checkValid();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
 
-        final GridCacheReturn<V> ret = new GridCacheReturn<>(false);
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
         if (F.isEmpty(entries))
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
         init();
 
         onePhaseCommit(onePhaseCommit);
 
         try {
-            Set<K> skipped = null;
+            Set<KeyCacheObject> skipped = null;
 
             long topVer = topologyVersion();
 
-            GridDhtCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+            GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
             // Enlist locks into transaction.
             for (int i = 0; i < entries.size(); i++) {
-                GridCacheEntryEx<K, V> entry = entries.get(i);
+                GridCacheEntryEx entry = entries.get(i);
 
-                K key = entry.key();
+                KeyCacheObject key = entry.key();
 
-                IgniteTxEntry<K, V> txEntry = entry(entry.txKey());
+                IgniteTxEntry txEntry = entry(entry.txKey());
 
                 // First time access.
                 if (txEntry == null) {
-                    GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(key, topVer);
+                    GridDhtCacheEntry cached = dhtCache.entryExx(key, topVer);
 
                     addActiveCache(dhtCache.context());
 
@@ -567,7 +554,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                         null,
                         cached,
                         null,
-                        CU.<K, V>empty(),
+                        CU.empty0(),
                         false,
                         -1L,
                         -1L,
@@ -576,7 +563,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                     if (read)
                         txEntry.ttl(accessTtl);
 
-                    txEntry.cached(cached, txEntry.keyBytes());
+                    txEntry.cached(cached);
 
                     addReader(msgId, cached, txEntry, topVer);
                 }
@@ -590,13 +577,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
             assert pessimistic();
 
-            Collection<K> keys = F.viewReadOnly(entries, CU.<K, V>entry2Key());
+            Collection<KeyCacheObject> keys = F.viewReadOnly(entries, CU.entry2Key());
 
             // Acquire locks only after having added operation to the write set.
             // Otherwise, during rollback we will not know whether locks need
             // to be rolled back.
             // Loose all skipped and previously locked (we cannot reenter locks here).
-            final Collection<? extends K> passedKeys = skipped != null ? F.view(keys, F0.notIn(skipped)) : keys;
+            final Collection<KeyCacheObject> passedKeys = skipped != null ? F.view(keys, F0.notIn(skipped)) : keys;
 
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
@@ -606,7 +593,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(cctx.kernalContext(), e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -620,22 +607,22 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param filter Entry write filter.
      * @return Future for lock acquisition.
      */
-    private IgniteInternalFuture<GridCacheReturn<V>> obtainLockAsync(
-        final GridCacheContext<K, V> cacheCtx,
-        GridCacheReturn<V> ret,
-        final Collection<? extends K> passedKeys,
+    private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
+        final GridCacheContext cacheCtx,
+        GridCacheReturn ret,
+        final Collection<KeyCacheObject> passedKeys,
         final boolean read,
-        final Set<K> skipped,
+        final Set<KeyCacheObject> skipped,
         final long accessTtl,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        @Nullable final CacheEntryPredicate[] filter) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
 
         if (passedKeys.isEmpty())
-            return new GridFinishedFuture<>(cctx.kernalContext(), ret);
+            return new GridFinishedFuture<>(ret);
 
-        GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+        GridDhtTransactionalCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             lockTimeout(),
@@ -645,12 +632,12 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             /*retval*/false,
             isolation,
             accessTtl,
-            CU.<K, V>empty());
+            CU.empty0());
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn<V>>(ret) {
-                @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
+            new PLC1<GridCacheReturn>(ret) {
+                @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + passedKeys);
 
@@ -662,20 +649,20 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                         /*retval*/false,
                         /*read*/read,
                         accessTtl,
-                        filter == null ? CU.<K, V>empty() : filter,
+                        filter == null ? CU.empty0() : filter,
                         /**computeInvoke*/false);
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            }
+        );
     }
 
     /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
+    @Override protected void addGroupTxMapping(Collection<IgniteTxKey> keys) {
         assert groupLock();
 
-        for (GridDistributedTxMapping<K, V> mapping : dhtMap.values())
+        for (GridDistributedTxMapping mapping : dhtMap.values())
             mapping.entries(Collections.unmodifiableCollection(txMap.values()), true);
 
         // Here we know that affinity key for all given keys is our group lock key.
@@ -683,10 +670,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         // Add near readers. If near cache is disabled on all nodes, do nothing.
         Collection<UUID> backupIds = dhtMap.keySet();
 
-        Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> locNearMap = null;
+        Map<ClusterNode, List<GridDhtCacheEntry>> locNearMap = null;
 
-        for (IgniteTxKey<K> key : keys) {
-            IgniteTxEntry<K, V> txEntry = entry(key);
+        for (IgniteTxKey key : keys) {
+            IgniteTxEntry txEntry = entry(key);
 
             if (!txEntry.groupLockEntry() || txEntry.context().isNear())
                 continue;
@@ -695,7 +682,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
             while (true) {
                 try {
-                    GridDhtCacheEntry<K, V> entry = (GridDhtCacheEntry<K, V>)txEntry.cached();
+                    GridDhtCacheEntry entry = (GridDhtCacheEntry)txEntry.cached();
 
                     Collection<UUID> readers = entry.readers();
 
@@ -711,7 +698,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                             if (locNearMap == null)
                                 locNearMap = new HashMap<>();
 
-                            List<GridDhtCacheEntry<K, V>> entries = locNearMap.get(n);
+                            List<GridDhtCacheEntry> entries = locNearMap.get(n);
 
                             if (entries == null)
                                 locNearMap.put(n, entries = new LinkedList<>());
@@ -724,7 +711,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
-                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()), txEntry.keyBytes());
+                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()));
                 }
             }
         }
@@ -823,7 +810,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      *
      * @param fut Expected future.
      */
-    protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture<K, V> fut);
+    protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture fut);
 
     /** {@inheritDoc} */
     @Override public void rollback() throws IgniteCheckedException {
@@ -831,7 +818,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             rollbackAsync().get();
         }
         finally {
-            cctx.tm().txContextReset();
+            cctx.tm().resetContext();
         }
     }
 

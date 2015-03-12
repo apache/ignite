@@ -47,7 +47,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFutureChain() throws Exception {
-        GridFutureAdapter<Integer> fut = new GridFutureAdapter<>(ctx);
+        GridFutureAdapter<Integer> fut = new GridFutureAdapter<>();
 
         IgniteInternalFuture<Integer> cur = fut;
 
@@ -55,9 +55,9 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             cur = new GridEmbeddedFuture<>(cur,
                 new IgniteBiClosure<Integer, Exception, IgniteInternalFuture<Integer>>() {
                     @Override public IgniteInternalFuture<Integer> apply(Integer o, Exception e) {
-                        return new GridFinishedFuture<>(ctx, o);
+                        return new GridFinishedFuture<>(o);
                     }
-                }, ctx);
+                });
         }
 
         fut.onDone(1);
@@ -82,10 +82,10 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
 
         for (final Throwable x : list) {
             // Original future.
-            final GridFutureAdapter<Integer> origFut = new GridFutureAdapter<>(ctx);
+            final GridFutureAdapter<Integer> origFut = new GridFutureAdapter<>();
 
             // Embedded future to test.
-            GridEmbeddedFuture<Double, Integer> embFut = new GridEmbeddedFuture<>(ctx, origFut,
+            GridEmbeddedFuture<Double, Integer> embFut = new GridEmbeddedFuture<>(
                 new C2<Integer, Exception, Double>() {
                     @Override public Double apply(Integer val, Exception e) {
                         if (x instanceof Error)
@@ -98,7 +98,8 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                });
+                },
+                origFut);
 
             assertFalse("Expect original future is not complete.", origFut.isDone());
             assertFalse("Expect embedded future is not complete.", embFut.isDone());

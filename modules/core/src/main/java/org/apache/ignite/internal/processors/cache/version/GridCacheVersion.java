@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
@@ -29,13 +28,9 @@ import java.util.*;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable, OptimizedMarshallable {
+public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** Node order mask. */
     private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
@@ -183,11 +178,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      */
     public boolean isLessEqual(GridCacheVersion ver) {
         return compareTo(ver) <= 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
     }
 
     /**

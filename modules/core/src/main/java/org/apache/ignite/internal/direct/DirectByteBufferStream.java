@@ -240,7 +240,19 @@ public class DirectByteBufferStream {
     private Message msg;
 
     /** */
+    private Iterator<?> mapIt;
+
+    /** */
     private Iterator<?> it;
+
+    /** */
+    private Iterator<?> arrIt;
+
+    /** */
+    private Object arrCur = NULL;
+
+    /** */
+    private Object mapCur = NULL;
 
     /** */
     private Object cur = NULL;
@@ -437,6 +449,18 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param val Value.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void writeByteArray(byte[] val, long off, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {
@@ -563,28 +587,28 @@ public class DirectByteBufferStream {
      */
     public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
         if (arr != null) {
-            if (it == null) {
+            if (arrIt == null) {
                 writeInt(arr.length);
 
                 if (!lastFinished)
                     return;
 
-                it = arrayIterator(arr);
+                arrIt = arrayIterator(arr);
             }
 
-            while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
-                    cur = it.next();
+            while (arrIt.hasNext() || arrCur != NULL) {
+                if (arrCur == NULL)
+                    arrCur = arrIt.next();
 
-                write(itemType, cur, writer);
+                write(itemType, arrCur, writer);
 
                 if (!lastFinished)
                     return;
 
-                cur = NULL;
+                arrCur = NULL;
             }
 
-            it = null;
+            arrIt = null;
         }
         else
             writeInt(-1);
@@ -634,22 +658,22 @@ public class DirectByteBufferStream {
     public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType,
         MessageWriter writer) {
         if (map != null) {
-            if (it == null) {
+            if (mapIt == null) {
                 writeInt(map.size());
 
                 if (!lastFinished)
                     return;
 
-                it = map.entrySet().iterator();
+                mapIt = map.entrySet().iterator();
             }
 
-            while (it.hasNext() || cur != NULL) {
+            while (mapIt.hasNext() || mapCur != NULL) {
                 Map.Entry<K, V> e;
 
-                if (cur == NULL)
-                    cur = it.next();
+                if (mapCur == NULL)
+                    mapCur = mapIt.next();
 
-                e = (Map.Entry<K, V>)cur;
+                e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
                     write(keyType, e.getKey(), writer);
@@ -665,11 +689,11 @@ public class DirectByteBufferStream {
                 if (!lastFinished)
                     return;
 
-                cur = NULL;
+                mapCur = NULL;
                 keyDone = false;
             }
 
-            it = null;
+            mapIt = null;
         }
         else
             writeInt(-1);
@@ -1054,7 +1078,7 @@ public class DirectByteBufferStream {
                     if (!lastFinished)
                         return null;
 
-                    cur = key;
+                    mapCur = key;
                     keyDone = true;
                 }
 
@@ -1063,7 +1087,7 @@ public class DirectByteBufferStream {
                 if (!lastFinished)
                     return null;
 
-                map.put(cur, val);
+                map.put(mapCur, val);
 
                 keyDone = false;
 
@@ -1073,7 +1097,7 @@ public class DirectByteBufferStream {
 
         readSize = -1;
         readItems = 0;
-        cur = null;
+        mapCur = null;
 
         M map0 = (M)map;
 

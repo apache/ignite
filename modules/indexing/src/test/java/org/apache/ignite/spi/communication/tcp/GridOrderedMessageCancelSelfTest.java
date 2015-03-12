@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  *
@@ -62,7 +62,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
-        cache.setPreloadMode(NONE);
+        cache.setRebalanceMode(NONE);
 
         cfg.setCacheConfiguration(cache);
 

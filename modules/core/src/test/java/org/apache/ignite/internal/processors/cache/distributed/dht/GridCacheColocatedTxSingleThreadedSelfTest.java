@@ -27,7 +27,7 @@ import org.apache.log4j.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Test txs in single-threaded mode for colocated cache.
@@ -57,7 +57,7 @@ public class GridCacheColocatedTxSingleThreadedSelfTest extends IgniteTxSingleTh
 
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

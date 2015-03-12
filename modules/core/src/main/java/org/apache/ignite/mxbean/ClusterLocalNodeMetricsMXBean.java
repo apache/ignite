@@ -246,4 +246,8 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Start time of the grid node in milliseconds.")
     public long getNodeStartTime();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total number of nodes.")
+    public int getTotalNodes();
 }

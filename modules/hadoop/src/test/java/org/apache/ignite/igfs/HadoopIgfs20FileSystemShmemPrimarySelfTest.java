@@ -44,11 +44,13 @@ public class HadoopIgfs20FileSystemShmemPrimarySelfTest extends HadoopIgfs20File
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
-        return new HashMap<String, String>() {{
-            put("type", "shmem");
-            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
-        }};
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+        IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
+
+        cfg.setType(IgfsIpcEndpointType.SHMEM);
+        cfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +68,7 @@ public class HadoopIgfs20FileSystemShmemPrimarySelfTest extends HadoopIgfs20File
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, String> secondaryIpcEndpointConfiguration() {
+    @Override protected IgfsIpcEndpointConfiguration secondaryIpcEndpointConfiguration() {
         assert false;
 
         return null;

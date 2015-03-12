@@ -23,10 +23,14 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -39,6 +43,9 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    
     /** */
     private static Interceptor interceptor;
 
@@ -72,6 +79,12 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        
+        spi.setIpFinder(IP_FINDER);
+        
+        c.setDiscoverySpi(spi);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -423,7 +436,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testCancelUpdate(String key, Operation op) throws Exception {
         // Interceptor returns null to disabled update.
         CacheInterceptor retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
                 return null;
             }
         };
@@ -505,7 +518,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testModifyUpdate(String key, Operation op) throws Exception {
         // Interceptor returns incremented new value.
         CacheInterceptor retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
                 return (Integer)newVal + 1;
             }
         };
@@ -585,7 +598,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testCancelRemove(String key, Operation op) throws Exception {
         // Interceptor disables remove and returns null.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(true, null);
             }
         };
@@ -600,9 +613,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(null, interceptor.beforeRemoveMap.get(key));
+        assertEquals(null, interceptor.beforeRmvMap.get(key));
 
         log.info("Remove 2 " + op);
 
@@ -610,7 +623,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor disables remove and changes return value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(true, 900);
             }
         };
@@ -623,9 +636,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(null, interceptor.beforeRemoveMap.get(key));
+        assertEquals(null, interceptor.beforeRmvMap.get(key));
 
         // Disable interceptor and update cache.
 
@@ -647,7 +660,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor disables remove and returns null.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(true, null);
             }
         };
@@ -660,15 +673,15 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
 
         interceptor.reset();
 
         // Interceptor disables remove and changes return value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(true, 1000);
             }
         };
@@ -681,9 +694,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
     }
 
     /**
@@ -712,7 +725,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testRemove(String key, Operation op) throws Exception {
         // Interceptor changes return value to null.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, null);
             }
         };
@@ -727,9 +740,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         log.info("Remove 2 " + op);
 
@@ -737,7 +750,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor changes return value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 900);
             }
         };
@@ -750,9 +763,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         // Disable interceptor and update cache.
 
@@ -774,7 +787,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor changes return value to null.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, null);
             }
         };
@@ -787,13 +800,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key));
+        assertEquals(1, interceptor.beforeRmvMap.get(key));
 
-        assertEquals(1, interceptor.afterRemoveMap.size());
+        assertEquals(1, interceptor.afterRmvMap.size());
 
-        assertEquals(1, interceptor.afterRemoveMap.get(key));
+        assertEquals(1, interceptor.afterRmvMap.get(key));
 
         // Disable interceptor and update cache.
 
@@ -813,7 +826,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor changes return value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 1000);
             }
         };
@@ -826,13 +839,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Check values passed to interceptor.
 
-        assertEquals(1, interceptor.beforeRemoveMap.size());
+        assertEquals(1, interceptor.beforeRmvMap.size());
 
-        assertEquals(2, interceptor.beforeRemoveMap.get(key));
+        assertEquals(2, interceptor.beforeRmvMap.get(key));
 
-        assertEquals(1, interceptor.afterRemoveMap.size());
+        assertEquals(1, interceptor.afterRmvMap.size());
 
-        assertEquals(2, interceptor.afterRemoveMap.get(key));
+        assertEquals(2, interceptor.afterRmvMap.get(key));
     }
 
     /**
@@ -867,7 +880,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         @Nullable TransactionIsolation txIsolation, @Nullable Operation op) throws Exception {
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
                 return (Integer)newVal + 1;
             }
         };
@@ -924,7 +937,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testBatchUpdate(Operation op) throws Exception {
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
                 return (Integer)newVal + 1;
             }
         };
@@ -975,8 +988,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor returns incremented new value, cancels update for one key.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
-                if (key.equals(key1))
+            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+                if (entry.getKey().equals(key1))
                     return null;
 
                 return (Integer)newVal + 1;
@@ -1048,7 +1061,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor does not cancel update.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 999);
             }
         };
@@ -1062,9 +1075,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(0, interceptor.beforeRemoveMap.size());
+        assertEquals(0, interceptor.beforeRmvMap.size());
 
-        assertEquals(0, interceptor.afterRemoveMap.size());
+        assertEquals(0, interceptor.afterRmvMap.size());
 
         // Disable interceptor and put some values in cache.
 
@@ -1078,7 +1091,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor does not cancel update.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 999);
             }
         };
@@ -1091,17 +1104,17 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(3, interceptor.beforeRemoveMap.size());
+        assertEquals(3, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key1));
-        assertEquals(2, interceptor.beforeRemoveMap.get(key2));
-        assertEquals(3, interceptor.beforeRemoveMap.get(key3));
+        assertEquals(1, interceptor.beforeRmvMap.get(key1));
+        assertEquals(2, interceptor.beforeRmvMap.get(key2));
+        assertEquals(3, interceptor.beforeRmvMap.get(key3));
 
-        assertEquals(3, interceptor.afterRemoveMap.size());
+        assertEquals(3, interceptor.afterRmvMap.size());
 
-        assertEquals(1, interceptor.afterRemoveMap.get(key1));
-        assertEquals(2, interceptor.afterRemoveMap.get(key2));
-        assertEquals(3, interceptor.afterRemoveMap.get(key3));
+        assertEquals(1, interceptor.afterRmvMap.get(key1));
+        assertEquals(2, interceptor.afterRmvMap.get(key2));
+        assertEquals(3, interceptor.afterRmvMap.get(key3));
 
         // Disable interceptor and put some values in cache.
 
@@ -1115,8 +1128,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Interceptor cancels update for one key.
         interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable@Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
-                return new IgniteBiTuple(key.equals(key1), 999);
+            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+                return new IgniteBiTuple(entry.getKey().equals(key1), 999);
             }
         };
 
@@ -1128,16 +1141,16 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         checkCacheValue(key2, null);
         checkCacheValue(key3, null);
 
-        assertEquals(3, interceptor.beforeRemoveMap.size());
+        assertEquals(3, interceptor.beforeRmvMap.size());
 
-        assertEquals(1, interceptor.beforeRemoveMap.get(key1));
-        assertEquals(2, interceptor.beforeRemoveMap.get(key2));
-        assertEquals(3, interceptor.beforeRemoveMap.get(key3));
+        assertEquals(1, interceptor.beforeRmvMap.get(key1));
+        assertEquals(2, interceptor.beforeRmvMap.get(key2));
+        assertEquals(3, interceptor.beforeRmvMap.get(key3));
 
-        assertEquals(2, interceptor.afterRemoveMap.size());
+        assertEquals(2, interceptor.afterRmvMap.size());
 
-        assertEquals(2, interceptor.afterRemoveMap.get(key2));
-        assertEquals(3, interceptor.afterRemoveMap.get(key3));
+        assertEquals(2, interceptor.afterRmvMap.get(key2));
+        assertEquals(3, interceptor.afterRmvMap.get(key3));
     }
 
     /**
@@ -1493,26 +1506,26 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         /** */
-        @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
             fail("onBeforePut not expected");
 
             return null;
         }
 
         /** */
-        @Override public void onAfterPut(Object key, Object val) {
+        @Override public void onAfterPut(Cache.Entry entry) {
             fail("onAfterPut not expected");
         }
 
         /** */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             fail("onBeforeRemove not expected");
 
             return null;
         }
 
         /** */
-        @Override public void onAfterRemove(Object key, Object val) {
+        @Override public void onAfterRemove(Cache.Entry entry) {
             fail("onAfterRemove not expected");
         }
     }
@@ -1531,10 +1544,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         private final Map<Object, IgniteBiTuple> beforePutMap = new ConcurrentHashMap8<>();
 
         /** */
-        private final Map<Object, Object> beforeRemoveMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> beforeRmvMap = new ConcurrentHashMap8<>();
 
         /** */
-        private final Map<Object, Object> afterRemoveMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> afterRmvMap = new ConcurrentHashMap8<>();
 
         /** */
         private final AtomicInteger invokeCnt = new AtomicInteger();
@@ -1570,81 +1583,84 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
             if (disabled)
                 return newVal;
 
             assertNotNull(retInterceptor);
 
-            Object ret = retInterceptor.onBeforePut(key, oldVal, newVal);
+            Object ret = retInterceptor.onBeforePut(entry, newVal);
 
-            log.info("Before put [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ", ret=" + ret + ']');
+            log.info("Before put [key=" + entry.getKey() + ", oldVal=" + entry.getValue()+ ", newVal=" + newVal 
+                + ", ret=" + ret + ']');
 
             invokeCnt.incrementAndGet();
 
-            IgniteBiTuple t = beforePutMap.put(key, new IgniteBiTuple(oldVal, newVal));
+            IgniteBiTuple t = beforePutMap.put(entry.getKey(), new IgniteBiTuple(entry.getValue(), newVal));
 
             if (t != null) {
-                assertEquals("Interceptor called with different old values for key " + key, t.get1(), oldVal);
-                assertEquals("Interceptor called with different new values for key " + key, t.get2(), newVal);
+                assertEquals("Interceptor called with different old values for key " + entry.getKey(), t.get1(), 
+                    entry.getValue());
+                assertEquals("Interceptor called with different new values for key " + entry.getKey(), t.get2(), 
+                    newVal);
             }
 
             return ret;
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterPut(Object key, Object val) {
+        @Override public void onAfterPut(Cache.Entry entry) {
             if (disabled)
                 return;
 
-            log.info("After put [key=" + key + ", val=" + val + ']');
+            log.info("After put [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
 
             invokeCnt.incrementAndGet();
 
-            Object old = afterPutMap.put(key, val);
+            Object old = afterPutMap.put(entry.getKey(), entry.getValue());
 
             if (old != null)
-                assertEquals(old, val);
+                assertEquals(old, entry.getValue());
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override @Nullable public IgniteBiTuple onBeforeRemove(Object key, @Nullable Object val) {
+        @Override @Nullable public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
             if (disabled)
-                return new IgniteBiTuple(false, val);
+                return new IgniteBiTuple(false, entry.getValue());
 
             assertNotNull(retInterceptor);
 
-            IgniteBiTuple ret = retInterceptor.onBeforeRemove(key, val);
+            IgniteBiTuple ret = retInterceptor.onBeforeRemove(entry);
 
-            log.info("Before remove [key=" + key + ", val=" + val + ", ret=" + ret + ']');
+            log.info("Before remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ", ret=" + ret + ']');
 
             invokeCnt.incrementAndGet();
 
-            if (val != null) {
-                Object old = beforeRemoveMap.put(key, val);
+            if (entry.getValue() != null) {
+                Object old = beforeRmvMap.put(entry.getKey(), entry.getValue());
 
                 if (old != null)
-                    assertEquals(old, val);
+                    assertEquals(old, entry.getValue());
             }
 
             return ret;
         }
 
         /** {@inheritDoc} */
-        @Override public void onAfterRemove(Object key, Object val) {
+        @Override public void onAfterRemove(Cache.Entry entry) {
             if (disabled)
                 return;
 
-            log.info("After remove [key=" + key + ", val=" + val + ']');
+            log.info("After remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
 
             invokeCnt.incrementAndGet();
 
-            if (val != null) {
-                Object old = afterRemoveMap.put(key, val);
+            if (entry.getValue() != null) {
+                Object old = afterRmvMap.put(entry.getKey(), entry.getValue());
 
                 if (old != null)
-                    assertEquals(old, val);
+                    assertEquals(old, entry.getValue());
             }
         }
 
@@ -1657,8 +1673,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             getMap.clear();
             beforePutMap.clear();
             afterPutMap.clear();
-            afterRemoveMap.clear();
-            beforeRemoveMap.clear();
+            afterRmvMap.clear();
+            beforeRmvMap.clear();
 
             retInterceptor = null;
         }

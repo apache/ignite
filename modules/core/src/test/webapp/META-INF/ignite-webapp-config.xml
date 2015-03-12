@@ -130,8 +130,8 @@
                     -->
                     <property name="backups" value="1"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <!--
@@ -179,8 +179,8 @@
                     -->
                     <property name="backups" value="1"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <!--
@@ -199,8 +199,8 @@
                     <!-- REPLICATED cache mode. -->
                     <property name="cacheMode" value="REPLICATED"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="150000"/>

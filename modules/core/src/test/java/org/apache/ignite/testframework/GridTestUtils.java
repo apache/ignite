@@ -45,6 +45,7 @@ import java.nio.file.attribute.*;
 import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Utility class for tests.
@@ -55,7 +56,7 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
-    private static final Map<Class<? extends Test>, String> addrs = new HashMap<>();
+    private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
     private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
@@ -401,7 +402,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast group.
      */
-    public static synchronized String getNextMulticastGroup(Class<? extends Test> cls) {
+    public static synchronized String getNextMulticastGroup(Class<?> cls) {
         String addrStr = addrs.get(cls);
 
         if (addrStr != null)
@@ -806,18 +807,7 @@ public final class GridTestUtils {
      * @see #getIgniteHome()
      */
     @Nullable public static File resolveIgnitePath(String path) {
-        return resolveIgnitePath(null, path);
-    }
-
-    /**
-     * @param igniteHome Optional ignite home path.
-     * @param path Path to resolve.
-     * @return Resolved path, or {@code null} if file cannot be resolved.
-     */
-    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
-        File file = resolvePath(igniteHome, path);
-
-        return file != null ? file : resolvePath(igniteHome, "os/" + path);
+        return resolvePath(null, path);
     }
 
     /**
@@ -886,7 +876,7 @@ public final class GridTestUtils {
         for (Ignite g : Ignition.allGrids()) {
             GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
 
-            GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
+            GridDhtPartitionTopology top = dht(cache).topology();
 
             while (true) {
                 boolean wait = false;
@@ -1431,6 +1421,55 @@ public final class GridTestUtils {
             res.add(PosixFilePermission.OTHERS_EXECUTE);
 
         return res;
+    }
+
+    /**
+     * @param name Name.
+     * @param run Run.
+     */
+    public static void benchmark(@Nullable String name, @NotNull Runnable run) {
+        benchmark(name, 8000, 10000, run);
+    }
+
+    /**
+     * @param name Name.
+     * @param warmup Warmup.
+     * @param executionTime Time.
+     * @param run Run.
+     */
+    public static void benchmark(@Nullable String name, long warmup, long executionTime, @NotNull Runnable run) {
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        class Stopper extends TimerTask {
+            @Override public void run() {
+                stop.set(true);
+            }
+        }
+
+        new Timer(true).schedule(new Stopper(), warmup);
+
+        while (!stop.get())
+            run.run();
+
+        stop.set(false);
+
+        new Timer(true).schedule(new Stopper(), executionTime);
+
+        long startTime = System.currentTimeMillis();
+
+        int cnt = 0;
+
+        do {
+            run.run();
+
+            cnt++;
+        }
+        while (!stop.get());
+
+        double dur = (System.currentTimeMillis() - startTime) / 1000d;
+
+        System.out.printf("%s:\n operations:%d, duration=%fs, op/s=%d, latency=%fms\n", name, cnt, dur,
+            (long)(cnt / dur), dur / cnt);
     }
 
     /**

@@ -239,7 +239,7 @@ public class GridCacheTxFinishSync<K, V> {
                     return null;
 
                 if (nodeLeft)
-                    return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to wait for finish synchronizer " +
+                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to wait for finish synchronizer " +
                         "state (node left grid): " + nodeId));
 
                 if (pendingFut == null) {
