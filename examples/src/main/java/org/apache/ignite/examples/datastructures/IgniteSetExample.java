@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.*;
@@ -29,14 +30,14 @@ import java.util.*;
  * Ignite cache distributed set example.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class IgniteSetExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
+    private static final String CACHE_NAME = IgniteSetExample.class.getSimpleName();
 
     /** Set instance. */
     private static IgniteSet<String> set;
@@ -48,18 +49,31 @@ public class IgniteSetExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Ignite set example started.");
 
-            // Make set name.
-            String setName = UUID.randomUUID().toString();
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            set = initializeSet(ignite, setName);
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            writeToSet(ignite);
+            NearCacheConfiguration<Integer, String> nearCache = new NearCacheConfiguration<>();
 
-            clearAndRemoveSet();
+            nearCache.setNearEnabled(true);
+
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCache)) {
+                // Make set name.
+                String setName = UUID.randomUUID().toString();
+
+                set = initializeSet(ignite, setName);
+
+                writeToSet(ignite);
+
+                clearAndRemoveSet();
+            }
+
         }
 
         System.out.println("Ignite set example finished.");
