@@ -59,7 +59,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setFileSystemConfiguration(
-            igfsConfiguration("tcp", DFLT_IPC_PORT, null)
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, null)
         );
 
         G.start(cfg);
@@ -78,8 +78,9 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         IgniteConfiguration cfg = gridConfiguration();
 
         cfg.setFileSystemConfiguration(
-            igfsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
-            igfsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, "127.0.0.1"),
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1,
+                U.getLocalHost().getHostName()));
 
         G.start(cfg);
 
@@ -154,20 +155,20 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @param endPntHost End point host.
      * @return test-purposed IgfsConfiguration.
      */
-    protected FileSystemConfiguration igfsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
-        @Nullable String endPntHost) throws IgniteCheckedException {
-        HashMap<String, String> endPntCfg = null;
+    protected FileSystemConfiguration igfsConfiguration(@Nullable IgfsIpcEndpointType endPntType,
+        @Nullable Integer endPntPort, @Nullable String endPntHost) throws IgniteCheckedException {
+        IgfsIpcEndpointConfiguration endPntCfg = null;
 
         if (endPntType != null) {
-            endPntCfg = new HashMap<>();
+            endPntCfg = new IgfsIpcEndpointConfiguration();
 
-            endPntCfg.put("type", endPntType);
+            endPntCfg.setType(endPntType);
 
             if (endPntPort != null)
-                endPntCfg.put("port", String.valueOf(endPntPort));
+                endPntCfg.setPort(endPntPort);
 
             if (endPntHost != null)
-                endPntCfg.put("host", endPntHost);
+                endPntCfg.setHost(endPntHost);
         }
 
         FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();

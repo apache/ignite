@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -69,10 +68,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
 
     /** Secondary endpoint configuration. */
-    protected static final Map<String, String> SECONDARY_ENDPOINT_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_ENDPOINT_CFG;
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -124,6 +120,13 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
     /** Skip local shmem flag. */
     private final boolean skipLocShmem;
+
+    static {
+        SECONDARY_ENDPOINT_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_ENDPOINT_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_ENDPOINT_CFG.setPort(11500);
+    }
 
     /**
      * Constructor.
@@ -291,11 +294,13 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
-        return new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
-        }};
+    protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+        IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
+
+        cfg.setType(IgfsIpcEndpointType.TCP);
+        cfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */

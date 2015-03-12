@@ -95,9 +95,9 @@
 
                     <!-- Loopback endpoint. -->
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="tcp"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
                     </property>
 
                 </bean>

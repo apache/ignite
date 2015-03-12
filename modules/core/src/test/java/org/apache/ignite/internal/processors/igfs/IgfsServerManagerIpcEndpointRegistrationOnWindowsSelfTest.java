@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -40,8 +41,8 @@ public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
             @Override public Object call() throws Exception {
                 IgniteConfiguration cfg = gridConfiguration();
 
-                cfg.setFileSystemConfiguration(igfsConfiguration("shmem", IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT,
-                    null));
+                cfg.setFileSystemConfiguration(igfsConfiguration(IgfsIpcEndpointType.SHMEM,
+                    IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, null));
 
                 return G.start(cfg);
             }
