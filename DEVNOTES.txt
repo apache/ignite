@@ -1,6 +1,6 @@
 Maven Build Instructions
 ========================
-To build Ignite project (without running of tests) use:
+To build Ignite project (without running tests) use:
 
 mvn clean package -DskipTests
 

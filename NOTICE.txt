@@ -21,11 +21,12 @@ licensed under MIT license.
 https://github.com/blackdrag/pcollections
 
 
-This software has a dependency on Open JDK library,
-licensed under GPL license with Class Path Exception.
-http://openjdk.java.net/
-
-
 This software has a dependency on snaptree library,
-licensed under SNAPTREE license.
+licensed under BSD 3-clause license.
 https://github.com/nbronson/snaptree/
+
+
+This software, specifically package "org.jdk8.backport", has a dependency on
+concurrency libraries written by Doug Lea with assistance from members of JCP JSR-166
+Expert Group and released to the public domain, as explained at
+http://creativecommons.org/publicdomain/zero/1.0/.
