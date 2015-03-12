@@ -414,8 +414,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * This method is not transactionally consistent.
      * Transactional semantics must be guaranteed outside of Ignite.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if flag {@link CacheFlag#READ} are set on projection.
      *
      * @param key Key to clear.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
@@ -437,8 +435,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * This method is not transactionally consistent.
      * Transactional semantics must be guaranteed outside of Ignite.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if flag {@link CacheFlag#READ} are set on projection.
      *
      * @param keys Set of keys to clear.
      */
@@ -457,8 +453,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * This method is not transactionally consistent.
      * Transactional semantics must be guaranteed outside of Ignite.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if flag {@link CacheFlag#READ} are set on projection.
      */
     public void localClear();
 
