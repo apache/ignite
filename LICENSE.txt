@@ -241,7 +241,7 @@ THE SOFTWARE.
 ==============================================================================
 For SnapTree:
 ==============================================================================
-SNAPTREE LICENSE
+BSD LICENSE
 
 Copyright (c) 2009 Stanford University, unless otherwise specified.
 All rights reserved.
