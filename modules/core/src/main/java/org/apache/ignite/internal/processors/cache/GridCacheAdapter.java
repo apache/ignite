@@ -1339,6 +1339,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public void clearLocally(Set<K> keys) {
+        clearLocally0(keys);
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearLocally() {
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
@@ -1431,7 +1436,46 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public void clear(K key) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocally(key);
+
+        clearRemotes(0, new GlobalClearKeyCallable<K>(name(), key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear(Set<K> keys) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocally(keys);
+
+        clearRemotes(0, new GlobalClearKeySetCallable<K>(name(), keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(K key) {
+        return clearAsync(new GlobalClearKeyCallable<K>(name(), key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
+        return clearAsync(new GlobalClearKeySetCallable<K>(name(), keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear(long timeout) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocally();
+
+        clearRemotes(timeout, new GlobalClearAllCallable(name()));
+    }
+
+    /**
+     * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
+     *      Set it to larger value for large caches.
+     * @param clearCallable Global clear callable object.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
+     */
+    private void clearRemotes(long timeout, GlobalClearCallable clearCallable) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
             Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).forRemotes().nodes();
@@ -1441,11 +1485,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (!nodes.isEmpty()) {
                 ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, timeout);
 
-                fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+                fut = ctx.closures().callAsyncNoFailover(BROADCAST, clearCallable, nodes, true);
             }
-
-            // Clear local cache synchronously.
-            clearLocally();
 
             if (fut != null)
                 fut.get();
@@ -1464,11 +1505,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
+        return clearAsync(new GlobalClearAllCallable(name()));
+    }
+
+    /**
+     * @param clearCallable Global clear callable object.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> clearAsync(GlobalClearCallable clearCallable) {
         Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
             IgniteInternalFuture<Object> fut =
-                    ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+                ctx.closures().callAsyncNoFailover(BROADCAST, clearCallable, nodes, true);
 
             return fut.chain(new CX1<IgniteInternalFuture<Object>, Object>() {
                 @Override public Object applyx(IgniteInternalFuture<Object> fut) throws IgniteCheckedException {
@@ -5457,16 +5506,47 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalClearAllCallable implements Callable<Object>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
+    private static abstract class GlobalClearCallable implements Callable<Object>, Externalizable {
 
         /** Cache name. */
-        private String cacheName;
+        protected String cacheName;
 
         /** Injected grid instance. */
         @IgniteInstanceResource
-        private Ignite ignite;
+        protected Ignite ignite;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalClearCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        protected GlobalClearCallable(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+        }
+    }
+
+    /**
+     * Global clear all.
+     */
+    @GridInternal
+    private static class GlobalClearAllCallable extends GlobalClearCallable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
         /**
          * Empty constructor for serialization.
@@ -5479,7 +5559,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param cacheName Cache name.
          */
         private GlobalClearAllCallable(String cacheName) {
-            this.cacheName = cacheName;
+            super(cacheName);
         }
 
         /** {@inheritDoc} */
@@ -5488,15 +5568,105 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return null;
         }
+    }
+
+    /**
+     * Global clear key.
+     */
+    @GridInternal
+    private static class GlobalClearKeyCallable<K> extends GlobalClearCallable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Key to remove. */
+        private K key;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalClearKeyCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param key Key to clear.
+         */
+        private GlobalClearKeyCallable(String cacheName, K key) {
+            super(cacheName);
+
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            ((IgniteEx)ignite).cachex(cacheName).clearLocally(key);
+
+            return null;
+        }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, cacheName);
+            super.writeExternal(out);
+
+            out.writeObject(key);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cacheName = U.readString(in);
+            super.readExternal(in);
+
+            key = (K)in.readObject();
+        }
+    }
+
+    /**
+     * Global clear keys.
+     */
+    @GridInternal
+    private static class GlobalClearKeySetCallable<K> extends GlobalClearCallable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Keys to remove. */
+        private Set<K> keys;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalClearKeySetCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param keys Keys to clear.
+         */
+        private GlobalClearKeySetCallable(String cacheName, Set<K> keys) {
+            super(cacheName);
+
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            ((IgniteEx)ignite).cachex(cacheName).clearLocally(keys);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            out.writeObject(keys);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            keys = (Set<K>) in.readObject();
         }
     }
 

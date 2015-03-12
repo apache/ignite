@@ -380,6 +380,28 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public void clear();
 
     /**
+     * Clear key, without notifying listeners or
+     * {@link javax.cache.integration.CacheWriter}s.
+     *
+     * @param key Key to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clear(K key);
+
+    /**
+     * Clear keys, without notifying listeners or
+     * {@link javax.cache.integration.CacheWriter}s.
+     *
+     * @param keys Keys to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clearAll(Set<K> keys);
+
+    /**
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p/>
@@ -400,10 +422,30 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if entry was in use at the time of this method invocation and could not be
      * cleared.
      */
-    public boolean clearLocally(K key);
+    public boolean localClear(K key);
 
     /**
-     * Clears all entry from this cache and swap storage only if the entry
+     * Clears entries from this cache and swap storage only if the entry
+     * is not currently locked, and is not participating in a transaction.
+     * <p/>
+     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * also be cleared from swap.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache. It does not remove entries from
+     * remote caches or from underlying persistent storage.
+     * This method is not transactionally consistent.
+     * Transactional semantics must be guaranteed outside of Ignite.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if flag {@link CacheFlag#READ} are set on projection.
+     *
+     * @param keys Set of keys to clear.
+     */
+    public void localClearAll(Set<K> keys);
+
+    /**
+     * Clears all entries from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p/>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
@@ -418,7 +460,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if flag {@link CacheFlag#READ} are set on projection.
      */
-    public void clearLocally();
+    public void localClear();
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
