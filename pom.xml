@@ -140,7 +140,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/schema-load</module>
+        <module>modules/schema-import</module>
         <module>modules/codegen</module>
     </modules>
 
@@ -381,14 +381,14 @@
                     </execution>
 
                     <execution>
-                        <id>dependencies-schema-load</id>
+                        <id>dependencies-schema-import</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-schema-load.xml</descriptor>
+                                <descriptor>assembly/dependencies-schema-import.xml</descriptor>
                             </descriptors>
                             <outputDirectory>target/release-package/bin</outputDirectory>
                             <finalName>include</finalName>
@@ -683,7 +683,7 @@
                                         </fileset>
 
                                         <fileset>
-                                            <directory>bin/include/schema-load</directory>
+                                            <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>
