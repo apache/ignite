@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Base class for eviction tests.
@@ -75,7 +75,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionFilter(filter);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (mode == PARTITIONED)

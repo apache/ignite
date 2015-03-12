@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -78,11 +78,11 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setEvictionPolicy(null);
         partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
         partCacheCfg.setEvictMaxOverflowRatio(0.99f);
-        partCacheCfg.setPreloadMode(ASYNC);
+        partCacheCfg.setRebalanceMode(ASYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         // This test requires artificial slowing down of the preloading.
-        partCacheCfg.setPreloadThrottle(2000);
+        partCacheCfg.setRebalanceThrottle(2000);
 
         cfg.setCacheConfiguration(partCacheCfg);
 

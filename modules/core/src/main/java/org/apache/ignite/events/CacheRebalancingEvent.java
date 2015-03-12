@@ -21,7 +21,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * In-memory database (cache) preloading event. Preload event happens every time there is a change
+ * In-memory database (cache) rebalancing event. Rebalance event happens every time there is a change
  * in grid topology, which means that a node has either joined or left the grid.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
@@ -52,12 +52,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
- * @see EventType#EVT_CACHE_PRELOAD_PART_LOADED
- * @see EventType#EVT_CACHE_PRELOAD_PART_UNLOADED
- * @see EventType#EVT_CACHE_PRELOAD_STARTED
- * @see EventType#EVT_CACHE_PRELOAD_STOPPED
+ * @see EventType#EVT_CACHE_REBALANCE_PART_LOADED
+ * @see EventType#EVT_CACHE_REBALANCE_PART_UNLOADED
+ * @see EventType#EVT_CACHE_REBALANCE_STARTED
+ * @see EventType#EVT_CACHE_REBALANCE_STOPPED
  */
-public class CachePreloadingEvent extends EventAdapter {
+public class CacheRebalancingEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,11 +84,11 @@ public class CachePreloadingEvent extends EventAdapter {
      * @param msg Event message.
      * @param type Event type.
      * @param part Partition for the event (usually the partition the key belongs to).
-     * @param discoNode Node that triggered this preloading event.
-     * @param discoEvtType Discovery event type that triggered this preloading event.
-     * @param discoTs Timestamp of discovery event that triggered this preloading event.
+     * @param discoNode Node that triggered this rebalancing event.
+     * @param discoEvtType Discovery event type that triggered this rebalancing event.
+     * @param discoTs Timestamp of discovery event that triggered this rebalancing event.
      */
-    public CachePreloadingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
+    public CacheRebalancingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
         ClusterNode discoNode, int discoEvtType, long discoTs) {
         super(node, msg, type);
         this.cacheName = cacheName;
@@ -117,18 +117,18 @@ public class CachePreloadingEvent extends EventAdapter {
     }
 
     /**
-     * Gets shadow of the node that triggered this preloading event.
+     * Gets shadow of the node that triggered this rebalancing event.
      *
-     * @return Shadow of the node that triggered this preloading event.
+     * @return Shadow of the node that triggered this rebalancing event.
      */
     public ClusterNode discoveryNode() {
         return discoNode;
     }
 
     /**
-     * Gets type of discovery event that triggered this preloading event.
+     * Gets type of discovery event that triggered this rebalancing event.
      *
-     * @return Type of discovery event that triggered this preloading event.
+     * @return Type of discovery event that triggered this rebalancing event.
      * @see DiscoveryEvent#type()
      */
     public int discoveryEventType() {
@@ -136,9 +136,9 @@ public class CachePreloadingEvent extends EventAdapter {
     }
 
     /**
-     * Gets name of discovery event that triggered this preloading event.
+     * Gets name of discovery event that triggered this rebalancing event.
      *
-     * @return Name of discovery event that triggered this preloading event.
+     * @return Name of discovery event that triggered this rebalancing event.
      * @see DiscoveryEvent#name()
      */
     public String discoveryEventName() {
@@ -146,9 +146,9 @@ public class CachePreloadingEvent extends EventAdapter {
     }
 
     /**
-     * Gets timestamp of discovery event that caused this preloading event.
+     * Gets timestamp of discovery event that caused this rebalancing event.
      *
-     * @return Timestamp of discovery event that caused this preloading event.
+     * @return Timestamp of discovery event that caused this rebalancing event.
      */
     public long discoveryTimestamp() {
         return discoTs;
@@ -162,7 +162,7 @@ public class CachePreloadingEvent extends EventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CachePreloadingEvent.class, this,
+        return S.toString(CacheRebalancingEvent.class, this,
             "discoEvtName", discoveryEventName(),
             "nodeId8", U.id8(node().id()),
             "msg", message(),

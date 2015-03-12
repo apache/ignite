@@ -37,7 +37,7 @@ import java.util.*;
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
  * <li>{@link #EVTS_CACHE}</li>
- * <li>{@link #EVTS_CACHE_PRELOAD}</li>
+ * <li>{@link #EVTS_CACHE_REBALANCE}</li>
  * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_SWAPSPACE}</li>
  * </ul>
@@ -554,24 +554,24 @@ public interface EventType {
     public static final int EVT_CACHE_OBJECT_FROM_OFFHEAP = 77;
 
     /**
-     * Built-in event type: cache preload started.
+     * Built-in event type: cache rebalance started.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
-    public static final int EVT_CACHE_PRELOAD_STARTED = 80;
+    public static final int EVT_CACHE_REBALANCE_STARTED = 80;
 
     /**
-     * Built-in event type: cache preload stopped.
+     * Built-in event type: cache rebalance stopped.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
-    public static final int EVT_CACHE_PRELOAD_STOPPED = 81;
+    public static final int EVT_CACHE_REBALANCE_STOPPED = 81;
 
     /**
      * Built-in event type: cache partition loaded.
@@ -581,7 +581,7 @@ public interface EventType {
      *
      * @see SwapSpaceEvent
      */
-    public static final int EVT_CACHE_PRELOAD_PART_LOADED = 82;
+    public static final int EVT_CACHE_REBALANCE_PART_LOADED = 82;
 
     /**
      * Built-in event type: cache partition unloaded.
@@ -589,15 +589,15 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      */
-    public static final int EVT_CACHE_PRELOAD_PART_UNLOADED = 83;
+    public static final int EVT_CACHE_REBALANCE_PART_UNLOADED = 83;
 
     /**
-     * Built-in event type: cache entry preloaded.
+     * Built-in event type: cache entry rebalanced.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      */
-    public static final int EVT_CACHE_PRELOAD_OBJECT_LOADED = 84;
+    public static final int EVT_CACHE_REBALANCE_OBJECT_LOADED = 84;
 
     /**
      * Built-in event type: cache entry unloaded.
@@ -605,7 +605,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      */
-    public static final int EVT_CACHE_PRELOAD_OBJECT_UNLOADED = 85;
+    public static final int EVT_CACHE_REBALANCE_OBJECT_UNLOADED = 85;
 
     /**
      * Built-in event type: query executed.
@@ -820,8 +820,8 @@ public interface EventType {
         EVT_TASK_DEPLOY_FAILED,
         EVT_TASK_DEPLOYED,
         EVT_TASK_UNDEPLOYED,
-        EVT_CACHE_PRELOAD_STARTED,
-        EVT_CACHE_PRELOAD_STOPPED
+        EVT_CACHE_REBALANCE_STARTED,
+        EVT_CACHE_REBALANCE_STOPPED
     };
 
     /**
@@ -917,17 +917,17 @@ public interface EventType {
     };
 
     /**
-     * All cache preload events. This array can be directly passed into
+     * All cache rebalance events. This array can be directly passed into
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
-     * subscribe to all cache preload events.
+     * subscribe to all cache rebalance events.
      */
-    public static final int[] EVTS_CACHE_PRELOAD = {
-        EVT_CACHE_PRELOAD_STARTED,
-        EVT_CACHE_PRELOAD_STOPPED,
-        EVT_CACHE_PRELOAD_PART_LOADED,
-        EVT_CACHE_PRELOAD_PART_UNLOADED,
-        EVT_CACHE_PRELOAD_OBJECT_LOADED,
-        EVT_CACHE_PRELOAD_OBJECT_UNLOADED
+    public static final int[] EVTS_CACHE_REBALANCE = {
+        EVT_CACHE_REBALANCE_STARTED,
+        EVT_CACHE_REBALANCE_STOPPED,
+        EVT_CACHE_REBALANCE_PART_LOADED,
+        EVT_CACHE_REBALANCE_PART_UNLOADED,
+        EVT_CACHE_REBALANCE_OBJECT_LOADED,
+        EVT_CACHE_REBALANCE_OBJECT_UNLOADED
     };
 
     /**
