@@ -60,7 +60,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
-        ccfg.setPreloadMode(CachePreloadMode.SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
     }

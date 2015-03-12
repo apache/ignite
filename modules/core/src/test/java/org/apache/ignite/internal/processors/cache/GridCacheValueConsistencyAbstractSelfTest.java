@@ -31,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -62,7 +62,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         cCfg.setAtomicityMode(atomicityMode());
         cCfg.setAtomicWriteOrderMode(writeOrderMode());
         cCfg.setDistributionMode(distributionMode());
-        cCfg.setPreloadMode(SYNC);
+        cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
         cCfg.setBackups(1);
 

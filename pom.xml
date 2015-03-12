@@ -553,20 +553,19 @@
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
-                                        <exclude>**/*.md</exclude><!--readme-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
-                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
+                                        <exclude>DEVNOTES.txt</exclude>
+                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--Apache License, Version 2.0 (Copyright)-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--Stanford University license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--Stanford University license-->
+                                        <exclude>src/main/java/org/pcollections/**</exclude><!--MIT license-->
+                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
-                                        <exclude>src/test/config/start-nodes.ini</exclude><!---->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
@@ -579,17 +578,17 @@
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude><!---->
+                                        <exclude>ipc/shmem/compile</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.guess</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.sub</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure</exclude><!--own license-->
+                                        <exclude>ipc/shmem/configure</exclude><!--free software-->
                                         <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/configure.ac</exclude><!---->
+                                        <exclude>ipc/shmem/configure.ac</exclude><!--cannot be changed-->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
                                         <exclude>ipc/shmem/install-sh</exclude><!--own license-->
                                         <exclude>ipc/shmem/depcomp</exclude><!--own license-->
                                         <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/libtool</exclude><!--own license-->
+                                        <exclude>ipc/shmem/libtool</exclude><!--auto generated-->
                                         <exclude>ipc/shmem/missing</exclude><!--own license-->
                                         <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->

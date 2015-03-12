@@ -46,14 +46,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default size of preload thread pool. */
-    public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
+    /** Default size of rebalance thread pool. */
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
 
-    /** Default preload timeout (ms).*/
-    public static final long DFLT_PRELOAD_TIMEOUT = 10000;
+    /** Default rebalance timeout (ms).*/
+    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
 
-    /** Time in milliseconds to wait between preload messages to avoid overloading CPU. */
-    public static final long DFLT_PRELOAD_THROTTLE = 0;
+    /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
+    public static final long DFLT_REBALANCE_THROTTLE = 0;
 
     /**
      * Default time to live. The value is <tt>0</tt> which means that
@@ -91,11 +91,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /** Default preload mode for distributed cache. */
-    public static final CachePreloadMode DFLT_PRELOAD_MODE = CachePreloadMode.ASYNC;
+    /** Default rebalance mode for distributed cache. */
+    public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
 
-    /** Default preload batch size in bytes. */
-    public static final int DFLT_PRELOAD_BATCH_SIZE = 512 * 1024; // 512K
+    /** Default rebalance batch size in bytes. */
+    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default maximum eviction queue ratio. */
     public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
@@ -163,11 +163,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
-    /** Preload thread pool size. */
-    private int preloadPoolSize = DFLT_PRELOAD_THREAD_POOL_SIZE;
+    /** Rebalance thread pool size. */
+    private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
-    /** Preload timeout. */
-    private long preloadTimeout = DFLT_PRELOAD_TIMEOUT;
+    /** Rebalance timeout. */
+    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
     /** Default time to live for cache entries. */
     private long ttl = DFLT_TIME_TO_LIVE;
@@ -250,14 +250,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
-    /** Distributed cache preload mode. */
-    private CachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
+    /** Distributed cache rebalance mode. */
+    private CacheRebalanceMode rebalanceMode = DFLT_REBALANCE_MODE;
 
-    /** Cache preload order. */
-    private int preloadOrder;
+    /** Cache rebalance order. */
+    private int rebalanceOrder;
 
-    /** Preload batch size. */
-    private int preloadBatchSize = DFLT_PRELOAD_BATCH_SIZE;
+    /** Rebalance batch size. */
+    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Off-heap memory size. */
     private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
@@ -299,10 +299,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private String indexingSpiName;
 
     /** */
-    private long preloadDelay;
+    private long rebalanceDelay;
 
     /** */
-    private long preloadThrottle = DFLT_PRELOAD_THROTTLE;
+    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
     private CacheInterceptor<?, ?> interceptor;
@@ -380,13 +380,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        preloadMode = cc.getPreloadMode();
-        preloadBatchSize = cc.getPreloadBatchSize();
-        preloadDelay = cc.getPreloadPartitionedDelay();
-        preloadOrder = cc.getPreloadOrder();
-        preloadPoolSize = cc.getPreloadThreadPoolSize();
-        preloadTimeout = cc.getPreloadTimeout();
-        preloadThrottle = cc.getPreloadThrottle();
+        rebalanceMode = cc.getRebalanceMode();
+        rebalanceBatchSize = cc.getRebalanceBatchSize();
+        rebalanceDelay = cc.getRebalanceDelay();
+        rebalanceOrder = cc.getRebalanceOrder();
+        rebalancePoolSize = cc.getRebalanceThreadPoolSize();
+        rebalanceTimeout = cc.getRebalanceTimeout();
+        rebalanceThrottle = cc.getRebalanceThrottle();
         qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
@@ -1015,73 +1015,73 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets cache preload mode.
+     * Sets cache rebalance mode.
      *
-     * @param preloadMode Preload mode.
+     * @param rebalanceMode Rebalance mode.
      */
-    public void setPreloadMode(CachePreloadMode preloadMode) {
-        this.preloadMode = preloadMode;
+    public void setRebalanceMode(CacheRebalanceMode rebalanceMode) {
+        this.rebalanceMode = rebalanceMode;
     }
 
     /**
-     * Gets preload mode for distributed cache.
+     * Gets rebalance mode for distributed cache.
      * <p>
-     * Default is defined by {@link #DFLT_PRELOAD_MODE}.
+     * Default is defined by {@link #DFLT_REBALANCE_MODE}.
      *
-     * @return Preload mode.
+     * @return Rebalance mode.
      */
-    public CachePreloadMode getPreloadMode() {
-        return preloadMode;
+    public CacheRebalanceMode getRebalanceMode() {
+        return rebalanceMode;
     }
 
     /**
-     * Gets cache preload order. Preload order can be set to non-zero value for caches with
-     * {@link CachePreloadMode#SYNC SYNC} or {@link CachePreloadMode#ASYNC ASYNC} preload modes only.
+     * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
+     * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
      * <p/>
-     * If cache preload order is positive, preloading for this cache will be started only when preloading for
-     * all caches with smaller preload order (except caches with preload order {@code 0}) will be completed.
+     * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
+     * all caches with smaller rebalance order (except caches with rebalance order {@code 0}) will be completed.
      * <p/>
      * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
-     * preload order {@code 1} will never wait for any other caches. All caches with order {@code 0} will
-     * be preloaded right away concurrently with each other and ordered preload processes.
+     * rebalance order {@code 1} will never wait for any other caches. All caches with order {@code 0} will
+     * be rebalanced right away concurrently with each other and ordered rebalance processes.
      * <p/>
-     * If not set, cache order is 0, i.e. preloading is not ordered.
+     * If not set, cache order is 0, i.e. rebalancing is not ordered.
      *
-     * @return Cache preload order.
+     * @return Cache rebalance order.
      */
-    public int getPreloadOrder() {
-        return preloadOrder;
+    public int getRebalanceOrder() {
+        return rebalanceOrder;
     }
 
     /**
-     * Sets cache preload order.
+     * Sets cache rebalance order.
      *
-     * @param preloadOrder Cache preload order.
-     * @see #getPreloadOrder()
+     * @param rebalanceOrder Cache rebalance order.
+     * @see #getRebalanceOrder()
      */
-    public void setPreloadOrder(int preloadOrder) {
-        this.preloadOrder = preloadOrder;
+    public void setRebalanceOrder(int rebalanceOrder) {
+        this.rebalanceOrder = rebalanceOrder;
     }
 
     /**
-     * Gets size (in number bytes) to be loaded within a single preload message.
-     * Preloading algorithm will split total data set on every node into multiple
+     * Gets size (in number bytes) to be loaded within a single rebalance message.
+     * Rebalancing algorithm will split total data set on every node into multiple
      * batches prior to sending data. Default value is defined by
-     * {@link #DFLT_PRELOAD_BATCH_SIZE}.
+     * {@link #DFLT_REBALANCE_BATCH_SIZE}.
      *
-     * @return Size in bytes of a single preload message.
+     * @return Size in bytes of a single rebalance message.
      */
-    public int getPreloadBatchSize() {
-        return preloadBatchSize;
+    public int getRebalanceBatchSize() {
+        return rebalanceBatchSize;
     }
 
     /**
-     * Sets preload batch size.
+     * Sets rebalance batch size.
      *
-     * @param preloadBatchSize Preload batch size.
+     * @param rebalanceBatchSize Rebalance batch size.
      */
-    public void setPreloadBatchSize(int preloadBatchSize) {
-        this.preloadBatchSize = preloadBatchSize;
+    public void setRebalanceBatchSize(int rebalanceBatchSize) {
+        this.rebalanceBatchSize = rebalanceBatchSize;
     }
 
     /**
@@ -1274,54 +1274,53 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets size of preloading thread pool. Note that size serves as a hint and implementation
-     * may create more threads for preloading than specified here (but never less threads).
+     * Gets size of rebalancing thread pool. Note that size serves as a hint and implementation
+     * may create more threads for rebalancing than specified here (but never less threads).
      * <p>
-     * Default value is {@link #DFLT_PRELOAD_THREAD_POOL_SIZE}.
+     * Default value is {@link #DFLT_REBALANCE_THREAD_POOL_SIZE}.
      *
-     * @return Size of preloading thread pool.
+     * @return Size of rebalancing thread pool.
      */
-    public int getPreloadThreadPoolSize() {
-        return preloadPoolSize;
+    public int getRebalanceThreadPoolSize() {
+        return rebalancePoolSize;
     }
 
     /**
-     * Sets size of preloading thread pool. Note that size serves as a hint and implementation may create more threads
-     * for preloading than specified here (but never less threads).
+     * Sets size of rebalancing thread pool. Note that size serves as a hint and implementation may create more threads
+     * for rebalancing than specified here (but never less threads).
      *
-     * @param preloadPoolSize Size of preloading thread pool.
+     * @param rebalancePoolSize Size of rebalancing thread pool.
      */
-    public void setPreloadThreadPoolSize(int preloadPoolSize) {
-        this.preloadPoolSize = preloadPoolSize;
+    public void setRebalanceThreadPoolSize(int rebalancePoolSize) {
+        this.rebalancePoolSize = rebalancePoolSize;
     }
 
     /**
-     * Gets preload timeout (ms).
+     * Gets rebalance timeout (ms).
      * <p>
-     * Default value is {@link #DFLT_PRELOAD_TIMEOUT}.
+     * Default value is {@link #DFLT_REBALANCE_TIMEOUT}.
      *
-     * @return Preload timeout (ms).
+     * @return Rebalance timeout (ms).
      */
-    public long getPreloadTimeout() {
-        return preloadTimeout;
+    public long getRebalanceTimeout() {
+        return rebalanceTimeout;
     }
 
     /**
-     * Sets preload timeout (ms).
+     * Sets rebalance timeout (ms).
      *
-     * @param preloadTimeout Preload timeout (ms).
+     * @param rebalanceTimeout Rebalance timeout (ms).
      */
-    public void setPreloadTimeout(long preloadTimeout) {
-        this.preloadTimeout = preloadTimeout;
+    public void setRebalanceTimeout(long rebalanceTimeout) {
+        this.rebalanceTimeout = rebalanceTimeout;
     }
 
     /**
-     * Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which preloading
-     * should be started automatically. Preloading should be delayed if you plan to restart nodes
+     * Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing
+     * should be started automatically. Rebalancing should be delayed if you plan to restart nodes
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
-     * and don't want to repartition and preload until all nodes are started.
+     * and don't want to repartition and rebalance until all nodes are started.
      * <p>
-     * Delayed preloading is applied to {@link CacheMode#PARTITIONED} caches only.
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
@@ -1329,59 +1328,59 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
-     * Default value is {@code 0} which means that repartitioning and preloading will start
-     * immediately upon node leaving topology. If {@code -1} is returned, then preloading
+     * Default value is {@code 0} which means that repartitioning and rebalancing will start
+     * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
      * will only be started manually by calling {@link GridCache#forceRepartition()} method or
      * from management console.
      *
-     * @return Preloading delay, {@code 0} to start preloading immediately, {@code -1} to
-     *      start preloading manually, or positive value to specify delay in milliseconds
-     *      after which preloading should start automatically.
+     * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
+     *      start rebalancing manually, or positive value to specify delay in milliseconds
+     *      after which rebalancing should start automatically.
      */
-    public long getPreloadPartitionedDelay() {
-        return preloadDelay;
+    public long getRebalanceDelay() {
+        return rebalanceDelay;
     }
 
     /**
-     * Sets preload delay (see {@link #getPreloadPartitionedDelay()} for more information).
+     * Sets rebalance delay (see {@link #getRebalanceDelay()} for more information).
      *
-     * @param preloadDelay Preload delay to set.
+     * @param rebalanceDelay Rebalance delay to set.
      */
-    public void setPreloadPartitionedDelay(long preloadDelay) {
-        this.preloadDelay = preloadDelay;
+    public void setRebalanceDelay(long rebalanceDelay) {
+        this.rebalanceDelay = rebalanceDelay;
     }
 
     /**
-     * Time in milliseconds to wait between preload messages to avoid overloading of CPU or network.
-     * When preloading large data sets, the CPU or network can get over-consumed with preloading messages,
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+     * When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
      * which consecutively may slow down the application performance. This parameter helps tune
-     * the amount of time to wait between preload messages to make sure that preloading process
+     * the amount of time to wait between rebalance messages to make sure that rebalancing process
      * does not have any negative performance impact. Note that application will continue to work
-     * properly while preloading is still in progress.
+     * properly while rebalancing is still in progress.
      * <p>
      * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
-     * the default is defined by {@link #DFLT_PRELOAD_THROTTLE} constant.
+     * the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
-     * @return Time in milliseconds to wait between preload messages to avoid overloading of CPU,
+     * @return Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      *      {@code 0} to disable throttling.
      */
-    public long getPreloadThrottle() {
-        return preloadThrottle;
+    public long getRebalanceThrottle() {
+        return rebalanceThrottle;
     }
 
     /**
-     * Time in milliseconds to wait between preload messages to avoid overloading of CPU or network. When preloading
-     * large data sets, the CPU or network can get over-consumed with preloading messages, which consecutively may slow
-     * down the application performance. This parameter helps tune the amount of time to wait between preload messages
-     * to make sure that preloading process does not have any negative performance impact. Note that application will
-     * continue to work properly while preloading is still in progress. <p> Value of {@code 0} means that throttling is
-     * disabled. By default throttling is disabled - the default is defined by {@link #DFLT_PRELOAD_THROTTLE} constant.
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network. When rebalancing
+     * large data sets, the CPU or network can get over-consumed with rebalancing messages, which consecutively may slow
+     * down the application performance. This parameter helps tune the amount of time to wait between rebalance messages
+     * to make sure that rebalancing process does not have any negative performance impact. Note that application will
+     * continue to work properly while rebalancing is still in progress. <p> Value of {@code 0} means that throttling is
+     * disabled. By default throttling is disabled - the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
-     * @param preloadThrottle Time in milliseconds to wait between preload messages to avoid overloading of CPU, {@code
-     * 0} to disable throttling.
+     * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
+     * {@code 0} to disable throttling.
      */
-    public void setPreloadThrottle(long preloadThrottle) {
-        this.preloadThrottle = preloadThrottle;
+    public void setRebalanceThrottle(long rebalanceThrottle) {
+        this.rebalanceThrottle = rebalanceThrottle;
     }
 
     /**

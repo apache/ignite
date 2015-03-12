@@ -37,7 +37,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.query.Query.*;
 
 /**
@@ -93,7 +93,7 @@ public class GridCacheCrossCacheQuerySelfTestNewApi extends GridCommonAbstractTe
         cc.setName(name);
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setEvictNearSynchronized(false);
         cc.setAtomicityMode(TRANSACTIONAL);

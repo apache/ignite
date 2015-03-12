@@ -63,7 +63,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
@@ -621,10 +621,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if preload is enabled.
+     * @return {@code True} if rebalance is enabled.
      */
-    public boolean preloadEnabled() {
-        return cacheCfg.getPreloadMode() != NONE;
+    public boolean rebalanceEnabled() {
+        return cacheCfg.getRebalanceMode() != NONE;
     }
 
     /**

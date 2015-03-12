@@ -5368,7 +5368,7 @@ public abstract class IgniteUtils {
      * @return Top level user class.
      */
     public static GridPeerDeployAware detectPeerDeployAware(GridPeerDeployAware obj) {
-        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridIdentityHashSet<>(3));
+        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridLeanIdentitySet<>());
 
         // Pass in obj.getClass() to avoid infinite recursion.
         return p != null ? p : peerDeployAware(obj.getClass());

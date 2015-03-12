@@ -36,7 +36,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -66,7 +66,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setBackups(backups);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
 
         cfg.setCacheConfiguration(cacheCfg);
 
