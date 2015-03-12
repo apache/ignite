@@ -23,17 +23,17 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
 /**
- * Data center replication cache updater for data loader.
+ * Data center replication cache updater for data streamer.
  */
-public class GridDrDataLoadCacheUpdater implements IgniteDataLoader.Updater<KeyCacheObject, CacheObject>,
-    GridDataLoadCacheUpdaters.InternalUpdater {
+public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Updater<KeyCacheObject, CacheObject>,
+    DataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class GridDrDataLoadCacheUpdater implements IgniteDataLoader.Updater<KeyC
             String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
             GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
-            IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
+            IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
             GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
             assert !F.isEmpty(col);

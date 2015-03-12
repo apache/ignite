@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.transactions.*;
@@ -3732,10 +3732,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
@@ -3883,18 +3883,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
-        try (final IgniteDataLoaderImpl<KeyCacheObject, CacheObject> ldr =
-                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataLoad().dataLoader(ctx.namex())) {
+        try (final DataStreamerImpl<KeyCacheObject, CacheObject> ldr =
+                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataStream().dataStreamer(ctx.namex())) {
             ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
-            final Collection<IgniteDataLoaderEntry> col = new ArrayList<>(ldr.perNodeBufferSize());
+            final Collection<DataStreamerEntry> col = new ArrayList<>(ldr.perNodeBufferSize());
 
             Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
             ctx.store().loadAllFromStore(null, keys0, new CIX2<KeyCacheObject, Object>() {
                 @Override public void applyx(KeyCacheObject key, Object val) {
-                    col.add(new IgniteDataLoaderEntry(key, ctx.toCacheObject(val)));
+                    col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
                     if (col.size() == ldr.perNodeBufferSize()) {
                         ldr.addDataInternal(col);
@@ -3926,10 +3926,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 
@@ -5907,7 +5907,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final Collection<GridCacheRawVersionedEntry> col;
 
         /** */
-        final IgniteDataLoaderImpl<K, V> ldr;
+        final DataStreamerImpl<K, V> ldr;
 
         /** */
         final ExpiryPolicy plc;
@@ -5918,7 +5918,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param plc Optional expiry policy.
          */
         private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p,
-            IgniteDataLoaderImpl<K, V> ldr,
+            DataStreamerImpl<K, V> ldr,
             @Nullable ExpiryPolicy plc) {
             this.p = p;
             this.ldr = ldr;

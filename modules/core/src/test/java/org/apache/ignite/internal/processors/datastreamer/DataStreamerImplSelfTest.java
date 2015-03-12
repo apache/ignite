@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -37,13 +34,13 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Tests for {@code GridDataLoaderImpl}.
+ * Tests for {@code IgniteDataStreamerImpl}.
  */
-public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
+public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Number of keys to load via data loader. */
+    /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
     /** Started grid counter. */
@@ -70,7 +67,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNullPointerExceptionUponDataLoaderClosing() throws Exception {
+    public void testNullPointerExceptionUponDataStreamerClosing() throws Exception {
         try {
             startGrids(5);
 
@@ -88,7 +85,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g4 = grid(4);
 
-            IgniteDataLoader<Object, Object> dataLdr = g4.dataLoader(null);
+            IgniteDataStreamer<Object, Object> dataLdr = g4.dataStreamer(null);
 
             dataLdr.perNodeBufferSize(32);
 
@@ -99,7 +96,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             U.awaitQuiet(barrier);
 
-            info("Closing data loader.");
+            info("Closing data streamer.");
 
             try {
                 dataLdr.close(true);
@@ -115,7 +112,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data loader should correctly load entries from HashMap in case of grids with more than one node
+     * Data streamer should correctly load entries from HashMap in case of grids with more than one node
      *  and with GridOptimizedMarshaller that requires serializable.
      *
      * @throws Exception If failed.
@@ -128,7 +125,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = grid(0);
 
-            IgniteDataLoader<Integer, String> dataLdr = g0.dataLoader(null);
+            IgniteDataStreamer<Integer, String> dataLdr = g0.dataStreamer(null);
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 

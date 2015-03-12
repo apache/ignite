@@ -21,7 +21,7 @@ import org.apache.ignite.examples.datagrid.CacheNodeStartup
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-import org.apache.ignite.{IgniteCache, IgniteDataLoader, IgniteException}
+import org.apache.ignite.{IgniteCache, IgniteDataStreamer, IgniteException}
 
 import javax.cache.processor.{EntryProcessor, MutableEntry}
 import java.util
@@ -35,7 +35,7 @@ import scala.util.Random
  * Real time popular number counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `ignite.sh examples/config/example-cache.xml`
+ * enables P2P class streaming: `ignite.sh examples/config/example-cache.xml`
  * <p>
  * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
  * start node with `examples/config/example-cache.xml` configuration.
@@ -99,13 +99,13 @@ object ScalarCachePopularNumbersExample extends App {
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
-        val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
+        val smtr = dataStreamer$[Int, Long](CACHE_NAME, 2048)
 
-        ldr.updater(new IncrementingUpdater())
+        smtr.updater(new IncrementingUpdater())
 
-        (0 until CNT) foreach (_ => ldr.addData(RAND.nextInt(RANGE), 1L))
+        (0 until CNT) foreach (_ => smtr.addData(RAND.nextInt(RANGE), 1L))
 
-        ldr.close(false)
+        smtr.close(false)
     }
 
     /**
@@ -126,7 +126,7 @@ object ScalarCachePopularNumbersExample extends App {
     /**
      * Increments value for key.
      */
-    private class IncrementingUpdater extends IgniteDataLoader.Updater[Int, Long] {
+    private class IncrementingUpdater extends IgniteDataStreamer.Updater[Int, Long] {
         private[this] final val INC = new EntryProcessor[Int, Long, Object]() {
             /** Process entries to increase value by entry key. */
             override def process(e: MutableEntry[Int, Long], args: AnyRef*): Object = {

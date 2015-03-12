@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dataload;
+package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
@@ -34,11 +34,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * Data loader performance test. Compares group lock data loader to traditional lock.
+ * Data streamer performance test. Compares group lock data streamer to traditional lock.
  * <p>
  * Disable assertions and give at least 2 GB heap to run this test.
  */
-public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
+public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -135,10 +135,10 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid();
 
-            final IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(null);
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
 
             ldr.perNodeBufferSize(8192);
-            ldr.updater(GridDataLoadCacheUpdaters.<Integer, String>batchedSorted());
+            ldr.updater(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
             final LongAdder cnt = new LongAdder();

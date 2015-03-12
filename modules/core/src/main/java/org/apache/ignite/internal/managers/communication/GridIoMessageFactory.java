@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.streamer.*;
@@ -385,12 +385,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 62:
-                msg = new GridDataLoadRequest();
+                msg = new DataStreamerRequest();
 
                 break;
 
             case 63:
-                msg = new GridDataLoadResponse();
+                msg = new DataStreamerResponse();
 
                 break;
 
@@ -525,7 +525,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 95:
-                msg = new IgniteDataLoaderEntry();
+                msg = new DataStreamerEntry();
 
                 break;
 
