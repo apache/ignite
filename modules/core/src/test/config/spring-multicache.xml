@@ -70,7 +70,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -92,7 +92,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -114,7 +114,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -136,7 +136,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -159,7 +159,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -181,7 +181,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -203,7 +203,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
@@ -225,7 +225,7 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">

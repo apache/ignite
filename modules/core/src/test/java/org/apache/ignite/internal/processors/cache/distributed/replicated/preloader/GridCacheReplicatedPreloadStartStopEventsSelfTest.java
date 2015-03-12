@@ -71,16 +71,16 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
 
         ignite.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event e) {
-                if (e.type() == EVT_CACHE_PRELOAD_STARTED)
+                if (e.type() == EVT_CACHE_REBALANCE_STARTED)
                     preloadStartCnt.incrementAndGet();
-                else if (e.type() == EVT_CACHE_PRELOAD_STOPPED)
+                else if (e.type() == EVT_CACHE_REBALANCE_STOPPED)
                     preloadStopCnt.incrementAndGet();
                 else
                     fail("Unexpected event type: " + e.type());
 
                 return true;
             }
-        }, EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
+        }, EVT_CACHE_REBALANCE_STARTED, EVT_CACHE_REBALANCE_STOPPED);
 
         startGrid(1);
 

@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Test for cache swap preloading.
@@ -65,7 +65,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(cacheMode);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setEvictSynchronized(false);
         cacheCfg.setEvictNearSynchronized(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

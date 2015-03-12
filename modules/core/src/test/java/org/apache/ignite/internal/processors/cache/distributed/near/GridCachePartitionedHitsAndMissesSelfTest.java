@@ -86,7 +86,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
         cfg.setDistributionMode(PARTITIONED_ONLY);
-        cfg.setPreloadPartitionedDelay(-1);
+        cfg.setRebalanceDelay(-1);
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
 
@@ -135,14 +135,14 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Populates cache with data loader.
+     * Populates cache with data streamer.
      *
      * @param g Grid.
      */
     private static void realTimePopulate(final Ignite g) {
-        try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(null)) {
             // Sets max values to 1 so cache metrics have correct values.
-            ldr.perNodeParallelLoadOperations(1);
+            ldr.perNodeParallelOperations(1);
 
             // Count closure which increments a count on remote node.
             ldr.updater(new IncrementingUpdater());
@@ -155,7 +155,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {

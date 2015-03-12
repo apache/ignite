@@ -491,7 +491,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param p Partition ID.
      */
     private void saveEvictionInfo(KeyCacheObject key, GridCacheVersion ver, int p) {
-        assert cctx.preloadEnabled();
+        assert cctx.rebalanceEnabled();
 
         if (!cctx.isNear()) {
             try {
@@ -517,7 +517,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      *      {@code false} if preloading is finished or disabled and no lock is needed.
      */
     private boolean lockPartition(int p) {
-        if (!cctx.preloadEnabled())
+        if (!cctx.rebalanceEnabled())
             return false;
 
         if (!cctx.isNear()) {
@@ -553,7 +553,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param p Partition ID.
      */
     private void unlockPartition(int p) {
-        if (!cctx.preloadEnabled())
+        if (!cctx.rebalanceEnabled())
             return;
 
         if (!cctx.isNear()) {

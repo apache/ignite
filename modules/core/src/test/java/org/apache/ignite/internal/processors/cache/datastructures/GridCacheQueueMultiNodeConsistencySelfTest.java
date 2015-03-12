@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.commons.collections.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 
@@ -150,7 +149,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
         if (forceRepartition)
             for (int i = 0; i < GRID_CNT; i++)
-                cache(i).forceRepartition();
+                jcache(i).rebalance();
 
         Ignite newIgnite = startGrid(GRID_CNT + 1);
 

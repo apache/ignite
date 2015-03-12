@@ -168,7 +168,7 @@ public class GridTestMain {
     }
 
     /**
-     * Generates and loads data directly through cache API using data loader.
+     * Generates and loads data directly through cache API using data streamer.
      * This method is provided as example and is not called directly because
      * data is loaded through {@link GridTestCacheStore} store.
      *
@@ -180,7 +180,7 @@ public class GridTestMain {
         ExecutorCompletionService<Object> execSvc =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(numThreads));
 
-        try (IgniteDataLoader<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
+        try (IgniteDataStreamer<GridTestKey, Long> ldr = G.ignite().dataStreamer("partitioned")) {
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
 

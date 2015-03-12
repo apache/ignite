@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -32,7 +32,7 @@ import java.nio.*;
 /**
  * Raw versioned entry.
  */
-public class GridCacheRawVersionedEntry<K, V> extends IgniteDataLoaderEntry implements
+public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implements
     GridCacheVersionedEntry<K, V>, GridCacheVersionable, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

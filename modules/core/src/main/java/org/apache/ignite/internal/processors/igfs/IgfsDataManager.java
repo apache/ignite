@@ -31,7 +31,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -299,13 +299,13 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Creates new instance of explicit data loader.
+     * Creates new instance of explicit data streamer.
      *
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
-    private IgniteDataLoader<IgfsBlockKey, byte[]> dataLoader() {
-        IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
-            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
+    private IgniteDataStreamer<IgfsBlockKey, byte[]> dataStreamer() {
+        IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
+            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
 
         FileSystemConfiguration cfg = igfsCtx.configuration();
 
@@ -313,9 +313,9 @@ public class IgfsDataManager extends IgfsManager {
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
 
         if (cfg.getPerNodeParallelBatchCount() > 0)
-            ldr.perNodeParallelLoadOperations(cfg.getPerNodeParallelBatchCount());
+            ldr.perNodeParallelOperations(cfg.getPerNodeParallelBatchCount());
 
-        ldr.updater(GridDataLoadCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
+        ldr.updater(DataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
     }
@@ -642,7 +642,7 @@ public class IgfsDataManager extends IgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
                     ldr.removeData(new IgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
@@ -668,7 +668,7 @@ public class IgfsDataManager extends IgfsManager {
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
@@ -1707,7 +1707,7 @@ public class IgfsDataManager extends IgfsManager {
                         break;
                     }
 
-                    IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer();
 
                     try {
                         IgfsFileMap map = fileInfo.fileMap();
@@ -1745,7 +1745,8 @@ public class IgfsDataManager extends IgfsManager {
                                 ldr.close(isCancelled());
                             }
                             catch (IgniteException e) {
-                                log.error("Failed to stop data loader while shutting down igfs async delete thread.", e);
+                                log.error("Failed to stop data streamer while shutting down " +
+                                    "igfs async delete thread.", e);
                             }
                             finally {
                                 fut.onDone(); // Complete future.
