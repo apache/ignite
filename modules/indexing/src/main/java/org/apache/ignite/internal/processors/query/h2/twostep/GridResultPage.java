@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.h2.value.*;
 
 import java.util.*;
 
@@ -32,13 +33,43 @@ public class GridResultPage {
     /** */
     protected final GridQueryNextPageResponse res;
 
+    /** */
+    private final Collection<Value[]> rows;
+
+    /** */
+    private final boolean last;
+
     /**
      * @param src Source.
      * @param res Response.
+     * @param last If this is the globally last page.
      */
-    protected GridResultPage(UUID src, GridQueryNextPageResponse res) {
+    protected GridResultPage(UUID src, GridQueryNextPageResponse res, boolean last) {
+        assert src != null;
+
         this.src = src;
         this.res = res;
+        this.last = last;
+
+        if (last)
+            assert res == null : "The last page must be dummy.";
+
+        // res == null means that it is a terminating dummy page for the given source node ID.
+        rows = res == null ? null : GridMapQueryExecutor.unmarshallRows(res.rows());
+    }
+
+    /**
+     * @return {@code true} If this is a dummy last page for all the sources.
+     */
+    public boolean isLast() {
+        return last;
+    }
+
+    /**
+     * @return Rows.
+     */
+    public Collection<Value[]> rows() {
+        return rows;
     }
 
     /**

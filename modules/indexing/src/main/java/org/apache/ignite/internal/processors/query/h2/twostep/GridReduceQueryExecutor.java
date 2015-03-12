@@ -147,7 +147,7 @@ public class GridReduceQueryExecutor {
         QueryRun r = runs.get(msg.queryRequestId());
 
         if (r != null && r.latch.getCount() != 0) {
-            r.rmtErr = new CacheException("Failed to execute map query on the node: " + node.id(), msg.error());
+            r.rmtErr = new CacheException("Failed to execute map query on the node: " + node.id() + "\n " + msg.error());
 
             while(r.latch.getCount() > 0)
                 r.latch.countDown();
@@ -161,16 +161,17 @@ public class GridReduceQueryExecutor {
     private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
-        final int pageSize = msg.rows().size();
 
-        QueryRun r = runs.get(qryReqId);
+        final QueryRun r = runs.get(qryReqId);
 
         if (r == null) // Already finished with error or canceled.
             return;
 
+        final int pageSize = r.pageSize;
+
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
-        idx.addPage(new GridResultPage(node.id(), msg) {
+        idx.addPage(new GridResultPage(node.id(), msg, false) {
             @Override public void fetchNextPage() {
                 try {
                     ctx.io().sendUserMessage(F.asList(node), new GridQueryNextPageRequest(qryReqId, qry, pageSize),
@@ -195,6 +196,8 @@ public class GridReduceQueryExecutor {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();
+
+        r.pageSize = 1000; // TODO configure correctly page size
 
         r.tbls = new ArrayList<>(qry.mapQueries().size());
 
@@ -228,7 +231,7 @@ public class GridReduceQueryExecutor {
         runs.put(qryReqId, r);
 
         try {
-            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, space, qry.mapQueries()), // TODO conf page size
+            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries()),
                 GridTopic.TOPIC_QUERY, false, 0);
 
             r.latch.await();
@@ -391,6 +394,9 @@ public class GridReduceQueryExecutor {
 
         /** */
         private Connection conn;
+
+        /** */
+        private int pageSize;
 
         /** */
         private volatile Throwable rmtErr;

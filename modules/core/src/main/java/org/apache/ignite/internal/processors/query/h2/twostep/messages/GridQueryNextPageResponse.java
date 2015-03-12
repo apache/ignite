@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.h2.store.*;
-import org.h2.value.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Next page response.
@@ -44,7 +41,7 @@ public class GridQueryNextPageResponse implements Externalizable {
     private int allRows;
 
     /** */
-    private Collection<Value[]> rows;
+    private byte[] rows;
 
     /**
      * For {@link Externalizable}.
@@ -61,7 +58,7 @@ public class GridQueryNextPageResponse implements Externalizable {
      * @param rows Rows.
      */
     public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows,
-        Collection<Value[]> rows) {
+        byte[] rows) {
         assert rows != null;
 
         this.qryReqId = qryReqId;
@@ -102,7 +99,7 @@ public class GridQueryNextPageResponse implements Externalizable {
     /**
      * @return Rows.
      */
-    public Collection<Value[]> rows() {
+    public byte[] rows() {
         return rows;
     }
 
@@ -112,32 +109,7 @@ public class GridQueryNextPageResponse implements Externalizable {
         out.writeInt(qry);
         out.writeInt(page);
         out.writeInt(allRows);
-
-        out.writeInt(rows.size());
-
-        if (rows.isEmpty())
-            return;
-
-        Data data = Data.create(null, 512);
-
-        boolean first = true;
-
-        for (Value[] row : rows) {
-            if (first) {
-                out.writeInt(row.length);
-
-                first = false;
-            }
-
-            for (Value val : row) {
-                data.checkCapacity(data.getValueLen(val));
-
-                data.writeValue(val);
-            }
-        }
-
-        out.writeInt(data.length());
-        out.write(data.getBytes(), 0, data.length());
+        U.writeByteArray(out, rows);
     }
 
     /** {@inheritDoc} */
@@ -146,32 +118,7 @@ public class GridQueryNextPageResponse implements Externalizable {
         qry = in.readInt();
         page = in.readInt();
         allRows = in.readInt();
-
-        int rowCnt = in.readInt();
-
-        if (rowCnt == 0)
-            rows = Collections.emptyList();
-        else {
-            rows = new ArrayList<>(rowCnt);
-
-            int cols = in.readInt();
-            int dataSize = in.readInt();
-
-            byte[] dataBytes = new byte[dataSize];
-
-            in.readFully(dataBytes);
-
-            Data data = Data.create(null, dataBytes);
-
-            for (int r = 0; r < rowCnt; r++) {
-                Value[] row = new Value[cols];
-
-                for (int c = 0; c < cols; c++)
-                    row[c] = data.readValue();
-
-                rows.add(row);
-            }
-        }
+        rows = U.readByteArray(in);
     }
 
     /** {@inheritDoc} */

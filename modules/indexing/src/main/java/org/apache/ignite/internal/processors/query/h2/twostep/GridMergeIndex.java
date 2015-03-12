@@ -35,9 +35,6 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
-    protected static final GridResultPage END = new GridResultPage(null, null);
-
-    /** */
     private static final int MAX_FETCH_SIZE = 100000; // TODO configure
 
     /** All rows number. */
@@ -45,6 +42,9 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** Remaining rows per source node ID. */
     private final ConcurrentMap<UUID, Counter> remainingRows = new ConcurrentHashMap8<>();
+
+    /** */
+    private final AtomicBoolean lastSubmitted = new AtomicBoolean();
 
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
@@ -83,7 +83,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     public final void addPage(GridResultPage page) {
-        int pageRowsCnt = page.response().rows().size();
+        int pageRowsCnt = page.rows().size();
 
         if (pageRowsCnt != 0)
             addPage0(page);
@@ -104,12 +104,20 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
 
         if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
-            for (Counter c : remainingRows.values()) {
-                if (c.get() != 0 || !c.initialized)
-                    return;
+            boolean last = true;
+
+            for (Counter c : remainingRows.values()) { // Check all the sources.
+                if (c.get() != 0 || !c.initialized) {
+                    last = false;
+
+                    break;
+                }
             }
 
-            addPage0(END); // We've fetched all.
+            if (last)
+                last = lastSubmitted.compareAndSet(false, true);
+
+            addPage0(new GridResultPage(page.source(), null, last));
         }
     }
 
@@ -122,8 +130,6 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     protected void fetchNextPage(GridResultPage page) {
-        assert page != END;
-
         if (remainingRows.get(page.source()).get() != 0)
             page.fetchNextPage();
     }

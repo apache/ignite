@@ -32,7 +32,7 @@ public class GridQueryFailResponse implements Serializable {
     private long qryReqId;
 
     /** */
-    private Throwable err;
+    private String errMsg;
 
     /**
      * @param qryReqId Query request ID.
@@ -40,7 +40,7 @@ public class GridQueryFailResponse implements Serializable {
      */
     public GridQueryFailResponse(long qryReqId, Throwable err) {
         this.qryReqId = qryReqId;
-        this.err = err;
+        this.errMsg = err.getClass() + ":" + err.getMessage();
     }
 
     /**
@@ -53,8 +53,8 @@ public class GridQueryFailResponse implements Serializable {
     /**
      * @return Error.
      */
-    public Throwable error() {
-        return err;
+    public String error() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */

@@ -44,7 +44,8 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
-        queue.add(page);
+        if (page.rows() != null || page.isLast()) // We are not interested in terminating pages which are not last.
+            queue.add(page);
     }
 
     /** {@inheritDoc} */
@@ -71,7 +72,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                     throw new IgniteException("Query execution was interrupted.", e);
                 }
 
-                if (page == END) {
+                if (page.isLast()) {
                     assert queue.isEmpty() : "It must be the last page: " + queue;
 
                     return false; // We are done.
@@ -79,7 +80,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
                 fetchNextPage(page);
 
-                iter = page.response().rows().iterator();
+                iter = page.rows().iterator();
 
                 assert iter.hasNext();
 

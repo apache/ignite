@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
+import org.h2.store.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
 
@@ -284,7 +285,8 @@ public class GridMapQueryExecutor {
 
         try {
             ctx.io().sendUserMessage(F.asList(node),
-                new GridQueryNextPageResponse(qr.qryReqId, qry, page, page == 0 ? res.rowCount : -1, rows),
+                new GridQueryNextPageResponse(qr.qryReqId, qry, page, page == 0 ? res.rowCount : -1,
+                    marshallRows(rows)),
                 GridTopic.TOPIC_QUERY, false, 0);
         }
         catch (IgniteCheckedException e) {
@@ -292,6 +294,62 @@ public class GridMapQueryExecutor {
 
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param bytes Bytes.
+     * @return Rows.
+     */
+    public static List<Value[]> unmarshallRows(byte[] bytes) {
+        Data data = Data.create(null, bytes);
+
+        int rowCnt = data.readVarInt();
+
+        if (rowCnt == 0)
+            return Collections.emptyList();
+
+        ArrayList<Value[]> rows = new ArrayList<>(rowCnt);
+
+        int cols = data.readVarInt();
+
+        for (int r = 0; r < rowCnt; r++) {
+            Value[] row = new Value[cols];
+
+            for (int c = 0; c < cols; c++)
+                row[c] = data.readValue();
+
+            rows.add(row);
+        }
+
+        return rows;
+    }
+
+    /**
+     * @param rows Rows.
+     * @return Bytes.
+     */
+    public static byte[] marshallRows(Collection<Value[]> rows) {
+        Data data = Data.create(null, 256);
+
+        data.writeVarInt(rows.size());
+
+        boolean first = true;
+
+        for (Value[] row : rows) {
+            if (first) {
+                data.writeVarInt(row.length);
+
+                first = false;
+            }
+
+            for (Value val : row) {
+                data.checkCapacity(data.getValueLen(val));
+
+                data.writeValue(val);
+            }
+        }
+
+        return Arrays.copyOf(data.getBytes(), data.length());
     }
 
     /**
