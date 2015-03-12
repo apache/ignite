@@ -281,7 +281,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        manager(ctx).unregisterListener(internal, routineId);
+        GridCacheAdapter<K, V> cache = ctx.cache().<K, V>internalCache(cacheName);
+
+        if (cache != null)
+            cache.context().continuousQueries().unregisterListener(internal, routineId);
     }
 
     /**
