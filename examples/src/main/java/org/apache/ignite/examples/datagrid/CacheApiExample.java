@@ -20,6 +20,7 @@ package org.apache.ignite.examples.datagrid;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
@@ -31,7 +32,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheApiExample {
