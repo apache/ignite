@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
  */
 public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String PARTITIONED_CACHE = "partitioned";
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -60,132 +60,85 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         c.setMarshaller(new OptimizedMarshaller(true));
 
-        // Cache.
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setName(CACHE_NAME);
-        cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cc.setDistributionMode(PARTITIONED_ONLY);
-//        cc.setWriteSynchronizationMode(FULL_SYNC);
-//        cc.setPreloadMode(SYNC);
-//        cc.setSwapEnabled(false);
-        cc.setBackups(1);
-//        cc.setSqlFunctionClasses(GridQueryParsingTest.class);
-        cc.setIndexedTypes(
-            UUID.class, Organization.class,
-            CacheAffinityKey.class, Person.class,
-            Integer.class, Long.class
-//            ,
-//            Integer.class, FPur
-        );
+        CacheConfiguration cc = partitionedCacheConfig();
 
         c.setCacheConfiguration(cc);
 
         return c;
     }
 
-    /** */
+    private CacheConfiguration partitionedCacheConfig() {
+        CacheConfiguration cc = defaultCacheConfiguration();
+
+        cc.setName(PARTITIONED_CACHE);
+        cc.setCacheMode(CacheMode.PARTITIONED);
+        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setBackups(1);
+        cc.setIndexedTypes(
+            UUID.class, Organization.class,
+            CacheAffinityKey.class, Person.class,
+            Integer.class, Long.class
+        );
+        return cc;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        ignite = startGrid();
+        ignite = startGrids(4);
+        
+        awaitPartitionMapExchange();
+
+        initialize();
+
+    }
+    
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+        
+        stopAllGrids();
+    }
+    
+    private void test0(String sql, Object... args){
+        IgniteCache<?, ?> cache = ignite.jcache(PARTITIONED_CACHE);
+
+        List<List<?>> res1 = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+
+        print(res1);
+    }
+    
+    /**
+     * TODO
+     */
+    public void testSqlQueryWithAggregation() {
+        test0("select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
+            + "lower(Organization.name) = lower(?)", "GridGain");
     }
 
     /**
      * TODO
-     * @throws Exception
      */
-    public static void test() throws Exception {
-        System.out.println();
-        System.out.println(">>> Cache query example started.");
-
-        // Clean up caches on all nodes before run.
-        ignite.jcache(CACHE_NAME).removeAll();
-
-        // Populate cache.
-        initialize();
-
-        // Example for SQL-based querying to calculate average salary among all employees within a company.
-        sqlQueryWithAggregation();
-
-        // Example for SQL-based fields queries that return only required
-        // fields instead of whole key-value pairs.
-        sqlFieldsQuery();
-
-        // Example for SQL-based fields queries that uses joins.
-        sqlFieldsQueryWithJoin();
-
-        print("Cache query example finished.");
+    public void testSqlFieldsQuery() {
+        test0("select concat(firstName, ' ', lastName) from Person");
     }
 
     /**
-     * Example for SQL queries to calculate average salary for a specific organization.
-     *
-     * @throws IgniteCheckedException In case of error.
+     * TODO
      */
-    private static void sqlQueryWithAggregation() throws IgniteCheckedException {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = ignite.jcache(CACHE_NAME);
-
-        // Calculate average of salary of all persons in GridGain.
-        QueryCursor<List<?>> cursor = cache.queryFields(new SqlFieldsQuery(
-            "select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
-                + "lower(Organization.name) = lower(?)").setArgs("GridGain"));
-
-        // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: " + cursor.getAll());
-    }
-
-    /**
-     * Example for SQL-based fields queries that return only required
-     * fields instead of whole key-value pairs.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    private static void sqlFieldsQuery() throws IgniteCheckedException {
-        IgniteCache<?, ?> cache = ignite.jcache(CACHE_NAME);
-
-        // Create query to get names of all employees.
-        QueryCursor<List<?>> cursor = cache.queryFields(
-            new SqlFieldsQuery("select concat(firstName, ' ', lastName) from Person"));
-
-        // Execute query to get collection of rows. In this particular
-        // case each row will have one element with full name of an employees.
-        List<List<?>> res = cursor.getAll();
-
-        // Print names.
-        print("Names of all employees:", res);
-    }
-
-    /**
-     * Example for SQL-based fields queries that return only required
-     * fields instead of whole key-value pairs.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
-        IgniteCache<?, ?> cache = ignite.jcache(CACHE_NAME);
-
-        // Execute query to get names of all employees.
-        QueryCursor<List<?>> cursor = cache.queryFields(new SqlFieldsQuery("select concat(firstName, ' ', lastName), "
+    public void testSqlFieldsQueryWithJoin() {
+        test0("select concat(firstName, ' ', lastName), "
             + "Organization.name from Person, Organization where "
-            + "Person.orgId = Organization.id"));
-
-        // In this particular case each row will have one element with full name of an employees.
-        List<List<?>> res = cursor.getAll();
-
-        // Print persons' names and organizations' names.
-        print("Names of all employees and organizations they belong to:", res);
+            + "Person.orgId = Organization.id");
     }
 
     /**
      * Populate cache with test data.
-     *
-     * @throws IgniteCheckedException In case of error.
-     * @throws InterruptedException In case of error.
      */
-    private static void initialize() throws IgniteCheckedException, InterruptedException {
-        IgniteCache cache = ignite.jcache(CACHE_NAME);
+    private void initialize() {
+        IgniteCache cache = ignite.jcache(PARTITIONED_CACHE);
 
         // Organizations.
         Organization org1 = new Organization("GridGain");
@@ -200,8 +153,6 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         cache.put(org1.id, org1);
         cache.put(org2.id, org2);
 
-        // Note that in this example we use custom affinity key for Person objects
-        // to ensure that all persons are collocated with their organizations.
         cache.put(p1.key(), p1);
         cache.put(p2.key(), p2);
         cache.put(p3.key(), p3);
