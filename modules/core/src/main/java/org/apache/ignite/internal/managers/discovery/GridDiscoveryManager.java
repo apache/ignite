@@ -373,7 +373,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
 
-                if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)) {
+                if (topVer > 0 && (type == EVT_NODE_JOINED || type == EVT_NODE_FAILED || type == EVT_NODE_LEFT ||
+                    type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)) {
                     boolean set = updateTopologyVersionIfGreater(nextTopVer);
 
                     assert set : "Topology version has not been updated [this.topVer=" +
@@ -1262,6 +1263,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return Topology version. */
     public long topologyVersion() {
         return topVer.get().topologyVersion();
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersionEx() {
+        return topVer.get();
     }
 
     /** @return Event that represents a local node joined to topology. */

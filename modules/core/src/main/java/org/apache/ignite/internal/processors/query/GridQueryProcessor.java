@@ -171,6 +171,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             idx.onCacheStopped(cctx);
+
+            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<TypeId, TypeDescriptor> entry = it.next();
+
+                if (F.eq(cctx.name(), entry.getKey().space))
+                    it.remove();
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);

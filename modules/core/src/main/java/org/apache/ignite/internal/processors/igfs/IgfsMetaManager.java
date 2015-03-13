@@ -40,8 +40,8 @@ import org.jetbrains.annotations.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -59,7 +59,7 @@ public class IgfsMetaManager extends IgfsManager {
     private GridCache<Object, Object> metaCache;
 
     /** */
-    private IgniteInternalFuture<?> metaCacheStartFut;
+    private CountDownLatch metaCacheStartLatch;
 
     /** File ID to file info projection. */
     private GridCacheProjectionEx<IgniteUuid, IgfsFileInfo> id2InfoPrj;
@@ -86,41 +86,42 @@ public class IgfsMetaManager extends IgfsManager {
      *
      */
     void awaitInit() {
-        if (!metaCacheStartFut.isDone()) {
-            try {
-                metaCacheStartFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            metaCacheStartLatch.await();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        metaCacheStartLatch = new CountDownLatch(1);
+
         cfg = igfsCtx.configuration();
-
-        metaCache = igfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
-
-        metaCacheStartFut = igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader()
-            .startFuture();
-
-        if (metaCache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
         evts = igfsCtx.kernalContext().event();
 
         sampling = new IgfsSamplingKey(cfg.getName());
-
-        assert metaCache != null;
-
-        id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
 
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
+        metaCache = igfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
+
+        assert metaCache != null;
+
+        igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
+            .listen(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> f) {
+                    metaCacheStartLatch.countDown();
+                }
+            });
+
+        id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
+
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
         // Start background delete worker.

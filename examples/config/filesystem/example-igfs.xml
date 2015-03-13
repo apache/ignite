@@ -119,7 +119,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
                         <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">

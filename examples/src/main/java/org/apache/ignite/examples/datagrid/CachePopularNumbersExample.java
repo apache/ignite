@@ -70,6 +70,14 @@ public class CachePopularNumbersExample {
 
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
+            cfg.setQueryIndexEnabled(true);
+
+            CacheQueryConfiguration qCfg = new CacheQueryConfiguration();
+
+            qCfg.setIndexPrimitiveKey(true);
+            qCfg.setIndexPrimitiveValue(true);
+
+            cfg.setQueryConfiguration(qCfg);
 
             try (IgniteCache<Integer, Long> cache = ignite.createCache(cfg)) {
                 ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);

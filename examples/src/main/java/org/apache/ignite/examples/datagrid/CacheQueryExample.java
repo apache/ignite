@@ -88,6 +88,7 @@ public class CacheQueryExample {
 
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
+            cfg.setQueryIndexEnabled(true);
 
             try (IgniteCache<?, ?> cache = ignite.createCache(cfg)) {
                 // Populate cache.

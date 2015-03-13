@@ -217,7 +217,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (key == null)
             return null;
 
-        AffinityInfo affInfo = affinityCache(cacheName, new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+        AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
         if (affInfo == null || affInfo.mapper == null)
             return null;
@@ -252,7 +252,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
         Collection<? extends K> keys) throws IgniteCheckedException {
-        return keysToNodes(cacheName, keys, new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+        return keysToNodes(cacheName, keys, ctx.discovery().topologyVersionEx());
     }
 
     /**

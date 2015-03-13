@@ -752,8 +752,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (String cacheName : stopSeq)
-            stopCache(caches.get(cacheName), cancel);
+        for (String cacheName : stopSeq) {
+            GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+
+            if (cache != null)
+                stopCache(cache, cancel);
+        }
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
@@ -775,8 +779,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        for (String cacheName : stopSeq)
-            onKernalStop(caches.get(cacheName), cancel);
+        for (String cacheName : stopSeq) {
+            GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+
+            if (cache != null)
+                onKernalStop(cache, cancel);
+        }
 
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
@@ -869,13 +877,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel);
         }
 
-        try {
-            ctx.kernalContext().query().onCacheStopped(cache.context());
-        }
-        catch (IgniteCheckedException e) {
-            // TODO implement.
-            e.printStackTrace();
-        }
+        ctx.kernalContext().query().onCacheStopped(cache.context());
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
             ctx.store().configuredStore()));
