@@ -73,6 +73,7 @@ public class IgniteExceptionRegistry {
      * Puts exception into queue.
      * Thread-safe.
      *
+     * @param msg Message that describe reason why error was suppressed.
      * @param e Exception.
      */
     public void onException(String msg, Throwable e) {
@@ -195,7 +196,7 @@ public class IgniteExceptionRegistry {
         }
 
         /**
-         * Locally unique ID that is atomically incremented for each new error.
+         * @return Locally unique ID that is atomically incremented for each new error.
          */
         public long order() {
             return order;
