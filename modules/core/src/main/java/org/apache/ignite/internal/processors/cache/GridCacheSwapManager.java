@@ -1886,7 +1886,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                 else
                     e0 = swapEntry(e0);
 
-                assert e0 != null;
+                assert e0 != null && e0.value() != null : e0;
 
                 entry = e0;
             }
