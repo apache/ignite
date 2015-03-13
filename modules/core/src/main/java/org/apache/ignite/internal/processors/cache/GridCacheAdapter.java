@@ -1398,6 +1398,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             try {
                 if (e != null)
                     e.clear(obsoleteVer, readers, null);
+
+                if (ctx.isSwapOrOffheapEnabled())
+                    entryEx(ctx.toCacheKeyObject(key)).clear(ctx.versions().next(), false, CU.empty0());
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to clearLocally entry (will continue to clearLocally other entries): " + e,
@@ -1422,7 +1425,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             GridCacheEntryEx e = peekEx(cacheKey);
 
             if (ctx.isSwapOrOffheapEnabled())
-                ctx.swap().readAndRemove(ctx.toCacheKeyObject(key));
+                entryEx(ctx.toCacheKeyObject(key)).clear(ctx.versions().next(), false, CU.empty0());
 
             return e != null && e.clear(obsoleteVer, false, filter);
         }
