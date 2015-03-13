@@ -47,8 +47,6 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
 
         TransactionConfiguration tcfg = new TransactionConfiguration();
