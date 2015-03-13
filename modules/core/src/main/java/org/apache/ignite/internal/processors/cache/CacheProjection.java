@@ -1265,6 +1265,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to clearLocally.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
@@ -1275,13 +1278,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocally(Object)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
-     * <p>
-     * This method is identical to calling {@link #clear(long) clear(0)}.
      *
      * @param key Key to clear.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
@@ -1290,13 +1291,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears keys on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocallyAll(Set)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
-     * <p>
-     * This method is identical to calling {@link #clear(long) clear(0)}.
      *
      * @param keys Keys to clear.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
