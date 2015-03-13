@@ -52,11 +52,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -74,7 +72,7 @@ public class IgfsDataManager extends IgfsManager {
     private GridCache<Object, Object> dataCache;
 
     /** */
-    private IgniteInternalFuture<?> dataCacheStartFut;
+    private CountDownLatch dataCacheStartLatch;
 
     /** Local IGFS metrics. */
     private IgfsLocalMetrics metrics;
@@ -138,13 +136,11 @@ public class IgfsDataManager extends IgfsManager {
      *
      */
     void awaitInit() {
-        if (!dataCacheStartFut.isDone()) {
-            try {
-                dataCacheStartFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            dataCacheStartLatch.await();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
         }
     }
 
@@ -152,25 +148,7 @@ public class IgfsDataManager extends IgfsManager {
     @Override protected void start0() throws IgniteCheckedException {
         igfs = igfsCtx.igfs();
 
-        dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
-        dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
-
-        dataCacheStartFut = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName())
-            .preloader().startFuture();
-
-        if (dataCache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new IgniteCheckedException("Data cache should be transactional: " +
-                igfsCtx.configuration().getDataCacheName());
-
-        metrics = igfsCtx.igfs().localMetrics();
-
-        assert dataCachePrj != null;
-
-        CacheAffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
-            .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
-
-        grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
-            ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+        dataCacheStartLatch = new CountDownLatch(1);
 
         grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
 
@@ -227,6 +205,26 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
+        dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
+        dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
+
+        metrics = igfsCtx.igfs().localMetrics();
+
+        assert dataCachePrj != null;
+
+        CacheAffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
+            .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
+
+        grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
+            ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+
+        igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
+            .startFuture().listen(new CI1<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> f) {
+                dataCacheStartLatch.countDown();
+            }
+        });
+
         new Thread(delWorker).start();
     }
 

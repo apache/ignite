@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
@@ -46,6 +47,17 @@ public interface GridQueryIndexing {
      */
     public void stop() throws IgniteCheckedException;
 
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheStarted(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheStopped(GridCacheContext ctx) throws IgniteCheckedException;
 
     /**
      * Runs two step query.

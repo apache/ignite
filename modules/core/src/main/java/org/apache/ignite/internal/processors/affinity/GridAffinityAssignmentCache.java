@@ -25,7 +25,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -160,7 +159,7 @@ public class GridAffinityAssignmentCache {
             sorted = Collections.singletonList(ctx.localNode());
         else {
             // Resolve nodes snapshot for specified topology version.
-            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer.topologyVersion());
+            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
             sorted = sort(nodes);
         }

@@ -447,7 +447,7 @@ public class GridCacheUtils {
      *      that may have already left).
      */
     public static Collection<ClusterNode> allNodes(GridCacheContext ctx) {
-        return allNodes(ctx, -1);
+        return allNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -458,7 +458,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().cacheNodes(ctx.namex(), topOrder);
     }
 
@@ -470,7 +470,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().cacheNodes(topOrder);
     }
 
@@ -481,7 +481,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -492,7 +492,7 @@ public class GridCacheUtils {
      * @return Remote nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx) {
-        return remoteNodes(ctx, -1);
+        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -502,7 +502,7 @@ public class GridCacheUtils {
      * @return Collection of nodes with at least one cache configured.
      */
     public static Collection<ClusterNode> remoteNodes(GridCacheSharedContext ctx) {
-        return remoteNodes(ctx, -1);
+        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -512,7 +512,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Remote nodes on which cache with the same name is started.
      */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().remoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -523,7 +523,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveRemoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -534,7 +534,7 @@ public class GridCacheUtils {
      * @param topVer Topology version.
      * @return Collection of remote nodes with at least one cache configured.
      */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, long topVer) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().remoteCacheNodes(topVer);
     }
 
@@ -545,7 +545,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveNodesWithCaches(topOrder);
     }
 
@@ -556,7 +556,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
     }
 
@@ -567,18 +567,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
-        return ctx.discovery().cacheAffinityNodes(ctx.namex(), -1);
-    }
-
-    /**
-     * Gets DHT affinity nodes.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, long topOrder) {
-        return ctx.discovery().cacheAffinityNodes(ctx.namex(), topOrder);
+        return ctx.discovery().cacheAffinityNodes(ctx.namex(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -589,7 +578,7 @@ public class GridCacheUtils {
      * @return Affinity nodes.
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return affinityNodes(ctx, topOrder.topologyVersion());
+        return ctx.discovery().cacheAffinityNodes(ctx.namex(), topOrder);
     }
 
     /**
@@ -650,7 +639,7 @@ public class GridCacheUtils {
      * @return Oldest node for the current topology version.
      */
     public static ClusterNode oldest(GridCacheContext cctx) {
-        return oldest(cctx, -1);
+        return oldest(cctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -660,7 +649,7 @@ public class GridCacheUtils {
      * @return Oldest node.
      */
     public static ClusterNode oldest(GridCacheSharedContext ctx) {
-        return oldest(ctx, -1);
+        return oldest(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -670,15 +659,15 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static ClusterNode oldest(GridCacheContext cctx, long topOrder) {
+    public static ClusterNode oldest(GridCacheContext cctx, AffinityTopologyVersion topOrder) {
         ClusterNode oldest = null;
 
         for (ClusterNode n : aliveNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
-        assert oldest != null : "Failed to find oldest node for cache context: " + cctx.name();
-        assert oldest.order() <= topOrder || topOrder < 0;
+        assert oldest != null : "Failed to find oldest node for cache context [name=" + cctx.name() + ", topOrder=" + topOrder + ']';
+        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
     }
@@ -690,7 +679,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static ClusterNode oldest(GridCacheSharedContext cctx, long topOrder) {
+    public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
         ClusterNode oldest = null;
 
         for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
@@ -699,7 +688,7 @@ public class GridCacheUtils {
         }
 
         assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
-        assert oldest.order() <= topOrder || topOrder < 0;
+        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
     }
@@ -1541,9 +1530,21 @@ public class GridCacheUtils {
      * @return Cache ID for utility cache.
      */
     public static int utilityCacheId() {
-        int hc = UTILITY_CACHE_NAME.hashCode();
+        return cacheId(UTILITY_CACHE_NAME);
+    }
 
-        return hc == 0 ? 1 : hc;
+    /** {@inheritDoc} */
+    public static int cacheId(String cacheName) {
+        if (cacheName != null) {
+            int hash = cacheName.hashCode();
+
+            if (hash == 0)
+                hash = 1;
+
+            return hash;
+        }
+        else
+            return 1;
     }
 
     /**

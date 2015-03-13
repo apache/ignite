@@ -1243,18 +1243,29 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void close() {
+        gate.enter();
+
         try {
             ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
+        finally {
+            gate.leave();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        return getCacheManager() == null;
+        gate.enter();
+
+        try {
+            return ctx.kernalContext().cache().context().closed(ctx);
+        }
+        finally {
+            gate.leave();
+        }
     }
 
     /**

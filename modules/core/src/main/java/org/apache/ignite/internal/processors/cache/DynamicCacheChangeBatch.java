@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -28,6 +31,7 @@ public class DynamicCacheChangeBatch implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Change requests. */
+    @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
     /**
@@ -44,5 +48,10 @@ public class DynamicCacheChangeBatch implements Serializable {
      */
     public Collection<DynamicCacheChangeRequest> requests() {
         return reqs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DynamicCacheChangeBatch.class, this);
     }
 }

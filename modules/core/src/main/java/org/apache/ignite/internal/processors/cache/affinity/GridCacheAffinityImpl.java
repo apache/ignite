@@ -167,7 +167,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
 
         AffinityTopologyVersion topVer = topologyVersion();
 
-        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer.topologyVersion()).size();
+        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
 
         // Must return empty map if no alive nodes present or keys is empty.
         Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);

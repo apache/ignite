@@ -20,7 +20,7 @@ package org.apache.ignite.scalar.examples
 import java.util.Timer
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.examples.datagrid.CacheNodeStartup
+import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
@@ -33,7 +33,7 @@ import collection.JavaConversions._
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `ignite.sh examples/config/example-cache.xml`
  * <p>
- * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
+ * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
  * start node with `examples/config/example-cache.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce

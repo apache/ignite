@@ -3057,7 +3057,7 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "modules").isDirectory() ||
+                !new File(cur, "docs").isDirectory() ||
                 !new File(cur, "config").isDirectory())
                 continue;
 

@@ -84,9 +84,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringExclude
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
-    /** Minor topology version incremented each time a new dynamic cache is started. */
-    private volatile int minorTopVer;
-
     /** */
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFuture;
 
@@ -134,7 +131,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
                     exchId = exchangeId(n.id(),
-                        new AffinityTopologyVersion(e.topologyVersion(), minorTopVer = 0),
+                        affinityTopologyVersion(e),
                         e.type());
 
                     exchFut = exchangeFuture(exchId, e, null);
@@ -155,7 +152,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (!F.isEmpty(valid)) {
                             exchId = exchangeId(n.id(),
-                                new AffinityTopologyVersion(e.topologyVersion(), ++minorTopVer),
+                                affinityTopologyVersion(e),
                                 e.type());
 
                             exchFut = exchangeFuture(exchId, e, valid);
@@ -240,12 +237,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         assert startTime > 0;
 
-        final AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(loc.order(), minorTopVer);
-
-        GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
-
         // Generate dummy discovery event for local node joining.
         DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+
+        final AffinityTopologyVersion startTopVer = affinityTopologyVersion(discoEvt);
+
+        GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
         assert discoEvt != null;
 
@@ -422,6 +419,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @param evt Discovery event.
+     * @return Affinity topology version.
+     */
+    private AffinityTopologyVersion affinityTopologyVersion(DiscoveryEvent evt) {
+        if (evt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)
+            return ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
+
+        return new AffinityTopologyVersion(evt.topologyVersion());
     }
 
     /**

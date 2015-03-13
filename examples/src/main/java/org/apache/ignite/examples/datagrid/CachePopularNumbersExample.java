@@ -18,7 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -29,14 +32,14 @@ import static org.apache.ignite.cache.query.Query.*;
  * Real time popular numbers counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class CachePopularNumbersExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CachePopularNumbersExample.class.getSimpleName();
 
     /** Count of most popular numbers to retrieve from cluster. */
     private static final int POPULAR_NUMBERS_CNT = 10;
@@ -59,29 +62,41 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>();
 
-            ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setQueryIndexEnabled(true);
 
-            if (prj.nodes().isEmpty()) {
-                System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
+            CacheQueryConfiguration qCfg = new CacheQueryConfiguration();
 
-                return;
+            qCfg.setIndexPrimitiveKey(true);
+            qCfg.setIndexPrimitiveValue(true);
+
+            cfg.setQueryConfiguration(qCfg);
+
+            try (IgniteCache<Integer, Long> cache = ignite.createCache(cfg)) {
+                ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
+
+                if (prj.nodes().isEmpty()) {
+                    System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
+
+                    return;
+                }
+
+                TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
+
+                streamData(ignite);
+
+                // Force one more run to get final counts.
+                task.run();
+
+                popularNumbersQryTimer.cancel();
             }
-
-            TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
-
-            streamData(ignite);
-
-            // Force one more run to get final counts.
-            task.run();
-
-            popularNumbersQryTimer.cancel();
         }
     }
 

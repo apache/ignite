@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.services.*;
@@ -249,6 +250,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         if (obj != null) {
             if (log.isDebugEnabled())
                 log.debug("Cleaning up resources: " + obj);
+            U.debug(log, "Cleaning up resources: " + obj);
 
             // Unwrap Proxy object.
             obj = unwrapTarget(obj);

@@ -218,7 +218,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         log = cctx.logger(getClass());
 
         // Grab all nodes with order of equal or less than last joined node.
-        oldestNode.set(CU.oldest(cctx, exchId.topologyVersion().topologyVersion()));
+        oldestNode.set(CU.oldest(cctx, exchId.topologyVersion()));
 
         assert oldestNode.get() != null;
 
@@ -424,12 +424,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     // Update before waiting for locks.
                     if (!cacheCtx.isLocal())
-                        cacheCtx.topology().updateTopologyVersion(exchId, this);
+                        cacheCtx.topology().updateTopologyVersion(exchId, this, stopping(cacheCtx.cacheId()));
                 }
 
                 // Grab all alive remote nodes with order of equal or less than last joined node.
                 rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteCacheNodes(cctx,
-                    exchId.topologyVersion().topologyVersion()));
+                    exchId.topologyVersion()));
 
                 rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
 
@@ -467,7 +467,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     log.debug("After waiting for partition release future: " + this);
 
                 if (!F.isEmpty(reqs))
-                    stopCaches();
+                    blockGateways();
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
@@ -492,7 +492,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
-                    top.updateTopologyVersion(exchId, this);
+                    top.updateTopologyVersion(exchId, this, stopping(top.cacheId()));
 
                     top.beforeExchange(exchId);
                 }
@@ -553,6 +553,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param cacheId Cache ID to check.
+     * @return {@code True} if cache is stopping by this exchange.
+     */
+    private boolean stopping(int cacheId) {
+        boolean stopping = false;
+
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (cacheId == CU.cacheId(req.cacheName())) {
+                    stopping = req.isStop();
+
+                    break;
+                }
+            }
+        }
+
+        return stopping;
+    }
+
+    /**
      * Starts dynamic caches.
      */
     private void startCaches() throws IgniteCheckedException {
@@ -563,12 +583,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * Stop dynamic caches.
+     *
      */
-    private void stopCaches() {
+    private void blockGateways() {
         for (DynamicCacheChangeRequest req : reqs) {
             if (req.isStop())
-                cctx.cache().prepareCacheStop(req);
+                cctx.cache().blockGateway(req);
         }
     }
 
@@ -961,7 +981,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             boolean set = false;
 
-                            ClusterNode newOldest = CU.oldest(cctx, exchId.topologyVersion().topologyVersion());
+                            ClusterNode newOldest = CU.oldest(cctx, exchId.topologyVersion());
 
                             // If local node is now oldest.
                             if (newOldest.id().equals(cctx.localNodeId())) {

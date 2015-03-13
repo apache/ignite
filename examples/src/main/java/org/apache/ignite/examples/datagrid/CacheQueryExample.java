@@ -18,9 +18,12 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -61,14 +64,14 @@ import static org.apache.ignite.cache.query.Query.*;
  * </ul>
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class CacheQueryExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheQueryExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -77,31 +80,36 @@ public class CacheQueryExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).removeAll();
+            CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
-            // Populate cache.
-            initialize();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setQueryIndexEnabled(true);
 
-            // Example for SQL-based querying employees based on salary ranges.
-            sqlQuery();
+            try (IgniteCache<?, ?> cache = ignite.createCache(cfg)) {
+                // Populate cache.
+                initialize();
 
-            // Example for SQL-based querying employees for a given organization (includes SQL join).
-            sqlQueryWithJoin();
+                // Example for SQL-based querying employees based on salary ranges.
+                sqlQuery();
 
-            // Example for TEXT-based querying for a given string in peoples resumes.
-            textQuery();
+                // Example for SQL-based querying employees for a given organization (includes SQL join).
+                sqlQueryWithJoin();
 
-            // Example for SQL-based fields queries that return only required
-            // fields instead of whole key-value pairs.
-            sqlFieldsQuery();
+                // Example for TEXT-based querying for a given string in peoples resumes.
+                textQuery();
 
-            // Example for SQL-based fields queries that uses joins.
-            sqlFieldsQueryWithJoin();
+                // Example for SQL-based fields queries that return only required
+                // fields instead of whole key-value pairs.
+                sqlFieldsQuery();
+
+                // Example for SQL-based fields queries that uses joins.
+                sqlFieldsQueryWithJoin();
+            }
 
             print("Cache query example finished.");
         }

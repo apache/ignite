@@ -35,7 +35,7 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ignite.sh examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start
  * node with {@code examples/config/example-compute.xml} configuration.
  */
 public class EventsExample {

@@ -152,6 +152,16 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Checks if cache context is closed.
+     *
+     * @param ctx Cache context to check.
+     * @return {@code True} if cache context is closed.
+     */
+    public boolean closed(GridCacheContext ctx) {
+        return !ctxMap.containsKey(ctx.cacheId());
+    }
+
+    /**
      * @return List of shared context managers in starting order.
      */
     public List<GridCacheSharedManager<K, V>> managers() {
