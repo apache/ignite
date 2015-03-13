@@ -1075,7 +1075,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             int size = locked.size();
 
-            Map<Object, Object> putMap = null;
+            Map<Object, IgniteBiTuple<Object, byte[]>> putMap = null;
 
             Collection<Object> rmvKeys = null;
 
@@ -1233,7 +1233,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 writeVals = new ArrayList<>(size);
                             }
 
-                            putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                            putMap.put(CU.value(entry.key(), ctx, false),
+                                F.t(CU.value(updated, ctx, false), updated.valueBytes(ctx.cacheObjectContext())));
                             writeVals.add(updated);
                         }
                     }
@@ -1268,7 +1269,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             writeVals = new ArrayList<>(size);
                         }
 
-                        putMap.put(CU.value(entry.key(), ctx, false), CU.value(cacheVal, ctx, false));
+                        putMap.put(CU.value(entry.key(), ctx, false),
+                            F.t(CU.value(cacheVal, ctx, false), cacheVal.valueBytes(ctx.cacheObjectContext())));
                         writeVals.add(cacheVal);
                     }
                     else {
@@ -1360,7 +1362,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,
         @Nullable List<CacheObject> writeVals,
-        @Nullable Map<Object, Object> putMap,
+        @Nullable Map<Object, IgniteBiTuple<Object, byte[]>> putMap,
         @Nullable Collection<Object> rmvKeys,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable CachePartialUpdateCheckedException err,
@@ -1375,9 +1377,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             if (putMap != null) {
                 try {
-                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
-                            return F.t(v, ver);
+                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap,
+                        new C1<IgniteBiTuple<Object, byte[]>, GridTuple3<Object, GridCacheVersion, byte[]>>() {
+                        @Override public GridTuple3<Object, GridCacheVersion, byte[]> apply(
+                            IgniteBiTuple<Object, byte[]> v) {
+                            return F.t(v.get1(), ver, v.get2());
                         }
                     }));
                 }

@@ -1253,7 +1253,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int size = req.keys().size();
 
-        Map<Object, Object> putMap = null;
+        Map<Object, IgniteBiTuple<Object, byte[]>> putMap = null;
 
         Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap = null;
 
@@ -1444,7 +1444,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             writeVals = new ArrayList<>(size);
                         }
 
-                        putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                        putMap.put(CU.value(entry.key(), ctx, false),
+                            F.t(CU.value(updated, ctx, false), updated.valueBytes(ctx.cacheObjectContext())));
                         writeVals.add(updated);
                     }
 
@@ -1488,7 +1489,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         writeVals = new ArrayList<>(size);
                     }
 
-                    putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                    putMap.put(CU.value(entry.key(), ctx, false),
+                        F.t(CU.value(updated, ctx, false), updated.valueBytes(ctx.cacheObjectContext())));
                     writeVals.add(updated);
                 }
                 else {
@@ -1855,7 +1857,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridCacheVersion ver,
         ClusterNode node,
         @Nullable List<CacheObject> writeVals,
-        @Nullable Map<Object, Object> putMap,
+        @Nullable Map<Object, IgniteBiTuple<Object, byte[]>> putMap,
         @Nullable Collection<Object> rmvKeys,
         @Nullable Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
@@ -1882,7 +1884,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             if (putMap != null) {
                 // If fast mapping, filter primary keys for write to store.
-                Map<Object, Object> storeMap = req.fastMap() ?
+                Map<Object, IgniteBiTuple<Object, byte[]>> storeMap = req.fastMap() ?
                     F.view(putMap, new P1<Object>() {
                         @Override public boolean apply(Object key) {
                             return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
@@ -1891,9 +1893,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     putMap;
 
                 try {
-                    ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
-                            return F.t(v, ver);
+                    ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<IgniteBiTuple<Object, byte[]>,
+                        GridTuple3<Object, GridCacheVersion, byte[]>>() {
+                        @Override public GridTuple3<Object, GridCacheVersion, byte[]> apply(
+                            IgniteBiTuple<Object, byte[]> v) {
+                            return F.t(v.get1(), ver, v.get2());
                         }
                     }));
                 }

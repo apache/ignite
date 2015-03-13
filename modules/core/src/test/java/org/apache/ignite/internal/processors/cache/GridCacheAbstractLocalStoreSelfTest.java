@@ -339,12 +339,30 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllValBytes() throws Exception {
+        Ignite ignite1 = startGrid(1);
+
+        Map<Object, Object> entries = new HashMap<>();
+
+        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+
+        // Populate cache and check that local store has all value.
+        for (int i = 0; i < KEYS; i++)
+            entries.put(i, i);
+
+        // Check that entries which passed into TestLocalStore#writeAll contains value bytes.
+        cache.putAll(entries);
+    }
+
+    /**
      * Checks that local stores contains only primary entry.
      *
      * @param ignite Ignite.
      * @param store Store.
      */
-    private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store) {
+    private void checkLocalStore(Ignite ignite, CacheStore<Integer, GridTuple3<Integer, ?, byte[]>> store) {
         for (int i = 0; i < KEYS; i++) {
             if (ignite.affinity(null).isPrimary(ignite.cluster().localNode(), i))
                 assertEquals(store.load(i).get1().intValue(), i);
@@ -359,7 +377,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @param ignite Ignite.
      * @param store Store.
      */
-    private void checkLocalStoreForBackup(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store) {
+    private void checkLocalStoreForBackup(Ignite ignite, CacheStore<Integer, GridTuple3<Integer, ?, byte[]>> store) {
         for (int i = 0; i < KEYS; i++) {
             if (ignite.affinity(BACKUP_CACHE).isBackup(ignite.cluster().localNode(), i))
                 assertEquals(store.load(i).get1().intValue(), i);
@@ -372,12 +390,12 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      *
      */
     @CacheLocalStore
-    public static class TestLocalStore<K, V> implements CacheStore<K, IgniteBiTuple<V, ?>> {
+    public static class TestLocalStore<K, V> implements CacheStore<K, GridTuple3<V, ?, byte[]>> {
         /** */
-        private Map<K, IgniteBiTuple<V, ?>> map = new ConcurrentHashMap<>();
+        private Map<K, GridTuple3<V, ?, byte[]>> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<K, IgniteBiTuple<V, ?>> clo, @Nullable Object... args)
+        @Override public void loadCache(IgniteBiInClosure<K, GridTuple3<V, ?, byte[]>> clo, @Nullable Object... args)
             throws CacheLoaderException {
             // No-op.
         }
@@ -388,16 +406,17 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<V, ?> load(K key) throws CacheLoaderException {
+        @Override public GridTuple3<V, ?, byte[]> load(K key) throws CacheLoaderException {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public Map<K, IgniteBiTuple<V, ?>> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
-            Map<K, IgniteBiTuple<V, ?>> res = new HashMap<>();
+        @Override public Map<K, GridTuple3<V, ?, byte[]>> loadAll(Iterable<? extends K> keys)
+            throws CacheLoaderException {
+            Map<K, GridTuple3<V, ?, byte[]>> res = new HashMap<>();
 
             for (K key : keys) {
-                IgniteBiTuple<V, ?> val = map.get(key);
+                GridTuple3<V, ?, byte[]> val = map.get(key);
 
                 if (val != null)
                     res.put(key, val);
@@ -407,16 +426,21 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>> entry)
+        @Override public void write(Cache.Entry<? extends K, ? extends GridTuple3<V, ?, byte[]>> entry)
             throws CacheWriterException {
+            assertNotNull(entry.getValue().get3());
+
             map.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>>> entries)
+        @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends GridTuple3<V, ?, byte[]>>> entries)
             throws CacheWriterException {
-            for (Cache.Entry<? extends K, ? extends IgniteBiTuple<V, ?>> e : entries)
+            for (Cache.Entry<? extends K, ? extends GridTuple3<V, ?, byte[]>> e : entries) {
+                assertNotNull(e.getValue().get3());
+
                 map.put(e.getKey(), e.getValue());
+            }
         }
 
         /** {@inheritDoc} */

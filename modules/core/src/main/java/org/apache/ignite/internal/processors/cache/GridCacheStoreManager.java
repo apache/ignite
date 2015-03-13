@@ -313,7 +313,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
         if (val == null)
             return null;
 
-        return locStore ? ((IgniteBiTuple<Object, GridCacheVersion>)val).get1() : val;
+        return locStore ? ((GridTuple3<Object, GridCacheVersion, byte[]>)val).get1() : val;
     }
 
     /**
@@ -537,13 +537,14 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      * @param tx Cache transaction.
      * @param key Key.
      * @param val Value.
+     * @param valBytes Value bytes.
      * @param ver Version.
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
     @SuppressWarnings("unchecked")
-    public boolean putToStore(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
-        throws IgniteCheckedException {
+    public boolean putToStore(@Nullable IgniteInternalTx tx, Object key, Object val, byte[] valBytes,
+        GridCacheVersion ver) throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
             if (key instanceof GridCacheInternal)
@@ -560,7 +561,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             boolean ses = initSession(tx);
 
             try {
-                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
+                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver, valBytes) : val));
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -594,16 +595,16 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If storage failed.
      */
     public boolean putAllToStore(@Nullable IgniteInternalTx tx,
-        Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map)
+        Map<Object, GridTuple3<Object, GridCacheVersion, byte[]>> map)
         throws IgniteCheckedException
     {
         if (F.isEmpty(map))
             return true;
 
         if (map.size() == 1) {
-            Map.Entry<Object, IgniteBiTuple<Object, GridCacheVersion>> e = map.entrySet().iterator().next();
+            Map.Entry<Object, GridTuple3<Object, GridCacheVersion, byte[]>> e = map.entrySet().iterator().next();
 
-            return putToStore(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
+            return putToStore(tx, e.getKey(), e.getValue().get1(), e.getValue().get3(), e.getValue().get2());
         }
         else {
             if (store != null) {
@@ -948,7 +949,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     @SuppressWarnings("unchecked")
     private class EntriesView extends AbstractCollection<Cache.Entry<?, ?>> {
         /** */
-        private final Map<?, IgniteBiTuple<?, GridCacheVersion>> map;
+        private final Map<?, GridTuple3<?, GridCacheVersion, byte[]>> map;
 
         /** */
         private Set<Object> rmvd;
@@ -959,7 +960,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
         /**
          * @param map Map.
          */
-        private EntriesView(Map<?, IgniteBiTuple<?, GridCacheVersion>> map) {
+        private EntriesView(Map<?, GridTuple3<?, GridCacheVersion, byte[]>> map) {
             assert map != null;
 
             this.map = map;
@@ -990,7 +991,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (cleared)
                 return F.emptyIterator();
 
-            final Iterator<Map.Entry<?, IgniteBiTuple<?, GridCacheVersion>>> it0 = (Iterator)map.entrySet().iterator();
+            final Iterator<Map.Entry<?, GridTuple3<?, GridCacheVersion, byte[]>>> it0 = (Iterator)map.entrySet().iterator();
 
             return new Iterator<Cache.Entry<?, ?>>() {
                 /** */
@@ -1011,7 +1012,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                  */
                 private void checkNext() {
                     while (it0.hasNext()) {
-                        Map.Entry<?, IgniteBiTuple<?, GridCacheVersion>> e = it0.next();
+                        Map.Entry<?, GridTuple3<?, GridCacheVersion, byte[]>> e = it0.next();
 
                         Object k = e.getKey();
 

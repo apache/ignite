@@ -497,7 +497,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
-                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
+                    Map<Object, GridTuple3<Object, GridCacheVersion, byte[]>> putMap = null;
                     List<Object> rmvCol = null;
                     GridCacheStoreManager writeStore = null;
 
@@ -558,7 +558,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (putMap == null)
                                 putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver,
+                                val.valueBytes(cacheCtx.cacheObjectContext())));
 
                             writeStore = cacheCtx.store();
                         }
