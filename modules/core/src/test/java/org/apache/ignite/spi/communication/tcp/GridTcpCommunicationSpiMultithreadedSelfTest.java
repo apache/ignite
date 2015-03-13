@@ -80,7 +80,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
     /**
      */
-    protected GridTcpCommunicationSpiMultithreadedSelfTest() {
+    public GridTcpCommunicationSpiMultithreadedSelfTest() {
         super(false);
     }
 
