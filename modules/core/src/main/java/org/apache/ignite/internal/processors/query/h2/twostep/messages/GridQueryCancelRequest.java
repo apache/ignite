@@ -27,6 +27,9 @@ import java.nio.*;
  */
 public class GridQueryCancelRequest implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long qryReqId;
 
     /**
