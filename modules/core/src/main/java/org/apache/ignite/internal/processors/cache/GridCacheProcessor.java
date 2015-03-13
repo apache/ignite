@@ -869,6 +869,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel);
         }
 
+        try {
+            ctx.kernalContext().query().onCacheStopped(cache.context());
+        }
+        catch (IgniteCheckedException e) {
+            // TODO implement.
+            e.printStackTrace();
+        }
+
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
             ctx.store().configuredStore()));
 
@@ -1186,6 +1194,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheCtx.cache(dht);
         }
 
+        ctx.query().onCacheStarted(ret);
+
         return ret;
     }
 
@@ -1288,7 +1298,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Stop request.
      */
-    public void prepareCacheStop(DynamicCacheChangeRequest req) {
+    public void blockGateway(DynamicCacheChangeRequest req) {
         assert req.isStop();
 
         // Break the proxy before exchange future is done.
@@ -1296,6 +1306,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (proxy != null)
             proxy.gate().onStopped();
+    }
+
+    /**
+     * @param req Stop request.
+     */
+    public void prepareCacheStop(DynamicCacheChangeRequest req) {
+        assert req.isStop();
 
         GridCacheAdapter<?, ?> cache = caches.remove(req.cacheName());
 
@@ -1326,6 +1343,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
         else {
+            prepareCacheStop(req);
+
             String masked = maskNull(req.cacheName());
 
             DynamicCacheDescriptor desc = registeredCaches.get(masked);

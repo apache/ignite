@@ -229,6 +229,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         });
     }
 
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        for (DeferredResponseBuffer buf : pendingResponses.values())
+            buf.finish();
+    }
+
     /**
      * @param near Near cache.
      */
@@ -1638,7 +1644,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 
-        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer.topologyVersion());
+        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
         boolean readersOnly = false;
 
@@ -1864,7 +1870,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 
-        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer.topologyVersion());
+        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
         CacheStorePartialUpdateException storeErr = null;
 
@@ -2337,7 +2343,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-            Collection<ClusterNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer.topologyVersion());
+            Collection<ClusterNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer);
 
             // We are on primary node for some key.
             assert !nodes.isEmpty();
@@ -2898,13 +2904,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 respVers);
 
             try {
-                ctx.gate().enter();
+                ctx.kernalContext().gateway().readLock();
 
                 try {
                     ctx.io().send(nodeId, msg, ctx.ioPolicy());
                 }
                 finally {
-                    ctx.gate().leave();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
             catch (IllegalStateException ignored) {

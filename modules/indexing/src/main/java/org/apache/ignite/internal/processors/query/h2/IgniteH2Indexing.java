@@ -293,6 +293,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Creates DB schema if it has not been created yet.
+     *
+     * @param schema Schema name.
+     * @throws IgniteCheckedException If failed to create db schema.
+     */
+    private void dropSchemaIfExists(String schema) throws IgniteCheckedException {
+        executeStatement("DROP SCHEMA IF EXISTS \"" + schema + '"');
+
+        if (log.isDebugEnabled())
+            log.debug("Dropped H2 schema for index database: " + schema);
+    }
+
+    /**
      * @param sql SQL statement.
      * @throws IgniteCheckedException If failed.
      */
@@ -1287,6 +1300,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
     }
 
+    /** {@inheritDoc} */
+    @Override public void onCacheStarted(GridCacheContext ctx) throws IgniteCheckedException {
+        if (registerSpace(ctx.name()))
+            createSchemaIfAbsent(schema(ctx.name()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheStopped(GridCacheContext ctx) throws IgniteCheckedException {
+        if (unregisterSpace(ctx.name())) {
+            dropSchemaIfExists(schema(ctx.name()));
+
+            schemas.remove(schema(ctx.name()));
+        }
+    }
+
     /**
      * Runs initial script.
      *
@@ -1476,9 +1504,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param spaceName Space name.
+     * @return {@code True} if space was added by this call.
      */
-    public void registerSpace(String spaceName) {
-        schemaNames.add(schema(spaceName));
+    public boolean registerSpace(String spaceName) {
+        return schemaNames.add(schema(spaceName));
+    }
+
+    /**
+     * @param spaceName Space name.
+     * @return {@code True} if space was removed by this call.
+     */
+    public boolean unregisterSpace(String spaceName) {
+        return schemaNames.remove(schema(spaceName));
     }
 
     /**

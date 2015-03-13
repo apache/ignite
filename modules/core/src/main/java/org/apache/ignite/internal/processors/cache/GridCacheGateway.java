@@ -83,7 +83,8 @@ public class GridCacheGateway<K, V> {
             ctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
-            CU.unwindEvicts(ctx);
+            if (!ctx.shared().closed(ctx))
+                CU.unwindEvicts(ctx);
         }
         finally {
             ctx.kernalContext().gateway().readUnlock();

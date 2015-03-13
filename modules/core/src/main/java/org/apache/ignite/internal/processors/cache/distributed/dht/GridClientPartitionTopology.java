@@ -65,6 +65,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** */
     private AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
+    /** */
+    private boolean stopping;
+
     /** A future that will be completed when topology with version topVer will be ready to use. */
     private GridDhtTopologyFuture topReadyFut;
 
@@ -127,13 +130,18 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public void updateTopologyVersion(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
+        boolean stopping
+    ) {
         lock.writeLock().lock();
 
         try {
             assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
                 ", exchId=" + exchId + ']';
+
+            this.stopping = stopping;
 
             topVer = exchId.topologyVersion();
 
@@ -179,6 +187,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return;
+
             assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
 
@@ -186,7 +197,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+            ClusterNode oldest = CU.oldest(cctx, topVer);
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -344,7 +355,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer.topologyVersion())) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
 
@@ -535,6 +546,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return null;
+
             if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for single partition map update (will ignore) [lastExchId=" +
@@ -624,7 +638,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId.equals(cctx.localNodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -674,7 +688,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         ClusterNode loc = cctx.localNode();
 
@@ -723,6 +737,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return;
+
             assert part.state() == EVICTED;
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();

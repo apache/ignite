@@ -72,33 +72,31 @@ public class CacheStarSchemaExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String[] args) {
-        Ignite ignite = Ignition.start("examples/config/example-compute.xml");
+    public static void main(String[] args) throws Exception {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
 
-        System.out.println();
-        System.out.println(">>> Cache star schema example started.");
+            System.out.println();
+            System.out.println(">>> Cache star schema example started.");
 
-        CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>();
 
-        factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        factCacheCfg.setName(PARTITIONED_CACHE_NAME);
+            factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            factCacheCfg.setName(PARTITIONED_CACHE_NAME);
+            factCacheCfg.setQueryIndexEnabled(true);
 
-        CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
 
-        dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
-        dimCacheCfg.setName(REPLICATED_CACHE_NAME);
+            dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
+            dimCacheCfg.setName(REPLICATED_CACHE_NAME);
+            dimCacheCfg.setQueryIndexEnabled(true);
 
-        try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
-            IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
-            try {
+            try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
+                 IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
                 populateDimensions(dimCache);
                 populateFacts(factCache);
 
                 queryStorePurchases(factCache);
                 queryProductPurchases(factCache);
-            }
-            finally {
-                Ignition.stop(false);
             }
         }
     }
@@ -162,7 +160,7 @@ public class CacheStarSchemaExample {
         // Create cross cache query to get all purchases made at store1.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(sql(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
+            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll());
@@ -190,7 +188,8 @@ public class CacheStarSchemaExample {
         // for specified products.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(sql(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase "
+            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + REPLICATED_CACHE_NAME + "\".DimProduct, " +
+                "\"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
                 + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
             .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));

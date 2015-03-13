@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -110,7 +109,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     /**
      * @return {@code True} if cache was added with this exchange ID.
      */
-    public boolean isCacheAdded() {
+    public boolean isCacheAdded(int cacheId) {
         // TODO IGNITE-45 add cache added flag.
         return evt == EVT_DISCOVERY_CUSTOM_EVT;
     }

@@ -68,6 +68,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     /** */
     private AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
+    /** */
+    private boolean stopping;
+
     /** A future that will be completed when topology with version topVer will be ready to use. */
     private GridDhtTopologyFuture topReadyFut;
 
@@ -81,6 +84,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
      * @param cctx Context.
      */
     GridDhtPartitionTopologyImpl(GridCacheContext<K, V> cctx) {
+        assert cctx != null;
+
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
@@ -150,13 +155,18 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public void updateTopologyVersion(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
+        boolean stopping
+    ) {
         lock.writeLock().lock();
 
         try {
             assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
                 ", exchId=" + exchId + ']';
+
+            this.stopping = stopping;
 
             topVer = exchId.topologyVersion();
 
@@ -207,6 +217,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return;
+
             assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
 
@@ -214,7 +227,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+            ClusterNode oldest = CU.oldest(cctx, topVer);
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -222,7 +235,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             long updateSeq = this.updateSeq.incrementAndGet();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id()) || exchId.isCacheAdded()) {
+            if (oldest.id().equals(loc.id()) || exchId.isCacheAdded(cctx.cacheId())) {
                 if (node2part == null) {
                     node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
 
@@ -249,8 +262,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             if (cctx.preloadEnabled()) {
                 for (int p = 0; p < num; p++) {
                     // If this is the first node in grid.
-                    if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) || exchId.isCacheAdded()) {
-                        assert exchId.isJoined() || exchId.isCacheAdded();
+                    if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) || exchId.isCacheAdded(cctx.cacheId())) {
+                        assert exchId.isJoined() || exchId.isCacheAdded(cctx.cacheId());
 
                         try {
                             GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);
@@ -373,6 +386,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return false;
+
             assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
 
@@ -622,7 +638,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer.topologyVersion())) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
 
@@ -721,6 +737,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return null;
+
             if (exchId != null && lastExchangeId != null && lastExchangeId.compareTo(exchId) >= 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for full partition map update (will ignore) [lastExchId=" +
@@ -821,6 +840,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return null;
+
             if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for single partition map update (will ignore) [lastExchId=" +
@@ -980,7 +1002,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         assert nodeId.equals(cctx.nodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.nodeId())) {
@@ -1030,7 +1052,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        ClusterNode oldest = CU.oldest(cctx, topVer.topologyVersion());
+        ClusterNode oldest = CU.oldest(cctx, topVer);
 
         ClusterNode loc = cctx.localNode();
 
@@ -1096,6 +1118,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return;
+
             assert part.state() == EVICTED;
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();

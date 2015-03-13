@@ -292,16 +292,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         cacheName = cacheCfg.getName();
 
-        if (cacheName != null) {
-            int hash = cacheName.hashCode();
-
-            if (hash == 0)
-                hash = 1;
-
-            cacheId = hash;
-        }
-        else
-            cacheId = 1;
+        cacheId = CU.cacheId(cacheName);
 
         sys = ctx.cache().systemCache(cacheName);
 
@@ -1939,7 +1930,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return toCacheKeyObject(key);
             }
         });
-    };
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

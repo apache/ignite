@@ -26,6 +26,7 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -155,7 +156,7 @@ public class IgfsMetaManager extends IgfsManager {
     Collection<ClusterNode> metaCacheNodes() {
         if (busyLock.enterBusy()) {
             try {
-                return igfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), -1);
+                return igfsCtx.kernalContext().discovery().cacheNodes(metaCache.name(), AffinityTopologyVersion.NONE);
             }
             finally {
                 busyLock.leaveBusy();

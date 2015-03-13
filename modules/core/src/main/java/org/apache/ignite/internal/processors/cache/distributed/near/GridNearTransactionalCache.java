@@ -500,7 +500,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             ver = cand.version();
 
                             if (map == null) {
-                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion().topologyVersion());
+                                Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
 
                                 if (F.isEmpty(affNodes))
                                     return;
@@ -617,7 +617,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             if (cand != null) {
                                 if (map == null) {
-                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion().topologyVersion());
+                                    Collection<ClusterNode> affNodes = CU.allNodes(ctx, cand.topologyVersion());
 
                                     if (F.isEmpty(affNodes))
                                         return;

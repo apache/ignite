@@ -141,6 +141,46 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+        if (idx == null)
+            return;
+
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            idx.onCacheStarted(cctx);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void onCacheStopped(GridCacheContext cctx) {
+        if (idx == null)
+            return;
+
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            idx.onCacheStopped(cctx);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Returns number of objects of given type for given space of spi.
      *
      * @param space Space.
