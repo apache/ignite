@@ -298,8 +298,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute(((SpiQuery)filter).getArgs());
         }
-        else
-            throw new IgniteException("Unsupported query predicate: " + filter);
+        else {
+            if (filter instanceof SqlFieldsQuery)
+                throw new CacheException("Use methods 'queryFields' and 'localQueryFields' for " +
+                    SqlFieldsQuery.class.getSimpleName() + ".");
+
+            throw new CacheException("Unsupported query type: " + filter);
+        }
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
             /** */

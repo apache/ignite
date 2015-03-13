@@ -280,14 +280,18 @@ public class GridReduceQueryExecutor implements GridMessageListener {
     private void send(Collection<ClusterNode> nodes, Message msg) throws IgniteCheckedException {
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
-                ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
+                if (nodes.size() > 1) {
+                    ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
 
-                for (ClusterNode node0 : nodes) {
-                    if (node0 != node)
-                        remotes.add(node0);
+                    for (ClusterNode node0 : nodes) {
+                        if (!node0.isLocal())
+                            remotes.add(node0);
+                    }
+
+                    assert remotes.size() == nodes.size() - 1;
+
+                    ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
                 }
-
-                ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
 
                 // Local node goes the last to allow parallel execution.
                 h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg);

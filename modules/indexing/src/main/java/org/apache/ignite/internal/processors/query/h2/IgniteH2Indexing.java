@@ -1249,7 +1249,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
         String schema = schema(ccfg.getName());
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), ccfg.getOffHeapMaxMemory() >= 0 ?
+        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
+            ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + ccfg.getName());
 
