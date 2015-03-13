@@ -4157,44 +4157,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testLocalClear() throws Exception {
-        Map<String, List<String>> keys = addKeys();
-
-        Set<String> keysToRemove = new HashSet<>();
-
-        Ignite g = grid(0);
-
-        for (int i = 0; i < gridCount(); ++i) {
-            List<String> gridKeys = keys.get(grid(i).name());
-
-            if (gridKeys.size() > 0) {
-                keysToRemove.addAll(gridKeys);
-
-                g = grid(i);
-
-                break;
-            }
-        }
-
-        g.jcache(null).localClear();
-
-        for (int i = 0; i < 500; ++i) {
-            String key = "key" + i;
-
-            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
-
-            if (keysToRemove.contains(key))
-                assertFalse("Found removed key " + key, found);
-            else
-                assertTrue("Not found key " + key, found);
-        }
-
-        assertEquals(0, g.jcache(null).localSize());
-    }
-
-    /**
      * Add 500 keys to cache only on primaries nodes.
      *
      * @return Map grid's name to its primary keys.
