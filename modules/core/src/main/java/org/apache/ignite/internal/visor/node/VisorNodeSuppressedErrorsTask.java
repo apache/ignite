@@ -31,15 +31,15 @@ import java.util.*;
  * Task to collect last errors on nodes.
  */
 @GridInternal
-public class VisorNodeLastErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
+public class VisorNodeSuppressedErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
     Map<UUID, IgniteBiTuple<Long, List<IgniteExceptionRegistry.ExceptionInfo>>>,
     IgniteBiTuple<Long, List<IgniteExceptionRegistry.ExceptionInfo>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorNodeLastErrorsJob job(Map<UUID, Long> arg) {
-        return new VisorNodeLastErrorsJob(arg, debug);
+    @Override protected VisorNodeSuppressedErrorsJob job(Map<UUID, Long> arg) {
+        return new VisorNodeSuppressedErrorsJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -60,7 +60,7 @@ public class VisorNodeLastErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
     /**
      * Job to collect last errors on nodes.
      */
-    private static class VisorNodeLastErrorsJob extends VisorJob<Map<UUID, Long>,
+    private static class VisorNodeSuppressedErrorsJob extends VisorJob<Map<UUID, Long>,
         IgniteBiTuple<Long, List<IgniteExceptionRegistry.ExceptionInfo>>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -71,7 +71,7 @@ public class VisorNodeLastErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
          * @param arg Map with last error counter.
          * @param debug Debug flag.
          */
-        private VisorNodeLastErrorsJob(Map<UUID, Long> arg, boolean debug) {
+        private VisorNodeSuppressedErrorsJob(Map<UUID, Long> arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -93,7 +93,7 @@ public class VisorNodeLastErrorsTask extends VisorMultiNodeTask<Map<UUID, Long>,
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorNodeLastErrorsJob.class, this);
+            return S.toString(VisorNodeSuppressedErrorsJob.class, this);
         }
     }
 }
