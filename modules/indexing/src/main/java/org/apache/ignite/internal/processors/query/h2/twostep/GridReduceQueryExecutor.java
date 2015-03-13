@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
@@ -107,9 +109,23 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         log = ctx.log(GridReduceQueryExecutor.class);
 
-        // TODO handle node failure.
-
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
+
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                for (QueryRun r : runs.values()) {
+                    for (GridMergeTable tbl : r.tbls) {
+                        if (tbl.getScanIndex(null).hasSource(nodeId)) {
+                            fail(r, nodeId, "Node left the topology.");
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
             " FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
@@ -146,11 +162,23 @@ public class GridReduceQueryExecutor implements GridMessageListener {
     private void onFail(ClusterNode node, GridQueryFailResponse msg) {
         QueryRun r = runs.get(msg.queryRequestId());
 
-        if (r != null && r.latch.getCount() != 0) {
-            r.rmtErr = new CacheException("Failed to execute map query on the node: " + node.id() + "\n " + msg.error());
+        fail(r, node.id(), msg.error());
+    }
 
-            while(r.latch.getCount() > 0)
+    /**
+     * @param r Query run.
+     * @param nodeId Failed node ID.
+     * @param msg Error message.
+     */
+    private void fail(QueryRun r, UUID nodeId, String msg) {
+        if (r != null) {
+            r.rmtErr = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+
+            while(r.latch.getCount() != 0)
                 r.latch.countDown();
+
+            for (GridMergeTable tbl : r.tbls)
+                tbl.getScanIndex(null).fail(nodeId);
         }
     }
 
@@ -173,6 +201,9 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         idx.addPage(new GridResultPage(node.id(), msg, false) {
             @Override public void fetchNextPage() {
+                if (r.rmtErr != null)
+                    throw new CacheException("Next page fetch failed.", r.rmtErr);
+
                 try {
                     GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
 
@@ -182,7 +213,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
                         ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+                    throw new CacheException(e);
                 }
             }
         });
@@ -435,7 +466,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         private int pageSize;
 
         /** */
-        private volatile Throwable rmtErr;
+        private volatile CacheException rmtErr;
     }
 
     /**

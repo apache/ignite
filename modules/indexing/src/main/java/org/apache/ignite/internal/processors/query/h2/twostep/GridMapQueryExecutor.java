@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
@@ -86,7 +87,19 @@ public class GridMapQueryExecutor implements GridMessageListener {
 
         log = ctx.log(GridMapQueryExecutor.class);
 
-        // TODO handle node failures.
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                ConcurrentMap<Long,QueryResults> nodeRess = qryRess.remove(nodeId);
+
+                if (nodeRess == null)
+                    return;
+
+                for (QueryResults ress : nodeRess.values())
+                    ress.cancel();
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
     }
@@ -171,7 +184,7 @@ public class GridMapQueryExecutor implements GridMessageListener {
 
         QueryResults qr = new QueryResults(req.requestId(), qrys.size());
 
-        if (nodeRess.putIfAbsent(req.requestId(), qr) != null)
+        if (nodeRess.put(req.requestId(), qr) != null)
             throw new IllegalStateException();
 
         h2.setFilters(h2.backupFilter());
