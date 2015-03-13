@@ -1985,7 +1985,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     assert !updRes.success() || updRes.newTtl() == CU.TTL_NOT_CHANGED || expiry != null :
                         "success=" + updRes.success() + ", newTtl=" + updRes.newTtl() + ", expiry=" + expiry;
 
-                    if (intercept) {
+                    if (updRes.success() && intercept) {
                         if (op == UPDATE) {
                             ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
                                 ctx,
