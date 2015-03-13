@@ -938,7 +938,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             Collection<ClusterNode> nodes0 = cluster().nodes();
 
                             hosts = U.neighborhood(nodes0).size();
-                            nodes = nodes0.size();
+                            nodes = metrics.getTotalNodes();
                             cpus = metrics.getTotalCpus();
                         }
                         catch (IgniteException ignore) {
@@ -1974,10 +1974,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Whether or not node restart is enabled. Node restart us supported when this node was started
      * with {@code bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be
-     * programmatically restarted using {@link org.apache.ignite.Ignition#restart(boolean)}} method.
+     * programmatically restarted using {@link Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
-     * @see org.apache.ignite.Ignition#restart(boolean)
+     * @see Ignition#restart(boolean)
      */
     @Override public boolean isRestartEnabled() {
         return System.getProperty(IGNITE_SUCCESS_FILE) != null;
@@ -2089,7 +2089,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cfg Grid configuration.
-     * @return Components provided in configuration which can implement {@link org.apache.ignite.lifecycle.LifecycleAware} interface.
+     * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();

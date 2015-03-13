@@ -50,10 +50,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
-    private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    private static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** File working in PRIMARY mode. */
     public static final IgfsPath FILE = new IgfsPath("/file");
@@ -72,6 +69,13 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
     /** Eviction policy */
     private static CacheIgfsPerBlockLruEvictionPolicy evictPlc;
+
+    static {
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /**
      * Start a grid with the primary file system.

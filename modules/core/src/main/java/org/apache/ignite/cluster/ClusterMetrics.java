@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cluster;
 
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+
 /**
  * This class represents runtime information on a cluster. Apart from obvious
  * statistical value, this information is used for implementation of
@@ -24,10 +27,10 @@ package org.apache.ignite.cluster;
  * in combination with fail-over SPI could check if other nodes don't have
  * any active or waiting jobs and fail-over some jobs to those nodes.
  * <p>
- * Node metrics for any node can be accessed via {@link org.apache.ignite.cluster.ClusterNode#metrics()}
+ * Node metrics for any node can be accessed via {@link ClusterNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
  * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
- * metrics on local node {@link org.apache.ignite.IgniteCluster#localNode() Grid.localNode().getMetrics()}
+ * metrics on local node {@link IgniteCluster#localNode() Grid.localNode().getMetrics()}
  * the metrics are always accurate and up to date.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from
@@ -52,8 +55,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of jobs that ever ran concurrently on this node.
@@ -74,8 +77,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of active jobs.
@@ -89,8 +92,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of waiting jobs.
@@ -111,8 +114,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of waiting jobs.
@@ -127,8 +130,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum number of jobs rejected at once.
@@ -149,8 +152,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of grid configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of jobs this node rejects during collision resolution operations.
@@ -193,8 +196,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average number of cancelled jobs.
@@ -228,8 +231,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Maximum waiting time.
@@ -250,8 +253,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average job wait time.
@@ -265,8 +268,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Time it took to execute the longest job on the node.
@@ -287,8 +290,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average job execution time.
@@ -302,8 +305,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Total number of jobs handled by the node.
@@ -382,8 +385,8 @@ public interface ClusterMetrics {
      * calculated over all the metrics kept in history. The
      * history size is set via either one or both of configuration settings:
      * <ul>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
-     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link IgniteConfiguration#getMetricsHistorySize()}</li>
      * </ul>
      *
      * @return Average of CPU load value in {@code [0, 1]} range over all metrics kept
@@ -674,4 +677,11 @@ public interface ClusterMetrics {
      * @return Outbound messages queue size.
      */
     public int getOutboundMessagesQueueSize();
+
+    /**
+     * Gets total number of nodes.
+     *
+     * @return Total number of nodes.
+     */
+    public int getTotalNodes();
 }

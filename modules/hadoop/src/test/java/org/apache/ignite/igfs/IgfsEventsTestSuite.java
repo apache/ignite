@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
@@ -79,10 +77,12 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-                put("type", "shmem");
-                put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
-            }});
+            IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+            endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+            endpointCfg.setPort(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1);
+
+            igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
             return igfsCfg;
         }
@@ -96,10 +96,12 @@ public class IgfsEventsTestSuite extends TestSuite {
         @Override protected FileSystemConfiguration getIgfsConfiguration() throws IgniteCheckedException {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
 
-            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-                put("type", "tcp");
-                put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
-            }});
+            IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+            endpointCfg.setType(IgfsIpcEndpointType.TCP);
+            endpointCfg.setPort(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1);
+
+            igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
             return igfsCfg;
         }
@@ -131,10 +133,13 @@ public class IgfsEventsTestSuite extends TestSuite {
 
             igfsCfg.setName("igfs-secondary");
             igfsCfg.setDefaultMode(PRIMARY);
-            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>(){{
-                put("type", "tcp");
-                put("port", "11500");
-            }});
+
+            IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+            endpointCfg.setType(IgfsIpcEndpointType.TCP);
+            endpointCfg.setPort(11500);
+
+            igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
             return igfsCfg;
         }
@@ -228,10 +233,13 @@ public class IgfsEventsTestSuite extends TestSuite {
 
             igfsCfg.setName("igfs-secondary");
             igfsCfg.setDefaultMode(PRIMARY);
-            igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-                put("type", "tcp");
-                put("port", "11500");
-            }});
+
+            IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+            endpointCfg.setType(IgfsIpcEndpointType.TCP);
+            endpointCfg.setPort(11500);
+
+            igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
             return igfsCfg;
         }
