@@ -18,10 +18,10 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -31,6 +31,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -378,6 +379,56 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public void clear();
+
+    /**
+     * Clear entry from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     *
+     * @param key Key to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clear(K key);
+
+    /**
+     * Clear entries from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     *
+     * @param keys Keys to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clearAll(Set<K> keys);
+
+    /**
+     * Clear entry from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache, it does not remove entries from
+     * remote caches.
+     *
+     * @param key Key to clear.
+     */
+    public void localClear(K key);
+
+    /**
+     * Clear entries from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache, it does not remove entries from
+     * remote caches.
+     *
+     * @param keys Keys to clear.
+     */
+    public void localClearAll(Set<K> keys);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported

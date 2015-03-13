@@ -4093,4 +4093,199 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(100);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKey() throws Exception {
+        addKeys();
+
+        String keyToRmv = "key" + 25;
+
+        Ignite g = primaryIgnite(keyToRmv);
+
+        g.<String, Integer>jcache(null).localClear(keyToRmv);
+
+        checkLocalRemovedKey(keyToRmv);
+
+        g.<String, Integer>jcache(null).put(keyToRmv, 1);
+
+        String keyToEvict = "key" + 30;
+
+        g = primaryIgnite(keyToEvict);
+
+        g.<String, Integer>jcache(null).localEvict(Collections.singleton(keyToEvict));
+
+        g.<String, Integer>jcache(null).localClear(keyToEvict);
+
+        checkLocalRemovedKey(keyToEvict);
+    }
+
+    /**
+     * @param keyToRmv Removed key.
+     */
+    private void checkLocalRemovedKey(String keyToRmv) {
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+
+            if (keyToRmv.equals(key)) {
+                Collection<ClusterNode> nodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+
+                for (int j = 0; j < gridCount(); ++j) {
+                    if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
+                        assertTrue("Not found on backup removed key ", grid(j).jcache(null).localPeek(key) != null);
+                }
+
+                assertFalse("Found removed key " + key, found);
+            }
+            else
+                assertTrue("Not found key " + key, found);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalClearKeys() throws Exception {
+        Map<String, List<String>> keys = addKeys();
+
+        Ignite g = grid(0);
+
+        Set<String> keysToRmv = new HashSet<>();
+
+        for (int i = 0; i < gridCount(); ++i) {
+            List<String> gridKeys = keys.get(grid(i).name());
+
+            if (gridKeys.size() > 2) {
+                keysToRmv.add(gridKeys.get(0));
+
+                keysToRmv.add(gridKeys.get(1));
+
+                g = grid(i);
+
+                break;
+            }
+        }
+
+        assert keysToRmv.size() > 1;
+
+        g.<String, Integer>jcache(null).localClearAll(keysToRmv);
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+
+            if (keysToRmv.contains(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
+        }
+    }
+
+    /**
+     * Add 500 keys to cache only on primaries nodes.
+     *
+     * @return Map grid's name to its primary keys.
+     */
+    private Map<String, List<String>> addKeys() {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
+        // because some of them were blocked due to having readers.
+        Map<String, List<String>> keys = new HashMap<>();
+
+        for (int i = 0; i < gridCount(); ++i)
+            keys.put(grid(i).name(), new ArrayList<String>());
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            Ignite g = primaryIgnite(key);
+
+            g.jcache(null).put(key, "value" + i);
+
+            keys.get(g.name()).add(key);
+        }
+
+        return keys;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKey() throws Exception {
+        testGlobalClearKey(false, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeyAsync() throws Exception {
+        testGlobalClearKey(true, Arrays.asList("key25"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeys() throws Exception {
+        testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearKeysAsync() throws Exception {
+        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @param keysToRmv Keys to remove.
+     * @throws Exception If failed.
+     */
+    protected void testGlobalClearKey(boolean async, Collection<String> keysToRmv) throws Exception {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
+        // because some of them were blocked due to having readers.
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            Ignite g = primaryIgnite(key);
+
+            g.jcache(null).put(key, "value" + i);
+        }
+
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+            if (keysToRmv.size() == 1)
+                asyncCache.clear(F.first(keysToRmv));
+            else
+                asyncCache.clearAll(new HashSet<>(keysToRmv));
+
+            asyncCache.future().get();
+        }
+        else {
+            if (keysToRmv.size() == 1)
+                jcache().clear(F.first(keysToRmv));
+            else
+                jcache().clearAll(new HashSet<>(keysToRmv));
+        }
+
+        for (int i = 0; i < 500; ++i) {
+            String key = "key" + i;
+
+            boolean found = false;
+
+            for (int j = 0; j < gridCount(); j++) {
+                if (jcache(j).localPeek(key) != null)
+                    found = true;
+            }
+
+            if (!keysToRmv.contains(key))
+                assertTrue("Not found key " + key, found);
+            else
+                assertFalse("Found removed key " + key, found);
+        }
+    }
 }
