@@ -143,7 +143,6 @@ import java.util.concurrent.*;
  * or not. If cache is not started, affinity function will be fetched from the remote node
  * which does have the cache running.
  *
- * @see org.apache.ignite.cache.CacheName
  * @see CacheAffinityFunction
  * @see CacheAffinityKeyMapper
  * @see CacheAffinityKey
