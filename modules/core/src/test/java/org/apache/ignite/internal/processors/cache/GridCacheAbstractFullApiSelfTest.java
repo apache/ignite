@@ -406,7 +406,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert 2 == map1.size() : "Invalid map: " + map1;
 
-        assertEquals(1, (int) map1.get("key1"));
+        assertEquals(1, (int)map1.get("key1"));
         assertEquals(2, (int)map1.get("key2"));
         assertNull(map1.get("key9999"));
 
@@ -1024,7 +1024,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        assertEquals((Integer) 3, cache.get("key"));
+        assertEquals((Integer)3, cache.get("key"));
     }
 
     /**
@@ -1188,11 +1188,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals("null", cache.invoke("k0", INCR_PROCESSOR));
 
-        assertEquals((Integer) 1, cache.get("k0"));
+        assertEquals((Integer)1, cache.get("k0"));
 
         assertEquals("1", cache.invoke("k0", INCR_PROCESSOR));
 
-        assertEquals((Integer) 2, cache.get("k0"));
+        assertEquals((Integer)2, cache.get("k0"));
 
         cache.put("k1", 1);
 
@@ -1225,8 +1225,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         };
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 cache.invoke("k1", errProcessor);
 
                 return null;
@@ -1641,7 +1640,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP) + ']');
         }
 
-        assertEquals((Integer) 1, cache.getAndPutIfAbsent("key", 2));
+        assertEquals((Integer)1, cache.getAndPutIfAbsent("key", 2));
 
         assert cache.get("key") != null;
         assert cache.get("key") == 1;
@@ -1651,7 +1650,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key2"));
 
-        assertEquals((Integer) 1, cache.getAndPutIfAbsent("key2", 3));
+        assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
 
         // Check db.
         putToStore("key3", 3);
@@ -2115,7 +2114,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         info("Finished replace.");
 
-        assertEquals((Integer) 2, cache.get("key"));
+        assertEquals((Integer)2, cache.get("key"));
 
         cacheAsync.replace("wrond", 2);
 
@@ -3000,7 +2999,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put(key, 1);
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         long ttl = 500;
 
@@ -3972,8 +3971,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         iter.remove();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 iter.remove();
 
                 return null;
@@ -4102,15 +4100,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testLocalClearKey() throws Exception {
         addKeys();
 
-        String keyToRemove = "key" + 25;
+        String keyToRmv = "key" + 25;
 
-        Ignite g = primaryIgnite(keyToRemove);
+        Ignite g = primaryIgnite(keyToRmv);
 
-        g.<String, Integer>jcache(null).localClear(keyToRemove);
+        g.<String, Integer>jcache(null).localClear(keyToRmv);
 
-        checkLocalRemovedKey(keyToRemove);
+        checkLocalRemovedKey(keyToRmv);
 
-        g.<String, Integer>jcache(null).put(keyToRemove, 1);
+        g.<String, Integer>jcache(null).put(keyToRmv, 1);
 
         String keyToEvict = "key" + 30;
 
@@ -4124,16 +4122,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @param keyToRemove Removed key.
+     * @param keyToRmv Removed key.
      */
-    private void checkLocalRemovedKey(String keyToRemove) {
+    private void checkLocalRemovedKey(String keyToRmv) {
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
             boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
 
-            if (keyToRemove.equals(key)) {
-                Collection<ClusterNode> nodes =grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+            if (keyToRmv.equals(key)) {
+                Collection<ClusterNode> nodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
 
                 for (int j = 0; j < gridCount(); ++j) {
                     if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
@@ -4155,15 +4153,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Ignite g = grid(0);
 
-        Set<String> keysToRemove = new HashSet<>();
+        Set<String> keysToRmv = new HashSet<>();
 
         for (int i = 0; i < gridCount(); ++i) {
             List<String> gridKeys = keys.get(grid(i).name());
 
             if (gridKeys.size() > 2) {
-                keysToRemove.add(gridKeys.get(0));
+                keysToRmv.add(gridKeys.get(0));
 
-                keysToRemove.add(gridKeys.get(1));
+                keysToRmv.add(gridKeys.get(1));
 
                 g = grid(i);
 
@@ -4171,14 +4169,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }
 
-        g.<String, Integer>jcache(null).localClearAll(keysToRemove);
+        assert keysToRmv.size() > 1;
+
+        g.<String, Integer>jcache(null).localClearAll(keysToRmv);
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
             boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
 
-            if (keysToRemove.contains(key))
+            if (keysToRmv.contains(key))
                 assertFalse("Found removed key " + key, found);
             else
                 assertTrue("Not found key " + key, found);
@@ -4241,10 +4241,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @param async If {@code true} uses async method.
-     * @param keysToRemove Keys to remove.
+     * @param keysToRmv Keys to remove.
      * @throws Exception If failed.
      */
-    protected void testGlobalClearKey(boolean async, Collection<String> keysToRemove) throws Exception {
+    protected void testGlobalClearKey(boolean async, Collection<String> keysToRmv) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < 500; ++i) {
@@ -4258,18 +4258,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (async) {
             IgniteCache<String, Integer> asyncCache = jcache().withAsync();
 
-            if (keysToRemove.size() == 1)
-                asyncCache.clear(F.first(keysToRemove));
+            if (keysToRmv.size() == 1)
+                asyncCache.clear(F.first(keysToRmv));
             else
-                asyncCache.clearAll(new HashSet(keysToRemove));
+                asyncCache.clearAll(new HashSet<>(keysToRmv));
 
             asyncCache.future().get();
         }
         else {
-            if (keysToRemove.size() == 1)
-                jcache().clear(F.first(keysToRemove));
+            if (keysToRmv.size() == 1)
+                jcache().clear(F.first(keysToRmv));
             else
-                jcache().clearAll(new HashSet(keysToRemove));
+                jcache().clearAll(new HashSet<>(keysToRmv));
         }
 
         for (int i = 0; i < 500; ++i) {
@@ -4277,11 +4277,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             boolean found = false;
 
-            for (int j = 0; j < gridCount(); j++)
+            for (int j = 0; j < gridCount(); j++) {
                 if (jcache(j).localPeek(key) != null)
                     found = true;
+            }
 
-            if (!keysToRemove.contains(key))
+            if (!keysToRmv.contains(key))
                 assertTrue("Not found key " + key, found);
             else
                 assertFalse("Found removed key " + key, found);

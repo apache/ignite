@@ -81,8 +81,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
-    /** Distribution modes to include into global size calculation. */
-    private static final Set<CacheDistributionMode> SIZE_NODES = EnumSet.of(
+    /** */
+    private static final Set<CacheDistributionMode> NEAR_AND_DATA_NODES = EnumSet.of(
         CacheDistributionMode.NEAR_PARTITIONED,
         CacheDistributionMode.PARTITIONED_ONLY,
         CacheDistributionMode.NEAR_ONLY);
@@ -1414,21 +1414,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return {@code True} if cleared.
      */
-    private boolean clearLocally(GridCacheVersion obsoleteVer, K key,
-        @Nullable CacheEntryPredicate[] filter) {
+    private boolean clearLocally(GridCacheVersion obsoleteVer, K key, @Nullable CacheEntryPredicate[] filter) {
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = peekEx(cacheKey);
+            GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
 
-            boolean removed = true;
-
-            if (!ctx.isNear() && ctx.isSwapOrOffheapEnabled() && ctx.swap().containsKey(ctx.toCacheKeyObject(key)))
-                removed = entryEx(ctx.toCacheKeyObject(key)).clear(obsoleteVer, false, CU.empty0());
-
-            removed &= e != null && e.clear(obsoleteVer, false, filter);
-
-            return removed;
+            if (entry != null)
+                return entry.clear(obsoleteVer, false, filter);
+        }
+        catch (GridDhtInvalidPartitionException e) {
+            return false;
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry for key: " + key, ex);
@@ -1479,20 +1475,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
      *      Set it to larger value for large caches.
-     * @param clearCallable Global clear callable object.
+     * @param clearCall Global clear callable object.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      */
-    private void clearRemotes(long timeout, GlobalClearCallable clearCallable) throws IgniteCheckedException {
+    private void clearRemotes(long timeout, GlobalClearCallable clearCall) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes =
+                ctx.grid().cluster().forCacheNodes(name(), NEAR_AND_DATA_NODES).forRemotes().nodes();
 
             IgniteInternalFuture<Object> fut = null;
 
             if (!nodes.isEmpty()) {
                 ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, timeout);
 
-                fut = ctx.closures().callAsyncNoFailover(BROADCAST, clearCallable, nodes, true);
+                fut = ctx.closures().callAsyncNoFailover(BROADCAST, clearCall, nodes, true);
             }
 
             if (fut != null)
@@ -1516,15 +1513,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * @param clearCallable Global clear callable object.
+     * @param clearCall Global clear callable object.
      * @return Future.
      */
-    private IgniteInternalFuture<?> clearAsync(GlobalClearCallable clearCallable) {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).nodes();
+    private IgniteInternalFuture<?> clearAsync(GlobalClearCallable clearCall) {
+        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name(), NEAR_AND_DATA_NODES).nodes();
 
         if (!nodes.isEmpty()) {
             IgniteInternalFuture<Object> fut =
-                ctx.closures().callAsyncNoFailover(BROADCAST, clearCallable, nodes, true);
+                ctx.closures().callAsyncNoFailover(BROADCAST, clearCall, nodes, true);
 
             return fut.chain(new CX1<IgniteInternalFuture<Object>, Object>() {
                 @Override public Object applyx(IgniteInternalFuture<Object> fut) throws IgniteCheckedException {
@@ -4067,7 +4064,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteClusterEx cluster = ctx.grid().cluster();
 
-        ClusterGroup grp = modes.near ? cluster.forCacheNodes(name(), SIZE_NODES) : cluster.forDataNodes(name());
+        ClusterGroup grp =
+            modes.near ? cluster.forCacheNodes(name(), NEAR_AND_DATA_NODES) : cluster.forDataNodes(name());
 
         Collection<ClusterNode> nodes = grp.nodes();
 
@@ -5509,12 +5507,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link CacheProjection#clearLocally()}
-     * operation on a cache with the given name.
+     * Internal callable which performs clear operation on a cache with the given name.
      */
     @GridInternal
     private static abstract class GlobalClearCallable implements Callable<Object>, Externalizable {
-
         /** Cache name. */
         protected String cacheName;
 
