@@ -20,7 +20,6 @@ package org.apache.ignite.schema.model;
 import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.parser.*;
 
 import java.math.*;
@@ -306,24 +305,24 @@ public class PojoDescriptor {
     /**
      * Gets indexes groups.
      */
-    public Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups() {
+    public Map<String, Map<String, IndexItem>> groups() {
         Map<String, Map<String, Boolean>> idxs = tbl.indexes();
 
-        Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups = new LinkedHashMap<>(idxs.size());
+        Map<String, Map<String, IndexItem>> groups = new LinkedHashMap<>(idxs.size());
 
         for (Map.Entry<String, Map<String, Boolean>> idx : idxs.entrySet()) {
             String idxName = idx.getKey();
 
             Map<String, Boolean> idxCols = idx.getValue();
 
-            Map<String, IgniteBiTuple<String, Boolean>> grp = new LinkedHashMap<>();
+            Map<String, IndexItem> grp = new LinkedHashMap<>();
 
             groups.put(idxName, grp);
 
             for (Map.Entry<String, Boolean> idxCol : idxCols.entrySet()) {
                 PojoField fld = fieldsMap.get(idxCol.getKey());
 
-                grp.put(fld.javaName(), new IgniteBiTuple<>(fld.javaTypeName(), idxCol.getValue()));
+                grp.put(fld.javaName(), new IndexItem(fld.javaTypeName(), idxCol.getValue()));
             }
         }
 
