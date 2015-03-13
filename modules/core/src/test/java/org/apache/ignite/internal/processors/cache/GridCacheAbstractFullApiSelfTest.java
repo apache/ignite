@@ -4111,8 +4111,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
 
-            if (keyToRemove.equals(key))
+            if (keyToRemove.equals(key)) {
+                Collection<ClusterNode> nodes =grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+
+                for (int j = 0; j < gridCount(); ++j) {
+                    if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
+                        assertTrue("Not found on backup removed key ", grid(j).jcache(null).localPeek(key) != null);
+                }
+
                 assertFalse("Found removed key " + key, found);
+            }
             else
                 assertTrue("Not found key " + key, found);
         }
