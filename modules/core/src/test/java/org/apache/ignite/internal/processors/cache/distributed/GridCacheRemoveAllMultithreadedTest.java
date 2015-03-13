@@ -93,7 +93,7 @@ public class GridCacheRemoveAllMultithreadedTest extends GridCacheAbstractSelfTe
 
             while (endTime > System.currentTimeMillis()) {
                 synchronized (mux) {
-                    try (IgniteDataLoader<Integer, Integer> ldr = ignite(0).dataLoader(null)) {
+                    try (IgniteDataStreamer<Integer, Integer> ldr = ignite(0).dataStreamer(null)) {
                         for (int i = 0; i < 1000; i++)
                             ldr.addData(i, i);
                     }
@@ -106,6 +106,12 @@ public class GridCacheRemoveAllMultithreadedTest extends GridCacheAbstractSelfTe
 
                     assert locSize == 0 : locSize;
                 }
+
+                System.out.println();
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! Ok !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! Ok !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!! Ok !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println();
             }
         }
         finally {
