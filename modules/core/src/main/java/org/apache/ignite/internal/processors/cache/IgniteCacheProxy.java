@@ -1097,16 +1097,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean localClear(K key) {
+    @Override public void localClear(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.clearLocally(key);
+            delegate.clearLocally(key);
         }
         finally {
             gate.leave(prev);
-
-            return false;
         }
     }
 

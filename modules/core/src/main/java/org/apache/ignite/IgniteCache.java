@@ -416,11 +416,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Transactional semantics must be guaranteed outside of Ignite.
      *
      * @param key Key to clear.
-     * @return {@code True} if entry was successfully cleared from cache, {@code false}
-     * if entry was in use at the time of this method invocation and could not be
-     * cleared.
      */
-    public boolean localClear(K key);
+    public void localClear(K key);
 
     /**
      * Clears entries from this cache and swap storage only if the entry
