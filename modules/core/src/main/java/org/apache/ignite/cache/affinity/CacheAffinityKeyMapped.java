@@ -90,8 +90,7 @@ import java.util.concurrent.*;
  * {@link org.apache.ignite.lang.IgniteClosure}. It should be attached to a method or field that provides affinity key
  * for the computation. Only one annotation per class is allowed. Whenever such annotation is detected,
  * then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} will be bypassed, and computation will be routed to the grid node
- * where the specified affinity key is cached. You can also use optional {@link org.apache.ignite.cache.CacheName @CacheName}
- * annotation whenever non-default cache name needs to be specified.
+ * where the specified affinity key is cached.
  * <p>
  * Here is how this annotation can be used to route a job to a node where Person object
  * is cached with ID "1234":
