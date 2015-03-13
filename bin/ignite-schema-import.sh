@@ -29,13 +29,6 @@ if [ "${IGNITE_HOME}" = "" ];
 fi
 
 #
-# Set SCRIPTS_HOME - base path to scripts.
-#
-SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
-
-source "${SCRIPTS_HOME}"/include/functions.sh
-
-#
 # Discover path to Java executable and check it's version.
 #
 checkJava
@@ -46,11 +39,9 @@ checkJava
 setIgniteHome
 
 #
-# Set IGNITE_LIBS.
+# Set CLASS PATH.
 #
-. "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_LIBS}${SEP}${IGNITE_HOME}/bin/include/schema-import/*"
+CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*"
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`

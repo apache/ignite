@@ -1530,6 +1530,12 @@ public class SchemaImportApp extends Application {
             };
         }
 
+        /** Previous POJO bound to cell. */
+        private PojoDescriptor prevPojo;
+
+        /** Previous cell graphic. */
+        private Pane prevGraphic;
+
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
@@ -1543,20 +1549,25 @@ public class SchemaImportApp extends Application {
                     final PojoDescriptor pojo = (PojoDescriptor)row.getItem();
 
                     if (pojo != null) {
-                        boolean isTbl = pojo.parent() != null;
+                        if (prevGraphic == null || pojo != prevPojo) {
+                            boolean isTbl = pojo.parent() != null;
 
-                        CheckBox ch = new CheckBox();
-                        ch.setAllowIndeterminate(false);
-                        ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
-                        ch.selectedProperty().bindBidirectional(pojo.useProperty());
+                            CheckBox ch = new CheckBox();
+                            ch.setAllowIndeterminate(false);
+                            ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
+                            ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
-                        Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
+                            Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
 
-                        Pane pnl = new HBox(5);
-                        pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
-                        pnl.getChildren().addAll(ch, lb);
+                            Pane pnl = new HBox(5);
+                            pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
+                            pnl.getChildren().addAll(ch, lb);
 
-                        setGraphic(pnl);
+                            prevPojo = pojo;
+                            prevGraphic = pnl;
+                        }
+
+                        setGraphic(prevGraphic);
                     }
                 }
             }
@@ -1576,6 +1587,12 @@ public class SchemaImportApp extends Application {
             };
         }
 
+        /** Previous POJO field bound to cell. */
+        private PojoField prevField;
+
+        /** Previous cell graphic. */
+        private CheckBox prevGraphic;
+
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
@@ -1589,13 +1606,18 @@ public class SchemaImportApp extends Application {
                     final PojoField field = (PojoField)row.getItem();
 
                     if (field != null) {
-                        setAlignment(Pos.CENTER);
+                        if (prevGraphic == null || prevField != field) {
+                            setAlignment(Pos.CENTER);
 
-                        CheckBox ch = new CheckBox();
-                        ch.setDisable(!field.nullable());
-                        ch.selectedProperty().bindBidirectional(field.useProperty());
+                            CheckBox ch = new CheckBox();
+                            ch.setDisable(!field.nullable());
+                            ch.selectedProperty().bindBidirectional(field.useProperty());
 
-                        setGraphic(ch);
+                            prevField = field;
+                            prevGraphic = ch;
+                        }
+
+                        setGraphic(prevGraphic);
                     }
                 }
             }

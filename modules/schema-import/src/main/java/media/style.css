@@ -58,6 +58,7 @@
 
 .table-view {
     -fx-focus-color: gray;
+    -fx-font-size: 14;
 }
 
 .table-view .table-row-cell:selected {
