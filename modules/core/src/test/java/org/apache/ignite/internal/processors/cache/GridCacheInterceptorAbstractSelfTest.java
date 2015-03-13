@@ -728,6 +728,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, null);
             }
+
+            @Override public void onAfterRemove(Cache.Entry entry) {
+                //No-op
+            }
         };
 
         // Execute remove when value is null.
@@ -752,6 +756,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 900);
+            }
+
+            @Override public void onAfterRemove(Cache.Entry entry) {
+                //No-op
             }
         };
 
@@ -789,6 +797,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, null);
+            }
+
+            @Override public void onAfterRemove(Cache.Entry entry) {
+                //No-op
             }
         };
 
@@ -828,6 +840,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
                 return new IgniteBiTuple(false, 1000);
+            }
+
+            @Override public void onAfterRemove(Cache.Entry entry) {
+                //No-op
             }
         };
 
@@ -1164,36 +1180,38 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(2, interceptor.afterRmvMap.get(key2));
         assertEquals(3, interceptor.afterRmvMap.get(key3));
 
-        interceptor.reset();
+        if (atomicityMode() != TRANSACTIONAL) {
+            interceptor.reset();
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-                return new IgniteBiTuple(false, null);
-            }
+            interceptor.retInterceptor = new InterceptorAdapter() {
+                @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+                    return new IgniteBiTuple(false, null);
+                }
 
-            @Override public void onAfterRemove(Cache.Entry entry) {
-                assert false: "Interceptor.onAfterRemove() method was launched after entry.innerUpdate() failed";
-            }
-        };
+                @Override  public void onAfterRemove(Cache.Entry entry) {
+                    assert false : "Interceptor.onAfterRemove() method was launched after entry.innerUpdate() failed";
+                }
+            };
 
-        map = new HashMap<>();
+            map = new HashMap<>();
 
-        String key4;
-        String key5;
-        String key6;
+            String key4;
+            String key5;
+            String key6;
 
-        key4 = "-4";
-        key5 = "-5";
-        key6 = "-6";
+            key4 = "-4";
+            key5 = "-5";
+            key6 = "-6";
 
-        map.put(key4, 4);
-        map.put(key5, 5);
-        map.put(key6, 6);
+            map.put(key4, 4);
+            map.put(key5, 5);
+            map.put(key6, 6);
 
-        log.info("Batch remove 4: " + op);
+            log.info("Batch remove 4: " + op);
 
-        //removing non-existent keys
-        batchRemove(0, op, map);
+            //removing non-existent keys
+            batchRemove(0, op, map);
+        }
     }
 
     /**

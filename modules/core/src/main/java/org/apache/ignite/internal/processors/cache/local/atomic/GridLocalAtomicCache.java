@@ -1439,7 +1439,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     subjId,
                     taskName);
 
-                if (intercept) {
+                if (t.get1() && intercept) {
                     if (op == UPDATE)
                         ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(ctx, entry.key(), writeVal));
                     else
