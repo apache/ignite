@@ -419,4 +419,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             throw new IgniteCheckedException(e);
         }
     }
+
+    /**
+     * Gets the underlying {@link FileSystem}.
+     * @return the underlying Hadoop {@link FileSystem}.
+     */
+    public FileSystem fileSystem() {
+        return fileSys;
+    }
 }

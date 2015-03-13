@@ -524,7 +524,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public FSDataOutputStream create(Path f, FsPermission perm, boolean overwrite, int bufSize,
+    @Override public FSDataOutputStream create(Path f, final FsPermission perm, boolean overwrite, int bufSize,
         short replication, long blockSize, Progressable progress) throws IOException {
         A.notNull(f, "f");
 
@@ -561,10 +561,13 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     return os;
             }
             else {
+                Map<String,String> propMap = permission(perm);
+
+                propMap.put(PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
+
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 HadoopIgfsStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
-                    replication, blockSize, F.asMap(PROP_PERMISSION, toString(perm),
-                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites)));
+                    replication, blockSize, propMap);
 
                 assert stream != null;
 
