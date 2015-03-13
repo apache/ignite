@@ -44,12 +44,13 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 
 /**
@@ -309,8 +310,8 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
         else
-            throw new IgniteCheckedException("Cannot create new output stream to the secondary file system because IGFS is " +
-                "stopping: " + path);
+            throw new IllegalStateException("Cannot create new output stream to the secondary file system " +
+                "because IGFS is stopping: " + path);
     }
 
     /**
@@ -400,25 +401,20 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
-        if (enterBusy()) {
-            try {
+        return safeOp(new Callable<IgfsStatus>() {
+            @Override public IgfsStatus call() throws Exception {
                 IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
                     new IgfsGlobalSpaceTask(name()), null);
 
                 return new IgfsStatus(space.get1(), space.get2());
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get global space because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
-        if (enterBusy()) {
-            try {
+    @Override public void globalSampling(@Nullable final Boolean val) throws IgniteCheckedException {
+        safeOp(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 if (meta.sampling(val)) {
                     if (val == null)
                         log.info("Sampling flag has been cleared. All further file system connections will perform " +
@@ -430,34 +426,19 @@ public final class IgfsImpl implements IgfsEx {
                         log.info("Sampling flag has been set to \"false\". All further file system connections will " +
                             "not perform logging.");
                 }
+
+                return null;
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set global sampling flag because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public Boolean globalSampling() {
-        if (enterBusy()) {
-            try {
-                try {
-                    return meta.sampling();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to get sampling state.", e);
-
-                    return false;
-                }
+        return safeOp(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                return meta.sampling();
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get global sampling flag because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -471,59 +452,52 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgfsPath path) {
-        try {
-            A.notNull(path, "path");
+    @Override public boolean exists(final IgfsPath path) {
+        A.notNull(path, "path");
 
-            if (log.isDebugEnabled())
-                log.debug("Check file exists: " + path);
+        return safeOp(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                if (log.isDebugEnabled())
+                    log.debug("Check file exists: " + path);
 
-            IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
-            if (mode == PROXY)
-                throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                boolean res = false;
 
-            boolean res = false;
+                switch (mode) {
+                    case PRIMARY:
+                        res = meta.fileId(path) != null;
 
-            switch (mode) {
-                case PRIMARY:
-                    res = meta.fileId(path) != null;
+                        break;
 
-                    break;
+                    case DUAL_SYNC:
+                    case DUAL_ASYNC:
+                        res = meta.fileId(path) != null;
 
-                case DUAL_SYNC:
-                case DUAL_ASYNC:
-                    res = meta.fileId(path) != null;
+                        if (!res)
+                            res = secondaryFs.exists(path);
 
-                    if (!res)
-                        res = secondaryFs.exists(path);
+                        break;
 
-                    break;
+                    default:
+                        assert false : "Unknown mode.";
+                }
 
-                default:
-                    assert false : "Unknown mode.";
+                return res;
             }
-
-            return res;
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFile info(IgfsPath path) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public IgfsFile info(final IgfsPath path) {
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<IgfsFile>() {
+            @Override public IgfsFile call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Get file info: " + path);
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
-
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                IgfsMode mode = resolveMode(path);
 
                 IgfsFileInfo info = resolveFileInfo(path, mode);
 
@@ -532,30 +506,22 @@ public final class IgfsImpl implements IgfsEx {
 
                 return new IgfsFileImpl(path, info, data.groupBlockSize());
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get path info because grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPathSummary summary(IgfsPath path) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public IgfsPathSummary summary(final IgfsPath path) {
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<IgfsPathSummary>() {
+            @Override public IgfsPathSummary call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Calculating path summary: " + path);
 
                 IgniteUuid fileId = meta.fileId(path);
 
                 if (fileId == null)
-                    throw new IgfsFileNotFoundException("Failed to get path summary (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to get path summary (path not found): " + path);
 
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
@@ -563,33 +529,23 @@ public final class IgfsImpl implements IgfsEx {
 
                 return sum;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get path summary because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
-                A.notNull(props, "props");
-                A.ensure(!props.isEmpty(), "!props.isEmpty()");
+    @Override public IgfsFile update(final IgfsPath path, final Map<String, String> props) {
+        A.notNull(path, "path");
+        A.notNull(props, "props");
+        A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
+        return safeOp(new Callable<IgfsFile>() {
+            @Override public IgfsFile call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Set file properties [path=" + path + ", props=" + props + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
-                else if (mode != PRIMARY) {
+                if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
@@ -622,39 +578,29 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     return null;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to update file because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgfsPath src, IgfsPath dest) {
-        if (enterBusy()) {
-            try {
-                A.notNull(src, "src");
-                A.notNull(dest, "dest");
+    @Override public void rename(final IgfsPath src, final IgfsPath dest) {
+        A.notNull(src, "src");
+        A.notNull(dest, "dest");
 
+        safeOp(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(src);
+                IgfsMode mode = resolveMode(src);
+
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + src);
-
                 if (src.equals(dest))
-                    return; // Rename to itself is a no-op.
+                    return null; // Rename to itself is a no-op.
 
                 // Cannot rename root directory.
                 if (src.parent() == null)
-                    throw new IgfsInvalidPathException("Failed to rename root directory.");
+                    throw new IgfsInvalidPathException("Root directory cannot be renamed.");
 
                 // Cannot move directory of upper level to self sub-dir.
                 if (dest.isSubDirectoryOf(src))
@@ -672,7 +618,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     meta.renameDual(secondaryFs, src, dest);
 
-                    return;
+                    return null;
                 }
 
                 IgfsPath destParent = dest.parent();
@@ -685,7 +631,7 @@ public final class IgfsImpl implements IgfsEx {
                     if (mode == PRIMARY)
                         checkConflictWithPrimary(src);
 
-                    throw new IgfsFileNotFoundException("Failed to rename (source path not found): " + src);
+                    throw new IgfsPathNotFoundException("Failed to rename (source path not found): " + src);
                 }
 
                 String srcFileName = src.name();
@@ -705,7 +651,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     // Destination directory doesn't exist.
                     if (destDesc == null)
-                        throw new IgfsFileNotFoundException("Failed to rename (destination directory does not " +
+                        throw new IgfsPathNotFoundException("Failed to rename (destination directory does not " +
                             "exist): " + dest);
 
                     destFileName = dest.name();
@@ -733,32 +679,24 @@ public final class IgfsImpl implements IgfsEx {
                     if (evts.isRecordable(EVT_IGFS_DIR_RENAMED))
                         evts.record(new IgfsEvent(src, dest, localNode(), EVT_IGFS_DIR_RENAMED));
                 }
+
+                return null;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set rename path because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgfsPath path, boolean recursive) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public boolean delete(final IgfsPath path, final boolean recursive) {
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 boolean res = false;
 
@@ -791,15 +729,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return res;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+        });
     }
 
     /**
@@ -850,29 +780,26 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props)  {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
+        A.notNull(path, "path");
 
+        safeOp(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Make directories: " + path);
 
-                if (props == null)
-                    props = DFLT_DIR_META;
+                Map<String, String> props0 = props == null ? DFLT_DIR_META : props;
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
-                else if (mode != PRIMARY) {
+                if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
 
-                    meta.mkdirsDual(secondaryFs, path, props);
+                    meta.mkdirsDual(secondaryFs, path, props0);
 
-                    return;
+                    return null;
                 }
 
                 List<IgniteUuid> ids = meta.fileIds(path);
@@ -889,7 +816,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgniteUuid fileId = ids.get(step + 1); // Skip the first ROOT element.
 
                     if (fileId == null) {
-                        IgfsFileInfo fileInfo = new IgfsFileInfo(true, props); // Create new directory.
+                        IgfsFileInfo fileInfo = new IgfsFileInfo(true, props0); // Create new directory.
 
                         String fileName = components.get(step); // Get current component name.
 
@@ -913,7 +840,7 @@ public final class IgfsImpl implements IgfsEx {
                             IgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
 
                             if (stored == null)
-                                throw new IgfsException(e);
+                                throw e;
 
                             if (!stored.isDirectory())
                                 throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
@@ -927,32 +854,23 @@ public final class IgfsImpl implements IgfsEx {
 
                     parentId = fileId;
                 }
+
+                return null;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<Collection<IgfsPath>>() {
+            @Override public Collection<IgfsPath> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("List directory: " + path);
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
-
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                IgfsMode mode = resolveMode(path);
 
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -974,39 +892,29 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
-                    @Override public IgfsPath apply(String e) {
+                    @Override
+                    public IgfsPath apply(String e) {
                         return new IgfsPath(path, e);
                     }
                 });
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<Collection<IgfsFile>>() {
+            @Override public Collection<IgfsFile> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
-
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                IgfsMode mode = resolveMode(path);
 
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -1018,8 +926,8 @@ public final class IgfsImpl implements IgfsEx {
                     Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                     for (IgfsFile child : children) {
-                        IgfsFileInfo fsInfo = new IgfsFileInfo(cfg.getBlockSize(), child.length(),
-                            evictExclude(path, false), child.properties());
+                        IgfsFileInfo fsInfo = new IgfsFileInfo(
+                            child.blockSize(), child.length(), evictExclude(path, false), child.properties());
 
                         files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
@@ -1048,20 +956,12 @@ public final class IgfsImpl implements IgfsEx {
                 else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
                 }
 
                 return files;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -1080,27 +980,25 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
-                A.ensure(bufSize >= 0, "bufSize >= 0");
-                A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
+    @Override public IgfsInputStreamAdapter open(final IgfsPath path, final int bufSize,
+        final int seqReadsBeforePrefetch) {
+        A.notNull(path, "path");
+        A.ensure(bufSize >= 0, "bufSize >= 0");
+        A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
+        return safeOp(new Callable<IgfsInputStreamAdapter>() {
+            @Override public IgfsInputStreamAdapter call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
-                if (bufSize == 0)
-                    bufSize = cfg.getStreamBufferSize();
+                int bufSize0 = bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
-                else if (mode != PRIMARY) {
+                if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-                    IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize);
+                    IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
                     IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
@@ -1116,11 +1014,11 @@ public final class IgfsImpl implements IgfsEx {
                 if (info == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("File not found: " + path);
+                    throw new IgfsPathNotFoundException("File not found: " + path);
                 }
 
                 if (!info.isFile())
-                    throw new IgfsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
@@ -1131,15 +1029,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return os;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to open file because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -1175,27 +1065,25 @@ public final class IgfsImpl implements IgfsEx {
         final IgfsPath path,
         final int bufSize,
         final boolean overwrite,
-        @Nullable IgniteUuid affKey,
+        @Nullable final IgniteUuid affKey,
         final int replication,
-        @Nullable Map<String, String> props,
+        @Nullable final Map<String, String> props,
         final boolean simpleCreate
     ) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
-                A.ensure(bufSize >= 0, "bufSize >= 0");
+        A.notNull(path, "path");
+        A.ensure(bufSize >= 0, "bufSize >= 0");
 
+        return safeOp(new Callable<IgfsOutputStream>() {
+            @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
                 IgfsFileWorkerBatch batch;
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
-                else if (mode != PRIMARY) {
+                if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
@@ -1227,13 +1115,12 @@ public final class IgfsImpl implements IgfsEx {
                 IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
 
                 if (parentId == null)
-                    throw new IgfsInvalidPathException("Failed to resolve parent directory: " + path);
+                    throw new IgfsPathNotFoundException("Failed to resolve parent directory: " + parent);
 
                 String fileName = path.name();
 
                 // Constructs new file info.
-                IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true),
-                    props);
+                IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true), props);
 
                 // Add new file into tree structure.
                 while (true) {
@@ -1255,7 +1142,7 @@ public final class IgfsImpl implements IgfsEx {
                             "directory): " + path);
 
                     // Remove old file from the tree.
-                    // Only one file is deleted, so we use internal data loader.
+                    // Only one file is deleted, so we use internal data streamer.
                     deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
@@ -1275,15 +1162,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return os;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to create file times because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -1292,24 +1171,22 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsOutputStream append(final IgfsPath path, final int bufSize, boolean create,
-        @Nullable Map<String, String> props) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
-                A.ensure(bufSize >= 0, "bufSize >= 0");
+    @Override public IgfsOutputStream append(final IgfsPath path, final int bufSize, final boolean create,
+        @Nullable final Map<String, String> props) {
+        A.notNull(path, "path");
+        A.ensure(bufSize >= 0, "bufSize >= 0");
 
+        return safeOp(new Callable<IgfsOutputStream>() {
+            @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
                         ", props=" + props + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
+                IgfsMode mode = resolveMode(path);
 
-                IgfsFileWorkerBatch batch = null;
+                IgfsFileWorkerBatch batch;
 
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
-                else if (mode != PRIMARY) {
+                if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
@@ -1333,11 +1210,11 @@ public final class IgfsImpl implements IgfsEx {
                     if (!create) {
                         checkConflictWithPrimary(path);
 
-                        throw new IgfsFileNotFoundException("File not found: " + path);
+                        throw new IgfsPathNotFoundException("File not found: " + path);
                     }
 
                     if (parentId == null)
-                        throw new IgfsInvalidPathException("Failed to resolve parent directory: " + path);
+                        throw new IgfsPathNotFoundException("Failed to resolve parent directory: " + path.parent());
 
                     info = new IgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path, true), props);
 
@@ -1353,7 +1230,7 @@ public final class IgfsImpl implements IgfsEx {
                 assert info != null;
 
                 if (!info.isFile())
-                    throw new IgfsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 info = meta.lock(info.id());
 
@@ -1361,51 +1238,37 @@ public final class IgfsImpl implements IgfsEx {
                     evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_WRITE));
 
                 return new IgfsEventAwareOutputStream(path, info, parentId, bufSize == 0 ?
-                    cfg.getStreamBufferSize() : bufSize, mode, batch);
+                    cfg.getStreamBufferSize() : bufSize, mode, null);
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to append file times because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public void setTimes(final IgfsPath path, final long accessTime, final long modificationTime) {
+        A.notNull(path, "path");
 
+        safeOp(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 if (accessTime == -1 && modificationTime == -1)
-                    return;
+                    return null;
 
                 FileDescriptor desc = getFileDescriptor(path);
 
                 if (desc == null) {
                     checkConflictWithPrimary(path);
 
-                    throw new IgfsFileNotFoundException("Failed to update times (path not found): " + path);
+                    throw new IgfsPathNotFoundException("Failed to update times (path not found): " + path);
                 }
 
                 // Cannot update times for root.
                 if (desc.parentId == null)
-                    return;
+                    return null;
 
                 meta.updateTimes(desc.parentId, desc.fileId, desc.fileName, accessTime, modificationTime);
+
+                return null;
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to set file times because Grid is stopping.");
+        });
     }
 
     /**
@@ -1417,7 +1280,7 @@ public final class IgfsImpl implements IgfsEx {
     private void checkConflictWithPrimary(IgfsPath path) throws IgniteCheckedException {
         if (secondaryFs != null) {
             if (secondaryFs.info(path) != null) {
-                throw new IgniteCheckedException("Path mapped to a PRIMARY mode found in secondary file " +
+                throw new IgfsInvalidPathException("Path mapped to a PRIMARY mode found in secondary file " +
                      "system. Remove path from secondary file system or change path mapping: " + path);
             }
         }
@@ -1429,20 +1292,18 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
-                A.ensure(start >= 0, "start >= 0");
-                A.ensure(len >= 0, "len >= 0");
+    @Override public Collection<IgfsBlockLocation> affinity(final IgfsPath path, final long start, final long len,
+        final long maxLen) {
+        A.notNull(path, "path");
+        A.ensure(start >= 0, "start >= 0");
+        A.ensure(len >= 0, "len >= 0");
 
+        return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
+            @Override public Collection<IgfsBlockLocation> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
-                IgfsMode mode = modeRslvr.resolveMode(path);
-
-                if (mode == PROXY)
-                    throw new IgniteException("PROXY mode cannot be used in IGFS directly: " + path);
+                IgfsMode mode = resolveMode(path);
 
                 // Check memory first.
                 IgniteUuid fileId = meta.fileId(path);
@@ -1457,29 +1318,21 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 if (info == null)
-                    throw new IgfsFileNotFoundException("File not found: " + path);
+                    throw new IgfsPathNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
-                    throw new IgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
-                        path);
+                    throw new IgfsPathIsDirectoryException("Failed to get affinity for path because it is not " +
+                        "a file: " + path);
 
                 return data.affinity(info, start, len, maxLen);
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get affinity because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
     @Override public IgfsMetrics metrics() {
-        if (enterBusy()) {
-            try {
+        return safeOp(new Callable<IgfsMetrics>() {
+            @Override public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
                 summary0(ROOT_ID, sum);
@@ -1514,15 +1367,7 @@ public final class IgfsImpl implements IgfsEx {
                     metrics.writeBytes(),
                     metrics.writeBytesTime());
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get metrics because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -1531,15 +1376,15 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long size(IgfsPath path) {
-        if (enterBusy()) {
-            try {
-                A.notNull(path, "path");
+    @Override public long size(final IgfsPath path) {
+        A.notNull(path, "path");
 
+        return safeOp(new Callable<Long>() {
+            @Override public Long call() throws Exception {
                 IgniteUuid nextId = meta.fileId(path);
 
                 if (nextId == null)
-                    return 0;
+                    return 0L;
 
                 IgfsPathSummary sum = new IgfsPathSummary(path);
 
@@ -1547,15 +1392,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return sum.totalLength();
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get path size because Grid is stopping.");
+        });
     }
 
     /**
@@ -1590,8 +1427,8 @@ public final class IgfsImpl implements IgfsEx {
         try {
             formatAsync().get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            throw IgfsUtils.toIgfsException(e);
         }
     }
 
@@ -1734,8 +1571,8 @@ public final class IgfsImpl implements IgfsEx {
         try {
             return executeAsync(task, rslvr, paths, arg).get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            throw IgfsUtils.toIgfsException(e);
         }
     }
 
@@ -1745,8 +1582,8 @@ public final class IgfsImpl implements IgfsEx {
         try {
             return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            throw IgfsUtils.toIgfsException(e);
         }
     }
 
@@ -1756,8 +1593,8 @@ public final class IgfsImpl implements IgfsEx {
         try {
             return executeAsync(taskCls, rslvr, paths, arg).get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            throw IgfsUtils.toIgfsException(e);
         }
     }
 
@@ -1768,8 +1605,8 @@ public final class IgfsImpl implements IgfsEx {
         try {
             return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            throw IgfsUtils.toIgfsException(e);
         }
     }
 
@@ -2203,16 +2040,11 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgniteUuid nextAffinityKey() {
-        if (enterBusy()) {
-            try {
+        return safeOp(new Callable<IgniteUuid>() {
+            @Override public IgniteUuid call() throws Exception {
                 return data.nextAffinityKey(null);
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to get next affinity key because Grid is stopping.");
+        });
     }
 
     /** {@inheritDoc} */
@@ -2226,5 +2058,42 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public IgfsSecondaryFileSystem asSecondary() {
         return new IgfsSecondaryFileSystemImpl(this);
+    }
+
+    /**
+     * Resolve mode for the given path.
+     *
+     * @param path Path.
+     * @return Mode.
+     */
+    private IgfsMode resolveMode(IgfsPath path) {
+        IgfsMode mode = modeRslvr.resolveMode(path);
+
+        if (mode == PROXY)
+            throw new IgfsInvalidPathException("PROXY mode cannot be used in IGFS directly: " + path);
+
+        return mode;
+    }
+
+    /**
+     * Perform IGFS operation in safe context.
+     *
+     * @param action Action.
+     * @return Result.
+     */
+    private <T> T safeOp(Callable<T> action) {
+        if (enterBusy()) {
+            try {
+                return action.call();
+            }
+            catch (Exception e) {
+                throw IgfsUtils.toIgfsException(e);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to perform IGFS action because grid is stopping.");
     }
 }

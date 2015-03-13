@@ -78,7 +78,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         c.setCacheConfiguration(cc);
 
@@ -243,7 +243,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         IgniteKernal kernal = (IgniteKernal) ignite;
 
-        GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
+        GridCacheAffinityManager affMgr = kernal.internalCache().context().affinity();
 
         for (int i = 0; i < KEY_CNT * GRID_CNT * 1.5; i++) {
             if (!affMgr.localNode((Object)i, kernal.context().discovery().topologyVersion())) {

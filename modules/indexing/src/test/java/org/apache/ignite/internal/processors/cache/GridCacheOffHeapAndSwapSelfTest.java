@@ -262,15 +262,15 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         for (long i = from; i < to; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Long, Long> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            Long val = entry.rawGet();
+            Long val = entry.rawGet().value(entry.context().cacheObjectContext(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), val);
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), val);
             assertEquals(entry.version(), versions.get(i));
         }
 
@@ -309,13 +309,13 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
             GridCacheContext<Long, Object> ctx = cache.dht().context();
 
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<Object>>> it = ctx.swap().iterator(part, true);
+            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = ctx.swap().iterator(part);
 
             assert it != null || vals.isEmpty();
 
             if (it != null) {
                 while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry<Object>> swapEntry = it.next();
+                    Map.Entry<byte[], GridCacheSwapEntry> swapEntry = it.next();
 
                     Long key = ctx.marshaller().unmarshal(swapEntry.getKey(), ctx.deploy().globalLoader());
 

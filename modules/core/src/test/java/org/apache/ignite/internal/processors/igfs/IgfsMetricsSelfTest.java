@@ -44,10 +44,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
-    private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>(){{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    private static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
@@ -66,6 +63,13 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** Secondary file system block size. */
     public static final int SECONDARY_BLOCK_SIZE = 512;
+
+    static {
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

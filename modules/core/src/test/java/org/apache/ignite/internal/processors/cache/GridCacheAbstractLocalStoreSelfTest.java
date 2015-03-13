@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -121,7 +121,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setAtomicityMode(getAtomicMode());
         cacheCfg.setDistributionMode(getDistributionMode());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
             cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_1));
@@ -220,7 +220,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
+            }, EventType.EVT_CACHE_REBALANCE_PART_UNLOADED);
         }
 
         final Ignite ignite2 = startGrid(2);
@@ -314,7 +314,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
+            }, EventType.EVT_CACHE_REBALANCE_PART_UNLOADED);
         }
 
         final Ignite ignite2 = startGrid(2);

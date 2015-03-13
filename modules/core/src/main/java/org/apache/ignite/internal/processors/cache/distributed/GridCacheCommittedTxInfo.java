@@ -29,7 +29,7 @@ import java.util.*;
  * Committed transaction information. Contains recovery writes that will be used to set commit values
  * in case if originating node crashes.
  */
-public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
+public class GridCacheCommittedTxInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
 
     /** Recovery writes, i.e. values that have never been sent to remote nodes. */
     @GridToStringInclude
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
+    private Collection<IgniteTxEntry> recoveryWrites;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -53,7 +53,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @param tx Committed cache transaction.
      */
-    public GridCacheCommittedTxInfo(IgniteInternalTx<K, V> tx) {
+    public GridCacheCommittedTxInfo(IgniteInternalTx tx) {
         assert !tx.local() || !tx.replicated();
 
         originatingTxId = tx.nearXidVersion();
@@ -79,8 +79,8 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @return Collection of recovery writes.
      */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : recoveryWrites;
+    public Collection<IgniteTxEntry> recoveryWrites() {
+        return recoveryWrites == null ? Collections.<IgniteTxEntry>emptyList() : recoveryWrites;
     }
 
     /** {@inheritDoc} */

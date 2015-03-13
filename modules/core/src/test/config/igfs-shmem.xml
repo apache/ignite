@@ -95,10 +95,10 @@
 
                     <!-- Shared memory endpoint. -->
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="shmem"/>
-                            <entry key="port" value="10500"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="SHMEM" />
+                            <property name="port" value="10500" />
+                        </bean>
                     </property>
                 </bean>
             </list>

@@ -32,7 +32,7 @@ import java.util.concurrent.locks.*;
 /**
  * Collection of near local locks acquired by a thread on one topology version.
  */
-public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
+public class GridCacheExplicitLockSpan extends ReentrantLock {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
 
     /** Pending candidates. */
     @GridToStringInclude
-    private final Map<K, Deque<GridCacheMvccCandidate<K>>> cands = new HashMap<>();
+    private final Map<KeyCacheObject, Deque<GridCacheMvccCandidate>> cands = new HashMap<>();
 
     /** Span lock release future. */
     @GridToStringInclude
@@ -52,7 +52,7 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @param topSnapshot Topology snapshot.
      * @param cand Candidate.
      */
-    public GridCacheExplicitLockSpan(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate<K> cand) {
+    public GridCacheExplicitLockSpan(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate cand) {
         this.topSnapshot = topSnapshot;
 
         ensureDeque(cand.key()).addFirst(cand);
@@ -66,7 +66,7 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @return {@code True} if candidate was added, {@code false} if this span is empty and
      *      new span should be created.
      */
-    public boolean addCandidate(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate<K> cand) {
+    public boolean addCandidate(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate cand) {
         lock();
 
         try {
@@ -75,9 +75,9 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
 
             assert this.topSnapshot.topologyVersion() == topSnapshot.topologyVersion();
 
-            Deque<GridCacheMvccCandidate<K>> deque = ensureDeque(cand.key());
+            Deque<GridCacheMvccCandidate> deque = ensureDeque(cand.key());
 
-            GridCacheMvccCandidate<K> old = F.first(deque);
+            GridCacheMvccCandidate old = F.first(deque);
 
             deque.add(cand);
 
@@ -97,11 +97,11 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @param cand Candidate to remove.
      * @return {@code True} if span is empty and should be removed, {@code false} otherwise.
      */
-    public boolean removeCandidate(GridCacheMvccCandidate<K> cand) {
+    public boolean removeCandidate(GridCacheMvccCandidate cand) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate<K>> deque = cands.get(cand.key());
+            Deque<GridCacheMvccCandidate> deque = cands.get(cand.key());
 
             if (deque != null) {
                 assert !deque.isEmpty();
@@ -133,13 +133,13 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @param ver Version (or {@code null} if any candidate should be removed.)
      * @return Removed candidate if matches given parameters.
      */
-    public GridCacheMvccCandidate<K> removeCandidate(K key, @Nullable GridCacheVersion ver) {
+    public GridCacheMvccCandidate removeCandidate(KeyCacheObject key, @Nullable GridCacheVersion ver) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate<K>> deque = cands.get(key);
+            Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
-            GridCacheMvccCandidate<K> cand = null;
+            GridCacheMvccCandidate cand = null;
 
             if (deque != null) {
                 assert !deque.isEmpty();
@@ -183,15 +183,15 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      *
      * @param key Key.
      */
-    public void markOwned(K key) {
+    public void markOwned(KeyCacheObject key) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate<K>> deque = cands.get(key);
+            Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
             assert deque != null;
 
-            for (GridCacheMvccCandidate<K> cand : deque)
+            for (GridCacheMvccCandidate cand : deque)
                 cand.setOwner();
         }
         finally {
@@ -206,17 +206,17 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate<K> candidate(K key, @Nullable final GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate candidate(KeyCacheObject key, @Nullable final GridCacheVersion ver) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate<K>> deque = cands.get(key);
+            Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
             if (deque != null) {
                 assert !deque.isEmpty();
 
-                return ver == null ? deque.peekFirst() : F.find(deque, null, new P1<GridCacheMvccCandidate<K>>() {
-                    @Override public boolean apply(GridCacheMvccCandidate<K> cand) {
+                return ver == null ? deque.peekFirst() : F.find(deque, null, new P1<GridCacheMvccCandidate>() {
+                    @Override public boolean apply(GridCacheMvccCandidate cand) {
                         return cand.version().equals(ver);
                     }
                 });
@@ -253,8 +253,8 @@ public class GridCacheExplicitLockSpan<K> extends ReentrantLock {
      * @param key Key to look up.
      * @return Deque.
      */
-    private Deque<GridCacheMvccCandidate<K>> ensureDeque(K key) {
-        Deque<GridCacheMvccCandidate<K>> deque = cands.get(key);
+    private Deque<GridCacheMvccCandidate> ensureDeque(KeyCacheObject key) {
+        Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
         if (deque == null) {
             deque = new LinkedList<>();

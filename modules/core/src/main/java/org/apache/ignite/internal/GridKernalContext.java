@@ -31,11 +31,12 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -243,11 +243,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridSegmentationProcessor segmentation();
 
     /**
-     * Gets data loader processor.
+     * Gets data streamer processor.
      *
-     * @return Data loader processor.
+     * @return Data streamer processor.
      */
-    public <K, V> GridDataLoaderProcessor<K, V> dataLoad();
+    public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
      * Gets file system processor.
@@ -287,16 +287,23 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * Gets utility cache pool.
      *
-     * @return DR pool.
+     * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
 
     /**
-     * Gets portable processor.
+     * Gets marshaller cache pool.
      *
-     * @return Portable processor.
+     * @return Marshaller cache pool.
      */
-    public GridPortableProcessor portable();
+    public ExecutorService marshallerCachePool();
+
+    /**
+     * Gets cache object processor.
+     *
+     * @return Cache object processor.
+     */
+    public IgniteCacheObjectProcessor cacheObjects();
 
     /**
      * Gets query processor.
@@ -546,4 +553,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cluster processor.
      */
     public ClusterProcessor cluster();
+
+    /**
+     * Gets marshaller context.
+     *
+     * @return Marshaller context.
+     */
+    public MarshallerContextImpl marshallerContext();
 }

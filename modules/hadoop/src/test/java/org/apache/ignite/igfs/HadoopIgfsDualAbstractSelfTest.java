@@ -35,7 +35,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -70,16 +69,10 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
 
     /** Primary file system REST endpoint configuration map. */
-    protected static final Map<String, String> PRIMARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "10500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration PRIMARY_REST_CFG;
 
     /** Secondary file system REST endpoint configuration map. */
-    protected static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** Directory. */
     protected static final IgfsPath DIR = new IgfsPath("/dir");
@@ -101,6 +94,18 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
     /** IGFS mode. */
     protected final IgfsMode mode;
+
+    static {
+        PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        PRIMARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        PRIMARY_REST_CFG.setPort(10500);
+
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /**
      * Constructor.
@@ -124,7 +129,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
      * @throws Exception If failed.
      */
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");

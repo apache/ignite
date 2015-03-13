@@ -27,6 +27,9 @@ import java.util.*;
  * One can get list of keys for which update failed with method {@link #failedKeys()}.
  */
 public class CachePartialUpdateException extends CacheException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param e Cause.
      */

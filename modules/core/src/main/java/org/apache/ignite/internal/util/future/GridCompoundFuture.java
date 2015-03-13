@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.*;
  * Future composed of multiple inner futures.
  */
 public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Futures. */
     private final ConcurrentLinkedDeque8<IgniteInternalFuture<T>> futs = new ConcurrentLinkedDeque8<>();
 

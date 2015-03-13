@@ -1459,8 +1459,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             m.put(null, 2);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     cache.putAll(m);
 
                     return null;
@@ -1479,8 +1478,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             m.put("key4", null);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     cache.putAll(m);
 
                     return null;
@@ -1597,8 +1595,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteFuture<?> f2 = cacheAsync.future();
 
-        f2.get();
-        f1.get();
+        assertNull(f2.get());
+        assertNull(f1.get());
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -1695,7 +1693,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteFuture<Integer> fut1 = cacheAsync.future();
 
-            assert fut1.get() == null;
+            assertNull(fut1.get());
             assertEquals((Integer)1, cache.get("key"));
 
             cacheAsync.getAndPutIfAbsent("key", 2);
@@ -2196,7 +2194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     GridCacheContext<String, Integer> cctx = context(g);
 
-                    GridCacheEntryEx<String, Integer> entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
+                    GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
                         cctx.cache().peekEx(key);
 
                     if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
@@ -2497,7 +2495,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.removeAll(F.asSet("key1", "key2"));
 
-        cacheAsync.future().get();
+        assertNull(cacheAsync.future().get());
 
         checkSize(F.asSet("key3"));
 
@@ -2815,7 +2813,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 lock1_2.unlock();
             }
 
-
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
@@ -2834,7 +2831,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             finally {
                 lock1_2.unlock();
             }
-
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
@@ -2917,7 +2913,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
 
-        GridCache<String, Integer> cache = ((IgniteKernal)primaryIgnite(key)).cache(null);
+        Ignite ignite = primaryIgnite(key);
+
+        GridCache<String, Integer> cache = ((IgniteKernal)ignite).cache(null);
 
         cache.put(key, 1);
 
@@ -2941,7 +2939,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (txEnabled()) {
-            try (Transaction tx = cache.txStart()) {
+            try (Transaction tx = ignite.transactions().txStart()) {
                 cache.replace(key, 2);
 
                 assert cache.peek(key, F.asList(GLOBAL)) == 1;
@@ -3189,7 +3187,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3222,7 +3220,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3255,7 +3253,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3292,7 +3290,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
 
-                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());
@@ -3440,9 +3438,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             info("Local keys (primary): " + locKeys);
 
-            locKeys.addAll(cache.keySet(new IgnitePredicate<Cache.Entry<String, Integer>>() {
-                @Override public boolean apply(Cache.Entry<String, Integer> e) {
-                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.getKey());
+            locKeys.addAll(cache.keySet(new CacheEntryPredicateAdapter() {
+                @Override public boolean apply(GridCacheEntryEx e) {
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(),
+                        e.key().value(e.context().cacheObjectContext(), false));
                 }
             }));
 
@@ -3767,7 +3766,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 for (String key : keys) {
                     if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion())) {
-                        GridCacheEntryEx<String, Integer> e =
+                        GridCacheEntryEx e =
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
                         assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
@@ -3897,18 +3896,29 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
-        final int SIZE = 20000;
+        final int SIZE = 10_000;
 
         Map<String, Integer> entries = new HashMap<>();
 
+        Map<String, Integer> putMap = new HashMap<>();
+
         for (int i = 0; i < SIZE; ++i) {
-            cache.put(Integer.toString(i), i);
+            String key = Integer.toString(i);
 
-            entries.put(Integer.toString(i), i);
+            putMap.put(key, i);
 
-            if (i > 0 && i % 500 == 0)
-                info("Puts finished: " + i);
+            entries.put(key, i);
+
+            if (putMap.size() == 500) {
+                cache.putAll(putMap);
+
+                info("Puts finished: " + (i + 1));
+
+                putMap.clear();
+            }
         }
+
+        cache.putAll(putMap);
 
         checkIteratorHasNext();
 

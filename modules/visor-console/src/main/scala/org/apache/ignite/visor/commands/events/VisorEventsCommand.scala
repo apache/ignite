@@ -159,7 +159,7 @@ class VisorEventsCommand {
                 case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
                 case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
                 case "ca" => arr ++= EVTS_CACHE.toList
-                case "cp" => arr ++= EVTS_CACHE_PRELOAD.toList
+                case "cp" => arr ++= EVTS_CACHE_REBALANCE.toList
                 case "sw" => arr ++= EVTS_SWAPSPACE.toList
                 case "di" => arr ++= EVTS_DISCOVERY.toList
                 case t => throw new IllegalArgumentException("Unknown event type: " + t)
@@ -185,7 +185,7 @@ class VisorEventsCommand {
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_SWAPSPACE.contains(t) => "sw"
-            case t if EVTS_CACHE_PRELOAD.contains(t) => "cp"
+            case t if EVTS_CACHE_REBALANCE.contains(t) => "cp"
         }
     }
 

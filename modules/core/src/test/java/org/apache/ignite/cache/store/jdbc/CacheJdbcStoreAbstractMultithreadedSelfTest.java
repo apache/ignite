@@ -222,11 +222,16 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                 for (int i = 0; i < TX_CNT; i++) {
                     int cnt = rnd.nextInt(BATCH_CNT);
 
-                    Map<Object, Object> map = U.newHashMap(cnt);
+                    List<Integer> ids = new ArrayList<>(cnt);
 
-                    for (int j = 0; j < cnt; j++) {
-                        int id = rnd.nextInt();
+                    for (int j = 0; j < cnt; j++)
+                        ids.add(rnd.nextInt());
 
+                    Collections.sort(ids);
+
+                    Map<Object, Object> map = U.newLinkedHashMap(cnt);
+
+                    for (Integer id : ids) {
                         if (rnd.nextBoolean())
                             map.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                         else

@@ -27,9 +27,9 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.
@@ -67,17 +67,14 @@ public class GridCacheAttributes implements Externalizable {
     /** Default lock timeout. */
     private long dfltLockTimeout;
 
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes;
-
-    /** Cache preload mode. */
-    private CachePreloadMode preloadMode;
+    /** Cache rebalance mode. */
+    private CacheRebalanceMode rebalanceMode;
 
     /** Partitioned cache mode. */
     private CacheDistributionMode partDistro;
 
-    /** Preload batch size. */
-    private int preloadBatchSize;
+    /** Rebalance batch size. */
+    private int rebalanceBatchSize;
 
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
@@ -156,10 +153,9 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
-        preloadBatchSize = cfg.getPreloadBatchSize();
-        preloadMode = cfg.getPreloadMode();
+        rebalanceBatchSize = cfg.getRebalanceBatchSize();
+        rebalanceMode = cfg.getRebalanceMode();
         readThrough = cfg.isReadThrough();
-        storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
         writeBehindBatchSize = cfg.getWriteBehindBatchSize();
@@ -244,10 +240,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Preload mode.
+     * @return Rebalance mode.
      */
-    public CachePreloadMode cachePreloadMode() {
-        return preloadMode;
+    public CacheRebalanceMode cacheRebalanceMode() {
+        return rebalanceMode;
     }
 
     /**
@@ -385,17 +381,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating if cached values should be additionally stored in serialized form.
+     * @return Rebalance batch size.
      */
-    public boolean storeValueBytes() {
-        return storeValBytes;
-    }
-
-    /**
-     * @return Preload batch size.
-     */
-    public int preloadBatchSize() {
-        return preloadBatchSize;
+    public int rebalanceBatchSize() {
+        return rebalanceBatchSize;
     }
 
     /**
@@ -473,10 +462,9 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum(out, partDistro);
-        out.writeInt(preloadBatchSize);
-        U.writeEnum(out, preloadMode);
+        out.writeInt(rebalanceBatchSize);
+        U.writeEnum(out, rebalanceMode);
         out.writeBoolean(readThrough);
-        out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
         out.writeInt(writeBehindBatchSize);
@@ -513,10 +501,9 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
-        preloadBatchSize = in.readInt();
-        preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
+        rebalanceBatchSize = in.readInt();
+        rebalanceMode = CacheRebalanceMode.fromOrdinal(in.readByte());
         readThrough = in.readBoolean();
-        storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
         writeBehindBatchSize = in.readInt();

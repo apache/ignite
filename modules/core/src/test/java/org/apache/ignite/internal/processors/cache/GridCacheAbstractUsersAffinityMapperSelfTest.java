@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+
 /**
  * Test affinity mapper.
  */
@@ -66,7 +68,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         cacheCfg.setAtomicityMode(getAtomicMode());
         cacheCfg.setDistributionMode(getDistributionMode());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAffinityMapper(AFFINITY_MAPPER);
 
         cfg.setCacheConfiguration(cacheCfg);

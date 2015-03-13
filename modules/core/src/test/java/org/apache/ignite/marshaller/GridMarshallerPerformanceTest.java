@@ -102,8 +102,6 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
 
         final OptimizedMarshaller marsh = new OptimizedMarshaller();
 
-        marsh.setClassNames(Arrays.asList(TestObject.class.getName()));
-
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws IgniteCheckedException {
                 tuple.set(marsh.marshal(obj));

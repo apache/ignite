@@ -19,3 +19,14 @@ http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7C
 This software has a dependency on Persistent Collections library,
 licensed under MIT license.
 https://github.com/blackdrag/pcollections
+
+
+This software has a dependency on snaptree library,
+licensed under BSD 3-clause license.
+https://github.com/nbronson/snaptree/
+
+
+This software, specifically package "org.jdk8.backport", has a dependency on
+concurrency libraries written by Doug Lea with assistance from members of JCP JSR-166
+Expert Group and released to the public domain, as explained at
+http://creativecommons.org/publicdomain/zero/1.0/.

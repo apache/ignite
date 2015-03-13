@@ -132,7 +132,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         CollectingEventListener lsnr = new CollectingEventListener();
 
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().localListen(lsnr, EventType.EVT_CACHE_PRELOAD_STOPPED);
+            grid(i).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
@@ -163,12 +163,12 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         fut1.get();
         fut2.get();
 
-        info("Awaiting preload events [restartCnt=" + restartCnt.get() + ']');
+        info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 
         boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
 
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_PRELOAD_STOPPED);
+            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         assert success;
     }

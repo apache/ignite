@@ -21,10 +21,11 @@ import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.lang.management.*;
+import java.util.*;
 
 /**
- * Contains constants for all system properties and environmental variables in Ignite. These
- * properties and variables can be used to affect the behavior of Ignite.
+ * Contains constants for all system properties and environmental variables in Ignite.
+ * These properties and variables can be used to affect the behavior of Ignite.
  */
 public final class IgniteSystemProperties {
     /**
@@ -473,5 +474,15 @@ public final class IgniteSystemProperties {
         }
 
         return res;
+    }
+
+    /**
+     * Gets snapshot of system properties.
+     * Snapshot could be used for thread safe iteration over system properties.
+     *
+     * @return Snapshot of system properties.
+     */
+    public static Properties snapshot() {
+        return (Properties)System.getProperties().clone();
     }
 }

@@ -68,7 +68,7 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMapEntry() throws Exception {
-        Map<Integer, GridCacheMapEntry<Integer, Integer>> map = new HashMap<>(5 * 1024 * 1024);
+        Map<Integer, GridCacheMapEntry> map = new HashMap<>(5 * 1024 * 1024);
 
         int i = 0;
 
@@ -79,13 +79,13 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
             Integer key = i++;
             Integer val = i++;
 
-            map.put(key, new GridCacheMapEntry<Integer, Integer>(ctx, key,
-                key.hashCode(), val, null, 0, 1) {
-                @Override public boolean tmLock(IgniteInternalTx<Integer, Integer> tx, long timeout) {
+            map.put(key, new GridCacheMapEntry(ctx, ctx.toCacheKeyObject(key),
+                key.hashCode(), ctx.toCacheObject(val), null, 0, 1) {
+                @Override public boolean tmLock(IgniteInternalTx tx, long timeout) {
                     return false;
                 }
 
-                @Override public void txUnlock(IgniteInternalTx<Integer, Integer> tx) {
+                @Override public void txUnlock(IgniteInternalTx tx) {
                     // No-op.
                 }
 

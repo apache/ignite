@@ -42,7 +42,7 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -201,7 +201,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
         ccfg.setSwapEnabled(false);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setEvictionPolicy(null);

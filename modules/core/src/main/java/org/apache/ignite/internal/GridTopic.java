@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -70,7 +69,7 @@ public enum GridTopic {
     TOPIC_IGFS,
 
     /** */
-    TOPIC_DATALOAD,
+    TOPIC_DATASTREAM,
 
     /** */
     TOPIC_STREAM,
@@ -186,13 +185,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T1 implements Externalizable, OptimizedMarshallable {
+    private static class T1 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -214,11 +209,6 @@ public enum GridTopic {
         private T1(GridTopic topic, IgniteUuid id) {
             this.topic = topic;
             this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -258,13 +248,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T2 implements Externalizable, OptimizedMarshallable {
+    private static class T2 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -291,11 +277,6 @@ public enum GridTopic {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -337,13 +318,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T3 implements Externalizable, OptimizedMarshallable {
+    private static class T3 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -384,11 +361,6 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
-        }
-
-        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
             U.writeUuid(out, id1);
@@ -409,13 +381,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T4 implements Externalizable, OptimizedMarshallable {
+    private static class T4 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -447,11 +415,6 @@ public enum GridTopic {
             this.id1 = id1;
             this.id2 = id2;
             this.id3 = id3;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -495,13 +458,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T5 implements Externalizable, OptimizedMarshallable {
+    private static class T5 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -533,11 +492,6 @@ public enum GridTopic {
             this.id1 = id1;
             this.id2 = id2;
             this.id3 = id3;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -581,13 +535,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T6 implements Externalizable, OptimizedMarshallable {
+    private static class T6 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -614,11 +564,6 @@ public enum GridTopic {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -660,13 +605,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T7 implements Externalizable, OptimizedMarshallable {
+    private static class T7 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -703,11 +644,6 @@ public enum GridTopic {
             this.id2 = id2;
             this.id3 = id3;
             this.id4 = id4;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */
@@ -754,13 +690,9 @@ public enum GridTopic {
     /**
      *
      */
-    private static class T8 implements Externalizable, OptimizedMarshallable {
+    private static class T8 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** */
         private GridTopic topic;
@@ -787,11 +719,6 @@ public enum GridTopic {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */

@@ -136,6 +136,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"FloatingPointEquality"})
     private void checkMetrics(ClusterMetrics m) {
+        assert m.getTotalNodes() == NODES_CNT;
+
         assert m.getMaximumActiveJobs() == 0;
         assert m.getAverageActiveJobs() == 0;
 

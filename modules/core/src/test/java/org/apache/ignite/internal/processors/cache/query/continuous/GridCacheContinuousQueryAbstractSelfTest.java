@@ -52,7 +52,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
@@ -79,7 +79,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setDistributionMode(distributionMode());
-        cacheCfg.setPreloadMode(ASYNC);
+        cacheCfg.setRebalanceMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         cacheCfg.setReadThrough(true);

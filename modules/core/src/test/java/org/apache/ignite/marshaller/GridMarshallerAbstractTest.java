@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.p2p.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
@@ -102,12 +101,17 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(marshaller());
         cfg.setStreamerConfiguration(streamerConfiguration());
         cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
         return cfg;
     }
+
+    /**
+     * @return Marshaller.
+     */
+    protected abstract Marshaller marshaller();
 
     /**
      * @return Streamer configuration.
@@ -135,14 +139,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /**
-     * @return Grid marshaller.
-     */
-    protected abstract Marshaller createMarshaller();
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        marsh = createMarshaller();
+        marsh = grid().configuration().getMarshaller();
     }
 
     /**
