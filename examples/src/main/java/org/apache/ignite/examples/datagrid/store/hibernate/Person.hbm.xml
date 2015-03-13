@@ -23,7 +23,7 @@
         "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping default-access="field">
-    <class name="org.apache.ignite.examples.datagrid.store.Person" table="PERSONS">
+    <class name="org.apache.ignite.examples.datagrid.store.model.Person" table="PERSONS">
         <!-- ID. -->
         <id name="id"/>
 

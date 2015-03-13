@@ -151,10 +151,11 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setName("igfs-secondary");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", "11500");
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(11500);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

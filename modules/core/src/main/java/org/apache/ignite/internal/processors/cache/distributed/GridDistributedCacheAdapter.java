@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -283,11 +283,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                try (IgniteDataLoaderImpl<KeyCacheObject, Object> dataLdr =
-                         (IgniteDataLoaderImpl)ignite.dataLoader(cacheName)) {
-                    ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
+                try (DataStreamerImpl<KeyCacheObject, Object> dataLdr =
+                         (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
+                    ((DataStreamerImpl)dataLdr).maxRemapCount(0);
 
-                    dataLdr.updater(GridDataLoadCacheUpdaters.<KeyCacheObject, Object>batched());
+                    dataLdr.updater(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
                     for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {

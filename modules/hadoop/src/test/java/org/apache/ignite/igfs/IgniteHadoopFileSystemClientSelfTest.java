@@ -72,10 +72,13 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", String.valueOf(DFLT_IPC_PORT));
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(DFLT_IPC_PORT);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(igfsCfg);
