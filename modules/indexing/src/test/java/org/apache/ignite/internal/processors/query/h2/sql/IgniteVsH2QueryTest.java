@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -30,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -52,6 +54,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
     /** Replicated cache. */
     private static IgniteCache rCache;
+    
+    /** H2 db connection. */
+    private static Connection conn;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -118,14 +123,19 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         rCache = ignite.jcache("replicated");
 
         awaitPartitionMapExchange();
+        
+        conn = openH2Connection(false);
 
-        initialize();
+        initializeH2Schema();
 
+        fillOutCacheAndDbWithData();
     }
     
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+        
+        conn.close();
         
         stopAllGrids();
     }
@@ -134,7 +144,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * Populate cache with test data.
      */
     @SuppressWarnings("unchecked")
-    private void initialize() {
+    private void fillOutCacheAndDbWithData() throws SQLException {
         int idGen = 0;
         
         // Organizations.
@@ -148,6 +158,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             orgs.add(org);
             
             pCache.put(org.id, org);
+            
+            insertInDb(org);
         }
 
         // Persons.
@@ -161,6 +173,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             persons.add(person);
 
             pCache.put(person.key(), person);
+            
+            insertInDb(person);
         }
 
         // Products.
@@ -174,6 +188,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             products.add(product);
             
             rCache.put(product.id, product);
+            
+            insertInDb(product);
         }
 
         // Purchases.
@@ -183,42 +199,150 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             Purchase purchase = new Purchase(id, products.get(i % products.size()), persons.get(i % persons.size()));
 
             pCache.put(purchase.key(), purchase);
+            
+            insertInDb(purchase);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void test0(IgniteCache cache, String sql, Object... args){
-        List<List<?>> res1 = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+    private void insertInDb(Organization org) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement("insert into ORGANIZATION (id, name) values(?, ?)")) {
+            st.setInt(1, org.id);
+            st.setString(2, org.name);
 
-        log.info(">>> Results (count=" + res1.size() + "):");
-        
-        for (List<?> objects : res1)
-            log.info(objects.toString());
+            st.executeUpdate();
+        }
     }
-    
-    private void test0(String sql, Object... args) {
-        test0(pCache, sql, args);        
+
+    private void insertInDb(Person p) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement("insert into PERSON (id, firstName, lastName, orgId) values(?, ?, ?, ?)")) {
+            st.setInt(1, p.id);
+            st.setString(2, p.firstName);
+            st.setString(3, p.lastName);
+            st.setInt(4, p.orgId);
+
+            st.executeUpdate();
+        }
+    }
+
+    private void insertInDb(Product p) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement("insert into PRODUCT (id, name, price) values(?, ?, ?)")) {
+            st.setInt(1, p.id);
+            st.setString(2, p.name);
+            st.setInt(3, p.price);
+
+            st.executeUpdate();
+        }
+    }
+
+    private void insertInDb(Purchase p) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement("insert into PURCHASE (id, personId, productId) values(?, ?, ?)")) {
+            st.setInt(1, p.id);
+            st.setInt(2, p.personId);
+            st.setInt(3, p.productId);
+
+            st.executeUpdate();
+        }
+    }
+
+    private void initializeH2Schema() throws SQLException {
+        Statement st = conn.createStatement();
+        
+        st.execute("create table if not exists ORGANIZATION" +
+            "  (id number unique," +
+            "  name varchar(255))");
+        
+        st.execute("create table if not exists PERSON" +
+            "  (id number unique, " +
+            "  firstName varchar(255), " +
+            "  lastName varchar(255)," +
+            "  orgId number not null)");
+
+        st.execute("create table if not exists PRODUCT" +
+            "  (id number unique, " +
+            "  name varchar(255), " +
+            "  price number)");
+
+        st.execute("create table if not exists PURCHASE" +
+            "  (id number unique, " +
+            "  personId varchar(255), " +
+            "  productId number)");
+
+        conn.commit();
+    }
+
+
+    /**
+     * Gets connection from a pool.
+     *
+     * @param autocommit {@code true} If connection should use autocommit mode.
+     * @return Pooled connection.
+     * @throws SQLException In case of error.
+     */
+    private Connection openH2Connection(boolean autocommit) throws SQLException {
+        Connection conn = DriverManager.getConnection("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
+
+        conn.setAutoCommit(autocommit);
+
+        return conn;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void test0(IgniteCache cache, String sql, Object... args) throws SQLException {
+        log.info(">>>>> sql=" + sql + ", args=" + Arrays.toString(args));
+
+
+        log.info(">>> H2 db results :");
+
+        int dbResCount = 0;
+        
+        try (PreparedStatement st = conn.prepareStatement(sql)) {
+            ResultSet rs = st.executeQuery();
+
+            while (rs.next()) {
+                GridStringBuilder sb = new GridStringBuilder();
+                
+                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++)
+                    sb.a(rs.getObject(i) + ", ");
+                
+                log.info(sb.toString());
+                
+                dbResCount++;
+            }
+        }
+
+        List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+
+        log.info(">>> Cache results (count=" + cacheRes.size() + "):");
+
+        for (List<?> objects : cacheRes)
+            log.info(objects.toString());
+        
+        assertEquals(dbResCount, cacheRes.size());
+    }
+
+    private void test0(String sql, Object... args) throws SQLException {
+        test0(pCache, sql, args);
     }
 
     /**
-     * TODO
+     * @throws Exception If failed.
      */
-    public void testSqlQueryWithAggregation() {
+    public void testSqlQueryWithAggregation() throws Exception {
         test0("select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
             + "lower(Organization.name) = lower(?)", "GridGain");
     }
 
     /**
-     * TODO
+     * @throws Exception If failed.
      */
-    public void testSqlFieldsQuery() {
+    public void testSqlFieldsQuery() throws Exception {
         test0("select concat(firstName, ' ', lastName) from Person");
     }
 
     /**
-     * TODO
+     * @throws Exception If failed.
      */
-    public void testSqlFieldsQueryWithJoin() {
+    public void testSqlFieldsQueryWithJoin() throws Exception {
         test0("select concat(firstName, ' ', lastName), "
             + "Organization.name from Person, Organization where "
             + "Person.orgId = Organization.id");
@@ -233,10 +357,10 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         log.info("-- Persons --");
         test0("select id, firstName, lastName, orgId from Person");
-        
+
         log.info("-- Purchases --");
         test0("select id, personId, productId from Purchase");
-        
+
         log.info("-- Products --");
         test0(rCache, "select * from \"replicated\".Product");
 
@@ -260,14 +384,14 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             "  from Person, Purchase, \"replicated\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
-        
+
         log.info("-- Cross query with group by --"); //TODO Investigate
         test0("select concat(firstName, ' ', lastName), count (Product.id) " +
             "  from Person, Purchase, \"replicated\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
     }
-    
+
     /**
      * Person class.
      */
