@@ -125,7 +125,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
                 + UUID.randomUUID().toString().substring(0, 8) + ".log";
 
             if (win)
-                throw new UnsupportedOperationException("Apache Ignite can't be run as service under Windows.");
+                throw new UnsupportedOperationException("Apache Ignite cannot be auto-started on Windows from IgniteCluster.startNodes(…) API.");
             else { // Assume Unix.
                 int spaceIdx = script.indexOf(' ');
 
