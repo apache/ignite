@@ -130,7 +130,7 @@ public class GridQueryFailResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 91;
+        return 107;
     }
 
     /** {@inheritDoc} */

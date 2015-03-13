@@ -25,14 +25,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -291,21 +289,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static int i(List<?> l, int idx){
         return ((Number)l.get(idx)).intValue();
-    }
-
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        CacheProjection<Integer, FactPurchase> prj = ((IgniteKernal)ignite)
-            .<Integer, FactPurchase>cache("partitioned").projection(
-            new IgnitePredicate<Cache.Entry<Integer, FactPurchase>>() {
-                @Override public boolean apply(Cache.Entry<Integer, FactPurchase> e) {
-                    return e.getKey() > 12;
-                }
-            });
-
-        List<Map.Entry<Integer, FactPurchase>> res = body(prj);
-
-        check(res);
     }
 
     /**

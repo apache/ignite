@@ -230,7 +230,7 @@ public class GridQueryNextPageResponse implements Externalizable, Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 93;
+        return 109;
     }
 
     /** {@inheritDoc} */

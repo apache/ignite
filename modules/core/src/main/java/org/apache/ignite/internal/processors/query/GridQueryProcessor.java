@@ -125,7 +125,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                 declaredTypes.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
 
-                int valTypeId = ctx.portable().typeId(meta.getValueType());
+                int valTypeId = ctx.cacheObjects().typeId(meta.getValueType());
 
                 portableIds.put(valTypeId, meta.getValueType());
 
@@ -351,8 +351,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            if (ctx.portable().isPortableObject(val)) {
-                int typeId = ctx.portable().typeId(val);
+            if (ctx.cacheObjects().isPortableObject(val)) {
+                int typeId = ctx.cacheObjects().typeId(val);
 
                 String typeName = portableName(typeId);
 
@@ -1355,7 +1355,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (obj == null)
                     return null;
 
-                if (!ctx.portable().isPortableObject(obj))
+                if (!ctx.cacheObjects().isPortableObject(obj))
                     throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
             }
@@ -1363,9 +1363,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int isKeyProp0 = isKeyProp;
 
                 if (isKeyProp0 == 0) {
-                    if (ctx.portable().hasField(key, propName))
+                    if (ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
-                    else if (ctx.portable().hasField(val, propName))
+                    else if (ctx.cacheObjects().hasField(val, propName))
                         isKeyProp = isKeyProp0 = -1;
                     else {
                         U.warn(log, "Neither key nor value have property " +
@@ -1378,7 +1378,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            return ctx.portable().field(obj, propName);
+            return ctx.cacheObjects().field(obj, propName);
         }
 
         /** {@inheritDoc} */

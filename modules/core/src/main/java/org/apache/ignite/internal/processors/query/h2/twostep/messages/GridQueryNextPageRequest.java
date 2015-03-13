@@ -157,7 +157,7 @@ public class GridQueryNextPageRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 92;
+        return 108;
     }
 
     /** {@inheritDoc} */

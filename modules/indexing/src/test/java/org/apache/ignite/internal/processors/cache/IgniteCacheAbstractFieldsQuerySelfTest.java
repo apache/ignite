@@ -40,7 +40,6 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests for fields queries.
@@ -93,7 +92,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         List<Class<?>> indexedTypes = new ArrayList<>(F.<Class<?>>asList(
             String.class, Organization.class

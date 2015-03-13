@@ -101,7 +101,7 @@ public class GridQueryCancelRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 90;
+        return 106;
     }
 
     /** {@inheritDoc} */

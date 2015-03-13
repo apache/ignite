@@ -580,27 +580,27 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 90:
+            case 106:
                 msg = new GridQueryCancelRequest();
 
                 break;
 
-            case 91:
+            case 107:
                 msg = new GridQueryFailResponse();
 
                 break;
 
-            case 92:
+            case 108:
                 msg = new GridQueryNextPageRequest();
 
                 break;
 
-            case 93:
+            case 109:
                 msg = new GridQueryNextPageResponse();
 
                 break;
 
-            case 94:
+            case 110:
                 msg = new GridQueryRequest();
 
                 break;

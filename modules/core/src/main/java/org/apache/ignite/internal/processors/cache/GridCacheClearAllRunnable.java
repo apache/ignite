@@ -96,7 +96,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             if (ctx.isSwapOrOffheapEnabled()) {
                 if (ctx.swap().swapEnabled()) {
                     if (GridQueryProcessor.isEnabled(ctx.config())) {
-                        Iterator<Map.Entry<K, V>> it = null;
+                        Iterator<KeyCacheObject> it = null;
 
                         try {
                             it = ctx.swap().swapKeyIterator(true, true, -1L);

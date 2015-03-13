@@ -73,9 +73,6 @@ public class CacheNodeWithStoreStartup {
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        // Set query indexing enabled for use query in example.
-        cacheCfg.setQueryIndexEnabled(true);
-
         CacheStore<Long, Person> store;
 
         // Uncomment other cache stores to try them.
