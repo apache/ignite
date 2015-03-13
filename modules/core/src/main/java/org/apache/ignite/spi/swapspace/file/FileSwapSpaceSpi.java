@@ -718,8 +718,14 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             try {
                 res = ch.read(ByteBuffer.wrap(v), pos);
             }
-            catch (ClosedChannelException ignore) {
-                assert idx == DELETED;
+            catch (ClosedByInterruptException e) {
+                throw new IgniteSpiException("Operation was interrupted.", e);
+            }
+            catch (AsynchronousCloseException ignore) {
+                assert idx == DELETED; // We closed it ourselves.
+            }
+            catch (ClosedChannelException e) {
+                throw new IgniteSpiException("File channel was unexpectedly closed.", e);
             }
             catch (IOException e) {
                 throw new IgniteSpiException("Failed to read value.", e);

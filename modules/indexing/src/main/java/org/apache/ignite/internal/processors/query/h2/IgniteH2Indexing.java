@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
@@ -1912,7 +1913,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
 
-            return e != null ? e.value().value(cctx.cacheObjectContext(), false) : null;
+            if (e == null)
+                return null;
+
+            CacheObject v = e.value();
+
+            assert v != null : "swap must unmarshall it for us";
+
+            return v.value(cctx.cacheObjectContext(), false);
         }
 
         /** {@inheritDoc} */
