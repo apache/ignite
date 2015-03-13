@@ -1498,6 +1498,7 @@ public class SchemaImportApp extends Application {
             super.updateItem(item, empty);
 
             setGraphic(null);
+            setText(null);
 
             if (!empty) {
                 setText(item);
@@ -1509,7 +1510,6 @@ public class SchemaImportApp extends Application {
 
                     if (pojo != null) {
                         comboBox.setItems(pojo.conversions());
-
                         comboBox.getSelectionModel().select(pojo.javaTypeName());
                     }
                 }
@@ -1530,12 +1530,11 @@ public class SchemaImportApp extends Application {
             };
         }
 
-        /** Previous POJO bound to cell. */
-        private PojoDescriptor prevPojo;
-
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
+
+            setGraphic(null);
 
             if (!empty) {
                 TableRow row = getTableRow();
@@ -1543,17 +1542,12 @@ public class SchemaImportApp extends Application {
                 if (row != null) {
                     final PojoDescriptor pojo = (PojoDescriptor)row.getItem();
 
-                    if (pojo != prevPojo) {
-                        prevPojo = pojo;
-
+                    if (pojo != null) {
                         boolean isTbl = pojo.parent() != null;
 
                         CheckBox ch = new CheckBox();
-
                         ch.setAllowIndeterminate(false);
-
                         ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
-
                         ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
                         Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
@@ -1582,12 +1576,11 @@ public class SchemaImportApp extends Application {
             };
         }
 
-        /** Previous POJO field bound to cell. */
-        private PojoField prevField;
-
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
+
+            setGraphic(null);
 
             if (!empty) {
                 TableRow row = getTableRow();
@@ -1595,15 +1588,11 @@ public class SchemaImportApp extends Application {
                 if (row != null) {
                     final PojoField field = (PojoField)row.getItem();
 
-                    if (field != prevField) {
-                        prevField = field;
-
+                    if (field != null) {
                         setAlignment(Pos.CENTER);
 
                         CheckBox ch = new CheckBox();
-
                         ch.setDisable(!field.nullable());
-
                         ch.selectedProperty().bindBidirectional(field.useProperty());
 
                         setGraphic(ch);
