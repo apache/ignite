@@ -1498,6 +1498,7 @@ public class SchemaImportApp extends Application {
             super.updateItem(item, empty);
 
             setGraphic(null);
+            setText(null);
 
             if (!empty) {
                 setText(item);
@@ -1509,7 +1510,6 @@ public class SchemaImportApp extends Application {
 
                     if (pojo != null) {
                         comboBox.setItems(pojo.conversions());
-
                         comboBox.getSelectionModel().select(pojo.javaTypeName());
                     }
                 }
@@ -1533,9 +1533,14 @@ public class SchemaImportApp extends Application {
         /** Previous POJO bound to cell. */
         private PojoDescriptor prevPojo;
 
+        /** Previous cell graphic. */
+        private Pane prevGraphic;
+
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
+
+            setGraphic(null);
 
             if (!empty) {
                 TableRow row = getTableRow();
@@ -1543,26 +1548,26 @@ public class SchemaImportApp extends Application {
                 if (row != null) {
                     final PojoDescriptor pojo = (PojoDescriptor)row.getItem();
 
-                    if (pojo != prevPojo) {
-                        prevPojo = pojo;
+                    if (pojo != null) {
+                        if (prevGraphic == null || pojo != prevPojo) {
+                            boolean isTbl = pojo.parent() != null;
 
-                        boolean isTbl = pojo.parent() != null;
+                            CheckBox ch = new CheckBox();
+                            ch.setAllowIndeterminate(false);
+                            ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
+                            ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
-                        CheckBox ch = new CheckBox();
+                            Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
 
-                        ch.setAllowIndeterminate(false);
+                            Pane pnl = new HBox(5);
+                            pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
+                            pnl.getChildren().addAll(ch, lb);
 
-                        ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
+                            prevPojo = pojo;
+                            prevGraphic = pnl;
+                        }
 
-                        ch.selectedProperty().bindBidirectional(pojo.useProperty());
-
-                        Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
-
-                        Pane pnl = new HBox(5);
-                        pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
-                        pnl.getChildren().addAll(ch, lb);
-
-                        setGraphic(pnl);
+                        setGraphic(prevGraphic);
                     }
                 }
             }
@@ -1585,9 +1590,14 @@ public class SchemaImportApp extends Application {
         /** Previous POJO field bound to cell. */
         private PojoField prevField;
 
+        /** Previous cell graphic. */
+        private CheckBox prevGraphic;
+
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
             super.updateItem(item, empty);
+
+            setGraphic(null);
 
             if (!empty) {
                 TableRow row = getTableRow();
@@ -1595,18 +1605,19 @@ public class SchemaImportApp extends Application {
                 if (row != null) {
                     final PojoField field = (PojoField)row.getItem();
 
-                    if (field != prevField) {
-                        prevField = field;
+                    if (field != null) {
+                        if (prevGraphic == null || prevField != field) {
+                            setAlignment(Pos.CENTER);
 
-                        setAlignment(Pos.CENTER);
+                            CheckBox ch = new CheckBox();
+                            ch.setDisable(!field.nullable());
+                            ch.selectedProperty().bindBidirectional(field.useProperty());
 
-                        CheckBox ch = new CheckBox();
+                            prevField = field;
+                            prevGraphic = ch;
+                        }
 
-                        ch.setDisable(!field.nullable());
-
-                        ch.selectedProperty().bindBidirectional(field.useProperty());
-
-                        setGraphic(ch);
+                        setGraphic(prevGraphic);
                     }
                 }
             }

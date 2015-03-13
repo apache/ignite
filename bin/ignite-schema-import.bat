@@ -70,37 +70,18 @@ set IGNITE_HOME=%IGNITE_HOME:~0,-1%
 goto checkIgniteHome2
 
 :checkIgniteHome3
-if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
+if exist "%IGNITE_HOME%\config" goto run
     echo %0, ERROR: Ignite installation folder is not found or IGNITE_HOME environment variable is not valid.
     echo Please create IGNITE_HOME environment variable pointing to location of
     echo Ignite installation folder.
     goto error_finish
 
-:checkIgniteHome4
-
-::
-:: Set SCRIPTS_HOME - base path to scripts.
-::
-set SCRIPTS_HOME=%IGNITE_HOME%\bin
-
-:: Remove trailing spaces
-for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
-
-if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
-    echo %0, WARN: IGNITE_HOME environment variable may be pointing to wrong folder: %IGNITE_HOME%
-
 :run
 
 ::
-:: Set IGNITE_LIBS
+:: Set CLASS PATH.
 ::
-call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-
-::
-:: Set CLASS PATH
-::
-set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_LIBS%;%IGNITE_HOME%\bin\include\schema-import\*
+set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*
 
 ::
 :: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
