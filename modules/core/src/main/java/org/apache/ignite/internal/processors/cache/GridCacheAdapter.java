@@ -1440,7 +1440,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         // Clear local cache synchronously.
         clearLocally(key);
 
-        clearRemotes(0, new GlobalClearKeyCallable<K>(name(), key));
+        Set<K> keys = U.newHashSet(1);
+
+        keys.add(key);
+
+        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), new HashSet<K>(keys)));
     }
 
     /** {@inheritDoc} */
@@ -1448,17 +1452,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         // Clear local cache synchronously.
         clearLocallyAll(keys);
 
-        clearRemotes(0, new GlobalClearKeySetCallable(name(), keys));
+        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(K key) {
-        return clearAsync(new GlobalClearKeyCallable<K>(name(), key));
+        Set<K> keys = U.newHashSet(1);
+
+        keys.add(key);
+
+        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
-        return clearAsync(new GlobalClearKeySetCallable(name(), keys));
+        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
     }
 
     /** {@inheritDoc} */
@@ -5567,56 +5575,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             ((IgniteEx)ignite).cachex(cacheName).clearLocally();
 
             return null;
-        }
-    }
-
-    /**
-     * Global clear key.
-     */
-    @GridInternal
-    private static class GlobalClearKeyCallable<K> extends GlobalClearCallable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Key to remove. */
-        private K key;
-
-        /**
-         * Empty constructor for serialization.
-         */
-        public GlobalClearKeyCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param key Key to clear.
-         */
-        private GlobalClearKeyCallable(String cacheName, K key) {
-            super(cacheName);
-
-            this.key = key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            ((IgniteEx)ignite).cachex(cacheName).clearLocally(key);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-
-            out.writeObject(key);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-
-            key = (K)in.readObject();
         }
     }
 
