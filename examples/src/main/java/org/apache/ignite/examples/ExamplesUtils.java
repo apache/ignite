@@ -18,14 +18,10 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.streamer.*;
 
 import java.net.*;
-import java.util.*;
 
 /**
  *
@@ -33,16 +29,6 @@ import java.util.*;
 public class ExamplesUtils {
     /** */
     private static final ClassLoader CLS_LDR = ExamplesUtils.class.getClassLoader();
-
-    /** Events of these types should be recorded in examples. */
-    public static final int[] EVTS;
-
-    static {
-        EVTS = Arrays.copyOf(EventType.EVTS_CACHE, EventType.EVTS_CACHE.length + EventType.EVTS_TASK_EXECUTION.length);
-
-        System.arraycopy(EventType.EVTS_TASK_EXECUTION, 0, EVTS, EventType.EVTS_CACHE.length,
-            EventType.EVTS_TASK_EXECUTION.length);
-    }
 
     /**
      * Exits with code {@code -1} if maximum memory is below 90% of minimally allowed threshold.
