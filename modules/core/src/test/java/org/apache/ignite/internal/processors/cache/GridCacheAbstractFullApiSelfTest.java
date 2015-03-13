@@ -406,7 +406,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert 2 == map1.size() : "Invalid map: " + map1;
 
-        assertEquals(1, (int)map1.get("key1"));
+        assertEquals(1, (int) map1.get("key1"));
         assertEquals(2, (int)map1.get("key2"));
         assertNull(map1.get("key9999"));
 
@@ -1024,7 +1024,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        assertEquals((Integer)3, cache.get("key"));
+        assertEquals((Integer) 3, cache.get("key"));
     }
 
     /**
@@ -1188,11 +1188,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals("null", cache.invoke("k0", INCR_PROCESSOR));
 
-        assertEquals((Integer)1, cache.get("k0"));
+        assertEquals((Integer) 1, cache.get("k0"));
 
         assertEquals("1", cache.invoke("k0", INCR_PROCESSOR));
 
-        assertEquals((Integer)2, cache.get("k0"));
+        assertEquals((Integer) 2, cache.get("k0"));
 
         cache.put("k1", 1);
 
@@ -1225,7 +1225,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         };
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override
+            public Void call() throws Exception {
                 cache.invoke("k1", errProcessor);
 
                 return null;
@@ -1640,7 +1641,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP) + ']');
         }
 
-        assertEquals((Integer)1, cache.getAndPutIfAbsent("key", 2));
+        assertEquals((Integer) 1, cache.getAndPutIfAbsent("key", 2));
 
         assert cache.get("key") != null;
         assert cache.get("key") == 1;
@@ -1650,7 +1651,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Collections.singleton("key2"));
 
-        assertEquals((Integer)1, cache.getAndPutIfAbsent("key2", 3));
+        assertEquals((Integer) 1, cache.getAndPutIfAbsent("key2", 3));
 
         // Check db.
         putToStore("key3", 3);
@@ -2114,7 +2115,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         info("Finished replace.");
 
-        assertEquals((Integer)2, cache.get("key"));
+        assertEquals((Integer) 2, cache.get("key"));
 
         cacheAsync.replace("wrond", 2);
 
@@ -2999,7 +3000,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put(key, 1);
 
-        assertEquals((Integer)1, cache.get(key));
+        assertEquals((Integer) 1, cache.get(key));
 
         long ttl = 500;
 
@@ -3971,7 +3972,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         iter.remove();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Void call() throws Exception {
+            @Override
+            public Void call() throws Exception {
                 iter.remove();
 
                 return null;
@@ -4106,6 +4108,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         g.<String, Integer>jcache(null).localClear(keyToRemove);
 
+        checkLocalRemovedKey(keyToRemove);
+
+        g.<String, Integer>jcache(null).put(keyToRemove, 1);
+
+        String keyToEvict = "key" + 30;
+
+        g = primaryIgnite(keyToEvict);
+
+        g.<String, Integer>jcache(null).localEvict(Collections.singleton(keyToEvict));
+
+        g.<String, Integer>jcache(null).localClear(keyToEvict);
+
+        checkLocalRemovedKey(keyToEvict);
+    }
+
+    /**
+     * @param keyToRemove Removed key.
+     */
+    private void checkLocalRemovedKey(String keyToRemove) {
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 

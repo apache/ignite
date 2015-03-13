@@ -1421,6 +1421,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             GridCacheEntryEx e = peekEx(cacheKey);
 
+            if (ctx.isSwapOrOffheapEnabled())
+                ctx.swap().readAndRemove(ctx.toCacheKeyObject(key));
+
             return e != null && e.clear(obsoleteVer, false, filter);
         }
         catch (IgniteCheckedException ex) {
@@ -1440,11 +1443,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         // Clear local cache synchronously.
         clearLocally(key);
 
-        Set<K> keys = U.newHashSet(1);
-
-        keys.add(key);
-
-        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), new HashSet<K>(keys)));
+        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), Collections.singleton(key)));
     }
 
     /** {@inheritDoc} */
@@ -1457,11 +1456,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(K key) {
-        Set<K> keys = U.newHashSet(1);
-
-        keys.add(key);
-
-        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
+        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), Collections.singleton(key)));
     }
 
     /** {@inheritDoc} */
