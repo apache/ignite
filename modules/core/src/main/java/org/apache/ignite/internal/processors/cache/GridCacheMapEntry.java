@@ -2178,15 +2178,17 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
-            if (res && intercept) {
-                if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0));
-                else
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, oldVal, old0));
-            }
+            if (intercept) {
+                if (res) {
+                    if (op == GridCacheOperation.UPDATE)
+                        cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0));
+                    else
+                        cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, oldVal, old0));
+                }
 
-            if (interceptRes != null)
-                oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
+                if (interceptRes != null)
+                    oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
+            }
         }
 
         if (log.isDebugEnabled())
