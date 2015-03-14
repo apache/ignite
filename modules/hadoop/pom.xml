@@ -98,7 +98,7 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-shmem</artifactId>
-            <version>RELEASE</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
