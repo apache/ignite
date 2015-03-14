@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
@@ -49,18 +48,6 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void stop() throws IgniteCheckedException;
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onCacheStarted(GridCacheContext ctx) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onCacheStopped(GridCacheContext ctx) throws IgniteCheckedException;
 
     /**
      * Runs two step query.
@@ -151,6 +138,14 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+
+    /**
+     * Deregisters cache.
+     *
+     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed to drop cache schema.
+     */
+    public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.

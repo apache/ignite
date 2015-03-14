@@ -1198,18 +1198,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
     }
 
-    /** {@inheritDoc} */
-    @Override public void onCacheStarted(GridCacheContext ctx) throws IgniteCheckedException {
-        createSchema(schema(ctx.name()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCacheStopped(GridCacheContext ctx) throws IgniteCheckedException {
-        dropSchema(schema(ctx.name()));
-
-        schemas.remove(schema(ctx.name()));
-    }
-
     /**
      * Registers SQL functions.
      *
@@ -1273,7 +1261,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
+    @Override public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
         String schema = schema(ccfg.getName());
 
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
@@ -1283,6 +1271,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         createSchema(schema);
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
+    }
+
+    @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
+        String schema = schema(ccfg.getName());
+
+        Schema rmv = schemas.remove(schema);
+
+        if (rmv != null) {
+            try {
+                dropSchema(schema);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to drop schema on cache stop (will ignore): " + ccfg.getName(), e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -194,7 +194,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 106;
+        return 111;
     }
 
     /** {@inheritDoc} */

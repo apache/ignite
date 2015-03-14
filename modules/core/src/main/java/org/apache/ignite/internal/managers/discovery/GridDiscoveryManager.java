@@ -837,7 +837,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     private String topologySnapshotMessage(int rmtNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
-            (discoOrdered ? "ver=" + topVer + ", " : "") +
+            (discoOrdered ? "ver=" + topVer.get().topologyVersion() + ", " : "") +
             "nodes=" + (rmtNodesNum + 1) +
             ", CPUs=" + totalCpus +
             ", heap=" + heap + "GB" +

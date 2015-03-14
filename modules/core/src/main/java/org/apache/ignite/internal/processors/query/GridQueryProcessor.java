@@ -99,9 +99,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             execSvc = ctx.getExecutorService();
 
             idx.start(ctx);
-
-            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration())
-                initializeCache(ccfg);
         }
     }
 
@@ -219,7 +216,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            idx.onCacheStarted(cctx);
+            initializeCache(cctx.config());
         }
         finally {
             busyLock.leaveBusy();
@@ -237,15 +234,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            idx.onCacheStopped(cctx);
+            idx.unregisterCache(cctx.config());
 
             Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
 
             while (it.hasNext()) {
                 Map.Entry<TypeId, TypeDescriptor> entry = it.next();
 
-                if (F.eq(cctx.name(), entry.getKey().space))
+                if (F.eq(cctx.name(), entry.getKey().space)) {
                     it.remove();
+
+                    typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
+                }
             }
         }
         catch (IgniteCheckedException e) {
