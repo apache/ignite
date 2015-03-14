@@ -319,8 +319,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     GridCommunicationClient oldClient = clients.get(sndId);
 
-                    boolean hasShmemClient = false;
-
                     if (oldClient != null) {
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
                             if (log.isDebugEnabled())
@@ -331,11 +329,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
                             return;
-                        }
-                        else {
-                            assert oldClient instanceof GridShmemCommunicationClient;
-
-                            hasShmemClient = true;
                         }
                     }
 
@@ -363,15 +356,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 return;
                             }
-                            else {
-                                assert oldClient instanceof GridShmemCommunicationClient;
-
-                                hasShmemClient = true;
-                            }
                         }
 
                         boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
-                            new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
+                            new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, fut));
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
@@ -380,7 +368,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (reserved) {
                             try {
                                 GridTcpNioCommunicationClient client =
-                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true);
 
                                 fut.onDone(client);
                             }
@@ -402,11 +390,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                         else {
                             boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
-                                new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
+                                new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, fut));
 
                             if (reserved) {
                                 GridTcpNioCommunicationClient client =
-                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true);
 
                                 fut.onDone(client);
                             }
@@ -474,7 +462,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
              * @param node Node.
              * @param rcvCnt Number of received messages..
              * @param sndRes If {@code true} sends response for recovery handshake.
-             * @param createClient If {@code true} creates NIO communication client.
              * @return Client.
              */
             private GridTcpNioCommunicationClient connected(
@@ -482,8 +469,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 GridNioSession ses,
                 ClusterNode node,
                 long rcvCnt,
-                boolean sndRes,
-                boolean createClient) {
+                boolean sndRes) {
                 recovery.onHandshake(rcvCnt);
 
                 ses.recoveryDescriptor(recovery);
@@ -495,16 +481,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 recovery.connected();
 
-                GridTcpNioCommunicationClient client = null;
+                GridTcpNioCommunicationClient client = new GridTcpNioCommunicationClient(ses, log);
 
-                if (createClient) {
-                    client = new GridTcpNioCommunicationClient(ses, log);
+                GridCommunicationClient oldClient = clients.putIfAbsent(node.id(), client);
 
-                    GridCommunicationClient oldClient = clients.putIfAbsent(node.id(), client);
-
-                    assert oldClient == null : "Client already created [node=" + node + ", client=" + client +
-                            ", oldClient=" + oldClient + ", recoveryDesc=" + recovery + ']';
-                }
+                assert oldClient == null : "Client already created [node=" + node + ", client=" + client +
+                        ", oldClient=" + oldClient + ", recoveryDesc=" + recovery + ']';
 
                 return client;
             }
@@ -532,28 +514,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 /** */
                 private final GridFutureAdapter<GridCommunicationClient> fut;
 
-                /** */
-                private final boolean createClient;
-
                 /**
                  * @param ses Incoming session.
                  * @param recoveryDesc Recovery descriptor.
                  * @param rmtNode Remote node.
                  * @param msg Handshake message.
-                 * @param createClient If {@code true} creates NIO communication client..
                  * @param fut Connect future.
                  */
                 ConnectClosure(GridNioSession ses,
                     GridNioRecoveryDescriptor recoveryDesc,
                     ClusterNode rmtNode,
                     HandshakeMessage msg,
-                    boolean createClient,
                     GridFutureAdapter<GridCommunicationClient> fut) {
                     this.ses = ses;
                     this.recoveryDesc = recoveryDesc;
                     this.rmtNode = rmtNode;
                     this.msg = msg;
-                    this.createClient = createClient;
                     this.fut = fut;
                 }
 
@@ -566,7 +542,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                     msgFut.get();
 
                                     GridTcpNioCommunicationClient client =
-                                        connected(recoveryDesc, ses, rmtNode, msg.received(), false, createClient);
+                                        connected(recoveryDesc, ses, rmtNode, msg.received(), false);
 
                                     fut.onDone(client);
                                 }
