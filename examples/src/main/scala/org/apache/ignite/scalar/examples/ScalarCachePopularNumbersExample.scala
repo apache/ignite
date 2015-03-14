@@ -21,7 +21,6 @@ import java.util.Timer
 
 import org.apache.ignite.IgniteException
 import org.apache.ignite.examples.ExampleNodeStartup
-import org.apache.ignite.examples.datagrid.CacheNodeStartup
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._

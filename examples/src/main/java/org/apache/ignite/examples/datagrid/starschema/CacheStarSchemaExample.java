@@ -69,9 +69,8 @@ public class CacheStarSchemaExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
 
             System.out.println();
@@ -81,21 +80,26 @@ public class CacheStarSchemaExample {
 
             factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             factCacheCfg.setName(PARTITIONED_CACHE_NAME);
-            factCacheCfg.setQueryIndexEnabled(true);
+            factCacheCfg.setIndexedTypes(
+                Integer.class, FactPurchase.class
+            );
 
             CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
 
             dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
             dimCacheCfg.setName(REPLICATED_CACHE_NAME);
-            dimCacheCfg.setQueryIndexEnabled(true);
+            dimCacheCfg.setIndexedTypes(
+                Integer.class, DimStore.class,
+                Integer.class, DimProduct.class
+            );
 
             try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
                  IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
                 populateDimensions(dimCache);
                 populateFacts(factCache);
 
-                queryStorePurchases(factCache);
-                queryProductPurchases(factCache);
+                queryStorePurchases();
+                queryProductPurchases();
             }
         }
     }
@@ -107,7 +111,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void populateDimensions(IgniteCache<Integer, Object> dimCache) throws IgniteException {
+    private static void populateDimensions(Cache<Integer, Object> dimCache) throws IgniteException {
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
 
@@ -136,7 +140,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void populateFacts(IgniteCache<Integer, FactPurchase> factCache) throws IgniteException {
+    private static void populateFacts(Cache<Integer, FactPurchase> factCache) throws IgniteException {
         for (int i = 0; i < 100; i++) {
             int id = idGen++;
 
@@ -154,7 +158,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryStorePurchases() throws IgniteCheckedException {
+    private static void queryStorePurchases() {
         IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
@@ -177,7 +181,7 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryProductPurchases() throws IgniteCheckedException {
+    private static void queryProductPurchases() {
         IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
 
         // All purchases for certain product made at store2.

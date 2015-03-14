@@ -86,7 +86,10 @@ public class CacheQueryExample {
 
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
-            cfg.setQueryIndexEnabled(true);
+            cfg.setIndexedTypes(
+                UUID.class, Organization.class,
+                CacheAffinityKey.class, Person.class
+            );
 
             try (IgniteCache<?, ?> cache = ignite.createCache(cfg)) {
                 // Populate cache.
@@ -122,10 +125,8 @@ public class CacheQueryExample {
 
     /**
      * Example for SQL queries based on salary ranges.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQuery() throws IgniteCheckedException {
+    private static void sqlQuery() {
         IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // SQL clause which selects salaries based on range.
@@ -144,10 +145,8 @@ public class CacheQueryExample {
 
     /**
      * Example for SQL queries based on all employees working for a specific organization.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQueryWithJoin() throws IgniteCheckedException {
+    private static void sqlQueryWithJoin() {
         IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // SQL clause query which joins on 2 types to select people for a specific organization.
@@ -165,10 +164,8 @@ public class CacheQueryExample {
 
     /**
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void textQuery() throws IgniteCheckedException {
+    private static void textQuery() {
         IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
@@ -185,10 +182,8 @@ public class CacheQueryExample {
 
     /**
      * Example for SQL queries to calculate average salary for a specific organization.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQueryWithAggregation() throws IgniteCheckedException {
+    private static void sqlQueryWithAggregation() {
         IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
@@ -203,10 +198,8 @@ public class CacheQueryExample {
     /**
      * Example for SQL-based fields queries that return only required
      * fields instead of whole key-value pairs.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlFieldsQuery() throws IgniteCheckedException {
+    private static void sqlFieldsQuery() {
         IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Create query to get names of all employees.
@@ -224,10 +217,8 @@ public class CacheQueryExample {
     /**
      * Example for SQL-based fields queries that return only required
      * fields instead of whole key-value pairs.
-     *
-     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
+    private static void sqlFieldsQueryWithJoin() {
         IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Execute query to get names of all employees.
@@ -244,11 +235,8 @@ public class CacheQueryExample {
 
     /**
      * Populate cache with test data.
-     *
-     * @throws IgniteCheckedException In case of error.
-     * @throws InterruptedException In case of error.
      */
-    private static void initialize() throws IgniteCheckedException, InterruptedException {
+    private static void initialize() {
         IgniteCache cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.

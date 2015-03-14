@@ -697,12 +697,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
 
-            if (maxPreloadOrder > 0) {
+            if (maxRebalanceOrder > 0) {
                 CacheConfiguration cfg = cache.configuration();
 
-                int order = cfg.getPreloadOrder();
+                int order = cfg.getRebalanceOrder();
 
-                if (order > 0 && order != maxPreloadOrder && cfg.getCacheMode() != LOCAL) {
+                if (order > 0 && order != maxRebalanceOrder && cfg.getCacheMode() != LOCAL) {
                     GridCompoundFuture<Object, Object> fut = (GridCompoundFuture<Object, Object>)preloadFuts
                         .get(order);
 
@@ -727,9 +727,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             CacheConfiguration cfg = cache.configuration();
 
-            if (cfg.getPreloadMode() == SYNC) {
+            if (cfg.getRebalanceMode() == SYNC) {
                 if (cfg.getCacheMode() == REPLICATED ||
-                    (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadPartitionedDelay() >= 0))
+                    (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0))
                     cache.preloader().syncFuture().get();
             }
         }
@@ -1749,7 +1749,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
-                "Cache preload mode", locAttr.cachePreloadMode(), rmtAttr.cachePreloadMode(), true);
+                "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity", "Cache affinity",
                 locAttr.cacheAffinityClassName(), rmtAttr.cacheAffinityClassName(), true);
@@ -1775,15 +1775,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                 "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultQueryTimeout",
-                "Default query timeout", locAttr.defaultQueryTimeout(), rmtAttr.defaultQueryTimeout(),
-                false);
-
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
                 "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
-                "Preload batch size", locAttr.preloadBatchSize(), rmtAttr.preloadBatchSize(), false);
+                "Preload batch size", locAttr.rebalanceBatchSize(), rmtAttr.rebalanceBatchSize(), false);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "swapEnabled",
                 "Swap enabled", locAttr.swapEnabled(), rmtAttr.swapEnabled(), false);
@@ -1814,15 +1810,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictMaxOverflowRatio",
                 "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
                 rmtAttr.evictMaxOverflowRatio(), true);
-
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "indexingSpiName", "IndexingSpiName",
-                locAttr.indexingSpiName(), rmtAttr.indexingSpiName(), true);
-
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
-                "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
             if (locAttr.cacheMode() == PARTITIONED) {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",

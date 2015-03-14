@@ -104,8 +104,8 @@ public class GridCacheAttributes implements Serializable {
     /**
      * @return Preload mode.
      */
-    public CachePreloadMode cachePreloadMode() {
-        return ccfg.getPreloadMode();
+    public CacheRebalanceMode cacheRebalanceMode() {
+        return ccfg.getRebalanceMode();
     }
 
     /**
@@ -228,13 +228,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Default query timeout.
-     */
-    public long defaultQueryTimeout() {
-        return ccfg.getDefaultQueryTimeout();
-    }
-
-    /**
      * @return Default lock timeout.
      */
     public long defaultLockTimeout() {
@@ -244,8 +237,8 @@ public class GridCacheAttributes implements Serializable {
     /**
      * @return Preload batch size.
      */
-    public int preloadBatchSize() {
-        return ccfg.getPreloadBatchSize();
+    public int rebalanceBatchSize() {
+        return ccfg.getRebalanceBatchSize();
     }
 
     /**
@@ -253,13 +246,6 @@ public class GridCacheAttributes implements Serializable {
      */
     public CacheWriteSynchronizationMode writeSynchronization() {
         return ccfg.getWriteSynchronizationMode();
-    }
-
-    /**
-     * @return Flag indicating whether  query indexing is enabled.
-     */
-    public boolean queryIndexEnabled() {
-        return ccfg.isQueryIndexEnabled();
     }
 
     /**
@@ -316,13 +302,6 @@ public class GridCacheAttributes implements Serializable {
      */
     public int writeBehindBatchSize() {
         return ccfg.getWriteBehindBatchSize();
-    }
-
-    /**
-     * @return Name of SPI to use for indexing.
-     */
-    public String indexingSpiName() {
-        return ccfg.getIndexingSpiName();
     }
 
     /**
