@@ -27,7 +27,7 @@ import static org.apache.ignite.igfs.IgfsIpcEndpointType.*;
  */
 public class IgfsIpcEndpointConfiguration {
     /** Default endpoint type is TCP. */
-    public static IgfsIpcEndpointType DFLT_TYPE = TCP;
+    public static IgfsIpcEndpointType DFLT_TYPE = U.hasSharedMemory() ? SHMEM : TCP;
 
     /** Default host. */
     public static String DFLT_HOST = "127.0.0.1";
