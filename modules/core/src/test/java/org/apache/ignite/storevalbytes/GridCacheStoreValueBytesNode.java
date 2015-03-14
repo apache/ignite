@@ -101,11 +101,6 @@ public class GridCacheStoreValueBytesNode {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
-
         cfg.setDiscoverySpi(discovery());
 
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
