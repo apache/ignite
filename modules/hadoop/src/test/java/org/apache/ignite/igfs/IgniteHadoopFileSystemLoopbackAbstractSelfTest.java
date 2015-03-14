@@ -37,10 +37,12 @@ public abstract class IgniteHadoopFileSystemLoopbackAbstractSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
-        return new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
-        }};
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+
+        return endpointCfg;
     }
 }

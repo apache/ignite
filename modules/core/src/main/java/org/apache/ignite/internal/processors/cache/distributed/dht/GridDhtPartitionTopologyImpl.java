@@ -259,7 +259,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                 }
             }
 
-            if (cctx.preloadEnabled()) {
+            if (cctx.rebalanceEnabled()) {
                 for (int p = 0; p < num; p++) {
                     // If this is the first node in grid.
                     if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) || exchId.isCacheAdded(cctx.cacheId())) {
@@ -337,7 +337,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                                 updateLocal(p, loc.id(), locPart.state(), updateSeq);
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Evicting partition with preloading disabled " +
+                                    log.debug("Evicting partition with rebalancing disabled " +
                                         "(it does not belong to affinity): " + locPart);
                             }
                         }
@@ -349,7 +349,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                         }
                         catch (GridDhtInvalidPartitionException e) {
                             if (log.isDebugEnabled())
-                                log.debug("Ignoring invalid partition with disabled preloader (no need to " +
+                                log.debug("Ignoring invalid partition with disabled rebalancer (no need to " +
                                     "pre-create a partition if it no longer belongs to local node: " + e.partition());
                         }
                     }
@@ -414,7 +414,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                     GridDhtPartitionState state = locPart.state();
 
                     if (state == MOVING) {
-                        if (cctx.preloadEnabled()) {
+                        if (cctx.rebalanceEnabled()) {
                             Collection<ClusterNode> owners = owners(p);
 
                             // If there are no other owners, then become an owner.
@@ -432,7 +432,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                                     log.debug("Owned partition: " + locPart);
                             }
                             else if (log.isDebugEnabled())
-                                log.debug("Will not own partition (there are owners to preload from) [locPart=" +
+                                log.debug("Will not own partition (there are owners to rebalance from) [locPart=" +
                                     locPart + ", owners = " + owners + ']');
                         }
                         else
@@ -677,7 +677,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer) {
-        if (!cctx.preloadEnabled())
+        if (!cctx.rebalanceEnabled())
             return ownersAndMoving(p, topVer);
 
         return nodes(p, topVer, OWNING);
@@ -690,7 +690,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
-        if (!cctx.preloadEnabled())
+        if (!cctx.rebalanceEnabled())
             return ownersAndMoving(p, AffinityTopologyVersion.NONE);
 
         return nodes(p, AffinityTopologyVersion.NONE, MOVING);

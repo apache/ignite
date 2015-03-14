@@ -19,6 +19,7 @@ package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;

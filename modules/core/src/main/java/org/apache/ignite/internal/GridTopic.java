@@ -69,7 +69,7 @@ public enum GridTopic {
     TOPIC_IGFS,
 
     /** */
-    TOPIC_DATALOAD,
+    TOPIC_DATASTREAM,
 
     /** */
     TOPIC_STREAM,

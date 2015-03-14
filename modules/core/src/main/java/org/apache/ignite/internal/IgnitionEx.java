@@ -68,7 +68,7 @@ import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
@@ -1911,8 +1911,7 @@ public class IgnitionEx {
                 cache.setCacheMode(REPLICATED);
                 cache.setAtomicityMode(TRANSACTIONAL);
                 cache.setSwapEnabled(false);
-                cache.setQueryIndexEnabled(false);
-                cache.setPreloadMode(SYNC);
+                cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
                 cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
@@ -1937,8 +1936,7 @@ public class IgnitionEx {
                 cache.setCacheMode(REPLICATED);
                 cache.setAtomicityMode(TRANSACTIONAL);
                 cache.setSwapEnabled(false);
-                cache.setQueryIndexEnabled(false);
-                cache.setPreloadMode(SYNC);
+                cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
                 cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
@@ -1963,8 +1961,7 @@ public class IgnitionEx {
                 ccfg.setName(CU.ATOMICS_CACHE_NAME);
                 ccfg.setAtomicityMode(TRANSACTIONAL);
                 ccfg.setSwapEnabled(false);
-                ccfg.setQueryIndexEnabled(false);
-                ccfg.setPreloadMode(SYNC);
+                ccfg.setRebalanceMode(SYNC);
                 ccfg.setWriteSynchronizationMode(FULL_SYNC);
                 ccfg.setCacheMode(cfg.getCacheMode());
                 ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);

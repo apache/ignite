@@ -60,6 +60,26 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
+
+                    <property name="indexedTypes">
+                        <list>
+                            <!-- Key and value type for SQL table Organization. -->
+                            <value>java.util.UUID</value>
+                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Organization</value>
+
+                            <!-- Key and value type for SQL table Person. -->
+                            <value>org.apache.ignite.cache.affinity.CacheAffinityKey</value>
+                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Person</value>
+
+                            <!-- Key and value type for SQL table Long. -->
+                            <value>java.lang.Integer</value>
+                            <value>java.lang.Long</value>
+
+                            <!-- Key and value type for SQL table FactPurchase. -->
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.examples.datagrid.starschema.FactPurchase</value>
+                        </list>
+                    </property>
                 </bean>
 
                 <!-- Partitioned cache example configuration (Atomic mode, PRIMARY write order mode). -->
@@ -86,6 +106,17 @@
                     <property name="name" value="replicated"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="indexedTypes">
+                        <list>
+                            <!-- Key and value type for SQL table DimStore. -->
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.examples.datagrid.starschema.DimStore</value>
+
+                            <!-- Key and value type for SQL table DimProduct. -->
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.examples.datagrid.starschema.DimProduct</value>
+                        </list>
+                    </property>
                 </bean>
 
                 <!-- Replicated cache example configuration (Transactional mode). -->
@@ -140,21 +171,10 @@
         <!-- Initial cache size. -->
         <property name="startSize" value="3000000"/>
 
-        <!-- Set synchronous preloading (default is asynchronous). -->
-        <property name="preloadMode" value="SYNC"/>
+        <!-- Set synchronous rebalancing (default is asynchronous). -->
+        <property name="rebalanceMode" value="SYNC"/>
 
         <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-        <!-- Set to true to enable indexing for query examples, default value is false. -->
-        <property name="queryIndexEnabled" value="true"/>
-
-        <!-- Allow to index primitive values. -->
-        <property name="queryConfiguration">
-            <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                <!-- Index primitives. -->
-                <property name="indexPrimitiveKey" value="true"/>
-            </bean>
-        </property>
     </bean>
 </beans>

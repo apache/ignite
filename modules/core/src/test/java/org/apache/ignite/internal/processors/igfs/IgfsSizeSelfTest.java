@@ -42,7 +42,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -133,9 +134,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         }
 
         dataCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCfg.setPreloadMode(SYNC);
+        dataCfg.setRebalanceMode(SYNC);
         dataCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
@@ -144,8 +144,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         metaCfg.setCacheMode(REPLICATED);
 
         metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCfg.setPreloadMode(SYNC);
-        metaCfg.setQueryIndexEnabled(false);
+        metaCfg.setRebalanceMode(SYNC);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

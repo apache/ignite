@@ -128,7 +128,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void start() {
         if (log.isDebugEnabled())
-            log.debug("Starting DHT preloader...");
+            log.debug("Starting DHT rebalancer...");
 
         cctx.io().addHandler(cctx.cacheId(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
@@ -167,7 +167,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("DHT preloader onKernalStart callback.");
+            log.debug("DHT rebalancer onKernalStart callback.");
 
         ClusterNode loc = cctx.localNode();
 
@@ -204,7 +204,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
-            log.debug("DHT preloader onKernalStop callback.");
+            log.debug("DHT rebalancer onKernalStop callback.");
 
         cctx.events().removeListener(discoLsnr);
 
@@ -227,12 +227,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
             final long start = U.currentTimeMillis();
 
-            if (cctx.config().getPreloadPartitionedDelay() >= 0) {
-                U.log(log, "Starting preloading in " + cctx.config().getPreloadMode() + " mode: " + cctx.name());
+            if (cctx.config().getRebalanceDelay() >= 0) {
+                U.log(log, "Starting rebalancing in " + cctx.config().getRebalanceMode() + " mode: " + cctx.name());
 
                 demandPool.syncFuture().listen(new CI1<Object>() {
                     @Override public void apply(Object t) {
-                        U.log(log, "Completed preloading in " + cctx.config().getPreloadMode() + " mode " +
+                        U.log(log, "Completed rebalancing in " + cctx.config().getRebalanceMode() + " mode " +
                             "[cache=" + cctx.name() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
                     }
                 });
@@ -474,7 +474,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         try {
             top.onEvicted(part, updateSeq);
 
-            if (cctx.events().isRecordable(EVT_CACHE_PRELOAD_PART_UNLOADED))
+            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
                 cctx.events().addUnloadEvent(part.id());
 
             if (updateSeq)

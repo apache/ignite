@@ -21,24 +21,8 @@ package org.apache.ignite.internal.processors.query.h2;
  * Tests for H2 indexing SPI.
  */
 public class GridH2IndexingOffheapSelfTest extends GridIndexingSpiAbstractSelfTest {
-    /** */
-    private static final long offheap = 10000000;
-
-    private static IgniteH2Indexing currentSpi;
-
     /** {@inheritDoc} */
-    @Override protected void startIndexing(IgniteH2Indexing spi) throws Exception {
-        spi.configuration().setMaxOffHeapMemory(offheap);
-
-        currentSpi = spi;
-
-        super.startIndexing(spi);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        assertEquals(0, currentSpi.getAllocatedOffHeapMemory());
+    @Override protected boolean offheap() {
+        return true;
     }
 }

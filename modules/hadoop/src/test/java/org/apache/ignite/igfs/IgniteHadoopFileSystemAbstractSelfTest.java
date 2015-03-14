@@ -75,10 +75,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
 
     /** Secondary endpoint configuration. */
-    protected static final Map<String, String> SECONDARY_ENDPOINT_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_ENDPOINT_CFG;
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -115,6 +112,13 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** Primary file system configuration. */
     protected Configuration primaryFsCfg;
+
+    static {
+        SECONDARY_ENDPOINT_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_ENDPOINT_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_ENDPOINT_CFG.setPort(11500);
+    }
 
     /** File statuses comparator. */
     private static final Comparator<FileStatus> STATUS_COMPARATOR = new Comparator<FileStatus>() {
@@ -190,7 +194,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
             cacheCfg.setBackups(0);
-            cacheCfg.setQueryIndexEnabled(false);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
             CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -198,7 +201,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             metaCacheCfg.setName("replicated");
             metaCacheCfg.setCacheMode(REPLICATED);
             metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            metaCacheCfg.setQueryIndexEnabled(false);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
             IgniteConfiguration cfg = new IgniteConfiguration();
@@ -260,7 +262,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract Map<String, String> primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
 
     /** {@inheritDoc} */
     @Override public String getTestGridName() {
@@ -299,7 +301,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -307,7 +308,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return new CacheConfiguration[] {metaCacheCfg, cacheCfg};

@@ -77,7 +77,6 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
         cfg.setBackups(1);
         cfg.setNearConfiguration(null);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(atomicityMode);
 
         return cfg;

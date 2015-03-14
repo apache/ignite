@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.transactions.*;
@@ -1334,6 +1334,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public void clearLocallyAll(Set<K> keys) {
+        clearLocally0(keys);
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearLocally() {
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
@@ -1404,14 +1409,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return {@code True} if cleared.
      */
-    private boolean clearLocally(GridCacheVersion obsoleteVer, K key,
-        @Nullable CacheEntryPredicate[] filter) {
+    private boolean clearLocally(GridCacheVersion obsoleteVer, K key, @Nullable CacheEntryPredicate[] filter) {
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = peekEx(cacheKey);
+            GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
 
-            return e != null && e.clear(obsoleteVer, false, filter);
+            if (entry != null)
+                return entry.clear(obsoleteVer, false, filter);
+        }
+        catch (GridDhtInvalidPartitionException e) {
+            return false;
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry for key: " + key, ex);
@@ -1426,21 +1434,58 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public void clear(K key) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocally(key);
+
+        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), Collections.singleton(key)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocallyAll(keys);
+
+        clearRemotes(0, new GlobalClearKeySetCallable<K, V>(name(), keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(K key) {
+        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), Collections.singleton(key)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
+        return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear(long timeout) throws IgniteCheckedException {
+        // Clear local cache synchronously.
+        clearLocally();
+
+        clearRemotes(timeout, new GlobalClearAllCallable(name()));
+    }
+
+    /**
+     * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
+     *      Set it to larger value for large caches.
+     * @param clearCall Global clear callable object.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
+     */
+    private void clearRemotes(long timeout, GlobalClearCallable clearCall) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes =
+                ctx.grid().cluster().forCacheNodes(name(), NEAR_AND_DATA_NODES).forRemotes().nodes();
 
             IgniteInternalFuture<Object> fut = null;
 
             if (!nodes.isEmpty()) {
                 ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, timeout);
 
-                fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+                fut = ctx.closures().callAsyncNoFailover(BROADCAST, clearCall, nodes, true);
             }
-
-            // Clear local cache synchronously.
-            clearLocally();
 
             if (fut != null)
                 fut.get();
@@ -1459,11 +1504,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name()).nodes();
+        return clearAsync(new GlobalClearAllCallable(name()));
+    }
+
+    /**
+     * @param clearCall Global clear callable object.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> clearAsync(GlobalClearCallable clearCall) {
+        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name(), NEAR_AND_DATA_NODES).nodes();
 
         if (!nodes.isEmpty()) {
             IgniteInternalFuture<Object> fut =
-                    ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+                ctx.closures().callAsyncNoFailover(BROADCAST, clearCall, nodes, true);
 
             return fut.chain(new CX1<IgniteInternalFuture<Object>, Object>() {
                 @Override public Object applyx(IgniteInternalFuture<Object> fut) throws IgniteCheckedException {
@@ -3730,10 +3783,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
@@ -3881,18 +3934,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
-        try (final IgniteDataLoaderImpl<KeyCacheObject, CacheObject> ldr =
-                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataLoad().dataLoader(ctx.namex())) {
+        try (final DataStreamerImpl<KeyCacheObject, CacheObject> ldr =
+                 ctx.kernalContext().<KeyCacheObject, CacheObject>dataStream().dataStreamer(ctx.namex())) {
             ldr.allowOverwrite(true);
             ldr.skipStore(true);
 
-            final Collection<IgniteDataLoaderEntry> col = new ArrayList<>(ldr.perNodeBufferSize());
+            final Collection<DataStreamerEntry> col = new ArrayList<>(ldr.perNodeBufferSize());
 
             Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
             ctx.store().loadAllFromStore(null, keys0, new CIX2<KeyCacheObject, Object>() {
                 @Override public void applyx(KeyCacheObject key, Object val) {
-                    col.add(new IgniteDataLoaderEntry(key, ctx.toCacheObject(val)));
+                    col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
                     if (col.size() == ldr.perNodeBufferSize()) {
                         ldr.addDataInternal(col);
@@ -3924,10 +3977,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
         if (ctx.store().isLocalStore()) {
-            IgniteDataLoaderImpl ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex());
+            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new GridDrDataLoadCacheUpdater());
+                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 
@@ -5456,20 +5509,49 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link CacheProjection#clearLocally()}
-     * operation on a cache with the given name.
+     * Internal callable which performs clear operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalClearAllCallable implements Callable<Object>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+    private static abstract class GlobalClearCallable implements Callable<Object>, Externalizable {
         /** Cache name. */
-        private String cacheName;
+        protected String cacheName;
 
         /** Injected grid instance. */
         @IgniteInstanceResource
-        private Ignite ignite;
+        protected Ignite ignite;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalClearCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        protected GlobalClearCallable(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+        }
+    }
+
+    /**
+     * Global clear all.
+     */
+    @GridInternal
+    private static class GlobalClearAllCallable extends GlobalClearCallable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
         /**
          * Empty constructor for serialization.
@@ -5482,7 +5564,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param cacheName Cache name.
          */
         private GlobalClearAllCallable(String cacheName) {
-            this.cacheName = cacheName;
+            super(cacheName);
         }
 
         /** {@inheritDoc} */
@@ -5491,15 +5573,55 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return null;
         }
+    }
+
+    /**
+     * Global clear keys.
+     */
+    @GridInternal
+    private static class GlobalClearKeySetCallable<K, V> extends GlobalClearCallable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Keys to remove. */
+        private Set<K> keys;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalClearKeySetCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param keys Keys to clear.
+         */
+        private GlobalClearKeySetCallable(String cacheName, Set<K> keys) {
+            super(cacheName);
+
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            ((IgniteEx)ignite).<K, V>cachex(cacheName).clearLocallyAll(keys);
+
+            return null;
+        }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, cacheName);
+            super.writeExternal(out);
+
+            out.writeObject(keys);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cacheName = U.readString(in);
+            super.readExternal(in);
+
+            keys = (Set<K>) in.readObject();
         }
     }
 
@@ -5910,7 +6032,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final Collection<GridCacheRawVersionedEntry> col;
 
         /** */
-        final IgniteDataLoaderImpl<K, V> ldr;
+        final DataStreamerImpl<K, V> ldr;
 
         /** */
         final ExpiryPolicy plc;
@@ -5921,7 +6043,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param plc Optional expiry policy.
          */
         private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p,
-            IgniteDataLoaderImpl<K, V> ldr,
+            DataStreamerImpl<K, V> ldr,
             @Nullable ExpiryPolicy plc) {
             this.p = p;
             this.ldr = ldr;

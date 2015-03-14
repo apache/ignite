@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -65,7 +65,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
         cache.setAtomicWriteOrderMode(PRIMARY);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
 
         cfg.setCacheConfiguration(cache);
 

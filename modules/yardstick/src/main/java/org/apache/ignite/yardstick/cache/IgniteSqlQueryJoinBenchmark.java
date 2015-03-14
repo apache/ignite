@@ -39,7 +39,7 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
         long start = System.nanoTime();
 
-        try (IgniteDataLoader<Object, Object> dataLdr = ignite().dataLoader(cache.getName())) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cache.getName())) {
             final int orgRange = args.range() / 10;
 
             // Populate organizations.

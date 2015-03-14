@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -80,7 +81,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         // Clear swapped entries.
         if (!ctx.isNear()) {
             if (ctx.swap().offHeapEnabled()) {
-                if (ctx.config().isQueryIndexEnabled()) {
+                if (GridQueryProcessor.isEnabled(ctx.config())) {
                     for (Iterator<KeyCacheObject> it =
                         ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE); it.hasNext();) {
                         KeyCacheObject key = it.next();
@@ -96,7 +97,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
             if (ctx.isSwapOrOffheapEnabled()) {
                 if (ctx.swap().swapEnabled()) {
-                    if (ctx.config().isQueryIndexEnabled()) {
+                    if (GridQueryProcessor.isEnabled(ctx.config())) {
                         Iterator<KeyCacheObject> it = null;
 
                         try {

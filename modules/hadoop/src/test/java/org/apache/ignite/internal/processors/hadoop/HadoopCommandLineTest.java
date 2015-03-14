@@ -156,9 +156,9 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
         testWorkDir = Files.createTempDirectory("hadoop-cli-test").toFile();
 
-        U.copy(U.resolveIgnitePath("docs/core-site.ignite.xml"), new File(testWorkDir, "core-site.xml"), false);
+        U.copy(resolveHadoopConfig("core-site.ignite.xml"), new File(testWorkDir, "core-site.xml"), false);
 
-        File srcFile = U.resolveIgnitePath("docs/mapred-site.ignite.xml");
+        File srcFile = resolveHadoopConfig("mapred-site.ignite.xml");
         File dstFile = new File(testWorkDir, "mapred-site.xml");
 
         try (BufferedReader in = new BufferedReader(new FileReader(srcFile));
@@ -182,6 +182,18 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         generateTestFile(new File(testWorkDir, "test-data"), "red", 100, "green", 200, "blue", 150, "yellow", 50);
 
         generateHiveTestFiles();
+    }
+
+    /**
+     * Resolve Hadoop configuration file.
+     *
+     * @param name File name.
+     * @return Resolve file.
+     */
+    private static File resolveHadoopConfig(String name) {
+        File path = U.resolveIgnitePath("modules/hadoop/config/" + name);
+
+        return path != null ? path : U.resolveIgnitePath("config/hadoop/" + name);
     }
 
     /** {@inheritDoc} */

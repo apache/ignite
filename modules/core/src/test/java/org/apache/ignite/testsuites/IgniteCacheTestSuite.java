@@ -30,10 +30,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
-import org.apache.ignite.internal.processors.cache.expiry.*;
 import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.internal.processors.cache.local.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 
 /**
  * Test suite.
@@ -107,8 +106,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
-        suite.addTestSuite(GridDataLoaderProcessorSelfTest.class);
-        suite.addTestSuite(GridDataLoaderImplSelfTest.class);
+        suite.addTestSuite(DataStreamProcessorSelfTest.class);
+        suite.addTestSuite(DataStreamerImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
         suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
@@ -399,6 +398,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
         suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
         suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
+
+        // TODO: IGNITE-477.
+        // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
         return suite;
     }

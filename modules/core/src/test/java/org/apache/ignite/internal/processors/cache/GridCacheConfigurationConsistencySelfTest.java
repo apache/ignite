@@ -47,7 +47,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -330,14 +330,14 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setPreloadMode(NONE);
+                    cfg.setRebalanceMode(NONE);
                     return null;
                 }
             },
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setPreloadMode(ASYNC);
+                    cfg.setRebalanceMode(ASYNC);
                     return null;
                 }
             }
@@ -519,26 +519,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAttributesError() throws Exception {
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setQueryIndexEnabled(true);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setQueryIndexEnabled(false);
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAffinityFunctionConsistency() throws Exception {
         cacheEnabled = true;
         cacheMode = PARTITIONED;
@@ -605,7 +585,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(1000);
-                cfg.setDefaultQueryTimeout(1000);
                 cfg.setDefaultTimeToLive(1000);
 
                 return null;
@@ -620,7 +599,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(2 * 1000);
-                cfg.setDefaultQueryTimeout(2 * 1000);
                 cfg.setDefaultTimeToLive(2 * 1000);
 
                 return null;

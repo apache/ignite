@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
@@ -53,14 +54,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default size of preload thread pool. */
-    public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
+    /** Default size of rebalance thread pool. */
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
 
-    /** Default preload timeout (ms).*/
-    public static final long DFLT_PRELOAD_TIMEOUT = 10000;
+    /** Default rebalance timeout (ms).*/
+    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
 
-    /** Time in milliseconds to wait between preload messages to avoid overloading CPU. */
-    public static final long DFLT_PRELOAD_THROTTLE = 0;
+    /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
+    public static final long DFLT_REBALANCE_THROTTLE = 0;
 
     /**
      * Default time to live. The value is <tt>0</tt> which means that
@@ -77,9 +78,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** Default query timeout. */
-    public static final long DFLT_QUERY_TIMEOUT = 0;
-
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
@@ -95,11 +93,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /** Default preload mode for distributed cache. */
-    public static final CachePreloadMode DFLT_PRELOAD_MODE = CachePreloadMode.ASYNC;
+    /** Default rebalance mode for distributed cache. */
+    public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
 
-    /** Default preload batch size in bytes. */
-    public static final int DFLT_PRELOAD_BATCH_SIZE = 512 * 1024; // 512K
+    /** Default rebalance batch size in bytes. */
+    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default maximum eviction queue ratio. */
     public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
@@ -128,9 +126,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
-    /** Default value for 'queryIndexEnabled' flag. */
-    public static final boolean DFLT_QUERY_INDEX_ENABLED = false;
-
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
 
@@ -148,9 +143,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
-
-    /** Default maximum number of query iterators that can be stored. */
-    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
@@ -173,14 +165,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Filter that accepts all nodes. */
     public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
 
+    /** Default timeout after which long query warning will be printed. */
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
+    /** Default size for onheap SQL row cache size. */
+    public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
+
     /** Cache name. */
     private String name;
 
-    /** Preload thread pool size. */
-    private int preloadPoolSize = DFLT_PRELOAD_THREAD_POOL_SIZE;
+    /** Rebalance thread pool size. */
+    private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
-    /** Preload timeout. */
-    private long preloadTimeout = DFLT_PRELOAD_TIMEOUT;
+    /** Rebalance timeout. */
+    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
     /** Default time to live for cache entries. */
     private long ttl = DFLT_TIME_TO_LIVE;
@@ -211,9 +209,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
-
-    /** Default query timeout. */
-    private long dfltQryTimeout = DFLT_QUERY_TIMEOUT;
 
     /** Default cache start size. */
     private int startSize = DFLT_START_SIZE;
@@ -254,14 +249,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
-    /** Distributed cache preload mode. */
-    private CachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
+    /** Distributed cache rebalance mode. */
+    private CacheRebalanceMode rebalanceMode = DFLT_REBALANCE_MODE;
 
-    /** Cache preload order. */
-    private int preloadOrder;
+    /** Cache rebalance order. */
+    private int rebalanceOrder;
 
-    /** Preload batch size. */
-    private int preloadBatchSize = DFLT_PRELOAD_BATCH_SIZE;
+    /** Rebalance batch size. */
+    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Off-heap memory size. */
     private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
@@ -271,9 +266,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
-
-    /** */
-    private boolean qryIdxEnabled = DFLT_QUERY_INDEX_ENABLED;
 
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
@@ -290,9 +282,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
 
-    /** Maximum number of query iterators that can be stored. */
-    private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
-
     /** Memory mode. */
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
@@ -300,19 +289,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheAffinityKeyMapper affMapper;
 
     /** */
-    private String indexingSpiName;
+    private long rebalanceDelay;
 
     /** */
-    private long preloadDelay;
-
-    /** */
-    private long preloadThrottle = DFLT_PRELOAD_THROTTLE;
+    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
     private CacheInterceptor<?, ?> interceptor;
 
-    /** Query configuration. */
-    private CacheQueryConfiguration qryCfg;
+    /** */
+    private Class<?>[] sqlFuncCls;
+
+    /** */
+    private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -325,6 +314,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** */
+    private boolean sqlEscapeAll;
+
+    /** */
+    private Class<?>[] indexedTypes;
+
+    /** */
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
@@ -361,7 +359,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheWriterFactory = cc.getCacheWriterFactory();
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
-        dfltQryTimeout = cc.getDefaultQueryTimeout();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
@@ -371,30 +368,30 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
-        indexingSpiName = cc.getIndexingSpiName();
+        indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
+        longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        maxQryIterCnt = cc.getMaximumQueryIteratorCount();
         memMode = cc.getMemoryMode();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
-        nodeFilter = cc.getNodeFilter();
-        preloadMode = cc.getPreloadMode();
-        preloadBatchSize = cc.getPreloadBatchSize();
-        preloadDelay = cc.getPreloadPartitionedDelay();
-        preloadOrder = cc.getPreloadOrder();
-        preloadPoolSize = cc.getPreloadThreadPoolSize();
-        preloadTimeout = cc.getPreloadTimeout();
-        preloadThrottle = cc.getPreloadThrottle();
-        qryCfg = cc.getQueryConfiguration();
-        qryIdxEnabled = cc.isQueryIndexEnabled();
+        rebalanceMode = cc.getRebalanceMode();
+        rebalanceBatchSize = cc.getRebalanceBatchSize();
+        rebalanceDelay = cc.getRebalanceDelay();
+        rebalanceOrder = cc.getRebalanceOrder();
+        rebalancePoolSize = cc.getRebalanceThreadPoolSize();
+        rebalanceTimeout = cc.getRebalanceTimeout();
+        rebalanceThrottle = cc.getRebalanceThrottle();
         readFromBackup = cc.isReadFromBackup();
+        sqlEscapeAll = cc.isSqlEscapeAll();
+        sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
@@ -905,25 +902,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets default query timeout. Default value is defined by {@link #DFLT_QUERY_TIMEOUT}. {@code 0} (zero)
-     * means that the query will never timeout and will wait for completion.
-     *
-     * @return Default query timeout, {@code 0} for never.
-     */
-    public long getDefaultQueryTimeout() {
-        return dfltQryTimeout;
-    }
-
-    /**
-     * Sets default query timeout, {@code 0} for never. For more information see {@link #getDefaultQueryTimeout()}.
-     *
-     * @param dfltQryTimeout Default query timeout.
-     */
-    public void setDefaultQueryTimeout(long dfltQryTimeout) {
-        this.dfltQryTimeout = dfltQryTimeout;
-    }
-
-    /**
      * Invalidation flag. If {@code true}, values will be invalidated (nullified) upon commit in near cache.
      *
      * @return Invalidation flag.
@@ -961,73 +939,73 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets cache preload mode.
+     * Sets cache rebalance mode.
      *
-     * @param preloadMode Preload mode.
+     * @param rebalanceMode Rebalance mode.
      */
-    public void setPreloadMode(CachePreloadMode preloadMode) {
-        this.preloadMode = preloadMode;
+    public void setRebalanceMode(CacheRebalanceMode rebalanceMode) {
+        this.rebalanceMode = rebalanceMode;
     }
 
     /**
-     * Gets preload mode for distributed cache.
+     * Gets rebalance mode for distributed cache.
      * <p>
-     * Default is defined by {@link #DFLT_PRELOAD_MODE}.
+     * Default is defined by {@link #DFLT_REBALANCE_MODE}.
      *
-     * @return Preload mode.
+     * @return Rebalance mode.
      */
-    public CachePreloadMode getPreloadMode() {
-        return preloadMode;
+    public CacheRebalanceMode getRebalanceMode() {
+        return rebalanceMode;
     }
 
     /**
-     * Gets cache preload order. Preload order can be set to non-zero value for caches with
-     * {@link CachePreloadMode#SYNC SYNC} or {@link CachePreloadMode#ASYNC ASYNC} preload modes only.
+     * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
+     * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
      * <p/>
-     * If cache preload order is positive, preloading for this cache will be started only when preloading for
-     * all caches with smaller preload order (except caches with preload order {@code 0}) will be completed.
+     * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
+     * all caches with smaller rebalance order (except caches with rebalance order {@code 0}) will be completed.
      * <p/>
      * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
-     * preload order {@code 1} will never wait for any other caches. All caches with order {@code 0} will
-     * be preloaded right away concurrently with each other and ordered preload processes.
+     * rebalance order {@code 1} will never wait for any other caches. All caches with order {@code 0} will
+     * be rebalanced right away concurrently with each other and ordered rebalance processes.
      * <p/>
-     * If not set, cache order is 0, i.e. preloading is not ordered.
+     * If not set, cache order is 0, i.e. rebalancing is not ordered.
      *
-     * @return Cache preload order.
+     * @return Cache rebalance order.
      */
-    public int getPreloadOrder() {
-        return preloadOrder;
+    public int getRebalanceOrder() {
+        return rebalanceOrder;
     }
 
     /**
-     * Sets cache preload order.
+     * Sets cache rebalance order.
      *
-     * @param preloadOrder Cache preload order.
-     * @see #getPreloadOrder()
+     * @param rebalanceOrder Cache rebalance order.
+     * @see #getRebalanceOrder()
      */
-    public void setPreloadOrder(int preloadOrder) {
-        this.preloadOrder = preloadOrder;
+    public void setRebalanceOrder(int rebalanceOrder) {
+        this.rebalanceOrder = rebalanceOrder;
     }
 
     /**
-     * Gets size (in number bytes) to be loaded within a single preload message.
-     * Preloading algorithm will split total data set on every node into multiple
+     * Gets size (in number bytes) to be loaded within a single rebalance message.
+     * Rebalancing algorithm will split total data set on every node into multiple
      * batches prior to sending data. Default value is defined by
-     * {@link #DFLT_PRELOAD_BATCH_SIZE}.
+     * {@link #DFLT_REBALANCE_BATCH_SIZE}.
      *
-     * @return Size in bytes of a single preload message.
+     * @return Size in bytes of a single rebalance message.
      */
-    public int getPreloadBatchSize() {
-        return preloadBatchSize;
+    public int getRebalanceBatchSize() {
+        return rebalanceBatchSize;
     }
 
     /**
-     * Sets preload batch size.
+     * Sets rebalance batch size.
      *
-     * @param preloadBatchSize Preload batch size.
+     * @param rebalanceBatchSize Rebalance batch size.
      */
-    public void setPreloadBatchSize(int preloadBatchSize) {
-        this.preloadBatchSize = preloadBatchSize;
+    public void setRebalanceBatchSize(int rebalanceBatchSize) {
+        this.rebalanceBatchSize = rebalanceBatchSize;
     }
 
     /**
@@ -1076,28 +1054,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-    }
-
-    /**
-     * Flag indicating whether Ignite should attempt to index value and/or key instances
-     * stored in cache. If this property is {@code false}, then all indexing annotations
-     * inside of any class will be ignored. By default query indexing is disabled and
-     * defined via {@link #DFLT_QUERY_INDEX_ENABLED} constant.
-     *
-     * @return {@code True} if query indexing is enabled.
-     * @see #getMemoryMode()
-     */
-    public boolean isQueryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
-     * Flag indicating whether query indexing is enabled or not.
-     *
-     * @param qryIdxEnabled {@code True} if query indexing is enabled.
-     */
-    public void setQueryIndexEnabled(boolean qryIdxEnabled) {
-        this.qryIdxEnabled = qryIdxEnabled;
     }
 
     /**
@@ -1220,54 +1176,53 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets size of preloading thread pool. Note that size serves as a hint and implementation
-     * may create more threads for preloading than specified here (but never less threads).
+     * Gets size of rebalancing thread pool. Note that size serves as a hint and implementation
+     * may create more threads for rebalancing than specified here (but never less threads).
      * <p>
-     * Default value is {@link #DFLT_PRELOAD_THREAD_POOL_SIZE}.
+     * Default value is {@link #DFLT_REBALANCE_THREAD_POOL_SIZE}.
      *
-     * @return Size of preloading thread pool.
+     * @return Size of rebalancing thread pool.
      */
-    public int getPreloadThreadPoolSize() {
-        return preloadPoolSize;
+    public int getRebalanceThreadPoolSize() {
+        return rebalancePoolSize;
     }
 
     /**
-     * Sets size of preloading thread pool. Note that size serves as a hint and implementation may create more threads
-     * for preloading than specified here (but never less threads).
+     * Sets size of rebalancing thread pool. Note that size serves as a hint and implementation may create more threads
+     * for rebalancing than specified here (but never less threads).
      *
-     * @param preloadPoolSize Size of preloading thread pool.
+     * @param rebalancePoolSize Size of rebalancing thread pool.
      */
-    public void setPreloadThreadPoolSize(int preloadPoolSize) {
-        this.preloadPoolSize = preloadPoolSize;
+    public void setRebalanceThreadPoolSize(int rebalancePoolSize) {
+        this.rebalancePoolSize = rebalancePoolSize;
     }
 
     /**
-     * Gets preload timeout (ms).
+     * Gets rebalance timeout (ms).
      * <p>
-     * Default value is {@link #DFLT_PRELOAD_TIMEOUT}.
+     * Default value is {@link #DFLT_REBALANCE_TIMEOUT}.
      *
-     * @return Preload timeout (ms).
+     * @return Rebalance timeout (ms).
      */
-    public long getPreloadTimeout() {
-        return preloadTimeout;
+    public long getRebalanceTimeout() {
+        return rebalanceTimeout;
     }
 
     /**
-     * Sets preload timeout (ms).
+     * Sets rebalance timeout (ms).
      *
-     * @param preloadTimeout Preload timeout (ms).
+     * @param rebalanceTimeout Rebalance timeout (ms).
      */
-    public void setPreloadTimeout(long preloadTimeout) {
-        this.preloadTimeout = preloadTimeout;
+    public void setRebalanceTimeout(long rebalanceTimeout) {
+        this.rebalanceTimeout = rebalanceTimeout;
     }
 
     /**
-     * Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which preloading
-     * should be started automatically. Preloading should be delayed if you plan to restart nodes
+     * Gets delay in milliseconds upon a node joining or leaving topology (or crash) after which rebalancing
+     * should be started automatically. Rebalancing should be delayed if you plan to restart nodes
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
-     * and don't want to repartition and preload until all nodes are started.
+     * and don't want to repartition and rebalance until all nodes are started.
      * <p>
-     * Delayed preloading is applied to {@link CacheMode#PARTITIONED} caches only.
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
@@ -1275,59 +1230,59 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
-     * Default value is {@code 0} which means that repartitioning and preloading will start
-     * immediately upon node leaving topology. If {@code -1} is returned, then preloading
+     * Default value is {@code 0} which means that repartitioning and rebalancing will start
+     * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
      * will only be started manually by calling {@link GridCache#forceRepartition()} method or
      * from management console.
      *
-     * @return Preloading delay, {@code 0} to start preloading immediately, {@code -1} to
-     *      start preloading manually, or positive value to specify delay in milliseconds
-     *      after which preloading should start automatically.
+     * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
+     *      start rebalancing manually, or positive value to specify delay in milliseconds
+     *      after which rebalancing should start automatically.
      */
-    public long getPreloadPartitionedDelay() {
-        return preloadDelay;
+    public long getRebalanceDelay() {
+        return rebalanceDelay;
     }
 
     /**
-     * Sets preload delay (see {@link #getPreloadPartitionedDelay()} for more information).
+     * Sets rebalance delay (see {@link #getRebalanceDelay()} for more information).
      *
-     * @param preloadDelay Preload delay to set.
+     * @param rebalanceDelay Rebalance delay to set.
      */
-    public void setPreloadPartitionedDelay(long preloadDelay) {
-        this.preloadDelay = preloadDelay;
+    public void setRebalanceDelay(long rebalanceDelay) {
+        this.rebalanceDelay = rebalanceDelay;
     }
 
     /**
-     * Time in milliseconds to wait between preload messages to avoid overloading of CPU or network.
-     * When preloading large data sets, the CPU or network can get over-consumed with preloading messages,
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+     * When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
      * which consecutively may slow down the application performance. This parameter helps tune
-     * the amount of time to wait between preload messages to make sure that preloading process
+     * the amount of time to wait between rebalance messages to make sure that rebalancing process
      * does not have any negative performance impact. Note that application will continue to work
-     * properly while preloading is still in progress.
+     * properly while rebalancing is still in progress.
      * <p>
      * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
-     * the default is defined by {@link #DFLT_PRELOAD_THROTTLE} constant.
+     * the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
-     * @return Time in milliseconds to wait between preload messages to avoid overloading of CPU,
+     * @return Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      *      {@code 0} to disable throttling.
      */
-    public long getPreloadThrottle() {
-        return preloadThrottle;
+    public long getRebalanceThrottle() {
+        return rebalanceThrottle;
     }
 
     /**
-     * Time in milliseconds to wait between preload messages to avoid overloading of CPU or network. When preloading
-     * large data sets, the CPU or network can get over-consumed with preloading messages, which consecutively may slow
-     * down the application performance. This parameter helps tune the amount of time to wait between preload messages
-     * to make sure that preloading process does not have any negative performance impact. Note that application will
-     * continue to work properly while preloading is still in progress. <p> Value of {@code 0} means that throttling is
-     * disabled. By default throttling is disabled - the default is defined by {@link #DFLT_PRELOAD_THROTTLE} constant.
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network. When rebalancing
+     * large data sets, the CPU or network can get over-consumed with rebalancing messages, which consecutively may slow
+     * down the application performance. This parameter helps tune the amount of time to wait between rebalance messages
+     * to make sure that rebalancing process does not have any negative performance impact. Note that application will
+     * continue to work properly while rebalancing is still in progress. <p> Value of {@code 0} means that throttling is
+     * disabled. By default throttling is disabled - the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
-     * @param preloadThrottle Time in milliseconds to wait between preload messages to avoid overloading of CPU, {@code
-     * 0} to disable throttling.
+     * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
+     * {@code 0} to disable throttling.
      */
-    public void setPreloadThrottle(long preloadThrottle) {
-        this.preloadThrottle = preloadThrottle;
+    public void setRebalanceThrottle(long rebalanceThrottle) {
+        this.rebalanceThrottle = rebalanceThrottle;
     }
 
     /**
@@ -1352,34 +1307,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setAffinityMapper(CacheAffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
-    }
-
-    /**
-     * Gets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @return Name of SPI to use for indexing.
-     * @see IndexingSpi
-     */
-    public String getIndexingSpiName() {
-        return indexingSpiName;
-    }
-
-    /**
-     * Sets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @param indexingSpiName Name.
-     * @see IndexingSpi
-     */
-    public void setIndexingSpiName(String indexingSpiName) {
-        this.indexingSpiName = indexingSpiName;
     }
 
     /**
@@ -1424,28 +1351,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setOffHeapMaxMemory(long offHeapMaxMem) {
         this.offHeapMaxMem = offHeapMaxMem;
-    }
-
-    /**
-     * Gets maximum number of query iterators that can be stored. Iterators are stored to
-     * support query pagination when each page of data is sent to user's node only on demand.
-     * Increase this property if you are running and processing lots of queries in parallel.
-     * <p>
-     * Default value is {@link #DFLT_MAX_QUERY_ITERATOR_CNT}.
-     *
-     * @return Maximum number of query iterators that can be stored.
-     */
-    public int getMaximumQueryIteratorCount() {
-        return maxQryIterCnt;
-    }
-
-    /**
-     * Sets maximum number of query iterators that can be stored.
-     *
-     * @param maxQryIterCnt Maximum number of query iterators that can be stored.
-     */
-    public void setMaximumQueryIteratorCount(int maxQryIterCnt) {
-        this.maxQryIterCnt = maxQryIterCnt;
     }
 
     /**
@@ -1506,26 +1411,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.typeMeta = typeMeta;
     }
 
-
-    /**
-     * Gets query configuration. Query configuration defines which fields should be indexed for objects
-     * without annotations or portable objects.
-     *
-     * @return Cache query configuration.
-     */
-    public CacheQueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * Sets query configuration.
-     *
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
-    }
-
     /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
@@ -1570,6 +1455,122 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setCopyOnRead(boolean cpOnGet) {
         this.cpOnRead = cpOnGet;
+    }
+
+    /**
+     * Sets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @param cls One or more classes with SQL functions.
+     */
+    public void setSqlFunctionClasses(Class<?>... cls) {
+        this.sqlFuncCls = cls;
+    }
+
+    /**
+     * Gets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @return Classes with SQL functions.
+     */
+    @Nullable public Class<?>[] getSqlFunctionClasses() {
+        return sqlFuncCls;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @return Timeout in milliseconds.
+     */
+    public long getLongQueryWarningTimeout() {
+        return longQryWarnTimeout;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param longQryWarnTimeout Timeout in milliseconds.
+     */
+    public void setLongQueryWarningTimeout(long longQryWarnTimeout) {
+        this.longQryWarnTimeout = longQryWarnTimeout;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     */
+    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
+     *
+     * @return Key and value type pairs.
+     */
+    public Class<?>[] getIndexedTypes() {
+        return indexedTypes;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
+     *
+     * @param indexedTypes Key and value type pairs.
+     */
+    public void setIndexedTypes(Class<?>... indexedTypes) {
+        this.indexedTypes = indexedTypes;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @return size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public int getSqlOnheapRowCacheSize() {
+        return sqlOnheapRowCacheSize;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @param size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public void setSqlOnheapRowCacheSize(int size) {
+        this.sqlOnheapRowCacheSize = size;
     }
 
     /** {@inheritDoc} */

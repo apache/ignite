@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -68,12 +68,11 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(cacheMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         // TODO IGNITE-45
 //        cc.setDistributionMode(cnt == 0 ? NEAR_ONLY : PARTITIONED_ONLY);
 //        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
-        cc.setQueryIndexEnabled(true);
         cc.setBackups(0);
 
         c.setCacheConfiguration(cc);
@@ -140,7 +139,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataLoader<Integer, String> ldr = grid(1).dataLoader(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(null)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }

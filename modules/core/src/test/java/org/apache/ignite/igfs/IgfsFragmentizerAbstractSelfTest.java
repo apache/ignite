@@ -93,7 +93,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheMode(REPLICATED);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         return cfg;
@@ -114,7 +113,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(IGFS_GROUP_SIZE));
         cfg.setNearConfiguration(null);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         return cfg;

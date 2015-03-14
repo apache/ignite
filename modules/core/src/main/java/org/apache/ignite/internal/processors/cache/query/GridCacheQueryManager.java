@@ -61,6 +61,9 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
+    public static int MAX_ITERATORS = 1000;
+
+    /** */
     protected GridQueryProcessor qryProc;
 
     /** */
@@ -90,7 +93,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
-        maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
+        maxIterCnt = MAX_ITERATORS;
 
         cctx.events().addListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -325,7 +328,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert key != null;
         assert val != null || valBytes != null;
 
-        if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
@@ -352,7 +355,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public void remove(Object key) throws IgniteCheckedException {
         assert key != null;
 
-        if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
+        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
@@ -1919,7 +1922,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.keyFields().size() + type.valueFields().size();
+                        int size = 2 + type.fields().size();
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
@@ -1927,10 +1930,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         fieldsMap.put("_KEY", type.keyClass().getName());
                         fieldsMap.put("_VAL", type.valueClass().getName());
 
-                        for (Map.Entry<String, Class<?>> e : type.keyFields().entrySet())
-                            fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
-
-                        for (Map.Entry<String, Class<?>> e : type.valueFields().entrySet())
+                        for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
 
                         fields.put(type.name(), fieldsMap);

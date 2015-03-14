@@ -621,7 +621,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setBackups(backups);
 
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
-            cacheCfg.setQueryIndexEnabled(false);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 

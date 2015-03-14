@@ -138,6 +138,18 @@ public class GridSqlQueryParser {
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
 
     /** */
+    private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
+
+    /** */
+    private static final Getter<RangeTable, Expression> RANGE_MAX = getter(RangeTable.class, "max");
+
+    /** */
+    private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
+
+    /** */
+    private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
@@ -154,7 +166,7 @@ public class GridSqlQueryParser {
     /**
      * @param filter Filter.
      */
-    private GridSqlElement parse(TableFilter filter) {
+    private GridSqlElement parseTable(TableFilter filter) {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
@@ -169,8 +181,17 @@ public class GridSqlQueryParser {
 
                 res = new GridSqlSubquery(parse((Select)qry));
             }
+            else if (tbl instanceof FunctionTable) {
+                res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl));
+            }
+            else if (tbl instanceof RangeTable) {
+                res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
+
+                res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl)));
+                res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl)));
+            }
             else
-                throw new IgniteException("Unsupported query: " + filter);
+                assert0(false, filter.getSelect().getSQL());
 
             String alias = ALIAS.get(filter);
 
@@ -201,23 +222,22 @@ public class GridSqlQueryParser {
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where));
 
-        Set<TableFilter> allFilers = new HashSet<>(select.getTopFilters());
+        Set<TableFilter> allFilters = new HashSet<>(select.getTopFilters());
 
         GridSqlElement from = null;
 
         TableFilter filter = select.getTopTableFilter();
+
         do {
             assert0(filter != null, select);
-            assert0(!filter.isJoinOuter(), select);
             assert0(filter.getNestedJoin() == null, select);
-            assert0(filter.getJoinCondition() == null, select);
-            assert0(filter.getFilterCondition() == null, select);
 
-            GridSqlElement gridFilter = parse(filter);
+            GridSqlElement gridFilter = parseTable(filter);
 
-            from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter);
+            from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, filter.isJoinOuter(),
+                parseExpression(filter.getJoinCondition()));
 
-            allFilers.remove(filter);
+            allFilters.remove(filter);
 
             filter = filter.getJoin();
         }
@@ -225,7 +245,7 @@ public class GridSqlQueryParser {
 
         res.from(from);
 
-        assert allFilers.isEmpty();
+        assert allFilters.isEmpty();
 
         ArrayList<Expression> expressions = select.getExpressions();
 
@@ -241,12 +261,13 @@ public class GridSqlQueryParser {
                 res.addGroupExpression(parseExpression(expressions.get(idx)));
         }
 
-        assert0(select.getHaving() == null, select);
-
         int havingIdx = HAVING_INDEX.get(select);
 
-        if (havingIdx >= 0)
+        if (havingIdx >= 0) {
+            res.havingColumn(havingIdx);
+
             res.having(parseExpression(expressions.get(havingIdx)));
+        }
 
         for (int i = 0; i < select.getColumnCount(); i++)
             res.addSelectExpression(parseExpression(expressions.get(i)));
@@ -257,9 +278,19 @@ public class GridSqlQueryParser {
             int[] indexes = sortOrder.getQueryColumnIndexes();
             int[] sortTypes = sortOrder.getSortTypes();
 
-            for (int i = 0; i < indexes.length; i++)
-                res.addSort(parseExpression(expressions.get(indexes[i])), sortTypes[i]);
+            for (int i = 0; i < indexes.length; i++) {
+                int colIdx = indexes[i];
+                int type = sortTypes[i];
+
+                res.addSort(parseExpression(expressions.get(colIdx)), new GridSqlSortColumn(colIdx,
+                    (type & SortOrder.DESCENDING) == 0,
+                    (type & SortOrder.NULLS_FIRST) != 0,
+                    (type & SortOrder.NULLS_LAST) != 0));
+            }
         }
+
+        res.limit(parseExpression(select.getLimit()));
+        res.offset(parseExpression(select.getOffset()));
 
         return res;
     }
@@ -289,7 +320,7 @@ public class GridSqlQueryParser {
         if (expression instanceof ExpressionColumn) {
             TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
 
-            GridSqlElement gridTblFilter = parse(tblFilter);
+            GridSqlElement gridTblFilter = parseTable(tblFilter);
 
             return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
         }
@@ -413,7 +444,7 @@ public class GridSqlQueryParser {
         if (expression instanceof Function) {
             Function f = (Function)expression;
 
-            GridSqlFunction res = new GridSqlFunction(f.getName());
+            GridSqlFunction res = new GridSqlFunction(null, f.getName());
 
             for (Expression arg : f.getArgs())
                 res.addChild(parseExpression(arg));
@@ -421,6 +452,19 @@ public class GridSqlQueryParser {
             if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
                 res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
                     .getCreateSQL());
+
+            return res;
+        }
+
+        if (expression instanceof JavaFunction) {
+            JavaFunction f = (JavaFunction)expression;
+
+            FunctionAlias alias = FUNC_ALIAS.get(f);
+
+            GridSqlFunction res = new GridSqlFunction(alias.getSchema().getName(), f.getName());
+
+            for (Expression arg : f.getArgs())
+                res.addChild(parseExpression(arg));
 
             return res;
         }

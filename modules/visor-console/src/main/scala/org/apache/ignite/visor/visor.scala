@@ -39,7 +39,8 @@ import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-
+import org.apache.ignite.visor.commands.VisorConsole.consoleReader
+import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable
 
 import java.io._
@@ -47,9 +48,6 @@ import java.net._
 import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
-
-import org.apache.ignite.visor.commands.VisorConsole.consoleReader
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -2425,8 +2423,8 @@ object visor extends VisorTag {
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
 
-                EVT_CACHE_PRELOAD_STARTED,
-                EVT_CACHE_PRELOAD_STOPPED,
+                EVT_CACHE_REBALANCE_STARTED,
+                EVT_CACHE_REBALANCE_STOPPED,
                 EVT_CLASS_DEPLOY_FAILED
             )
 
@@ -2535,7 +2533,7 @@ object visor extends VisorTag {
 
         logText("H/N/C" + pipe +
             U.neighborhood(ignite.cluster.nodes()).size.toString.padTo(4, ' ') + pipe +
-            ignite.cluster.nodes().size().toString.padTo(4, ' ') + pipe +
+            m.getTotalNodes.toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
             bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryTotal) + pipe
         )

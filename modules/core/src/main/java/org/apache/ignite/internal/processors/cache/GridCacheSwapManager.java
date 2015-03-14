@@ -227,8 +227,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
-    private void onUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) {
+    private void onUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         onEntryUnswapped(swapLsnrs, part, key, e);
     }
 
@@ -236,8 +237,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
-    private void onOffHeaped(int part, KeyCacheObject key, GridCacheSwapEntry e) {
+    private void onOffHeaped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         onEntryUnswapped(offheapLsnrs, part, key, e);
     }
 
@@ -246,9 +248,10 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
     private void onEntryUnswapped(ConcurrentMap<Integer, Collection<GridCacheSwapListener>> map,
-        int part, KeyCacheObject key, GridCacheSwapEntry e) {
+        int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         Collection<GridCacheSwapListener> lsnrs = map.get(part);
 
         if (lsnrs == null) {
@@ -392,7 +395,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Reconstituted swap entry or {@code null} if entry is obsolete.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCacheSwapEntry swapEntry(GridCacheSwapEntry e) throws IgniteCheckedException
+    @Nullable private <X extends GridCacheSwapEntry> X swapEntry(X e) throws IgniteCheckedException
     {
         assert e != null;
 
@@ -1850,7 +1853,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    private static class KeySwapListener implements GridCacheSwapListener {
+    private class KeySwapListener implements GridCacheSwapListener {
         /** */
         private final KeyCacheObject key;
 
@@ -1867,16 +1870,26 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public void onEntryUnswapped(int part,
             KeyCacheObject key,
-            GridCacheSwapEntry e)
-        {
+            GridCacheSwapEntry e) throws IgniteCheckedException {
             if (this.key.equals(key)) {
-                entry = new GridCacheSwapEntryImpl(ByteBuffer.wrap(e.valueBytes()),
+                GridCacheSwapEntryImpl e0 = new GridCacheSwapEntryImpl(ByteBuffer.wrap(e.valueBytes()),
                     e.type(),
                     e.version(),
                     e.ttl(),
                     e.expireTime(),
                     e.keyClassLoaderId(),
                     e.valueClassLoaderId());
+
+                CacheObject v = e.value();
+
+                if (v != null)
+                    e0.value(v);
+                else
+                    e0 = swapEntry(e0);
+
+                assert e0 != null;
+
+                entry = e0;
             }
         }
     }

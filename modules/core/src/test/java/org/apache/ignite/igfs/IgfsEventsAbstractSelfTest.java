@@ -65,7 +65,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -74,7 +73,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setEvictionPolicy(null);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return new CacheConfiguration[] {cacheCfg, metaCacheCfg};
@@ -169,7 +167,8 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         // Clean up file system.
-        igfs.format();
+        if (igfs != null)
+            igfs.format();
     }
 
     /** {@inheritDoc} */

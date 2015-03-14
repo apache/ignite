@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -61,7 +61,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cacheCfg.setBackups(1);
             // TODO IGNITE-45
 //            cacheCfg.setDistributionMode(nearOnly ? NEAR_ONLY : NEAR_PARTITIONED);
-            cacheCfg.setPreloadMode(SYNC);
+            cacheCfg.setRebalanceMode(SYNC);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
             cfg.setCacheConfiguration(cacheCfg);

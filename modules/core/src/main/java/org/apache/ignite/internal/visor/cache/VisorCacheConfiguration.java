@@ -84,9 +84,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Memory mode. */
     private CacheMemoryMode memoryMode;
 
-    /** Name of SPI to use for indexing. */
-    private String indexingSpiName;
-
     /** Cache interceptor. */
     private String interceptor;
 
@@ -145,15 +142,12 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.eagerTtl = ccfg.isEagerTtl();
         cfg.writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         cfg.swapEnabled = ccfg.isSwapEnabled();
-        cfg.qryIdxEnabled = ccfg.isQueryIndexEnabled();
         cfg.invalidate = ccfg.isInvalidate();
         cfg.startSize = ccfg.getStartSize();
         cfg.tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         cfg.offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
-        cfg.maxQryIterCnt = ccfg.getMaximumQueryIteratorCount();
         cfg.maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         cfg.memoryMode = ccfg.getMemoryMode();
-        cfg.indexingSpiName = ccfg.getIndexingSpiName();
         cfg.interceptor = compactClass(ccfg.getInterceptor());
         cfg.typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
         cfg.statisticsEnabled = ccfg.isStatisticsEnabled();
@@ -168,7 +162,7 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.nearCfg = VisorCacheNearConfiguration.from(ccfg);
         cfg.dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
         cfg.storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
-        cfg.qryCfg = VisorCacheQueryConfiguration.from(ccfg.getQueryConfiguration());
+        cfg.qryCfg = VisorCacheQueryConfiguration.from(ccfg);
 
         return cfg;
     }
@@ -303,10 +297,10 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Name of SPI to use for indexing.
+     * @param memoryMode New memory mode.
      */
-    public String indexingSpiName() {
-        return indexingSpiName;
+    public void memoryMode(CacheMemoryMode memoryMode) {
+        this.memoryMode = memoryMode;
     }
 
     /**

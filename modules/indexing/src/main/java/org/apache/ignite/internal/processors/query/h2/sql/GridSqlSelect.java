@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.result.*;
 import org.h2.util.*;
 
 import java.util.*;
@@ -51,7 +50,44 @@ public class GridSqlSelect implements Cloneable {
     private GridSqlElement having;
 
     /** */
-    private Map<GridSqlElement, Integer> sort = new LinkedHashMap<>();
+    private int havingCol = -1;
+
+    /** */
+    private Map<GridSqlElement,GridSqlSortColumn> sort = new LinkedHashMap<>();
+
+    /** */
+    private GridSqlElement offset;
+
+    /** */
+    private GridSqlElement limit;
+
+    /**
+     * @return Offset.
+     */
+    public GridSqlElement offset() {
+        return offset;
+    }
+
+    /**
+     * @param offset Offset.
+     */
+    public void offset(GridSqlElement offset) {
+        this.offset = offset;
+    }
+
+    /**
+     * @param limit Limit.
+     */
+    public void limit(GridSqlElement limit) {
+        this.limit = limit;
+    }
+
+    /**
+     * @return Limit.
+     */
+    public GridSqlElement limit() {
+        return limit;
+    }
 
     /**
      * @return Distinct.
@@ -110,7 +146,7 @@ public class GridSqlSelect implements Cloneable {
 
             buff.resetCount();
 
-            for (Map.Entry<GridSqlElement, Integer> entry : sort.entrySet()) {
+            for (Map.Entry<GridSqlElement,GridSqlSortColumn> entry : sort.entrySet()) {
                 buff.appendExceptFirst(", ");
 
                 GridSqlElement expression = entry.getKey();
@@ -122,17 +158,23 @@ public class GridSqlSelect implements Cloneable {
                 else
                     buff.append('=').append(StringUtils.unEnclose(expression.getSQL()));
 
-                int type = entry.getValue();
+                GridSqlSortColumn type = entry.getValue();
 
-                if ((type & SortOrder.DESCENDING) != 0)
+                if (!type.asc())
                     buff.append(" DESC");
 
-                if ((type & SortOrder.NULLS_FIRST) != 0)
+                if (type.nullsFirst())
                     buff.append(" NULLS FIRST");
-                else if ((type & SortOrder.NULLS_LAST) != 0)
+                else if (type.nullsLast())
                     buff.append(" NULLS LAST");
             }
         }
+
+        if (limit != null)
+            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
+
+        if (offset != null)
+            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
 
         return buff.toString();
     }
@@ -172,6 +214,9 @@ public class GridSqlSelect implements Cloneable {
      * @param expression Expression.
      */
     public void addSelectExpression(GridSqlElement expression) {
+        if (expression == null)
+            throw new NullPointerException();
+
         select.add(expression);
     }
 
@@ -194,6 +239,9 @@ public class GridSqlSelect implements Cloneable {
      * @param expression Expression.
      */
     public void addGroupExpression(GridSqlElement expression) {
+        if (expression == null)
+            throw new NullPointerException();
+
         groups.add(expression);
     }
 
@@ -220,9 +268,12 @@ public class GridSqlSelect implements Cloneable {
 
     /**
      * @param from From element.
+     * @return {@code this}.
      */
-    public void from(GridSqlElement from) {
+    public GridSqlSelect from(GridSqlElement from) {
         this.from = from;
+
+        return this;
     }
 
     /**
@@ -240,6 +291,21 @@ public class GridSqlSelect implements Cloneable {
     }
 
     /**
+     * @param condition Adds new WHERE condition using AND operator.
+     * @return {@code this}.
+     */
+    public GridSqlSelect whereAnd(GridSqlElement condition) {
+        if (condition == null)
+            throw new NullPointerException();
+
+        GridSqlElement old = where();
+
+        where(old == null ? condition : new GridSqlOperation(GridSqlOperationType.AND, old, condition));
+
+        return this;
+    }
+
+    /**
      * @return Having.
      */
     public GridSqlElement having() {
@@ -254,9 +320,23 @@ public class GridSqlSelect implements Cloneable {
     }
 
     /**
+     * @param col Index of HAVING column.
+     */
+    public void havingColumn(int col) {
+        this.havingCol = col;
+    }
+
+    /**
+     * @return Index of HAVING column.
+     */
+    public int havingColumn() {
+        return havingCol;
+    }
+
+    /**
      * @return Sort.
      */
-    public Map<GridSqlElement, Integer> sort() {
+    public Map<GridSqlElement,GridSqlSortColumn> sort() {
         return sort;
     }
 
@@ -271,7 +351,7 @@ public class GridSqlSelect implements Cloneable {
      * @param expression Expression.
      * @param sortType The sort type bit mask (SortOrder.DESCENDING, SortOrder.NULLS_FIRST, SortOrder.NULLS_LAST).
      */
-    public void addSort(GridSqlElement expression, int sortType) {
+    public void addSort(GridSqlElement expression, GridSqlSortColumn sortType) {
         sort.put(expression, sortType);
     }
 

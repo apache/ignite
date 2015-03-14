@@ -52,7 +52,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setPreloadMode(CachePreloadMode.SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
     }

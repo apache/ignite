@@ -50,7 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
@@ -1484,11 +1484,10 @@ public class GridCacheUtils {
 
         cache.setEvictionPolicy(null);
         cache.setSwapEnabled(false);
-        cache.setQueryIndexEnabled(false);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
 
         return cache;
     }

@@ -84,8 +84,6 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
-
                     <property name="typeMetadata">
                         <list>
                             <ref bean="sampleTypeMetadata"/>
@@ -107,8 +105,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
 
                     <property name="typeMetadata">
                         <list>

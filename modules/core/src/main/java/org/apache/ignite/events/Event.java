@@ -75,7 +75,7 @@ import java.io.*;
  * </ul>
  * @see JobEvent
  * @see CacheEvent
- * @see CachePreloadingEvent
+ * @see CacheRebalancingEvent
  * @see SwapSpaceEvent
  * @see CheckpointEvent
  * @see DeploymentEvent

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.scalar
 
+import org.apache.ignite.cache.GridCache
+import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import java.net.URL
 import java.util.UUID
 
@@ -26,6 +28,9 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
+
+import java.net.URL
+import java.util.UUID
 
 import scala.annotation.meta.field
 
@@ -286,16 +291,16 @@ object scalar extends ScalarConversions {
         }
 
     /**
-     * Gets a new instance of data loader associated with given cache name.
+     * Gets a new instance of data streamer associated with given cache name.
      *
      * @param cacheName Cache name (`null` for default cache).
      * @param bufSize Per node buffer size.
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
-    @inline def dataLoader$[K, V](
+    @inline def dataStreamer$[K, V](
         @Nullable cacheName: String,
-        bufSize: Int): IgniteDataLoader[K, V] = {
-        val dl = ignite$.dataLoader[K, V](cacheName)
+        bufSize: Int): IgniteDataStreamer[K, V] = {
+        val dl = ignite$.dataStreamer[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)
 

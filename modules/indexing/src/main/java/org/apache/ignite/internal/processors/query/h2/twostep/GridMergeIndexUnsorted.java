@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridMergeIndexUnsorted extends GridMergeIndex {
     /** */
-    private final BlockingQueue<GridResultPage<?>> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
     /**
      * @param tbl  Table.
@@ -43,8 +43,14 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void addPage0(GridResultPage<?> page) {
-        queue.add(page);
+    @Override protected void addPage0(GridResultPage page) {
+        if (page.rows() != null || page.isLast()) // We are not interested in terminating pages which are not last.
+            queue.add(page);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
+        return new IteratorCursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
@@ -57,7 +63,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                 if (iter.hasNext())
                     return true;
 
-                GridResultPage<?> page;
+                GridResultPage page;
 
                 try {
                     page = queue.take();
@@ -66,15 +72,15 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                     throw new IgniteException("Query execution was interrupted.", e);
                 }
 
-                if (page == END) {
+                if (page.isLast()) {
                     assert queue.isEmpty() : "It must be the last page: " + queue;
 
                     return false; // We are done.
                 }
 
-                page.fetchNextPage();
+                fetchNextPage(page);
 
-                iter = page.response().rows().iterator();
+                iter = page.rows().iterator();
 
                 assert iter.hasNext();
 

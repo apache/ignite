@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -267,7 +268,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (dataCacheCfg == null)
                 throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
 
-            if (dataCacheCfg.isQueryIndexEnabled())
+            if (GridQueryProcessor.isEnabled(dataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
             if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
@@ -276,7 +277,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (metaCacheCfg == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
 
-            if (metaCacheCfg.isQueryIndexEnabled())
+            if (GridQueryProcessor.isEnabled(metaCacheCfg))
                 throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
             if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
