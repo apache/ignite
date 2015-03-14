@@ -123,7 +123,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setCacheStoreFactory(new StoreFactory());
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
             cc.setLoadPreviousValue(true);
@@ -1068,7 +1068,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void testTextQueryEvents(final boolean customSubjId) throws Exception {
-        final Map<Integer, Person> map = new ConcurrentHashMap8<>();
+        final Map<UUID, Person> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
@@ -1077,7 +1077,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryReadEvent;
 
-                    CacheQueryReadEvent<Integer, Person> qe = (CacheQueryReadEvent<Integer, Person>)evt;
+                    CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
 
                     assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1118,14 +1118,17 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        IgniteCache<Integer, Person> cache = ignite.jcache(null);
+        IgniteCache<UUID, Person> cache = ignite.jcache(null);
 
-        cache.put(1, new Person("Bob White", 1000));
-        cache.put(2, new Person("Tom White", 1000));
-        cache.put(3, new Person("Mike Green", 1000));
+        UUID one = UUID.randomUUID();
+        UUID two = UUID.randomUUID();
+
+        cache.put(one, new Person("Bob White", 1000));
+        cache.put(two, new Person("Tom White", 1000));
+        cache.put(UUID.randomUUID(), new Person("Mike Green", 1000));
 
 
-        QueryCursor<Cache.Entry<Integer, Person>> q = cache.query(new TextQuery(Person.class, "White"));
+        QueryCursor<Cache.Entry<UUID, Person>> q = cache.query(new TextQuery(Person.class, "White"));
 
         q.getAll();
 
@@ -1134,8 +1137,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(2, map.size());
 
-        assertEquals("Bob White", map.get(1).name());
-        assertEquals("Tom White", map.get(2).name());
+        assertEquals("Bob White", map.get(one).name());
+        assertEquals("Tom White", map.get(two).name());
     }
 
     /**
@@ -1171,10 +1174,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        IgniteCache<Integer, Person> cache = ignite.jcache(null);
+        IgniteCache<UUID, Person> cache = ignite.jcache(null);
 
         for (int i = 1; i <= 20; i++)
-            cache.put(i, new Person("Person " + i, i));
+            cache.put(UUID.randomUUID(), new Person("Person " + i, i));
 
         QueryCursor<List<?>> q = cache
             .queryFields(new SqlFieldsQuery("select _key, name from Person where salary > ?").setArgs(10));

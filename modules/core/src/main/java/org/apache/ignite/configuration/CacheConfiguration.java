@@ -20,7 +20,7 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
@@ -30,12 +30,11 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.configuration.*;
-import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
@@ -381,6 +380,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         memMode = cc.getMemoryMode();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
+        nodeFilter = cc.getNodeFilter();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceDelay = cc.getRebalanceDelay();
