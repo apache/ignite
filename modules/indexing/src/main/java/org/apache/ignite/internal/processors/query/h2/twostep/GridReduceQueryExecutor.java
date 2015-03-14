@@ -40,9 +40,10 @@ import org.h2.index.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.h2.tools.*;
+import org.h2.util.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
@@ -128,7 +129,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
-            " FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
+            " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
     }
 
     /** {@inheritDoc} */
@@ -357,9 +358,53 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         String url = c.getMetaData().getURL();
 
         // URL is either "jdbc:default:connection" or "jdbc:columnlist:connection"
-        Cursor cursor = url.charAt(5) == 'c' ? null : tbl.getScanIndex(ses).find(ses, null, null);
+        final Cursor cursor = url.charAt(5) == 'c' ? null : tbl.getScanIndex(ses).find(ses, null, null);
 
-        return CONSTRUCTOR.newInstance(c, null, new Result0(cursor, tbl.getColumns()), 0, false, false, false);
+        final Column[] cols = tbl.getColumns();
+
+        SimpleResultSet rs = new SimpleResultSet(cursor == null ? null : new SimpleRowSource() {
+            @Override public Object[] readRow() throws SQLException {
+                if (!cursor.next())
+                    return null;
+
+                Row r = cursor.get();
+
+                Object[] row = new Object[cols.length];
+
+                for (int i = 0; i < row.length; i++)
+                    row[i] = r.getValue(i).getObject();
+
+                return row;
+            }
+
+            @Override public void close() {
+                // No-op.
+            }
+
+            @Override public void reset() throws SQLException {
+                throw new SQLException("Unsupported.");
+            }
+        }) {
+            @Override public byte[] getBytes(int colIdx) throws SQLException {
+                assert cursor != null;
+
+                return cursor.get().getValue(colIdx - 1).getBytes();
+            }
+
+            @Override public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
+                throw new UnsupportedOperationException();
+            }
+        };
+
+        for (Column col : cols)
+            rs.addColumn(col.getName(), DataType.convertTypeToSQLType(col.getType()),
+                MathUtils.convertLongToInt(col.getPrecision()), col.getScale());
+
+        return rs;
     }
 
     /**
@@ -491,135 +536,6 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             Collections.addAll(res, row);
 
             return res;
-        }
-    }
-
-    /**
-     * Query result for H2.
-     */
-    private static class Result0 implements ResultInterface {
-        /** */
-        private Cursor cursor;
-
-        /** */
-        private Column[] cols;
-
-        /** */
-        private int rowId;
-
-        /**
-         * @param cursor Cursor.
-         * @param cols Columns.
-         */
-        Result0(@Nullable Cursor cursor, Column[] cols) {
-            this.cursor = cursor != null ? cursor : new SingleRowCursor(null);
-            this.cols = cols;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value[] currentRow() {
-            return cursor.get().getValueList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            if (cursor.next()) {
-                rowId++;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getRowId() {
-            return rowId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVisibleColumnCount() {
-            return cols.length;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getRowCount() {
-            return Integer.MAX_VALUE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needToClose() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getAlias(int i) {
-            return cols[i].getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getSchemaName(int i) {
-            return cols[i].getTable().getSchema().getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getTableName(int i) {
-            return cols[i].getTable().getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getColumnName(int i) {
-            return cols[i].getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnType(int i) {
-            return cols[i].getType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getColumnPrecision(int i) {
-            return cols[i].getPrecision();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnScale(int i) {
-            return cols[i].getScale();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getDisplaySize(int i) {
-            return cols[i].getDisplaySize();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAutoIncrement(int i) {
-            return cols[i].isAutoIncrement();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getNullable(int i) {
-            return Column.NULLABLE_UNKNOWN;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setFetchSize(int fetchSize) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getFetchSize() {
-            throw new UnsupportedOperationException();
         }
     }
 }

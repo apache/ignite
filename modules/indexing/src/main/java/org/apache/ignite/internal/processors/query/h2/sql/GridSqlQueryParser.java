@@ -307,6 +307,12 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseExpression0(expression);
 
+            Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
+                expression.getDisplaySize());
+
+            res.expressionResultType(new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(),
+                c.getCreateSQL()));
+
             h2ObjToGridObj.put(expression, res);
         }
 
