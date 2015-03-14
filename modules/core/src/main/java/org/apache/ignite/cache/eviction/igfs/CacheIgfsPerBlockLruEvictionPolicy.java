@@ -26,6 +26,7 @@ import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.regex.*;
@@ -34,7 +35,7 @@ import java.util.regex.*;
  * IGFS eviction policy which evicts particular blocks.
  */
 public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
-    CacheIgfsPerBlockLruEvictionPolicyMXBean {
+    CacheIgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
 
@@ -267,6 +268,22 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
     /** {@inheritDoc} */
     @Override public int getCurrentBlocks() {
         return queue.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(maxSize);
+        out.writeInt(maxBlocks);
+        out.writeObject(excludePaths);
+        out.writeObject(excludePatterns);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        maxSize = in.readLong();
+        maxBlocks = in.readInt();
+        excludePaths = (Collection<String>)in.readObject();
+        excludePatterns = (Collection<Pattern>)in.readObject();
     }
 
     /**

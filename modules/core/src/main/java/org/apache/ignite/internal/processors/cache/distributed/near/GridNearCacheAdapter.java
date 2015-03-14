@@ -303,7 +303,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return super.size() + dht().size();
+        return nearEntries().size() + dht().size();
     }
 
     /** {@inheritDoc} */
@@ -313,14 +313,22 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
-        return super.size();
+        return nearEntries().size();
     }
 
     /**
      * @return Near entries.
      */
     public Set<Cache.Entry<K, V>> nearEntries() {
-        return super.entrySet(CU.empty0());
+        final AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        return super.entrySet(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx entry) {
+                GridNearCacheEntry nearEntry = (GridNearCacheEntry)entry;
+
+                return nearEntry.valid(topVer);
+            }
+        });
     }
 
     /** {@inheritDoc} */

@@ -80,7 +80,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setPreloadMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setCacheStoreFactory(new StoreFactory());
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
@@ -142,7 +142,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
                 try {
-                    ((IgniteKernal)grid(i)).cache(null).removeAll();
+                    GridCache<Object, Object> cache = ((IgniteKernal)grid(i)).cache(null);
+
+                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
+                        cache.remove(entry.getKey());
+                    }
 
                     break;
                 }
@@ -159,8 +163,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0,
-                ((IgniteKernal)grid(i)).cache(null).size());
+            assertEquals("Cache is not empty [entrySet=" + ((IgniteKernal)grid(i)).cache(null).entrySet() +
+                ", i=" + i + ']',
+                0, ((IgniteKernal)grid(i)).cache(null).size());
 
 
         for (int i = 0; i < gridCount(); i++) {
@@ -800,34 +805,29 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
         final Collection<CacheEntryEvent<? extends Integer, ? extends Integer>> all = new ConcurrentLinkedDeque8<>();
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(30);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                int size = 0;
-
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                     all.add(evt);
-
-                    size++;
-                }
-
-                assertEquals(1, size);
 
                 latch.countDown();
             }
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cache.put(1, 1);
+            cache.put(0, 0);
 
             startGrid("anotherGrid");
 
-            cache.put(2, 2);
+            for (int i = 1; i < 30; i++) {
+                cache.put(i, i);
+            }
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : all;
 
-            assertEquals(2, all.size());
+            assertEquals(30, all.size());
         }
         finally {
             stopGrid("anotherGrid");
@@ -926,6 +926,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 grid(i).events().stopLocalListen(lsnr, EVT_CACHE_QUERY_OBJECT_READ);
                 grid(i).events().stopLocalListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return new TestStore();
         }
     }
 

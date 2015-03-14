@@ -38,7 +38,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static javax.cache.event.EventType.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
@@ -394,7 +393,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;
 
-        GridContinuousHandler hnd = new CacheContinuousQueryHandler<>(
+        GridContinuousHandler hnd = new CacheContinuousQueryHandler(
             cctx.name(),
             TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
             locLsnr,
@@ -473,7 +472,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param internal Internal flag.
      * @return Whether listener was actually registered.
      */
-    boolean registerListener(UUID lsnrId,
+    GridContinuousHandler.RegisterStatus registerListener(UUID lsnrId,
         CacheContinuousQueryListener lsnr,
         boolean internal) {
         boolean added;
@@ -494,7 +493,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             }
         }
 
-        return added;
+        return added ? GridContinuousHandler.RegisterStatus.REGISTERED : GridContinuousHandler.RegisterStatus.NOT_REGISTERED;
     }
 
     /**

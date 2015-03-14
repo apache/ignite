@@ -107,7 +107,12 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
+    @Override public String cacheName() {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RegisterStatus register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
@@ -168,7 +173,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         ctx.event().addLocalEventListener(lsnr, types);
 
-        return true;
+        return RegisterStatus.REGISTERED;
     }
 
     /** {@inheritDoc} */

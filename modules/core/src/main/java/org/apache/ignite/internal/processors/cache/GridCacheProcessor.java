@@ -123,8 +123,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public GridCacheProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        caches = new LinkedHashMap<>();
-        jCacheProxies = new HashMap<>();
+        caches = new ConcurrentHashMap<>();
+        jCacheProxies = new ConcurrentHashMap<>();
         preloadFuts = new TreeMap<>();
 
         sysCaches = new HashSet<>();
@@ -598,7 +598,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cfgs[i] = cfg; // Replace original configuration value.
 
-            if (caches.containsKey(cfg.getName())) {
+            if (caches.containsKey(maskNull(cfg.getName()))) {
                 String cacheName = cfg.getName();
 
                 if (cacheName != null)
@@ -634,7 +634,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
 
-            jCacheProxies.put(e.getKey(), new IgniteCacheProxy(cache.context(), cache, null, false));
+            jCacheProxies.put(maskNull(e.getKey()), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
@@ -685,11 +685,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 String name = ccfg.getName();
 
-                caches.put(name, cache);
+                caches.put(maskNull(name), cache);
 
                 startCache(cache);
 
-                jCacheProxies.put(name, new IgniteCacheProxy(ctx, cache, null, false));
+                jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
             }
         }
 
@@ -753,7 +753,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         for (String cacheName : stopSeq) {
-            GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+            GridCacheAdapter<?, ?> cache = caches.get(maskNull(cacheName));
 
             if (cache != null)
                 stopCache(cache, cancel);
@@ -780,7 +780,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         for (String cacheName : stopSeq) {
-            GridCacheAdapter<?, ?> cache = caches.get(cacheName);
+            GridCacheAdapter<?, ?> cache = caches.get(maskNull(cacheName));
 
             if (cache != null)
                 onKernalStop(cache, cancel);
@@ -803,6 +803,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
+
+        ctx.query().onCacheStart(cacheCtx);
+        ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -877,7 +880,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel);
         }
 
-        ctx.kernalContext().query().onCacheStopped(cache.context());
+        ctx.kernalContext().query().onCacheStop(ctx);
+        ctx.kernalContext().continuous().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
             ctx.store().configuredStore()));
@@ -1196,8 +1200,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheCtx.cache(dht);
         }
 
-        ctx.query().onCacheStarted(ret);
-
         return ret;
     }
 
@@ -1270,7 +1272,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 startCache(cacheCtx.cache());
                 onKernalStart(cacheCtx.cache());
 
-                caches.put(cacheCtx.name(), cacheCtx.cache());
+                caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
             }
         }
         else if (req.isClientStart()) {
@@ -1292,7 +1294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 startCache(cacheCtx.cache());
                 onKernalStart(cacheCtx.cache());
 
-                caches.put(cacheCtx.name(), cacheCtx.cache());
+                caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
             }
         }
     }
@@ -1304,7 +1306,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.isStop();
 
         // Break the proxy before exchange future is done.
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(req.cacheName());
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
 
         if (proxy != null)
             proxy.gate().onStopped();
@@ -1316,7 +1318,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void prepareCacheStop(DynamicCacheChangeRequest req) {
         assert req.isStop();
 
-        GridCacheAdapter<?, ?> cache = caches.remove(req.cacheName());
+        GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
 
         if (cache != null) {
             GridCacheContext<?, ?> ctx = cache.context();
@@ -1338,16 +1340,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(DynamicCacheChangeRequest req) {
+        String masked = maskNull(req.cacheName());
+
         if (req.isStart() || req.isClientStart()) {
-            GridCacheAdapter<?, ?> cache = caches.get(req.cacheName());
+            GridCacheAdapter<?, ?> cache = caches.get(masked);
 
             if (cache != null)
-                jCacheProxies.put(cache.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
         }
         else {
             prepareCacheStop(req);
-
-            String masked = maskNull(req.cacheName());
 
             DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
@@ -1355,7 +1357,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 registeredCaches.remove(masked, desc);
         }
 
-        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
+        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(masked);
 
         assert req.deploymentId() != null;
         assert fut == null || fut.deploymentId != null;
@@ -1918,7 +1920,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * it is called from synchronization block within Swap SPI.
          */
 
-        GridCacheAdapter cache = caches.get(CU.cacheNameForSwapSpaceName(spaceName));
+        GridCacheAdapter cache = caches.get(maskNull(CU.cacheNameForSwapSpaceName(spaceName)));
 
         assert cache != null : "Failed to resolve cache name for swap space name: " + spaceName;
 
@@ -1994,7 +1996,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
         return jcache == null ? null : jcache.legacyProxy();
     }
@@ -2069,7 +2071,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
         if (jcache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -2092,10 +2094,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
         try {
-            IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+            String masked = maskNull(name);
+
+            IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
 
             if (cache == null) {
-                DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+                DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
                 if (desc == null || desc.cancelled())
                     throw new IllegalArgumentException("Cache is not started: " + name);
@@ -2107,7 +2111,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 F.first(initiateCacheChanges(F.asList(req))).get();
 
-                cache = (IgniteCache<K, V>)jCacheProxies.get(name);
+                cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
 
                 if (cache == null)
                     throw new IllegalArgumentException("Cache is not started: " + name);
@@ -2126,7 +2130,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteCacheProxy<K, V> jcache(@Nullable String name) {
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -2174,7 +2178,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting internal cache adapter: " + name);
 
-        return (GridCacheAdapter<K, V>)caches.get(name);
+        return (GridCacheAdapter<K, V>)caches.get(maskNull(name));
     }
 
     /**

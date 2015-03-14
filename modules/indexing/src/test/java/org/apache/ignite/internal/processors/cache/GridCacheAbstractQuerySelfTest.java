@@ -117,41 +117,43 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setMarshaller(new OptimizedMarshaller(false));
 
-        CacheConfiguration[] ccs = new CacheConfiguration[2];
+        if (!gridName.startsWith("client")) {
+            CacheConfiguration[] ccs = new CacheConfiguration[2];
 
-        for (int i = 0; i < ccs.length; i++) {
-            CacheConfiguration cc = defaultCacheConfiguration();
+            for (int i = 0; i < ccs.length; i++) {
+                CacheConfiguration cc = defaultCacheConfiguration();
 
-            if (i > 0)
-                cc.setName("c" + i);
+                if (i > 0)
+                    cc.setName("c" + i);
 
-            cc.setCacheMode(cacheMode());
-            cc.setAtomicityMode(atomicityMode());
-            // TODO IGNITE-45
-//            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
-            cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
-            cc.setReadThrough(true);
-            cc.setWriteThrough(true);
-            cc.setLoadPreviousValue(true);
-            cc.setPreloadMode(SYNC);
-            cc.setSwapEnabled(true);
+                cc.setCacheMode(cacheMode());
+                cc.setAtomicityMode(atomicityMode());
+                cc.setWriteSynchronizationMode(FULL_SYNC);
+                cc.setCacheStoreFactory(new StoreFactory());
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
+                cc.setPreloadMode(SYNC);
+                cc.setSwapEnabled(true);
 
-            CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+                CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
-            qcfg.setIndexPrimitiveKey(true);
-            qcfg.setIndexFixedTyping(true);
+                qcfg.setIndexPrimitiveKey(true);
+                qcfg.setIndexFixedTyping(true);
 
-            cc.setQueryConfiguration(qcfg);
+                cc.setQueryConfiguration(qcfg);
 
-            // Explicitly set number of backups equal to number of grids.
-            if (cacheMode() == CacheMode.PARTITIONED)
-                cc.setBackups(gridCount());
+                // Explicitly set number of backups equal to number of grids.
+                if (cacheMode() == CacheMode.PARTITIONED)
+                    cc.setBackups(gridCount());
 
-            ccs[i] = cc;
+                ccs[i] = cc;
+            }
+
+            c.setCacheConfiguration(ccs);
         }
-
-        c.setCacheConfiguration(ccs);
+        else
+            c.setClientMode(true);
 
         return c;
     }
@@ -2053,6 +2055,15 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         @Override public Integer reduce() {
             return sum;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return store;
         }
     }
 }

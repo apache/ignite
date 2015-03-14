@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -32,7 +33,7 @@ import java.util.*;
  * information is maintained by attaching ordering metadata to cache entries.
  */
 public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
-    CacheLruEvictionPolicyMBean {
+    CacheLruEvictionPolicyMBean, Externalizable {
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
@@ -176,6 +177,16 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                 touch(entry);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(max);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        max = in.readInt();
     }
 
     /** {@inheritDoc} */

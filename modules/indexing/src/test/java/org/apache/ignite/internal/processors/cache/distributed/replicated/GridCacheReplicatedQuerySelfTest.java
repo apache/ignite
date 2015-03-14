@@ -112,10 +112,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid("client");
 
+            // Create client cache.
+            g.jcache(null);
+
             GridCache<Integer, Integer> c = ((IgniteKernal)g).cache(null);
 
             for (int i = 0; i < 10; i++)
-                c.putx(i, i);
+                c.put(i, i);
 
             // Client cache should be empty.
             assertEquals(0, c.size());

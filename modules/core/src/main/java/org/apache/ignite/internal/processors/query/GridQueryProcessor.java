@@ -144,7 +144,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -162,7 +162,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      */
-    public void onCacheStopped(GridCacheContext cctx) {
+    public void onCacheStop(GridCacheContext cctx) {
         if (idx == null)
             return;
 
