@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.h2.value.*;
 
 import java.sql.*;
 import java.util.*;
@@ -310,6 +311,9 @@ public class GridSqlQuerySplitter {
 
             if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
                 GridSqlElement rdcEl = column(mapColAlias);
+
+                if (el.expressionResultType().type() == Value.UUID)
+                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl);
 
                 if (colNames.add(rdcColAlias))
                     rdcEl = alias(rdcColAlias, rdcEl);

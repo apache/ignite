@@ -119,9 +119,10 @@
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>*asm*.jar</include>
-                        </includes>
+                        <excludes>
+                            <exclude>hadoop*.jar</exclude>
+                            <exclude>log4j*.jar</exclude>
+                        </excludes>
                     </fileSet>
                     <fileSet>
                         <directory>target</directory>
