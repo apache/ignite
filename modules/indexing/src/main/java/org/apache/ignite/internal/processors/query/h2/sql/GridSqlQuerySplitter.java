@@ -312,7 +312,9 @@ public class GridSqlQuerySplitter {
             if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
                 GridSqlElement rdcEl = column(mapColAlias);
 
-                if (el.expressionResultType().type() == Value.UUID)
+                GridSqlType type = el.expressionResultType();
+
+                if (type != null && type.type() == Value.UUID)
                     rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl);
 
                 if (colNames.add(rdcColAlias))

@@ -24,6 +24,7 @@ import org.h2.expression.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -307,11 +308,13 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseExpression0(expression);
 
-            Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
-                expression.getDisplaySize());
+            if (expression.getType() != Value.UNKNOWN) {
+                Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
+                    expression.getDisplaySize());
 
-            res.expressionResultType(new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(),
-                c.getCreateSQL()));
+                res.expressionResultType(new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(),
+                    c.getCreateSQL()));
+            }
 
             h2ObjToGridObj.put(expression, res);
         }
@@ -389,13 +392,13 @@ public class GridSqlQueryParser {
 
             assert0(qry instanceof Select, expression);
 
-            return new GridSqlSubquery(parse((Select) qry));
+            return new GridSqlSubquery(parse((Select)qry));
         }
 
         if (expression instanceof ConditionIn) {
             GridSqlOperation res = new GridSqlOperation(IN);
 
-            res.addChild(parseExpression(LEFT_CI.get((ConditionIn) expression)));
+            res.addChild(parseExpression(LEFT_CI.get((ConditionIn)expression)));
 
             List<Expression> vals = VALUE_LIST_CI.get((ConditionIn)expression);
 
