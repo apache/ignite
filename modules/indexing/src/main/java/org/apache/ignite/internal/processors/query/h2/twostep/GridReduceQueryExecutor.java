@@ -240,7 +240,15 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         r.conn = h2.connectionForSpace(space);
 
         // TODO Add topology version.
-        final Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(space).nodes();
+        ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
+
+        if (ctx.cache().internalCache(space).context().isReplicated()) {
+            assert dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
+
+            dataNodes = dataNodes.forRandom(); // Select random data node to run query on a replicated data.
+        }
+
+        final Collection<ClusterNode> nodes = dataNodes.nodes();
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl;

@@ -413,7 +413,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (qry instanceof SqlQuery) {
                 SqlQuery p = (SqlQuery)qry;
 
-                if (ctx.isReplicated() || ctx.isLocal())
+                if (isReplicatedDataNode() || ctx.isLocal())
                     return doLocalQuery(p);
 
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
@@ -432,6 +432,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
+    /**
+     * @return {@code true} If this is a replicated cache and we are on a data node.
+     */
+    private boolean isReplicatedDataNode() {
+        if (!ctx.isReplicated())
+            return false;
+
+        ClusterGroup grp = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name());
+
+        return grp.node(ctx.localNodeId()) != null;
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry) {
         A.notNull(qry, "qry");
@@ -441,7 +453,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             validate(qry);
 
-            if (ctx.isReplicated() || ctx.isLocal())
+            if (isReplicatedDataNode() || ctx.isLocal())
                 return doLocalFieldsQuery(qry);
 
             return ctx.kernalContext().query().queryTwoStep(ctx.name(), qry.getSql(), qry.getArgs());
