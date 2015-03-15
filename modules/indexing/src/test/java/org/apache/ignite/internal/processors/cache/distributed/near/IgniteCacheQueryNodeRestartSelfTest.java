@@ -73,13 +73,16 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setIndexedTypes(
+            Integer.class, Integer.class
+        );
 
         c.setCacheConfiguration(cc);
 
