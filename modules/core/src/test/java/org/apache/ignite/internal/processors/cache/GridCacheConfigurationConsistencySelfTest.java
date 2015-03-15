@@ -638,7 +638,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         String log = strLog.toString();
 
         assertTrue(log.contains("Default lock timeout"));
-        assertTrue(log.contains("Default query timeout"));
         assertTrue(log.contains("Default time to live"));
     }
 
