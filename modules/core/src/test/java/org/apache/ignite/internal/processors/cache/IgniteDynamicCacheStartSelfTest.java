@@ -432,7 +432,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testClientCache() throws Exception {
+    public void testClientCache() throws Exception {
         try {
             testAttribute = false;
 
@@ -456,6 +456,93 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     return ignite.cache(DYNAMIC_CACHE_NAME);
                 }
             }, IllegalArgumentException.class, null);
+
+            // Should obtain client cache on new node.
+            IgniteCache<Object, Object> clientCache = ignite(nodeCount()).jcache(DYNAMIC_CACHE_NAME);
+
+            clientCache.put("1", "1");
+
+            for (int g = 0; g < nodeCount() + 1; g++)
+                assertEquals("1", ignite(g).jcache(DYNAMIC_CACHE_NAME).get("1"));
+
+            kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
+        }
+        finally {
+            stopGrid(nodeCount());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartFromClientNode() throws Exception {
+        try {
+            testAttribute = false;
+
+            startGrid(nodeCount());
+
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+            CacheConfiguration ccfg = new CacheConfiguration();
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+            ccfg.setName(DYNAMIC_CACHE_NAME);
+
+            ccfg.setNodeFilter(NODE_FILTER);
+
+            final IgniteKernal started = (IgniteKernal)grid(nodeCount());
+
+            started.context().cache().dynamicStartCache(ccfg, null).get();
+
+            GridCacheAdapter<Object, Object> cache = started.internalCache(DYNAMIC_CACHE_NAME);
+
+            assertNotNull(cache);
+            assertFalse(cache.context().affinityNode());
+
+            // Should obtain client cache on new node.
+            IgniteCache<Object, Object> clientCache = ignite(nodeCount()).jcache(DYNAMIC_CACHE_NAME);
+
+            clientCache.put("1", "1");
+
+            for (int g = 0; g < nodeCount() + 1; g++)
+                assertEquals("1", ignite(g).jcache(DYNAMIC_CACHE_NAME).get("1"));
+
+            kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
+        }
+        finally {
+            stopGrid(nodeCount());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartNearCacheFromClientNode() throws Exception {
+        try {
+            testAttribute = false;
+
+            startGrid(nodeCount());
+
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
+
+            CacheConfiguration ccfg = new CacheConfiguration();
+            ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+            ccfg.setName(DYNAMIC_CACHE_NAME);
+
+            ccfg.setNodeFilter(NODE_FILTER);
+
+            final IgniteKernal started = (IgniteKernal)grid(nodeCount());
+
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            started.context().cache().dynamicStartCache(ccfg, nearCfg).get();
+
+            GridCacheAdapter<Object, Object> cache = started.internalCache(DYNAMIC_CACHE_NAME);
+
+            assertNotNull(cache);
+            assertFalse(cache.context().affinityNode());
+            assertTrue(cache.context().isNear());
 
             // Should obtain client cache on new node.
             IgniteCache<Object, Object> clientCache = ignite(nodeCount()).jcache(DYNAMIC_CACHE_NAME);

@@ -311,7 +311,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "CacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
-            if (cc.getNearConfiguration() != null) {
+            if (cc.getNearConfiguration() != null &&
+                ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName())) {
                 U.warn(log, "Near cache cannot be used with REPLICATED cache, " +
                     "will be ignored [cacheName=" + cc.getName() + ']');
 
@@ -1229,7 +1230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
         if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
-            if (req.isStart() || req.isClientStart())
+            if (req.isStart())
                 return !desc.cancelled();
             else
                 return desc.cancelled();
@@ -1242,36 +1243,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Start request.
      */
     public void prepareCacheStart(DynamicCacheChangeRequest req) throws IgniteCheckedException {
-        assert req.isStart() || req.isClientStart();
+        assert req.isStart();
 
-        CacheConfiguration ccfg = req.startCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(req.startCacheConfiguration());
 
         IgnitePredicate nodeFilter = ccfg.getNodeFilter();
 
         ClusterNode locNode = ctx.discovery().localNode();
 
         if (req.isStart()) {
-            if (nodeFilter.apply(locNode)) {
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+            boolean affNodeStart = !req.clientStartOnly() && nodeFilter.apply(locNode);
+            boolean clientNodeStart = locNode.id().equals(req.initiatingNodeId());
 
-                GridCacheContext cacheCtx = createCache(ccfg, cacheObjCtx);
-
-                cacheCtx.dynamicDeploymentId(req.deploymentId());
-
-                sharedCtx.addCacheContext(cacheCtx);
-
-                startCache(cacheCtx.cache());
-                onKernalStart(cacheCtx.cache());
-
-                caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
-            }
-        }
-        else if (req.isClientStart()) {
-            if (req.clientNodeId().equals(locNode.id())) {
-                if (nodeFilter.apply(locNode)) {
-                    U.warn(log, "Requested to start client cache on affinity node (will ignore): " + req);
-
-                    return;
+            if (affNodeStart || clientNodeStart) {
+                if (clientNodeStart && !affNodeStart) {
+                    if (req.nearCacheConfiguration() != null)
+                        ccfg.setNearConfiguration(req.nearCacheConfiguration());
                 }
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
@@ -1333,7 +1320,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onExchangeDone(DynamicCacheChangeRequest req) {
         String masked = maskNull(req.cacheName());
 
-        if (req.isStart() || req.isClientStart()) {
+        if (req.isStart()) {
             GridCacheAdapter<?, ?> cache = caches.get(masked);
 
             if (cache != null)
@@ -1395,7 +1382,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (!desc.cancelled() && desc.valid()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration());
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest((UUID)null);
+
+                req.startCacheConfiguration(desc.cacheConfiguration());
 
                 req.deploymentId(desc.deploymentId());
 
@@ -1415,7 +1404,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor existing = registeredCaches.get(maskNull(req.cacheName()));
 
                 try {
-                    if (req.isStart()) {
+                    if (req.isStart() && !req.clientStartOnly()) {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
                         if (existing != null) {
@@ -1455,9 +1444,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable CacheConfiguration ccfg,
         @Nullable NearCacheConfiguration nearCfg
     ) {
-        Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(2);
+        assert ccfg != null || nearCfg != null;
+
+        String cacheName = ccfg == null ? nearCfg.getName() : ccfg.getName();
+
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
 
         if (ccfg != null) {
+            if (desc != null)
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
+                    "(a cache with the same name is already started): " + cacheName));
+
+            req.deploymentId(IgniteUuid.randomUuid());
+
             try {
                 CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
@@ -1465,40 +1466,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 initialize(cfg, cacheObjCtx);
 
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cfg);
-
-                reqs.add(req);
+                req.startCacheConfiguration(cfg);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture(e);
             }
+
+            if (nearCfg != null)
+                nearCfg.setName(ccfg.getName());
         }
+        else {
+            req.clientStartOnly(true);
 
-        if (nearCfg != null) {
-            if (ccfg == null) {
-                DynamicCacheDescriptor desc = registeredCaches.get(maskNull(nearCfg.getName()));
-
-                if (desc != null && !desc.cancelled())
-                    ccfg = desc.cacheConfiguration();
-            }
+            if (desc != null && !desc.cancelled())
+                ccfg = desc.cacheConfiguration();
 
             if (ccfg == null)
                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near cache " +
                     "(a cache with the given name is not started): " + nearCfg.getName()));
 
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(), ccfg, nearCfg);
-
-            reqs.add(req);
+            req.deploymentId(desc.deploymentId());
+            req.startCacheConfiguration(ccfg);
         }
 
-        GridCompoundFuture fut = new GridCompoundFuture();
+        if (nearCfg != null)
+            req.nearCacheConfiguration(nearCfg);
 
-        for (DynamicCacheStartFuture startFut : initiateCacheChanges(reqs))
-            fut.add(startFut);
-
-        fut.markInitialized();
-
-        return fut;
+        return F.first(initiateCacheChanges(F.asList(req)));
     }
 
     /**
@@ -1522,13 +1516,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId());
 
             try {
-                if (req.isStart()) {
-                    if (registeredCaches.containsKey(maskNull(req.cacheName()))) {
-                        fut.onDone(new IgniteCheckedException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + req.cacheName()));
-                    }
-                }
-                else if (!req.isClientStart()) {
+                if (req.isStop()) {
                     DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
                     if (desc == null)
@@ -1552,7 +1540,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     maskNull(req.cacheName()), fut);
 
                 if (old != null) {
-                    if (req.isStart()) {
+                    if (req.isStart() && !req.clientStartOnly()) {
                         fut.onDone(new IgniteCheckedException("Failed to start cache " +
                             "(a cache with the same name is already being started or stopped): " + req.cacheName()));
                     }
@@ -1593,41 +1581,49 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (req.isStart()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
 
+                DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingFuts.get(
+                    maskNull(ccfg.getName()));
+
                 // Check if cache with the same name was concurrently started form different node.
                 if (desc != null) {
-                    // If local node initiated start, fail the start future.
-                    DynamicCacheStartFuture startFut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(ccfg.getName()));
+                    if (!req.clientStartOnly()) {
+                        // If local node initiated start, fail the start future.
+                        if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
+                            startFut.onDone(new IgniteCheckedException("Failed to start cache " +
+                                "(a cache with the same name is already started): " + ccfg.getName()));
+                        }
 
-                    if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
-                        startFut.onDone(new IgniteCheckedException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + ccfg.getName()));
+                        return;
                     }
-
-                    return;
-                }
-
-                DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.deploymentId());
-
-                DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
-
-                ctx.discovery().setCacheFilter(
-                    ccfg.getName(),
-                    ccfg.getNodeFilter(),
-                    ccfg.getNearConfiguration() != null,
-                    ccfg.getCacheMode() == LOCAL);
-
-                assert old == null :
-                    "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
-            }
-            else if (req.isClientStart()) {
-                if (desc != null) {
-                    if (req.nearCacheCfg() != null)
-                        ctx.discovery().addNearNode(req.cacheName(), req.clientNodeId());
                 }
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not start client cache since cache is not registered: " + req.cacheName());
+                    if (req.clientStartOnly()) {
+                        if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
+                            startFut.onDone(new IgniteCheckedException("Failed to start client cache " +
+                                "(a cache with the given name is not started): " + ccfg.getName()));
+                        }
+
+                        return;
+                    }
                 }
+
+                if (!req.clientStartOnly()) {
+                    DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.deploymentId());
+
+                    DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
+
+                    assert old == null :
+                        "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
+
+                    ctx.discovery().setCacheFilter(
+                        ccfg.getName(),
+                        ccfg.getNodeFilter(),
+                        ccfg.getNearConfiguration() != null,
+                        ccfg.getCacheMode() == LOCAL);
+                }
+
+                if (req.nearCacheConfiguration() != null)
+                    ctx.discovery().addNearNode(req.cacheName(), req.initiatingNodeId());
             }
             else {
                 if (desc == null) {
@@ -2082,10 +2078,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (desc == null || desc.cancelled())
                     throw new IllegalArgumentException("Cache is not started: " + name);
 
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId(),
-                    desc.cacheConfiguration(), null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
+
+                req.cacheName(name);
 
                 req.deploymentId(desc.deploymentId());
+
+                req.startCacheConfiguration(desc.cacheConfiguration());
+
+                req.clientStartOnly(true);
 
                 F.first(initiateCacheChanges(F.asList(req))).get();
 

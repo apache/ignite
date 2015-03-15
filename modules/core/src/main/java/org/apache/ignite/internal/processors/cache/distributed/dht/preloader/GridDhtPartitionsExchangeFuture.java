@@ -577,7 +577,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void startCaches() throws IgniteCheckedException {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (req.isStart() || req.isClientStart())
+            if (req.isStart())
                 cctx.cache().prepareCacheStart(req);
         }
     }
@@ -690,10 +690,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!F.isEmpty(reqs)) {
                 for (DynamicCacheChangeRequest req : reqs) {
                     if (F.eq(cacheCtx.name(), req.cacheName())) {
-                        if (req.isStart())
-                            cacheCtx.preloader().onInitialExchangeComplete(err);
-                        else if (req.isClientStart()) {
-                            if (req.clientNodeId().equals(cacheCtx.localNodeId()))
+                        if (req.isStart()) {
+                            if (!req.clientStartOnly() || cacheCtx.localNodeId().equals(req.initiatingNodeId()))
                                 cacheCtx.preloader().onInitialExchangeComplete(err);
                         }
                     }
