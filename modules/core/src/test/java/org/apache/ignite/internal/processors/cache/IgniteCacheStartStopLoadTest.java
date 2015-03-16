@@ -124,7 +124,11 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, CACHE_COUNT, "cache-starter");
+
+            System.out.println("Start-Stop Ok !!!");
         }
+
+        GridTestUtils.runGC();
 
         assert weakMap.isEmpty() : weakMap;
     }
