@@ -92,8 +92,6 @@ public class SnippetGenerator {
         src.add("ccfg.setReadThrough(true);");
         src.add("ccfg.setWriteThrough(true);");
         src.add("");
-        src.add("cfg.setCacheConfiguration(ccfg);");
-        src.add("");
         src.add("// Configure cache types. ");
         src.add("Collection<CacheTypeMetadata> meta = new ArrayList<>();");
         src.add("");
@@ -111,6 +109,9 @@ public class SnippetGenerator {
             src.add("type.setValueType(\"" +  pkg + "." + pojo.valueClassName() + "\");");
             src.add("");
 
+            src.add("meta.add(type);");
+            src.add("");
+
             src.add("// Key fields for " + tbl + ".");
             src.add((first ? "Collection<CacheTypeFieldMetadata> " : "") + "keys = new ArrayList<>();");
             addFields(src, "keys", pojo.keyFields());
@@ -125,6 +126,11 @@ public class SnippetGenerator {
 
             first = false;
         }
+        src.add("");
+        src.add("ccfg.setTypeMetadata(meta);");
+
+        src.add("");
+        src.add("cfg.setCacheConfiguration(ccfg);");
 
         src.add("// Start Ignite node.");
         src.add("Ignition.start(cfg);");
