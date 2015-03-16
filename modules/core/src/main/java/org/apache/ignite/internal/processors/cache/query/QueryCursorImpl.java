@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 
 import java.util.*;
 
 /**
  * Query cursor implementation.
  */
-public class QueryCursorImpl<T> implements QueryCursor<T> {
+public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** */
     private Iterator<T> iter;
 
@@ -65,6 +64,17 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
         }
 
         return all;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
+        try {
+            for (T t : this)
+                clo.consume(t);
+        }
+        finally {
+            close();
+        }
     }
 
     /** {@inheritDoc} */
