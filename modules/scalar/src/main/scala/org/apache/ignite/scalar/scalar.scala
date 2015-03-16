@@ -17,11 +17,6 @@
 
 package org.apache.ignite.scalar
 
-import org.apache.ignite.cache.GridCache
-import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
-import java.net.URL
-import java.util.UUID
-
 import org.apache.ignite._
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
