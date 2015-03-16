@@ -319,7 +319,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /**
      *
      */
-    private class IgniteCacheObjectImpl extends CacheObjectImpl {
+    private static class IgniteCacheObjectImpl extends CacheObjectImpl {
         /**
          *
          */
