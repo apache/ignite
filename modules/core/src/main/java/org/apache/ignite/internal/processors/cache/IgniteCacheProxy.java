@@ -1193,7 +1193,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... args)
+    @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -1257,7 +1257,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        IgniteEntryProcessor<K, V, T> entryProcessor,
+        CacheEntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal.processors.cache.integration;
 
-import java.io.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Defines a predicate which accepts a parameter and returns {@code true} or {@code false}. In
- * Ignite, predicates are generally used for filtering nodes within grid projections.
  *
- * @param <E> Type of predicate parameter.
  */
-public interface IgnitePredicate<E> extends Serializable {
-    /**
-     * Predicate body.
-     *
-     * @param e Predicate parameter.
-     * @return Return value.
-     */
-    public boolean apply(E e);
+public class IgniteCacheAtomicStoreSessionWriteBehindTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 }

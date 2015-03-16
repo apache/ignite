@@ -71,8 +71,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     };
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final IgniteEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
-        new IgniteEntryProcessor<String, Integer, String>() {
+    public static final CacheEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<String, Integer, String>() {
             @Override public String process(MutableEntry<String, Integer> e, Object... args) {
                 return INCR_PROCESSOR.process(e, args);
             }
@@ -92,8 +92,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     };
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final IgniteEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
-        new IgniteEntryProcessor<String, Integer, String>() {
+    public static final CacheEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<String, Integer, String>() {
             @Override public String process(MutableEntry<String, Integer> e, Object... args) {
                 return RMV_PROCESSOR.process(e, args);
             }

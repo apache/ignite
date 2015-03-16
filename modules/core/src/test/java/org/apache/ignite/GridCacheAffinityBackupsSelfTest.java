@@ -72,6 +72,8 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param backups Number of backups.
+     * @param func Affinity function.
      * @throws Exception If failed.
      */
     private void checkBackups(int backups, CacheAffinityFunction func) throws Exception {
