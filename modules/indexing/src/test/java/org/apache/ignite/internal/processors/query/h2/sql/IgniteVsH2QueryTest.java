@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.commons.dbutils.*;
-import org.apache.commons.dbutils.handlers.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
@@ -292,39 +290,102 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     private void test0(IgniteCache cache, String sql, Object... args) throws SQLException {
         log.info("Sql=" + sql + ", args=" + Arrays.toString(args));
-
-        List<List<?>> h2Res = executeQueryOnH2(sql, args);
-
-        List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
-
-        print("H2 query result.", h2Res);
-        print("Ignite Cache query result.", cacheRes);
-
-        assertRsEquals(h2Res, cacheRes);
-    }
-
-    private List<List<?>> executeQueryOnH2(String sql, Object[] args) throws SQLException {
-        ResultSet rs = null;
+        
+        ResultSet h2Rs = null;
+        PreparedStatement st = null;
 
         try {
-            try(PreparedStatement st = conn.prepareStatement(sql)) {
-                //TODO apply args.
+            st = conn.prepareStatement(sql);
+            
+            //TODO apply args ot stat.
 
-                rs = st.executeQuery();
+            h2Rs = st.executeQuery();
 
-                return new RsHandler().handle(rs);
-            }
+            List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+
+//            print("H2 query result.", h2Res);
+            print("Ignite Cache query result.", cacheRes);
+
+            assertRsEquals(h2Rs, cacheRes);
         }
         finally {
-            U.closeQuiet(rs);
+            U.closeQuiet(st);
+            U.closeQuiet(h2Rs);
         }
     }
 
     private void print(String msg, List<List<?>> rs) {
         log.info(msg);
-        
+
         for (List<?> objects : rs)
             log.info(objects.toString());
+    }
+
+    private void assertRsEquals(ResultSet rs, List<List<?>> actualRs) throws SQLException {
+        int rsRowsCnt = 0;
+
+        while (rs.next()) {
+            boolean currRowFound = false;
+
+            for (List<?> row : actualRs) {
+                if (rowEqualsCurrentRsRow(rs, row)) {
+                    currRowFound = true;
+
+                    break;
+                }
+            }
+
+            assertTrue("A row with number " + rsRowsCnt + " from " + rs + " not found at " + actualRs + '.',
+                currRowFound);
+
+            rsRowsCnt++;
+        }
+
+        assertEquals("Count of results.", rsRowsCnt, actualRs.size());
+    }
+
+    private boolean rowEqualsCurrentRsRow(ResultSet rs, List<?> row) throws SQLException {
+        for (int columnNum = 0; columnNum < row.size(); columnNum++) {
+            Object o1 = row.get(columnNum);
+
+            Object o2 = extractColumn(rs, columnNum + 1, o1.getClass());
+
+            if (!o1.equals(o2))
+                return false;
+        }
+
+        return true;
+    }
+
+    protected Object extractColumn(ResultSet rs, int idx, Class<?> propType)
+        throws SQLException {
+
+        if (!propType.isPrimitive() && rs.getObject(idx) == null)
+            return null;
+
+        if (propType.equals(String.class))
+            return rs.getString(idx);
+        else if (propType.equals(Integer.TYPE) || propType.equals(Integer.class))
+            return rs.getInt(idx);
+        else if (propType.equals(Boolean.TYPE) || propType.equals(Boolean.class))
+            return rs.getBoolean(idx);
+        else if (propType.equals(Long.TYPE) || propType.equals(Long.class))
+            return rs.getLong(idx);
+        else if (propType.equals(Double.TYPE) || propType.equals(Double.class))
+            return rs.getDouble(idx);
+        else if (propType.equals(Float.TYPE) || propType.equals(Float.class))
+            return rs.getFloat(idx);
+        else if (propType.equals(Short.TYPE) || propType.equals(Short.class))
+            return rs.getShort(idx);
+        else if (propType.equals(Byte.TYPE) || propType.equals(Byte.class))
+            return rs.getByte(idx);
+        else if (propType.equals(Timestamp.class))
+            return rs.getTimestamp(idx);
+        else if (propType.equals(SQLXML.class))
+            return rs.getSQLXML(idx);
+        else // Object.
+            return rs.getObject(idx);
+
     }
 
     private void assertRsEquals(List<List<?>> expRs, List<List<?>> actualRs) {
@@ -518,7 +579,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Product class. 
+     * Product class.
      */
     private static class Product implements Serializable {
         /** Primary key. */
@@ -528,14 +589,14 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /** Product name. */
         @QuerySqlField
         private String name;
-        
+
         /** Product price */
         @QuerySqlField
         private int price;
 
         /**
          * Create Product.
-         *  
+         *
          * @param id Product ID.
          * @param name Product name.
          * @param price Product price.
@@ -595,21 +656,6 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Purchase [id=" + id + ", productId=" + productId + ", personId=" + personId + ']';
-        }
-    }
-    
-    private static class RsHandler implements ResultSetHandler<List<List<?>>> {
-        private final ArrayListHandler handler = new ArrayListHandler();
-
-        @Override public List<List<?>> handle(ResultSet rs) throws SQLException {
-            List<Object[]> listOfArrays = handler.handle(rs);
-
-            List<List<?>> res = new ArrayList<>(listOfArrays.size());
-
-            for (Object[] arr : listOfArrays)
-                res.add(Arrays.asList(arr));
-            
-            return res; 
         }
     }
 }
