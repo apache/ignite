@@ -43,6 +43,12 @@ public class DynamicCacheDescriptor {
     /** Locally configured flag. */
     private boolean locCfg;
 
+    /** Statically configured flag. */
+    private boolean staticCfg;
+
+    /** Started flag. */
+    private boolean started;
+
     /**
      * @param cacheCfg Cache configuration.
      */
@@ -77,6 +83,33 @@ public class DynamicCacheDescriptor {
      */
     public void locallyConfigured(boolean locCfg) {
         this.locCfg = locCfg;
+    }
+
+    /**
+     * @return {@code True} if statically configured.
+     */
+    public boolean staticallyConfigured() {
+        return staticCfg;
+    }
+
+    /**
+     * @param staticCfg {@code True} if statically configured.
+     */
+    public void staticallyConfigured(boolean staticCfg) {
+        this.staticCfg = staticCfg;
+    }
+
+    /**
+     * @return {@code True} if started flag was flipped by this call.
+     */
+    public boolean onStart() {
+        if (!started) {
+            started = true;
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

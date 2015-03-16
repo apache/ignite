@@ -43,8 +43,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
-import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -197,6 +195,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private CacheObjectContext cacheObjCtx;
 
+    /** Start topology version. */
+    private AffinityTopologyVersion startTopVer;
+
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
@@ -342,6 +343,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean affinityNode() {
         return affNode;
+    }
+
+    /**
+     * @return Start topology version.
+     */
+    public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
+    }
+
+    /**
+     * @param startTopVer Start topology version.
+     */
+    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        this.startTopVer = startTopVer;
     }
 
     /**

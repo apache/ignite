@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -414,8 +415,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 // will return corresponding nodes.
                 U.await(evtLatch);
 
-                if (!F.isEmpty(reqs))
-                    startCaches();
+                startCaches();
 
                 assert discoEvt != null;
 
@@ -576,10 +576,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Starts dynamic caches.
      */
     private void startCaches() throws IgniteCheckedException {
-        for (DynamicCacheChangeRequest req : reqs) {
-            if (req.isStart())
-                cctx.cache().prepareCacheStart(req);
-        }
+        cctx.cache().prepareCachesStart(F.view(reqs, new IgnitePredicate<DynamicCacheChangeRequest>() {
+            @Override public boolean apply(DynamicCacheChangeRequest req) {
+                return req.isStart();
+            }
+        }), exchId.topologyVersion());
     }
 
     /**
@@ -686,23 +687,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!cacheCtx.isLocal())
                     cacheCtx.affinity().cleanUpCache(res.topologyVersion() - 10);
             }
-
-            if (!F.isEmpty(reqs)) {
-                for (DynamicCacheChangeRequest req : reqs) {
-                    if (F.eq(cacheCtx.name(), req.cacheName())) {
-                        if (req.isStart()) {
-                            if (!req.clientStartOnly() || cacheCtx.localNodeId().equals(req.initiatingNodeId()))
-                                cacheCtx.preloader().onInitialExchangeComplete(err);
-                        }
-                    }
-                }
-            }
         }
 
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs)
-                cctx.cache().onExchangeDone(req);
-        }
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs);
 
         cctx.exchange().onExchangeDone(this);
 
