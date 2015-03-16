@@ -18,15 +18,16 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 
 import javax.cache.*;
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
@@ -61,14 +62,14 @@ import static org.apache.ignite.cache.query.Query.*;
  * </ul>
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class CacheQueryExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheQueryExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -77,31 +78,46 @@ public class CacheQueryExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).removeAll();
+            CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
-            // Populate cache.
-            initialize();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setIndexedTypes(
+                UUID.class, Organization.class,
+                CacheAffinityKey.class, Person.class
+            );
 
-            // Example for SQL-based querying employees based on salary ranges.
-            sqlQuery();
+            try (IgniteCache<?, ?> cache = ignite.createCache(cfg)) {
+                // Populate cache.
+                initialize();
 
-            // Example for SQL-based querying employees for a given organization (includes SQL join).
-            sqlQueryWithJoin();
+                // Example for SQL-based querying employees based on salary ranges.
+                sqlQuery();
 
-            // Example for TEXT-based querying for a given string in peoples resumes.
-            textQuery();
+                // Example for SQL-based querying employees for a given organization (includes SQL join).
+                sqlQueryWithJoin();
 
-            // Example for SQL-based fields queries that return only required
-            // fields instead of whole key-value pairs.
-            sqlFieldsQuery();
+                // Example for TEXT-based querying for a given string in peoples resumes.
+                textQuery();
+                
+                // Example for SQL-based querying to calculate average salary among all employees within a company.
+                sqlQueryWithAggregation();
+    
+                // Example for SQL-based fields queries that return only required
+                // fields instead of whole key-value pairs.
+                sqlFieldsQuery();
 
-            // Example for SQL-based fields queries that uses joins.
-            sqlFieldsQueryWithJoin();
+                // Example for SQL-based fields queries that return only required
+                // fields instead of whole key-value pairs.
+                sqlFieldsQuery();
+
+                // Example for SQL-based fields queries that uses joins.
+                sqlFieldsQueryWithJoin();
+            }
 
             print("Cache query example finished.");
         }
@@ -118,13 +134,13 @@ public class CacheQueryExample {
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000: ",
-            cache.query(sql(Person.class, sql).setArgs(0, 1000)).getAll());
+            cache.query(new SqlQuery(Person.class, sql).setArgs(0, 1000)).getAll());
 
         print("People with salaries between 1000 and 2000: ",
-            cache.query(sql(Person.class, sql).setArgs(1000, 2000)).getAll());
+            cache.query(new SqlQuery(Person.class, sql).setArgs(1000, 2000)).getAll());
 
         print("People with salaries greater than 2000: ",
-            cache.query(sql(Person.class, sql).setArgs(2000, Integer.MAX_VALUE)).getAll());
+            cache.query(new SqlQuery(Person.class, sql).setArgs(2000, Integer.MAX_VALUE)).getAll());
     }
 
     /**
@@ -140,10 +156,10 @@ public class CacheQueryExample {
             + "and lower(Organization.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'Ignite' employees: ",
-            cache.query(sql(Person.class, joinSql).setArgs("Ignite")).getAll());
+        print("Following people are 'GridGain' employees: ",
+            cache.query(new SqlQuery(Person.class, joinSql).setArgs("GridGain")).getAll());
         print("Following people are 'Other' employees: ",
-            cache.query(sql(Person.class, joinSql).setArgs("Other")).getAll());
+            cache.query(new SqlQuery(Person.class, joinSql).setArgs("Other")).getAll());
     }
 
     /**
@@ -154,14 +170,29 @@ public class CacheQueryExample {
 
         //  Query for all people with "Master Degree" in their resumes.
         QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> masters =
-            cache.query(text(Person.class, "Master"));
+            cache.query(new TextQuery(Person.class, "Master"));
 
         // Query for all people with "Bachelor Degree" in their resumes.
         QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> bachelors =
-            cache.query(text(Person.class, "Bachelor"));
+            cache.query(new TextQuery(Person.class, "Bachelor"));
 
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
+    }
+
+    /**
+     * Example for SQL queries to calculate average salary for a specific organization.
+     */
+    private static void sqlQueryWithAggregation() {
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
+
+        // Calculate average of salary of all persons in GridGain.
+        QueryCursor<List<?>> cursor = cache.queryFields(new SqlFieldsQuery(
+            "select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
+                + "lower(Organization.name) = lower(?)").setArgs("GridGain"));
+
+        // Calculate average salary for a specific organization.
+        print("Average salary for 'GridGain' employees: " + cursor.getAll());
     }
 
     /**
@@ -173,7 +204,7 @@ public class CacheQueryExample {
 
         // Create query to get names of all employees.
         QueryCursor<List<?>> cursor = cache.queryFields(
-                sql("select concat(firstName, ' ', lastName) from Person"));
+            new SqlFieldsQuery("select concat(firstName, ' ', lastName) from Person"));
 
         // Execute query to get collection of rows. In this particular
         // case each row will have one element with full name of an employees.
@@ -191,9 +222,9 @@ public class CacheQueryExample {
         IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Execute query to get names of all employees.
-        QueryCursor<List<?>> cursor = cache.queryFields(sql("select concat(firstName, ' ', lastName), "
-                + "Organization.name from Person, Organization where "
-                + "Person.orgId = Organization.id"));
+        QueryCursor<List<?>> cursor = cache.queryFields(new SqlFieldsQuery("select concat(firstName, ' ', lastName), "
+            + "Organization.name from Person, Organization where "
+            + "Person.orgId = Organization.id"));
 
         // In this particular case each row will have one element with full name of an employees.
         List<List<?>> res = cursor.getAll();
@@ -209,7 +240,7 @@ public class CacheQueryExample {
         IgniteCache cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.
-        Organization org1 = new Organization("Ignite");
+        Organization org1 = new Organization("GridGain");
         Organization org2 = new Organization("Other");
 
         // People.

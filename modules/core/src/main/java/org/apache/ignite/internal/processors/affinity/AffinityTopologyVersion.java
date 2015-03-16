@@ -28,6 +28,9 @@ import java.nio.*;
  */
 public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public static final AffinityTopologyVersion NONE = new AffinityTopologyVersion(-1, 0);
 
     /** */
@@ -77,14 +80,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
      */
     public void topologyVersion(long topVer) {
         this.topVer = topVer;
-    }
-
-    /**
-     *
-     */
-    public AffinityTopologyVersion previous() {
-        // TODO IGNITE-45.
-        return new AffinityTopologyVersion(topVer - 1, 0);
     }
 
     /** {@inheritDoc} */
@@ -191,7 +186,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 89;
+        return 111;
     }
 
     /** {@inheritDoc} */

@@ -30,7 +30,7 @@ import java.util.*;
  * DHT partition topology.
  */
 @GridToStringExclude
-public interface GridDhtPartitionTopology<K, V> {
+public interface GridDhtPartitionTopology {
     /**
      * Locks the topology, usually during mapping on locks or transactions.
      */
@@ -47,7 +47,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */
-    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture<K, V> exchFut);
+    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut, boolean stopping);
 
     /**
      * Topology version.
@@ -67,10 +67,10 @@ public interface GridDhtPartitionTopology<K, V> {
     /**
      * Pre-initializes this topology.
      *
-     * @param exchId Exchange ID for this pre-initialization.
+     * @param exchFut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
 
     /**
      * Post-initializes this topology.
@@ -89,7 +89,7 @@ public interface GridDhtPartitionTopology<K, V> {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition<K, V> localPartition(int p, AffinityTopologyVersion topVer, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -99,19 +99,19 @@ public interface GridDhtPartitionTopology<K, V> {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition<K, V> localPartition(K key, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(Object key, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
      * @return All local partitions by copying them into another list.
      */
-    public List<GridDhtLocalPartition<K, V>> localPartitions();
+    public List<GridDhtLocalPartition> localPartitions();
 
     /**
      *
      * @return All current local partitions.
      */
-    public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions();
+    public Collection<GridDhtLocalPartition> currentLocalPartitions();
 
     /**
      * @return Local IDs.
@@ -160,12 +160,12 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param e Entry added to cache.
      * @return Local partition.
      */
-    public GridDhtLocalPartition<K, V> onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry<K, V> e);
+    public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e);
 
     /**
      * @param e Entry removed from cache.
      */
-    public void onRemoved(GridDhtCacheEntry<K, V> e);
+    public void onRemoved(GridDhtCacheEntry e);
 
     /**
      * @param exchId Exchange ID.
@@ -186,12 +186,12 @@ public interface GridDhtPartitionTopology<K, V> {
      * @param part Partition to own.
      * @return {@code True} if owned.
      */
-    public boolean own(GridDhtLocalPartition<K, V> part);
+    public boolean own(GridDhtLocalPartition part);
 
     /**
      * @param part Evicted partition.
      */
-    public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq);
+    public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
 
     /**
      * @param nodeId Node to get partitions for.

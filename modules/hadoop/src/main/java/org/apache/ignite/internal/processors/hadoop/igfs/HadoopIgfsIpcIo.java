@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -237,7 +237,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
         try {
             endpoint = IpcEndpointFactory.connectEndpoint(
-                    endpointAddr, new GridLoggerProxy(new HadoopIgfsJclLogger(log), null, null, ""));
+                endpointAddr, new GridLoggerProxy(new HadoopIgfsJclLogger(log), null, null, ""));
 
             out = new IgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
@@ -316,12 +316,12 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<IgfsMessage> send(IgfsMessage msg) throws IgniteCheckedException {
         return send(msg, null, 0, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridPlainFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff,
+    @Override public <T> IgniteInternalFuture<T> send(IgfsMessage msg, @Nullable byte[] outBuf, int outOff,
         int outLen) throws IgniteCheckedException {
         assert outBuf == null || msg.command() == IgfsIpcCommand.READ_BLOCK;
 
@@ -557,7 +557,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
                                 fut.onDone(res);
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgfsException | IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to apply response closure (will fail request future): " +
                                         e.getMessage());
@@ -565,6 +565,11 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
                                 fut.onDone(e);
 
                                 err = e;
+                            }
+                            catch (Throwable t) {
+                                fut.onDone(t);
+
+                                throw t;
                             }
                         }
                     }
@@ -579,7 +584,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
                 err = new HadoopIgfsCommunicationException(e);
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 if (!stopping)
                     log.error("Failed to obtain endpoint input stream (connection will be closed)", e);
 

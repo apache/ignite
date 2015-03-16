@@ -128,7 +128,6 @@ public class CacheManager implements javax.cache.CacheManager {
             igniteCacheCfg = new CacheConfiguration<>();
 
             igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
-            igniteCacheCfg.setStoreValueBytes(cacheCfg.isStoreByValue());
         }
 
         igniteCacheCfg.setName(cacheName);

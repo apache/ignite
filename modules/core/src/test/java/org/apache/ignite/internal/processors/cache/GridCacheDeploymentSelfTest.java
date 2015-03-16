@@ -32,7 +32,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -100,8 +100,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setPreloadMode(SYNC);
-        cfg.setStoreValueBytes(true);
+        cfg.setRebalanceMode(SYNC);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setBackups(1);
@@ -205,8 +204,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
                 U.sleep(500);
             }
 
-            assert g1.jcache(null).localSize() == 0;
-            assert g2.jcache(null).localSize() == 0;
+            assertEquals(0, g1.jcache(null).localSize());
+            assertEquals(0, g2.jcache(null).localSize());
 
             startGrid(3);
         }

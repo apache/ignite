@@ -42,7 +42,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -55,7 +55,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     private static final int PRELOAD_DELAY = 5000;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** Preload delay. */
     private long delay = -1;
@@ -73,8 +73,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
-        cc.setPreloadPartitionedDelay(delay);
+        cc.setRebalanceMode(preloadMode);
+        cc.setRebalanceDelay(delay);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -129,7 +129,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         g2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -137,7 +137,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         info("Beginning to wait for cache1 repartition.");
 
@@ -148,7 +148,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         checkMaps(false, d0, d1, d2);
 
         // Force preload.
-        internalCache(c1).forceRepartition();
+        c1.rebalance();
 
         l1.await();
 
@@ -159,7 +159,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         info("Beginning to wait for cache2 repartition.");
 
         // Force preload.
-        internalCache(c2).forceRepartition();
+        c2.rebalance();
 
         l2.await();
 
@@ -206,7 +206,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         g2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -214,7 +214,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         U.sleep(1000);
 
@@ -244,7 +244,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testAutomaticPreload() throws Exception {
         delay = 0;
-        preloadMode = CachePreloadMode.SYNC;
+        preloadMode = CacheRebalanceMode.SYNC;
 
         Ignite g0 = startGrid(0);
 
@@ -289,7 +289,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                 for (Ignite g : ignites) {
                     info(">>> Checking affinity for grid: " + g.name());
 
-                    GridDhtPartitionTopology<Integer, String> top = topology(g);
+                    GridDhtPartitionTopology top = topology(g);
 
                     GridDhtPartitionFullMap fullMap = top.partitionMap(true);
 
@@ -321,7 +321,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testManualPreloadSyncMode() throws Exception {
-        preloadMode = CachePreloadMode.SYNC;
+        preloadMode = CacheRebalanceMode.SYNC;
         delay = -1;
 
         try {
@@ -351,7 +351,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
             long start = System.currentTimeMillis();
 
-            internalCache(g.jcache(null)).forceRepartition().get();
+            g.jcache(null).rebalance().get();
 
             info(">>> Finished preloading of empty cache in " + (System.currentTimeMillis() - start) + "ms.");
         }
@@ -364,7 +364,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Topology.
      */
-    private GridDhtPartitionTopology<Integer, String> topology(Ignite g) {
+    private GridDhtPartitionTopology topology(Ignite g) {
         return ((GridNearCacheAdapter<Integer, String>)((IgniteKernal)g).<Integer, String>internalCache()).dht().topology();
     }
 

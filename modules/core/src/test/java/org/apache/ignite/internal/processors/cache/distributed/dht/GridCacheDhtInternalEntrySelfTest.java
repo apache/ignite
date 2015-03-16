@@ -36,7 +36,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests for internal DHT entry.
@@ -64,7 +64,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -170,8 +170,8 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return DHT entry.
      */
-    private GridDhtCacheEntry<Object, Object> peekDhtEntry(ClusterNode node) {
-        return (GridDhtCacheEntry<Object, Object>)dht(grid(node).jcache(null)).peekEx(
+    private GridDhtCacheEntry peekDhtEntry(ClusterNode node) {
+        return (GridDhtCacheEntry)dht(grid(node).jcache(null)).peekEx(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
     }
 

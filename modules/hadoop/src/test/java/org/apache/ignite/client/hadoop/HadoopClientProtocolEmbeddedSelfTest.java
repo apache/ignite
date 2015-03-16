@@ -27,7 +27,8 @@ public class HadoopClientProtocolEmbeddedSelfTest extends HadoopClientProtocolSe
     @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
         HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
 
-        cfg.setExternalExecution(false);
+        // TODO: IGNITE-404: Uncomment when fixed.
+        //cfg.setExternalExecution(false);
 
         return cfg;
     }

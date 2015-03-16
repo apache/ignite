@@ -30,7 +30,6 @@ public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfT
     @Override protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration();
 
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.marshaller.optimized.*;
+import org.apache.ignite.internal.client.marshaller.jdk.*;
 import org.apache.ignite.internal.processors.hadoop.proto.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -41,6 +41,9 @@ import static org.apache.ignite.internal.processors.hadoop.proto.HadoopClientPro
  * Ignite Hadoop client protocol provider.
  */
 public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
+    /** Framework name used in configuration. */
+    public static final String FRAMEWORK_NAME = "ignite";
+
     /** Clients. */
     private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
@@ -111,7 +114,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
 
                     cliCfg.setProtocol(TCP);
                     cliCfg.setServers(Collections.singletonList(addr));
-                    cliCfg.setMarshaller(new GridClientOptimizedMarshaller());
+                    cliCfg.setMarshaller(new GridClientJdkMarshaller());
                     cliCfg.setDaemon(true);
 
                     try {

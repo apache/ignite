@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -92,38 +93,45 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     public void testHasNearCache() throws Exception {
         IgniteKernal g0 = (IgniteKernal)startGrid(0); // PARTITIONED_ONLY cache.
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 0));
-        assertFalse(g0.context().discovery().hasNearCache(null, 0));
+        AffinityTopologyVersion zero = new AffinityTopologyVersion(0);
+        AffinityTopologyVersion one = new AffinityTopologyVersion(1);
+        AffinityTopologyVersion two = new AffinityTopologyVersion(2);
+        AffinityTopologyVersion three = new AffinityTopologyVersion(3);
+        AffinityTopologyVersion four = new AffinityTopologyVersion(4);
+        AffinityTopologyVersion five = new AffinityTopologyVersion(5);
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
-        assertFalse(g0.context().discovery().hasNearCache(null, 1));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, zero));
+        assertFalse(g0.context().discovery().hasNearCache(null, zero));
+
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
+        assertFalse(g0.context().discovery().hasNearCache(null, one));
 
         IgniteKernal g1 = (IgniteKernal)startGrid(1); // NEAR_ONLY cache.
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertFalse(g0.context().discovery().hasNearCache(null, 1));
-        assertTrue(g0.context().discovery().hasNearCache(null, 2));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertFalse(g0.context().discovery().hasNearCache(null, one));
+        assertTrue(g0.context().discovery().hasNearCache(null, two));
 
-        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertTrue(g1.context().discovery().hasNearCache(null, 2));
+        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertTrue(g1.context().discovery().hasNearCache(null, two));
 
         IgniteKernal g2 = (IgniteKernal)startGrid(2); // NEAR_PARTITIONED cache.
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertFalse(g0.context().discovery().hasNearCache(null, 1));
-        assertTrue(g0.context().discovery().hasNearCache(null, 2));
-        assertTrue(g0.context().discovery().hasNearCache(null, 3));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertFalse(g0.context().discovery().hasNearCache(null, one));
+        assertTrue(g0.context().discovery().hasNearCache(null, two));
+        assertTrue(g0.context().discovery().hasNearCache(null, three));
 
-        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertTrue(g1.context().discovery().hasNearCache(null, 2));
-        assertTrue(g1.context().discovery().hasNearCache(null, 3));
+        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g1.context().discovery().hasNearCache(null, two));
+        assertTrue(g1.context().discovery().hasNearCache(null, three));
 
-        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertTrue(g2.context().discovery().hasNearCache(null, 3));
+        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g2.context().discovery().hasNearCache(null, three));
 
         stopGrid(1);
 
@@ -141,19 +149,19 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
             Thread.sleep(1000);
         }
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 4));
-        assertFalse(g0.context().discovery().hasNearCache(null, 1));
-        assertTrue(g0.context().discovery().hasNearCache(null, 2));
-        assertTrue(g0.context().discovery().hasNearCache(null, 3));
-        assertTrue(g0.context().discovery().hasNearCache(null, 4));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, four));
+        assertFalse(g0.context().discovery().hasNearCache(null, one));
+        assertTrue(g0.context().discovery().hasNearCache(null, two));
+        assertTrue(g0.context().discovery().hasNearCache(null, three));
+        assertTrue(g0.context().discovery().hasNearCache(null, four));
 
-        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, 4));
-        assertTrue(g2.context().discovery().hasNearCache(null, 3));
-        assertTrue(g2.context().discovery().hasNearCache(null, 4));
+        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, four));
+        assertTrue(g2.context().discovery().hasNearCache(null, three));
+        assertTrue(g2.context().discovery().hasNearCache(null, four));
 
         stopGrid(2);
 
@@ -171,16 +179,16 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
             Thread.sleep(1000);
         }
 
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 3));
-        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 4));
-        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 5));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, four));
+        assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, five));
 
-        assertFalse(g0.context().discovery().hasNearCache(null, 1));
-        assertTrue(g0.context().discovery().hasNearCache(null, 2));
-        assertTrue(g0.context().discovery().hasNearCache(null, 3));
-        assertTrue(g0.context().discovery().hasNearCache(null, 4));
-        assertFalse(g0.context().discovery().hasNearCache(null, 5));
+        assertFalse(g0.context().discovery().hasNearCache(null, one));
+        assertTrue(g0.context().discovery().hasNearCache(null, two));
+        assertTrue(g0.context().discovery().hasNearCache(null, three));
+        assertTrue(g0.context().discovery().hasNearCache(null, four));
+        assertFalse(g0.context().discovery().hasNearCache(null, five));
     }
 }

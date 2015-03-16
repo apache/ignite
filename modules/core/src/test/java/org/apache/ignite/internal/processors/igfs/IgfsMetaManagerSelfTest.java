@@ -101,7 +101,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         }
 
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 

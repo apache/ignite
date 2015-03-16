@@ -148,14 +148,8 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (cctx.portableEnabled()) {
-            try {
-                key = (K)cctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 
         return cctx.config().getAffinityMapper().affinityKey(key);
     }
@@ -173,7 +167,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
 
         AffinityTopologyVersion topVer = topologyVersion();
 
-        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer.topologyVersion()).size();
+        int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
 
         // Must return empty map if no alive nodes present or keys is empty.
         Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);

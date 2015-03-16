@@ -180,7 +180,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
 
                 ComputeTaskFuture<Object> f = comp.future();
 
-                f.listenAsync(lsnr);
+                f.listen(lsnr);
 
                 iterCntr.increment();
 

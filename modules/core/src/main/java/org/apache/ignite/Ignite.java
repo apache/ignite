@@ -41,8 +41,7 @@ import java.util.concurrent.*;
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
- * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
@@ -198,9 +197,6 @@ public interface Ignite extends AutoCloseable {
 
     public <K, V> IgniteCache<K, V> createCache(NearCacheConfiguration<K, V> nearCfg);
 
-    // TODO IGNITE-45
-    //public <K, V> IgniteCache<K, V> createCache(String name, String path);
-
     /**
      * Stops dynamically started cache.
      *
@@ -225,14 +221,14 @@ public interface Ignite extends AutoCloseable {
     public IgniteTransactions transactions();
 
     /**
-     * Gets a new instance of data loader associated with given cache name. Data loader
+     * Gets a new instance of data streamer associated with given cache name. Data streamer
      * is responsible for loading external data into in-memory data grid. For more information
-     * refer to {@link IgniteDataLoader} documentation.
+     * refer to {@link IgniteDataStreamer} documentation.
      *
      * @param cacheName Cache name ({@code null} for default cache).
-     * @return Data loader.
+     * @return Data streamer.
      */
-    public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName);
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not

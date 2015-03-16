@@ -119,7 +119,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testSelectString() throws Exception {
+    public void testSelectString() throws Exception {
         ResultSet rs = stmt.executeQuery("select 'str'");
 
         int cnt = 0;

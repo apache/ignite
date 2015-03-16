@@ -72,7 +72,6 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(mode);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setStartSize(startSize);
 

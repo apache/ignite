@@ -36,7 +36,7 @@ import java.util.*;
  * Force keys request. This message is sent by node while preloading to force
  * another node to put given keys into the next batch of transmitting entries.
  */
-public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,14 +46,10 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
-    /** Serialized keys. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> keyBytes;
-
     /** Keys to request. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<K> keys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
     private AffinityTopologyVersion topVer;
@@ -69,8 +65,8 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        Collection<K> keys,
-        @NotNull AffinityTopologyVersion topVer
+        Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -98,7 +94,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @param keys Collection of keys.
      */
-    public GridDhtForceKeysRequest(Collection<K> keys) {
+    public GridDhtForceKeysRequest(Collection<KeyCacheObject> keys) {
         assert !F.isEmpty(keys);
 
         this.keys = keys;
@@ -119,16 +115,9 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /**
-     * @return Collection of serialized keys.
-     */
-    public Collection<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Keys.
      */
-    public Collection<K> keys() {
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -141,26 +130,28 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (keyBytes == null)
-            keyBytes = marshalCollection(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null)
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
     /**
      * @return Key count.
      */
     private int keyCount() {
-        return keyBytes == null ? keys.size() : keyBytes.size();
+        return keys.size();
     }
 
     /** {@inheritDoc} */
@@ -185,7 +176,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -227,7 +218,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 reader.incrementState();
 
             case 4:
-                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

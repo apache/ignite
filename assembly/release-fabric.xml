@@ -39,11 +39,6 @@
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
-
-        <file>
-            <source>docs/ignite_readme.pdf</source>
-            <outputDirectory>/docs</outputDirectory>
-        </file>
     </files>
 
     <fileSets>

@@ -24,13 +24,13 @@ import org.jetbrains.annotations.*;
 /**
  * Cache entry transactional update result.
  */
-public class GridCacheUpdateTxResult<V> {
+public class GridCacheUpdateTxResult {
     /** Success flag.*/
     private final boolean success;
 
     /** Old value. */
     @GridToStringInclude
-    private final V oldVal;
+    private final CacheObject oldVal;
 
     /**
      * Constructor.
@@ -38,7 +38,7 @@ public class GridCacheUpdateTxResult<V> {
      * @param success Success flag.
      * @param oldVal Old value (if any),
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable V oldVal) {
+    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal) {
         this.success = success;
         this.oldVal = oldVal;
     }
@@ -53,7 +53,7 @@ public class GridCacheUpdateTxResult<V> {
     /**
      * @return Old value.
      */
-    @Nullable public V oldValue() {
+    @Nullable public CacheObject oldValue() {
         return oldVal;
     }
 

@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -85,11 +85,10 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
 
         ccfg.setBackups(1);
-        ccfg.setStoreValueBytes(false);
         ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setWriteSynchronizationMode(writeSync);
 
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
 
         return ccfg;
     }
@@ -243,7 +242,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
 
-                    GridCacheEntryEx<Object, Object> entry = c.peekEx(k);
+                    GridCacheEntryEx entry = c.peekEx(k);
 
                     for (int r = 0; r < 3; r++) {
                         try {
@@ -258,7 +257,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 if (val == null) {
                                     assertNull(ver);
 
-                                    val = entry.rawGetOrUnmarshal(false);
+                                    val = CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false);
                                     ver = entry.version();
                                     nodeId = locNode.id();
                                 }
@@ -267,7 +266,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, entry.rawGetOrUnmarshal(false));
+                                        val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
                                     assertEquals(ver, entry.version());
                                 }
                             }

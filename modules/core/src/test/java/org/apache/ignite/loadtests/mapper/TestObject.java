@@ -26,7 +26,7 @@ import java.io.*;
  */
 public class TestObject implements Serializable {
     /** ID. */
-    @QuerySqlField
+    @QuerySqlField(index = true)
     private int id;
 
     /** Text. */

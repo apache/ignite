@@ -66,7 +66,6 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
@@ -74,7 +73,6 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 

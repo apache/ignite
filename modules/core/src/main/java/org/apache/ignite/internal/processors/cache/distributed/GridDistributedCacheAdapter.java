@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,7 +36,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,21 +68,21 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
+    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> tx,
+        IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
         boolean isInvalidate,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         assert tx != null;
 
@@ -92,11 +91,19 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
+        CacheEntryPredicate... filter) {
+        IgniteTxLocalEx tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
-        return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, -1L, filter);
+        return lockAllAsync(ctx.cacheKeysView(keys),
+            timeout,
+            tx,
+            false,
+            false,
+            /*retval*/true,
+            null,
+            -1L,
+            filter);
     }
 
     /**
@@ -111,22 +118,22 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param filter Optional filter.
      * @return Future for locks.
      */
-    protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter);
+        CacheEntryPredicate[] filter);
 
     /**
      * @param key Key to remove.
      * @param ver Version to remove.
      */
-    public void removeVersionedEntry(K key, GridCacheVersion ver) {
-        GridCacheEntryEx<K, V> entry = peekEx(key);
+    public void removeVersionedEntry(KeyCacheObject key, GridCacheVersion ver) {
+        GridCacheEntryEx entry = peekEx(key);
 
         if (entry == null)
             return;
@@ -161,7 +168,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -181,7 +188,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
                     new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
 
-            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
                         fut.get();
@@ -277,29 +284,30 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
-                    ((IgniteDataLoaderImpl)dataLdr).maxRemapCount(0);
+                try (DataStreamerImpl<KeyCacheObject, Object> dataLdr =
+                         (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
+                    ((DataStreamerImpl)dataLdr).maxRemapCount(0);
 
-                    dataLdr.updater(GridDataLoadCacheUpdaters.<K, V>batched());
+                    dataLdr.updater(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
-                    for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                            for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                            for (GridDhtCacheEntry o : locPart.entries()) {
                                 if (!o.obsoleteOrDeleted())
-                                    dataLdr.removeData(o.key());
+                                    dataLdr.removeDataInternal(o.key());
                             }
                         }
                     }
 
-                    Iterator<Cache.Entry<K, V>> it = dht.context().swap().offheapIterator(true, false, topVer);
+                    Iterator<KeyCacheObject> it = dht.context().swap().offHeapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next().getKey());
+                        dataLdr.removeDataInternal(it.next());
 
-                    it = dht.context().swap().swapIterator(true, false, topVer);
+                    it = dht.context().swap().swapKeyIterator(true, false, topVer);
 
                     while (it.hasNext())
-                        dataLdr.removeData(it.next().getKey());
+                        dataLdr.removeDataInternal(it.next());
                 }
             }
             finally {

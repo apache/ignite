@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -24,8 +27,16 @@ import java.util.*;
  * Cache change batch.
  */
 public class DynamicCacheChangeBatch implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Change requests. */
+    @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
+
+    /** Client nodes map. Used in discovery data exchange. */
+    @GridToStringInclude
+    private Map<String, Map<UUID, Boolean>> clientNodes;
 
     /**
      * @param reqs Requests.
@@ -41,5 +52,24 @@ public class DynamicCacheChangeBatch implements Serializable {
      */
     public Collection<DynamicCacheChangeRequest> requests() {
         return reqs;
+    }
+
+    /**
+     * @return Client nodes map.
+     */
+    public Map<String, Map<UUID, Boolean>> clientNodes() {
+        return clientNodes;
+    }
+
+    /**
+     * @param clientNodes Client nodes map.
+     */
+    public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
+        this.clientNodes = clientNodes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DynamicCacheChangeBatch.class, this);
     }
 }

@@ -61,7 +61,6 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setMemoryMode(OFFHEAP_VALUES);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
-        cfg.setQueryIndexEnabled(false);
 
         return cfg;
     }
@@ -75,7 +74,6 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setMemoryMode(OFFHEAP_TIERED);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
-        cfg.setQueryIndexEnabled(false);
 
         return cfg;
     }

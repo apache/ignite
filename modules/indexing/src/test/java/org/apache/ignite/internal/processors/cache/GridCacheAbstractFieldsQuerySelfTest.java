@@ -41,7 +41,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests for fields queries.
@@ -73,8 +73,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         if (hasCache)
             cfg.setCacheConfiguration(cache(null, null), cache(CACHE, null), cache(EMPTY_CACHE, null));
-        else
+        else {
+            cfg.setClientMode(true);
             cfg.setCacheConfiguration();
+        }
 
         cfg.setDiscoverySpi(discovery());
 
@@ -93,15 +95,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cache.setPreloadMode(SYNC);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-        qcfg.setIndexFixedTyping(true);
-
-        cache.setQueryConfiguration(qcfg);
+        cache.setRebalanceMode(SYNC);
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
@@ -1035,40 +1029,6 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         assert res.size() == 2;
         assert "John White".equals(res.get(0));
         assert res.get(1).equals(25);
-    }
-
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        P2<Integer, Integer> p = new P2<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                return val < 30;
-            }
-        };
-
-        CacheProjection<Integer, Integer> cachePrj = ((IgniteKernal)grid(0))
-            .<Integer, Integer>cache(null).projection(p);
-
-        CacheQuery<List<?>> q = cachePrj.queries()
-            .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");
-
-        List<List<?>> list = new ArrayList<>(q.execute().get());
-
-        dedup(list);
-
-        Collections.sort(list, new Comparator<List<?>>() {
-            @Override public int compare(List<?> r1, List<?> r2) {
-                return ((Integer)r1.get(0)).compareTo((Integer)r2.get(0));
-            }
-        });
-
-        assertEquals(10, list.size());
-
-        for (int i = 20; i < 30; i++) {
-            List<?> row = list.get(i - 20);
-
-            assertEquals(i, row.get(0));
-            assertEquals(i, row.get(1));
-        }
     }
 
     /**

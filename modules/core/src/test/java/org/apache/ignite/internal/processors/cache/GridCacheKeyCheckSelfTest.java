@@ -73,7 +73,6 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         cfg.setBackups(1);
         cfg.setNearConfiguration(nearConfiguration());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(atomicityMode);
 
         return cfg;

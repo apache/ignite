@@ -86,7 +86,6 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
             new CacheLruEvictionPolicy(maxOnheapSize));
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
-        cacheCfg.setQueryIndexEnabled(memoryMode != CacheMemoryMode.OFFHEAP_VALUES);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setMarshaller(new OptimizedMarshaller(false));
@@ -241,6 +240,10 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         assertEquals(cache, c.size());
         assertEquals(offheapSwap, c.offHeapEntriesCount() + c.swapKeys());
 
+        info("size: " + c.size());
+        info("offheap: " + c.offHeapEntriesCount());
+        info("swap: " + c.swapKeys());
+
         if (offheapEmpty)
             Assert.assertEquals(0, c.offHeapEntriesCount());
         else
@@ -250,10 +253,6 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(0, c.swapKeys());
         else
             Assert.assertNotEquals(0, c.swapKeys());
-
-        info("size: " + c.size());
-        info("offheap: " + c.offHeapEntriesCount());
-        info("swap: " + c.swapKeys());
 
         stopAllGrids();
     }

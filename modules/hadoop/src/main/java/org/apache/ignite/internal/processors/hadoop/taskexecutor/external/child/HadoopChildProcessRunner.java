@@ -66,7 +66,7 @@ public class HadoopChildProcessRunner {
     private long startTime;
 
     /** Init future. */
-    private final GridFutureAdapterEx<?> initFut = new GridFutureAdapterEx<>();
+    private final GridFutureAdapter<?> initFut = new GridFutureAdapter<>();
 
     /** Job instance. */
     private HadoopJob job;
@@ -147,7 +147,7 @@ public class HadoopChildProcessRunner {
         if (!initFut.isDone() && log.isDebugEnabled())
             log.debug("Will wait for process initialization future completion: " + req);
 
-        initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        initFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     // Make sure init was successful.
@@ -219,7 +219,7 @@ public class HadoopChildProcessRunner {
      * @param req Update request.
      */
     private void updateTasks(final HadoopJobInfoUpdateRequest req) {
-        initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        initFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> gridFut) {
                 assert initGuard.get();
 
@@ -316,7 +316,7 @@ public class HadoopChildProcessRunner {
             final long start = U.currentTimeMillis();
 
             try {
-                shuffleJob.flush().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                shuffleJob.flush().listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         long end = U.currentTimeMillis();
 
@@ -396,7 +396,7 @@ public class HadoopChildProcessRunner {
                 if (log.isTraceEnabled())
                     log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
-                initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                initFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
                         try {
                             HadoopShuffleMessage m = (HadoopShuffleMessage)msg;

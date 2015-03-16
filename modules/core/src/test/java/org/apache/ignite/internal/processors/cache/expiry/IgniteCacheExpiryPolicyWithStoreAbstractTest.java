@@ -206,7 +206,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+            GridCacheEntryEx e = cache.peekEx(key);
 
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);

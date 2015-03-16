@@ -37,6 +37,7 @@ public class GridCacheReplicatedFullApiSelfTest extends GridCacheAbstractFullApi
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 

@@ -27,35 +27,6 @@
     <bean id="base-ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="true"/>
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.yardstick.cache.model.SampleValue</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Person</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Organization</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopTask$NoopJob</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopCallable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteRunBenchmark$NoopRunnable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteApplyBenchmark$NoopClosure</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
-        <!--<property name="indexingSpi">-->
-            <!--<list>-->
-                <!--<bean class="org.apache.ignite.spi.indexing.h2.H2IndexingSpi">-->
-                    <!--<property name="name" value="offheap"/>-->
-                    <!--<property name="maxOffHeapMemory" value="#{500*1024*1024}"/>-->
-                <!--</bean>-->
-                <!--<bean class="org.apache.ignite.spi.indexing.h2.H2IndexingSpi">-->
-                    <!--<property name="name" value="default"/>-->
-                <!--</bean>-->
-            <!--</list>-->
-        <!--</property>-->
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -66,8 +37,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -80,8 +49,6 @@
                     <property name="swapEnabled" value="false"/>
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -95,7 +62,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -107,7 +73,6 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -121,7 +86,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -135,7 +99,6 @@
 
                     <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -147,10 +110,15 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <!-- Enable query indexing for query cache. -->
-                    <property name="queryIndexEnabled" value="true"/>
+                    <property name="indexedTypes">
+                        <list>
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.yardstick.cache.model.Organization</value>
 
-                    <property name="indexingSpiName" value="default"/>
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.yardstick.cache.model.Person</value>
+                        </list>
+                    </property>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -162,12 +130,17 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <!-- Enable query indexing for query cache. -->
-                    <property name="queryIndexEnabled" value="true"/>
-
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
-                    <!--<property name="indexingSpiName" value="offheap"/>-->
+                    <property name="indexedTypes">
+                        <list>
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.yardstick.cache.model.Organization</value>
+
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.yardstick.cache.model.Person</value>
+                        </list>
+                    </property>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -178,8 +151,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <!--<property name="queryIndexEnabled" value="false"/>-->
                 </bean>
             </list>
         </property>
@@ -193,12 +164,6 @@
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
-            </bean>
-        </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="sharedMemoryPort" value="-1"/>
             </bean>
         </property>
     </bean>

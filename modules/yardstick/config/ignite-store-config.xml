@@ -73,24 +73,6 @@
     <bean class="org.apache.ignite.configuration.IgniteConfiguration" >
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="true"/>
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.yardstick.cache.model.SampleKey</value>
-                        <value>org.apache.ignite.yardstick.cache.model.SampleValue</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Person</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Organization</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopTask$NoopJob</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopCallable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteRunBenchmark$NoopRunnable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteApplyBenchmark$NoopClosure</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -101,8 +83,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
 
                     <property name="typeMetadata">
                         <list>
@@ -125,8 +105,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
 
                     <property name="typeMetadata">
                         <list>
@@ -152,12 +130,6 @@
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
-            </bean>
-        </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="sharedMemoryPort" value="-1"/>
             </bean>
         </property>
 

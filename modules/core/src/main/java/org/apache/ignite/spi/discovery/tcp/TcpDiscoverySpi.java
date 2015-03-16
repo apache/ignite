@@ -1021,18 +1021,19 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             DiscoverySpiListener lsnr = this.lsnr;
 
             if (lsnr != null) {
-                Collection<ClusterNode> processed = new LinkedList<>();
+                Set<ClusterNode> processed = new HashSet<>();
 
                 for (TcpDiscoveryNode n : rmts) {
                     assert n.visible();
 
                     processed.add(n);
 
-                    Collection<ClusterNode> top = F.viewReadOnly(rmts, F.<ClusterNode>identity(), F.notIn(processed));
+                    List<ClusterNode> top = U.arrayList(rmts, F.notIn(processed));
 
                     topVer++;
 
-                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
+                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
+                        Collections.unmodifiableList(top));
 
                     lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
@@ -1169,7 +1170,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         if (F.contains(locNodeAddrs, addr))
             return F.t(ignite.configuration().getNodeId(), false);
 
-        GridFutureAdapterEx<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
+        GridFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapter<>();
 
         IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
@@ -1458,6 +1459,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             }
                         }
                         catch (IgniteSpiException e) {
+                            e.printStackTrace();
+
                             ex = e;
                         }
                     }

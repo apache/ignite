@@ -53,6 +53,13 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         return DUR * 3;
     }
 
+    /** {@inheritDoc} */
+    @Override protected Class<?>[] indexedTypes() {
+        return new Class<?>[]{
+            Integer.class, EnemyCamp.class
+        };
+    }
+
     /**
      * @throws Exception If failed.
      */

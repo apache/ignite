@@ -119,7 +119,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
@@ -129,16 +129,12 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setIndexedTypes(
+            Long.class, Long.class
+        );
         cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cacheCfg.setEvictionPolicy(null);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -264,15 +260,15 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         for (long i = from; i < to; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Long, Long> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            Long val = entry.rawGet();
+            Long val = entry.rawGet().value(entry.context().cacheObjectContext(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), val);
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), val);
             assertEquals(entry.version(), versions.get(i));
         }
 
@@ -311,13 +307,13 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
             GridCacheContext<Long, Object> ctx = cache.dht().context();
 
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<Object>>> it = ctx.swap().iterator(part, true);
+            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = ctx.swap().iterator(part);
 
             assert it != null || vals.isEmpty();
 
             if (it != null) {
                 while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry<Object>> swapEntry = it.next();
+                    Map.Entry<byte[], GridCacheSwapEntry> swapEntry = it.next();
 
                     Long key = ctx.marshaller().unmarshal(swapEntry.getKey(), ctx.deploy().globalLoader());
 

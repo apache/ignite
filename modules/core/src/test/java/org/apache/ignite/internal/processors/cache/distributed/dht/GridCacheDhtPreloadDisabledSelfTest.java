@@ -38,7 +38,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -82,11 +82,11 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        //cacheCfg.setPreloadThreadPoolSize(1);
+        //cacheCfg.setRebalanceThreadPoolSize(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -114,8 +114,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @param i Grid index.
      * @return Topology.
      */
-    private GridDhtPartitionTopology<Integer, String> topology(int i) {
-        return near(grid(i).<Integer, String>jcache(null)).dht().topology();
+    private GridDhtPartitionTopology topology(int i) {
+        return near(grid(i).jcache(null)).dht().topology();
     }
 
     /** @throws Exception If failed. */
@@ -254,7 +254,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                         return true;
                     }
-                }, EVTS_CACHE_PRELOAD);
+                }, EVTS_CACHE_REBALANCE);
 
             list.add(g);
         }

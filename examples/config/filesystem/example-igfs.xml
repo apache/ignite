@@ -27,12 +27,9 @@
     Ignition.start("examples/config/filesystem/example-igfs.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
-       http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/util
-       http://www.springframework.org/schema/util/spring-util.xsd">
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <!--
         Optional description.
@@ -90,9 +87,9 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="tcp"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
                     </property>
                     -->
 
@@ -101,10 +98,9 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="shmem"/>
-                            <entry key="port" value="10500"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="SHMEM" />
+                        </bean>
                     </property>
                     -->
                 </bean>
@@ -117,9 +113,7 @@
                     <property name="name" value="igfs-data"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
                         <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
@@ -133,7 +127,6 @@
                     <property name="name" value="igfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="queryIndexEnabled" value="false"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
             </list>

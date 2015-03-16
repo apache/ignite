@@ -22,9 +22,9 @@ import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
 
-import org.apache.ignite.visor.{VisorTag, visor}
 import org.apache.ignite.visor.commands.VisorConsoleCommand
-import visor._
+import org.apache.ignite.visor.visor._
+import org.apache.ignite.visor.{VisorTag, visor}
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions

@@ -80,12 +80,15 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
+        cacheCfg.setIndexedTypes(
+            Integer.class, CacheValue.class
+        );
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -569,15 +572,15 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = entry.rawGet();
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), (Integer)val.value());
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
 
             assertEquals(entry.version(), versions.get(i));
         }

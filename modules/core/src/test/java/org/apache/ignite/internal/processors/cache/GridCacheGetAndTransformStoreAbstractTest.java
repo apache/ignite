@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -85,7 +85,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cc.setReadThrough(true);

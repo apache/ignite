@@ -71,7 +71,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc2.setWriteSynchronizationMode(FULL_SYNC);
         cc2.setMemoryMode(OFFHEAP_VALUES);
         cc2.setOffHeapMaxMemory(100 * 1024 * 1024);
-        cc2.setQueryIndexEnabled(false);
 
         c.setCacheConfiguration(cc1, cc2);
 

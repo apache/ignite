@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Factory for cache entries.
  */
-public interface GridCacheMapEntryFactory<K, V> {
+public interface GridCacheMapEntryFactory {
     /**
      * @param ctx Cache registry.
      * @param topVer Topology version.
@@ -35,6 +35,12 @@ public interface GridCacheMapEntryFactory<K, V> {
      * @param hdrId Header id.
      * @return New cache entry.
      */
-    public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, AffinityTopologyVersion topVer, K key, int hash,
-        V val, @Nullable GridCacheMapEntry<K, V> next, long ttl, int hdrId);
+    public GridCacheMapEntry create(GridCacheContext ctx,
+        AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        @Nullable GridCacheMapEntry next,
+        long ttl,
+        int hdrId);
 }

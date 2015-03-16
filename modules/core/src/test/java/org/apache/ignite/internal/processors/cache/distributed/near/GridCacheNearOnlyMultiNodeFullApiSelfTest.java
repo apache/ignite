@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -56,17 +55,41 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         cnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (ignite(i).configuration().isClientMode()) {
+                if (clientHasNearCache())
+                    ignite(i).createCache(new NearCacheConfiguration<>());
+                else
+                    ignite(i).jcache(null);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return If client node has near cache.
+     */
+    protected boolean clientHasNearCache() {
+        return true;
+    }
+
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (cnt.getAndIncrement() == 0) {
+            info("Use grid '" + gridName + "' as near-only.");
+
+            cfg.setClientMode(true);
+        }
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        if (cnt.getAndIncrement() == 0) {
-            info("Use grid '" + gridName + "' as near-only.");
-
-            return null;
-        }
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicWriteOrderMode(PRIMARY);
@@ -77,7 +100,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            if (!cache(i).affinityNode()) {
+            if (ignite(i).configuration().isClientMode()) {
                 nearIdx = i;
 
                 break;
@@ -88,21 +111,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         dfltIgnite = grid(nearIdx);
 
+        info("Near-only node: " + dfltIgnite.cluster().localNode().id());
+
         super.beforeTest(); // Doing initial asserts.
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
-
-        for (int i = 0; i < gridCount(); i++) {
-            ClusterNode node = grid(i).localNode();
-
-            GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
-
-            info("Cache attributes for node [nodeId=" + node.id() + ", attrs=" +
-                Arrays.asList(nodeAttrs) + ']');
-        }
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
@@ -222,7 +238,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -253,7 +269,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             info("Checking grid: " + grid(i).localNode().id());
 
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -297,7 +313,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -338,7 +354,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -403,7 +419,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -412,7 +428,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         // Ensure that next update will not pick old expire time.
-        tx = inTx ? c.txStart() : null;
+        tx = inTx ? transactions().txStart() : null;
 
         try {
             c.put(key, 10);
@@ -433,7 +449,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 

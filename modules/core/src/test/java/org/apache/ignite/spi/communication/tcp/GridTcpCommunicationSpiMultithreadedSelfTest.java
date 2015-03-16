@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
+public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
@@ -53,9 +53,6 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
     /** Message id sequence. */
     private AtomicLong msgId = new AtomicLong();
-
-    /** */
-    private final boolean useShmem;
 
     /** SPI resources. */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
@@ -82,12 +79,9 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     }
 
     /**
-     * @param useShmem Use shared mem.
      */
-    protected GridTcpCommunicationSpiMultithreadedSelfTest(boolean useShmem) {
+    public GridTcpCommunicationSpiMultithreadedSelfTest() {
         super(false);
-
-        this.useShmem = useShmem;
     }
 
     /**
@@ -417,9 +411,6 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
      */
     private CommunicationSpi<Message> newCommunicationSpi() {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
-
-        if (!useShmem)
-            spi.setSharedMemoryPort(-1);
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);

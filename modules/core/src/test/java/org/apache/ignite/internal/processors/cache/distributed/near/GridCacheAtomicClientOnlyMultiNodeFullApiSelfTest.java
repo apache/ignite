@@ -42,13 +42,14 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-// TODO IGNITE-45
-//        if (cfg.getDistributionMode() == NEAR_ONLY)
-//            cfg.setDistributionMode(CLIENT_ONLY);
-//        else
-//            cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean clientHasNearCache() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -390,30 +390,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgnitePredicate CACHE_ENTRY_HAS_GET_VAL = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Cache.Entry)o).getValue() != null;
-        }
-
-        @Override public String toString() {
-            return "Cache entry has-get-value predicate.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate CACHE_ENTRY_NO_GET_VAL = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Cache.Entry)o).getValue() == null;
-        }
-
-        @Override public String toString() {
-            return "Cache entry no-get-value predicate.";
-        }
-    };
-
-    /** */
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
@@ -2704,88 +2680,6 @@ public class GridFunc {
         return new P1<IgniteBiTuple<E1, E2>>() {
             @Override public boolean apply(IgniteBiTuple<E1, E2> e) {
                 return p.apply(e.get1(), e.get2());
-            }
-        };
-    }
-
-    /**
-     * Converts given object with interface {@link org.apache.ignite.internal.IgniteInternalFuture} into an object implementing {@link Future}.
-     *
-     * @param fut Future to convert.
-     * @param <T> Type of computation result.
-     * @return Instance implementing {@link Future}.
-     */
-    public static <T> Future<T> as(final IgniteInternalFuture<T> fut) {
-        A.notNull(fut, "fut");
-
-        return new GridSerializableFuture<T>() {
-            @Override public boolean cancel(boolean mayInterruptIfRunning) {
-                if (mayInterruptIfRunning) {
-                    try {
-                        return fut.cancel();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-                else
-                    return false;
-            }
-
-            @Override public boolean isCancelled() {
-                return fut.isCancelled();
-            }
-
-            @Override public boolean isDone() {
-                return fut.isDone();
-            }
-
-            @Override public T get() throws InterruptedException, ExecutionException {
-                try {
-                    return fut.get();
-                }
-                catch (IgniteFutureCancelledCheckedException ignore) {
-                    throw new CancellationException("The computation was cancelled.");
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    throw new InterruptedException("The computation was interrupted.");
-                }
-                catch (IgniteCheckedException e) {
-                    throw new ExecutionException("The computation failed.", e);
-                }
-            }
-
-            @Override public T get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException,
-                TimeoutException {
-                try {
-                    return fut.get(timeout, unit);
-                }
-                catch (IgniteFutureCancelledCheckedException ignore) {
-                    throw new CancellationException("The computation was cancelled.");
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    throw new InterruptedException("The computation was interrupted.");
-                }
-                catch (IgniteFutureTimeoutCheckedException e) {
-                    throw new TimeoutException("The computation timed out: " + e.getMessage());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new ExecutionException("The computation failed.", e);
-                }
-            }
-        };
-    }
-
-    /**
-     * Gets closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
-     *
-     * @param <T> Type of future.
-     * @return Closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
-     */
-    public static <T> IgniteClosure<IgniteInternalFuture<T>, Future<T>> future() {
-        return new C1<IgniteInternalFuture<T>, Future<T>>() {
-            @Override public Future<T> apply(IgniteInternalFuture<T> fut) {
-                return as(fut);
             }
         };
     }
@@ -5546,7 +5440,7 @@ public class GridFunc {
      *      does not exist in the map. Return {@code null} if key is not found and
      *      closure is {@code null}.
      */
-    @Nullable public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
+    public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
         A.notNull(map, "map", key, "key");
 
         V v = map.get(key);
@@ -7907,34 +7801,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     * method returns {@code non-null} value.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     *      method returns {@code non-null} value.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasGetValue() {
-        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
-    }
-
-    /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     * method returns {@code null} value.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
-     *      method returns {@code null} value.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheNoGetValue() {
-        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
-    }
-
-    /**
      * Gets predicate which returns {@code true} if
      * {@link org.apache.ignite.cache.Entry#peek() Entry.peek()} method
      * returns {@code non-null} value.
@@ -8523,7 +8389,7 @@ public class GridFunc {
      * @return Completed future.
      */
     public static <T> IgniteInternalFuture<T> awaitOne(IgniteInternalFuture<T>... futs) {
-        return isEmpty(futs) ? new GridFinishedFutureEx<T>() : awaitOne(asList(futs));
+        return isEmpty(futs) ? new GridFinishedFuture<T>() : awaitOne(asList(futs));
     }
 
     /**
@@ -8535,7 +8401,7 @@ public class GridFunc {
      */
     public static <T> IgniteInternalFuture<T> awaitOne(Iterable<IgniteInternalFuture<T>> futs) {
         if (F.isEmpty(futs))
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -8555,7 +8421,7 @@ public class GridFunc {
                         };
                     }
 
-                    fut.listenAsync(c);
+                    fut.listen(c);
                 }
                 else
                     return fut;
@@ -8564,7 +8430,7 @@ public class GridFunc {
 
         // Only NULLs have been passed in.
         if (c == null)
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         boolean interrupted = false;
 

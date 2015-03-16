@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -216,6 +217,9 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                 for (int j = 0; j < keyCount(); j++)
                     cache.put(j, j);
 
+            // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
+            U.sleep(30);
+
             tx.commit();
         }
 
@@ -257,6 +261,9 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
             if (put)
                 for (int j = 0; j < keyCount(); j++)
                     cache.put(j, j);
+
+            // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
+            U.sleep(30);
 
             tx.rollback();
         }

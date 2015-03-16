@@ -26,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -70,7 +69,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             SQL,
-            filter(),
             ctx.kernalContext().query().typeName(U.box(cls)),
             clause,
             null,
@@ -85,7 +83,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             SQL,
-            filter(),
             clsName,
             clause,
             null,
@@ -99,7 +96,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             SQL_FIELDS,
-            filter(),
             null,
             qry,
             null,
@@ -114,7 +110,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             TEXT,
-            filter(),
             ctx.kernalContext().query().typeName(U.box(cls)),
             search,
             null,
@@ -129,7 +124,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             TEXT,
-            filter(),
             clsName,
             search,
             null,
@@ -142,7 +136,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     @Override public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
         return new GridCacheQueryAdapter<>(ctx,
             SCAN,
-            filter(),
             null,
             null,
             (IgniteBiPredicate<Object, Object>)filter,
@@ -158,7 +151,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     public <R> CacheQuery<R> createSpiQuery() {
         return new GridCacheQueryAdapter<>(ctx,
             SPI,
-            filter(),
             null,
             null,
             null,
@@ -167,17 +159,12 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+    @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
         return ctx.kernalContext().query().queryTwoStep(space, qry);
     }
 
-    /**
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
-     * @return Result.
-     */
-    public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
         return ctx.kernalContext().query().queryTwoStep(space, sqlQry, params);
     }
 
@@ -221,20 +208,11 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
         return new GridCacheQueryAdapter<>(ctx,
             SQL_FIELDS,
-            filter(),
             null,
             qry,
             null,
             incMeta,
             prj != null && prj.isKeepPortable());
-    }
-
-    /**
-     * @return Optional projection filter.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private IgnitePredicate<Cache.Entry<Object, Object>> filter() {
-        return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 
     /** {@inheritDoc} */

@@ -17,15 +17,16 @@
 
 package org.apache.ignite.scalar
 
-import java.net.URL
-import java.util.UUID
-
 import org.apache.ignite._
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
+
+import java.net.URL
+import java.util.UUID
 
 import scala.annotation.meta.field
 
@@ -274,6 +275,22 @@ object scalar extends ScalarConversions {
         Option(Ignition.ignite.jcache(cacheName))
 
     /**
+     * Creates cache cache with specified parameters in default grid.
+     *
+     * @param cacheName Name of the cache to get.
+     */
+    @inline def createCache$[K, V](@Nullable cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
+        indexedTypes: Seq[Class[_]] = Seq.empty): IgniteCache[K, V] = {
+        val cfg = new CacheConfiguration[K, V]()
+
+        cfg.setName(cacheName)
+        cfg.setCacheMode(cacheMode)
+        cfg.setIndexedTypes(indexedTypes:_*)
+
+        Ignition.ignite.createCache(cfg)
+    }
+
+    /**
      * Gets named cache from specified grid.
      *
      * @param gridName Name of the grid.
@@ -286,16 +303,16 @@ object scalar extends ScalarConversions {
         }
 
     /**
-     * Gets a new instance of data loader associated with given cache name.
+     * Gets a new instance of data streamer associated with given cache name.
      *
      * @param cacheName Cache name (`null` for default cache).
      * @param bufSize Per node buffer size.
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
-    @inline def dataLoader$[K, V](
+    @inline def dataStreamer$[K, V](
         @Nullable cacheName: String,
-        bufSize: Int): IgniteDataLoader[K, V] = {
-        val dl = ignite$.dataLoader[K, V](cacheName)
+        bufSize: Int): IgniteDataStreamer[K, V] = {
+        val dl = ignite$.dataStreamer[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)
 

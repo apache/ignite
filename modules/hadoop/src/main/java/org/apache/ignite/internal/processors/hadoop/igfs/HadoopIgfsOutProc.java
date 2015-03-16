@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -36,40 +39,40 @@ import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
  */
 public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener {
     /** Expected result is boolean. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Boolean> BOOL_RES = createClosure();
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>, Boolean> BOOL_RES = createClosure();
 
     /** Expected result is boolean. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, Long> LONG_RES = createClosure();
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>, Long> LONG_RES = createClosure();
 
     /** Expected result is {@code IgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsFile> FILE_RES = createClosure();
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>, IgfsFile> FILE_RES = createClosure();
 
     /** Expected result is {@code IgfsHandshakeResponse} */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         IgfsHandshakeResponse> HANDSHAKE_RES = createClosure();
 
     /** Expected result is {@code IgfsStatus} */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsStatus> STATUS_RES =
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>, IgfsStatus> STATUS_RES =
         createClosure();
 
     /** Expected result is {@code IgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         IgfsInputStreamDescriptor> STREAM_DESCRIPTOR_RES = createClosure();
 
     /** Expected result is {@code IgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsFile>> FILE_COL_RES = createClosure();
 
     /** Expected result is {@code IgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsPath>> PATH_COL_RES = createClosure();
 
     /** Expected result is {@code IgfsPathSummary}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>, IgfsPathSummary> SUMMARY_RES =
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>, IgfsPathSummary> SUMMARY_RES =
         createClosure();
 
     /** Expected result is {@code IgfsFile}. */
-    private static final GridPlainClosure<GridPlainFuture<IgfsMessage>,
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
     /** Grid name. */
@@ -340,7 +343,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<byte[]> readData(HadoopIgfsStreamDelegate desc, long pos, int len,
+    @Override public IgniteInternalFuture<byte[]> readData(HadoopIgfsStreamDelegate desc, long pos, int len,
         final @Nullable byte[] outBuf, final int outOff, final int outLen) {
         assert len > 0;
 
@@ -355,7 +358,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
             return io.send(msg, outBuf, outOff, outLen);
         }
         catch (IgniteCheckedException e) {
-            return new GridPlainFutureAdapter<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -451,15 +454,20 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      * @return Conversion closure.
      */
     @SuppressWarnings("unchecked")
-    private static <T> GridPlainClosure<GridPlainFuture<IgfsMessage>, T> createClosure() {
-        return new GridPlainClosure<GridPlainFuture<IgfsMessage>, T>() {
-            @Override public T apply(GridPlainFuture<IgfsMessage> fut) throws IgniteCheckedException {
-                IgfsControlResponse res = (IgfsControlResponse)fut.get();
+    private static <T> IgniteClosure<IgniteInternalFuture<IgfsMessage>, T> createClosure() {
+        return new IgniteClosure<IgniteInternalFuture<IgfsMessage>, T>() {
+            @Override public T apply(IgniteInternalFuture<IgfsMessage> fut) {
+                try {
+                    IgfsControlResponse res = (IgfsControlResponse)fut.get();
 
-                if (res.hasError())
-                    res.throwError();
+                    if (res.hasError())
+                        res.throwError();
 
-                return (T)res.response();
+                    return (T)res.response();
+                }
+                catch (IgfsException | IgniteCheckedException e) {
+                    throw new GridClosureException(e);
+                }
             }
         };
     }

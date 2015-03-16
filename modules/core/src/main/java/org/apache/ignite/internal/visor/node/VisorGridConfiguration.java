@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.node;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.internal.visor.streamer.*;
 import java.io.*;
 import java.util.*;
 
-import static java.lang.System.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
@@ -90,9 +90,6 @@ public class VisorGridConfiguration implements Serializable {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
-    /** Query configuration */
-    private VisorQueryConfiguration qryCfg;
-
     /**
      * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
@@ -116,11 +113,10 @@ public class VisorGridConfiguration implements Serializable {
         caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
-        env = new HashMap<>(getenv());
-        sysProps = getProperties();
+        env = new HashMap<>(System.getenv());
+        sysProps = IgniteSystemProperties.snapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
         txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
-        qryCfg = VisorQueryConfiguration.from(c.getQueryConfiguration());
 
         return this;
     }
@@ -249,13 +245,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public VisorTransactionConfiguration transaction() {
         return txCfg;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public VisorQueryConfiguration queryConfiguration() {
-        return qryCfg;
     }
 
     /** {@inheritDoc} */

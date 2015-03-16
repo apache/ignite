@@ -107,7 +107,12 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
+    @Override public String cacheName() {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RegisterStatus register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
@@ -152,7 +157,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                     }
                                 }
 
-                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false);
+                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false, false);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);
@@ -168,7 +173,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         ctx.event().addLocalEventListener(lsnr, types);
 
-        return true;
+        return RegisterStatus.REGISTERED;
     }
 
     /** {@inheritDoc} */
@@ -282,6 +287,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** {@inheritDoc} */

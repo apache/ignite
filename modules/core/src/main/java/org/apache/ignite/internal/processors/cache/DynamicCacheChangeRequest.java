@@ -29,6 +29,9 @@ import java.util.*;
  * Cache start/stop request.
  */
 public class DynamicCacheChangeRequest implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
@@ -40,23 +43,13 @@ public class DynamicCacheChangeRequest implements Serializable {
     private CacheConfiguration startCfg;
 
     /** Near node ID in case if near cache is being started. */
-    private UUID clientNodeId;
+    private UUID initiatingNodeId;
 
     /** Near cache configuration. */
     private NearCacheConfiguration nearCacheCfg;
 
-    /**
-     * Constructor creates cache start request.
-     *
-     * @param startCfg Start cache configuration.
-     */
-    public DynamicCacheChangeRequest(
-        CacheConfiguration startCfg
-    ) {
-        this.startCfg = startCfg;
-
-        deploymentId = IgniteUuid.randomUuid();
-    }
+    /** Start only client cache, do not start data nodes. */
+    private boolean clientStartOnly;
 
     /**
      * Constructor creates cache stop request.
@@ -70,14 +63,12 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * Constructor creates near cache start request.
      *
-     * @param clientNodeId Client node ID.
-     * @param startCfg Start cache configuration.
-     * @param nearCacheCfg Near cache configuration.
+     * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(UUID clientNodeId, CacheConfiguration startCfg, NearCacheConfiguration nearCacheCfg) {
-        this.clientNodeId = clientNodeId;
-        this.startCfg = startCfg;
-        this.nearCacheCfg = nearCacheCfg;
+    public DynamicCacheChangeRequest(
+        UUID initiatingNodeId
+    ) {
+        this.initiatingNodeId = initiatingNodeId;
     }
 
     /**
@@ -98,21 +89,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a start request.
      */
     public boolean isStart() {
-        return clientNodeId == null && startCfg != null;
-    }
-
-    /**
-     * @return If this is a near cache start request.
-     */
-    public boolean isClientStart() {
-        return clientNodeId != null;
+        return startCfg != null;
     }
 
     /**
      * @return {@code True} if this is a stop request.
      */
     public boolean isStop() {
-        return clientNodeId == null && startCfg == null;
+        return initiatingNodeId == null && startCfg == null;
     }
 
     /**
@@ -123,17 +107,31 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * @param cacheName Cache name.
+     */
+    public void cacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+    /**
      * @return Near node ID.
      */
-    public UUID clientNodeId() {
-        return clientNodeId;
+    public UUID initiatingNodeId() {
+        return initiatingNodeId;
     }
 
     /**
      * @return Near cache configuration.
      */
-    public NearCacheConfiguration nearCacheCfg() {
+    public NearCacheConfiguration nearCacheConfiguration() {
         return nearCacheCfg;
+    }
+
+    /**
+     * @param nearCacheCfg Near cache configuration.
+     */
+    public void nearCacheConfiguration(NearCacheConfiguration nearCacheCfg) {
+        this.nearCacheCfg = nearCacheCfg;
     }
 
     /**
@@ -141,6 +139,27 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public CacheConfiguration startCacheConfiguration() {
         return startCfg;
+    }
+
+    /**
+     * @param startCfg Cache configuration.
+     */
+    public void startCacheConfiguration(CacheConfiguration startCfg) {
+        this.startCfg = startCfg;
+    }
+
+    /**
+     * @return Client start only.
+     */
+    public boolean clientStartOnly() {
+        return clientStartOnly;
+    }
+
+    /**
+     * @param clientStartOnly Client start only.
+     */
+    public void clientStartOnly(boolean clientStartOnly) {
+        this.clientStartOnly = clientStartOnly;
     }
 
     /** {@inheritDoc} */

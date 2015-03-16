@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.commun
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.log4j.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.jdk.*;
 
 import java.io.*;
 import java.net.*;
@@ -90,7 +90,7 @@ public class HadoopExternalProcessStarter {
         HadoopExternalCommunication comm = new HadoopExternalCommunication(
             args.nodeId,
             args.childProcId,
-            new OptimizedMarshaller(),
+            new JdkMarshaller(),
             log,
             msgExecSvc,
             "external"

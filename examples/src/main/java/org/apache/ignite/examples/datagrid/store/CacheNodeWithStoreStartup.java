@@ -18,22 +18,43 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
+import org.apache.ignite.examples.datagrid.store.hibernate.*;
+import org.apache.ignite.examples.datagrid.store.jdbc.*;
+import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import javax.cache.configuration.*;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Starts up an empty node with example cache configuration.
+ * Starts up an empty node with example cache and store configuration.
  */
 public class CacheNodeWithStoreStartup {
+    /** Use org.apache.ignite.examples.datagrid.store.dummy.CacheDummyPersonStore to run example. */
+    public static final String DUMMY = "DUMMY";
+
+    /** Use org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPersonStore to run example. */
+    public static final String SIMPLE_JDBC = "SIMPLE_JDBC";
+
+    /** Use org.apache.ignite.examples.datagrid.store.hibernate.CacheHibernatePersonStore to run example. */
+    public static final String HIBERNATE = "HIBERNATE";
+
+    /** Use org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPojoPersonStore to run example. */
+    public static final String AUTO = "AUTO";
+
+    /** Store to use. */
+    public static final String STORE = DUMMY;
+
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -71,10 +92,24 @@ public class CacheNodeWithStoreStartup {
 
         CacheStore<Long, Person> store;
 
-        // Uncomment other cache stores to try them.
-        store = new CacheDummyPersonStore();
-        // store = new CacheJdbcPersonStore();
-        // store = new CacheHibernatePersonStore();
+        switch (STORE) {
+            case DUMMY:
+                store = new CacheDummyPersonStore();
+                break;
+
+            case SIMPLE_JDBC:
+                store = new CacheJdbcPersonStore();
+                break;
+
+            case HIBERNATE:
+                store = new CacheHibernatePersonStore();
+                break;
+
+            default:
+                store = new CacheJdbcPojoPersonStore();
+                cacheCfg.setTypeMetadata(typeMetadata());
+                break;
+        }
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
         cacheCfg.setReadThrough(true);
@@ -84,5 +119,27 @@ public class CacheNodeWithStoreStartup {
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Type mapping description.
+     */
+    private static Collection<CacheTypeMetadata> typeMetadata() {
+        CacheTypeMetadata tm = new CacheTypeMetadata();
+
+        tm.setDatabaseTable("PERSON");
+
+        tm.setKeyType("java.lang.Long");
+        tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
+
+        tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
+
+        tm.setValueFields(F.asList(
+            new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", long.class),
+            new CacheTypeFieldMetadata("FIRST_NAME", Types.VARCHAR, "firstName", String.class),
+            new CacheTypeFieldMetadata("LAST_NAME", Types.VARCHAR, "lastName", String.class)
+        ));
+
+        return F.asList(tm);
     }
 }

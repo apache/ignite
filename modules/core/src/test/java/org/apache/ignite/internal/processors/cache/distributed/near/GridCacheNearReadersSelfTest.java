@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -37,7 +38,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -64,7 +65,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
 
         cacheCfg.setAffinity(aff);
         cacheCfg.setSwapEnabled(false);
@@ -149,8 +150,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(cache1.getAndPut(1, "v1"));
         assertNull(cache1.getAndPut(2, "v2"));
 
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).entryEx(1);
-        GridDhtCacheEntry<Integer, String> e2 = (GridDhtCacheEntry<Integer, String>)dht(cache2).entryEx(2);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+        GridDhtCacheEntry e2 = (GridDhtCacheEntry)dht(cache2).entryEx(2);
 
         assertNotNull(e1.readers());
 
@@ -217,8 +218,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        ((IgniteKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), new AffinityTopologyVersion(2)).get();
-        ((IgniteKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), new AffinityTopologyVersion(2)).get();
+        GridCacheContext ctx = ((IgniteKernal) g1).internalCache(null).context();
+
+        List<KeyCacheObject> cacheKeys = F.asList(ctx.toCacheKeyObject(1), ctx.toCacheKeyObject(2));
+
+        ((IgniteKernal)g1).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
+        ((IgniteKernal)g2).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
 
         IgniteCache<Integer, String> cache1 = g1.jcache(null);
         IgniteCache<Integer, String> cache2 = g2.jcache(null);
@@ -243,7 +248,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(near(cache1).peekNearOnly(1));
         assertNull(near(cache2).peekNearOnly(1));
 
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).entryEx(1);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
 
         // Store second value in cache.
         assertNull(cache1.getAndPut(2, "v2"));
@@ -259,7 +264,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(near(cache1).peekNearOnly(2));
         assertNull(near(cache2).peekNearOnly(2));
 
-        GridDhtCacheEntry<Integer, String> c2e2 = (GridDhtCacheEntry<Integer, String>)dht(cache2).entryEx(2);
+        GridDhtCacheEntry c2e2 = (GridDhtCacheEntry)dht(cache2).entryEx(2);
 
         // Nodes are backups of each other, so no readers should be added.
         assertFalse(c2e2.readers().contains(n1.id()));
@@ -399,8 +404,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // Store a values in cache.
         assertNull(cache1.getAndPut(1, "v1"));
 
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).peekEx(1);
-        GridDhtCacheEntry<Integer, String> e2 = (GridDhtCacheEntry<Integer, String>)dht(cache2).peekEx(1);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).peekEx(1);
+        GridDhtCacheEntry e2 = (GridDhtCacheEntry)dht(cache2).peekEx(1);
 
         assert e1 != null;
         assert e2 != null;

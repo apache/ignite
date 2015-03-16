@@ -21,11 +21,15 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.igfs.*;
 
 import javax.cache.*;
+import java.io.*;
 
 /**
  * IGFS eviction filter which will not evict blocks of particular files.
  */
-public class CacheIgfsEvictionFilter implements CacheEvictionFilter {
+public class CacheIgfsEvictionFilter implements CacheEvictionFilter, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean evictAllowed(Cache.Entry entry) {
         Object key = entry.getKey();

@@ -21,9 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -35,7 +33,7 @@ import java.util.*;
 /**
  * Cache eviction request.
  */
-public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridCacheEvictionRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,12 +42,8 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** Entries to clear from near and backup nodes. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<GridTuple3<K, GridCacheVersion, Boolean>> entries;
-
-    /** Serialized entries. */
-    @GridToStringExclude
-    private byte[] entriesBytes;
+    @GridDirectCollection(CacheEvictionEntry.class)
+    private Collection<CacheEvictionEntry> entries;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -82,23 +76,33 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (entries != null) {
-            if (ctx.deploymentEnabled())
-                prepareObjects(entries, ctx);
+            boolean depEnabled = ctx.deploymentEnabled();
 
-            entriesBytes = ctx.marshaller().marshal(entries);
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEvictionEntry e : entries) {
+                e.prepareMarshal(cctx);
+
+                if (depEnabled)
+                    prepareObject(e.key().value(cctx.cacheObjectContext(), false), ctx);
+            }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entriesBytes != null)
-            entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
+        if (entries != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+            for (CacheEvictionEntry e : entries)
+                e.finishUnmarshal(cctx, ldr);
+        }
     }
 
     /**
@@ -111,7 +115,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Entries - {{Key, Version, Boolean (near or not)}, ...}.
      */
-    Collection<GridTuple3<K, GridCacheVersion, Boolean>> entries() {
+    Collection<CacheEvictionEntry> entries() {
         return entries;
     }
 
@@ -129,11 +133,11 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
      * @param ver Entry version.
      * @param near {@code true} if key should be evicted from near cache.
      */
-    void addKey(K key, GridCacheVersion ver, boolean near) {
+    void addKey(KeyCacheObject key, GridCacheVersion ver, boolean near) {
         assert key != null;
         assert ver != null;
 
-        entries.add(F.t(key, ver, near));
+        entries.add(new CacheEvictionEntry(key, ver, near));
     }
 
     /** {@inheritDoc} */
@@ -157,7 +161,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("entriesBytes", entriesBytes))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -191,7 +195,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (reader.state()) {
             case 3:
-                entriesBytes = reader.readByteArray("entriesBytes");
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

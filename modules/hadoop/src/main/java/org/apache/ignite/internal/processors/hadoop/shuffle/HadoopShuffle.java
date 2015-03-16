@@ -237,13 +237,13 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob job = jobs.get(jobId);
 
         if (job == null)
-            return new GridFinishedFutureEx<>();
+            return new GridFinishedFuture<>();
 
         try {
             return job.flush();
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

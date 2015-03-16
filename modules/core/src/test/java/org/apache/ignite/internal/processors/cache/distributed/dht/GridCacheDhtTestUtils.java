@@ -52,25 +52,29 @@ public class GridCacheDhtTestUtils {
     static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws IgniteCheckedException {
         CacheAffinityFunction aff = dht.context().config().getAffinity();
 
-        GridCacheConcurrentMap<Integer, String> cacheMap;
+        GridCacheConcurrentMap cacheMap;
 
         try {
             Field field = GridCacheAdapter.class.getDeclaredField("map");
 
             field.setAccessible(true);
 
-            cacheMap = (GridCacheConcurrentMap<Integer, String>)field.get(dht);
+            cacheMap = (GridCacheConcurrentMap)field.get(dht);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get cache map.", e);
         }
 
-        GridDhtPartitionTopology<Integer,String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
+
+        GridCacheContext ctx = dht.context();
 
         for (int i = 0; i < keyCnt; i++) {
-            cacheMap.putEntry(AffinityTopologyVersion.NONE, i, "value" + i, 0);
+            KeyCacheObject cacheKey = ctx.toCacheKeyObject(i);
+            
+            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i), 0);
 
-            dht.preloader().request(Collections.singleton(i), AffinityTopologyVersion.NONE);
+            dht.preloader().request(Collections.singleton(cacheKey), AffinityTopologyVersion.NONE);
 
             GridDhtLocalPartition part = top.localPartition(aff.partition(i), false);
 
@@ -100,7 +104,7 @@ public class GridCacheDhtTestUtils {
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
 
-        GridDhtPartitionTopology<Integer, String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
 
         System.out.println("\nTopology of cache #" + idx + " (" + locNode.id() + ")" + ":");
         System.out.println("----------------------------------");
@@ -158,6 +162,7 @@ public class GridCacheDhtTestUtils {
      * @param idx Cache index.
      * @param log Logger.
      */
+    @SuppressWarnings("unchecked")
     static void checkDhtTopology(GridDhtCache<Integer, String> dht, int idx, IgniteLogger log) {
         assert dht != null;
         assert idx >= 0;
@@ -165,12 +170,12 @@ public class GridCacheDhtTestUtils {
 
         log.info("Checking balanced state of cache #" + idx);
 
-        CacheAffinity<Integer> aff = dht.affinity();
+        CacheAffinity<Object> aff = (CacheAffinity)dht.affinity();
 
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
 
-        GridDhtPartitionTopology<Integer,String> top = dht.topology();
+        GridDhtPartitionTopology top = dht.topology();
 
         // Expected partitions calculated with affinity function.
         // They should be in topology in OWNING state.
@@ -202,8 +207,8 @@ public class GridCacheDhtTestUtils {
         }
 
         // Check keys.
-        for (GridCacheEntryEx<Integer, String> e : dht.entries()) {
-            GridDhtCacheEntry<Integer, String> entry = (GridDhtCacheEntry<Integer, String>)e;
+        for (GridCacheEntryEx e : dht.entries()) {
+            GridDhtCacheEntry entry = (GridDhtCacheEntry)e;
 
             if (!affParts.contains(entry.partition()))
                 log.warning("Partition of stored entry is obsolete for node: [cache=" + idx + ", entry=" + entry +

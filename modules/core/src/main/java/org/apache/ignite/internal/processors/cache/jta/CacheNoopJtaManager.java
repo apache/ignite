@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
 /**
  * No-op implementation of {@link CacheJtaManagerAdapter}.
  */
-public class CacheNoopJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
+public class CacheNoopJtaManager extends CacheJtaManagerAdapter {
     /** {@inheritDoc} */
     @Override public void checkJta() throws IgniteCheckedException {
         // No-op.

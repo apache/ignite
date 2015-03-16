@@ -163,8 +163,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();
@@ -208,8 +208,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();
@@ -254,8 +254,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();

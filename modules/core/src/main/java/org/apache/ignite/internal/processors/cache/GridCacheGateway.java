@@ -79,8 +79,12 @@ public class GridCacheGateway<K, V> {
      */
     public void leave() {
         try {
+            ctx.tm().resetContext();
+            ctx.mvcc().contextReset();
+
             // Unwind eviction notifications.
-            CU.unwindEvicts(ctx);
+            if (!ctx.shared().closed(ctx))
+                CU.unwindEvicts(ctx);
         }
         finally {
             ctx.kernalContext().gateway().readUnlock();
@@ -151,6 +155,9 @@ public class GridCacheGateway<K, V> {
      */
     public void leave(GridCacheProjectionImpl<K, V> prev) {
         try {
+            ctx.tm().resetContext();
+            ctx.mvcc().contextReset();
+
             // Unwind eviction notifications.
             CU.unwindEvicts(ctx);
 

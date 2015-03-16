@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -82,14 +80,12 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMemoryLeaks() throws Exception {
-        final IgniteKernal kernal = (IgniteKernal)grid(0);
+        final Ignite ignite = ignite(0);
 
         long startTime = System.currentTimeMillis();
 
         while ((System.currentTimeMillis() - startTime) < DURATION) {
             final AtomicInteger idx = new AtomicInteger();
-
-            final Collection<IgniteInternalFuture<?>> futs = new ConcurrentLinkedDeque<>();
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -97,14 +93,11 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
                     ccfg.setName(CACHE_NAMES[idx.getAndIncrement()]);
 
-                    futs.add(kernal.context().cache().dynamicStartCache(ccfg));
+                    ignite.createCache(ccfg);
 
                     return null;
                 }
             }, CACHE_COUNT, "cache-starter");
-
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.get();
 
             for (String cacheName : CACHE_NAMES)
                 assert ignite(0).jcache(cacheName) != null;
@@ -122,13 +115,15 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
                 weakMap.put(obj, Boolean.TRUE);
             }
 
-            futs.clear();
+            idx.set(0);
 
-            for (String cacheName : CACHE_NAMES)
-                futs.add(kernal.context().cache().dynamicStopCache(cacheName));
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    ignite.destroyCache(CACHE_NAMES[idx.getAndIncrement()]);
 
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.get();
+                    return null;
+                }
+            }, CACHE_COUNT, "cache-starter");
         }
 
         assert weakMap.isEmpty() : weakMap;
