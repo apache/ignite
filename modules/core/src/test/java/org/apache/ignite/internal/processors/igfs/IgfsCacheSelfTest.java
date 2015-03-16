@@ -110,7 +110,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         assert ((IgniteKernal)g).caches().size() == 1;
 
-        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().name());
+        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().getName());
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {

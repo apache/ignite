@@ -17,10 +17,10 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -1917,7 +1917,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         sesFactory2 = null;
 
-        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
-            cache.clear();
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+            cache.legacyProxy().clear();
     }
 }

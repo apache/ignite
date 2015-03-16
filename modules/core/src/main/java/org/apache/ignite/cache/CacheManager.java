@@ -222,8 +222,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
             Collection<String> res = new ArrayList<>();
 
-            for (GridCache<?, ?> cache : ignite.context().cache().publicCaches())
-                res.add(cache.name());
+            for (IgniteCache<?, ?> cache : ignite.context().cache().publicCaches())
+                res.add(cache.getName());
 
             return Collections.unmodifiableCollection(res);
         }

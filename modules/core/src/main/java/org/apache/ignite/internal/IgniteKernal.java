@@ -2315,7 +2315,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @return Public caches.
      */
-    public Collection<GridCache<?, ?>> caches() {
+    public Collection<IgniteCacheProxy<?, ?>> caches() {
         guard();
 
         try {

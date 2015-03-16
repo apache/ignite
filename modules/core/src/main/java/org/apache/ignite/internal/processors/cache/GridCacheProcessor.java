@@ -90,9 +90,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Map of proxies. */
     private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
-    /** Map of public proxies, i.e. proxies which could be returned to the user. */
-    private volatile List<GridCache<?, ?>> publicProxies;
-
     /** Map of preload finish futures grouped by preload order. */
     private final NavigableMap<Integer, IgniteInternalFuture<?>> preloadFuts;
 
@@ -689,8 +686,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 startCache(cache);
 
                 jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
-
-                publicProxies = null;
             }
         }
 
@@ -1349,11 +1344,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
 
-        if (proxy != null) {
-            publicProxies = null;
-
+        if (proxy != null)
             proxy.gate().onStopped();
-        }
     }
 
     /**
@@ -1394,8 +1386,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 String masked = maskNull(cacheCtx.name());
 
                 jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-
-                publicProxies = null;
             }
         }
 
@@ -2224,18 +2214,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return All configured public cache instances.
      */
-    public Collection<GridCache<?, ?>> publicCaches() {
-        List<GridCache<?, ?>> res = publicProxies;
+    public Collection<IgniteCacheProxy<?, ?>> publicCaches() {
+        List<IgniteCacheProxy<?, ?>> res = new ArrayList<>(jCacheProxies.size());
 
-        if (res == null) {
-            res = new ArrayList<>(jCacheProxies.size());
-
-            for (IgniteCacheProxy<?, ?> proxy : jCacheProxies.values()) {
-                if (!sysCaches.contains(proxy.getName()))
-                    res.add(proxy.legacyProxy());
-            }
-
-            publicProxies = res;
+        for (Map.Entry<String, IgniteCacheProxy<?, ?>> entry : jCacheProxies.entrySet()) {
+            if (!sysCaches.contains(entry.getKey()))
+                res.add(entry.getValue());
         }
 
         return res;

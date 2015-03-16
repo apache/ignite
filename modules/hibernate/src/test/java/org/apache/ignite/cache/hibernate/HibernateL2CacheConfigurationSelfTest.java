@@ -18,9 +18,9 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -79,8 +79,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
-            cache.clear();
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+            cache.legacyProxy().clear();
     }
 
     /** {@inheritDoc} */
