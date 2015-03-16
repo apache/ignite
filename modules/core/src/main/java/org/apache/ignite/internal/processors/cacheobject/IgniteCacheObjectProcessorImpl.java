@@ -223,36 +223,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (!userObj)
             new CacheObjectImpl(obj, null);
 
-        return new CacheObjectImpl(obj, null) {
-            @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-                return super.value(ctx, false); // Do not need copy since user value is not in cache.
-            }
-
-            @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-                if (!ctx.processor().immutable(val)) {
-                    try {
-                        if (valBytes == null)
-                            valBytes = ctx.processor().marshal(ctx, val);
-
-                        if (ctx.unmarshalValues()) {
-                            ClassLoader ldr = ctx.p2pEnabled() ?
-                                IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
-
-                            Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
-
-                            return new CacheObjectImpl(val, valBytes);
-                        }
-
-                        return new CacheObjectImpl(null, valBytes);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Failed to marshal object: " + val, e);
-                    }
-                }
-                else
-                    return new CacheObjectImpl(val, valBytes);
-            }
-        };
+        return new IgniteCacheObjectImpl(obj, null);
     }
 
     /** {@inheritDoc} */
@@ -343,5 +314,54 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName) {
         return false;
+    }
+
+    /**
+     *
+     */
+    private class IgniteCacheObjectImpl extends CacheObjectImpl {
+        /**
+         *
+         */
+        public IgniteCacheObjectImpl() {
+            //No-op.
+        }
+
+        /**
+         *
+         */
+        public IgniteCacheObjectImpl(Object val, byte[] valBytes) {
+            super(val, valBytes);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+            return super.value(ctx, false); // Do not need copy since user value is not in cache.
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+            if (!ctx.processor().immutable(val)) {
+                try {
+                    if (valBytes == null)
+                        valBytes = ctx.processor().marshal(ctx, val);
+
+                    if (ctx.unmarshalValues()) {
+                        ClassLoader ldr = ctx.p2pEnabled() ?
+                            IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+
+                        Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+
+                        return new CacheObjectImpl(val, valBytes);
+                    }
+
+                    return new CacheObjectImpl(null, valBytes);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to marshal object: " + val, e);
+                }
+            } else
+                return new CacheObjectImpl(val, valBytes);
+        }
     }
 }

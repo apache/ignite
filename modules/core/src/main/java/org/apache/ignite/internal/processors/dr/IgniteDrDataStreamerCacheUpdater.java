@@ -60,6 +60,7 @@ public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Upda
             CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 
             for (Map.Entry<KeyCacheObject, CacheObject> entry0 : col) {
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!! GridCacheRawVersionedEntry TEST!!!!!!!!!!!!!!! ");
                 GridCacheRawVersionedEntry entry = (GridCacheRawVersionedEntry)entry0;
 
                 entry.unmarshal(cacheObjCtx, ctx.config().getMarshaller());

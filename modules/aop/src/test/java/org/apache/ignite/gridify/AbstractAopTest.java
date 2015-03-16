@@ -419,7 +419,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
             assert res == 1 : "Method gridifyDefault returned wrong value [result=" + res + ", expected=1]";
 
-`            assert locDepCnt.get() == 1 : "Invalid local deployment count [expected=1, got=" + locDepCnt.get() + ']';
+            assert locDepCnt.get() == 1 : "Invalid local deployment count [expected=1, got=" + locDepCnt.get() + ']';
             assert rmtDepCnt.get() == 1 : "Invalid remote deployment count [expected=1, got=" + rmtDepCnt.get() + ']';
         }
         finally {
