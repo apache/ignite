@@ -73,8 +73,14 @@ public class CacheManager implements javax.cache.CacheManager {
         this.props = props;
 
         try {
-            if (uri.equals(cachingProvider.getDefaultURI()))
-                ignite = (IgniteKernal)IgnitionEx.start();
+            if (uri.equals(cachingProvider.getDefaultURI())) {
+                IgniteConfiguration cfg = new IgniteConfiguration();
+
+                cfg.setGridName("CacheManager [uri=" + uri.toString() + ", classLoader="
+                    + clsLdr.getClass().getSimpleName() + '#' + clsLdr.hashCode());
+
+                ignite = (IgniteKernal)IgnitionEx.start(cfg);
+            }
             else
                 ignite = (IgniteKernal)IgnitionEx.start(uri.toURL());
 
