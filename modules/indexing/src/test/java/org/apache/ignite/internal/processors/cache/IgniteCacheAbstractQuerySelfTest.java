@@ -1120,13 +1120,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         IgniteCache<UUID, Person> cache = ignite.jcache(null);
 
-        UUID one = UUID.randomUUID();
-        UUID two = UUID.randomUUID();
+        UUID k1 = UUID.randomUUID();
+        UUID k2 = UUID.randomUUID();
+        UUID k3 = UUID.randomUUID();
 
-        cache.put(one, new Person("Bob White", 1000));
-        cache.put(two, new Person("Tom White", 1000));
-        cache.put(UUID.randomUUID(), new Person("Mike Green", 1000));
-
+        cache.put(k1, new Person("Bob White", 1000));
+        cache.put(k2, new Person("Tom White", 1000));
+        cache.put(k3, new Person("Mike Green", 1000));
 
         QueryCursor<Cache.Entry<UUID, Person>> q = cache.query(new TextQuery(Person.class, "White"));
 
@@ -1137,21 +1137,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(2, map.size());
 
-        assertEquals("Bob White", map.get(one).name());
-        assertEquals("Tom White", map.get(two).name());
+        assertEquals("Bob White", map.get(k1).name());
+        assertEquals("Tom White", map.get(k2).name());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testFieldsQueryEvents() throws Exception {
-        checkFieldsQueryEvents();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void checkFieldsQueryEvents() throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
