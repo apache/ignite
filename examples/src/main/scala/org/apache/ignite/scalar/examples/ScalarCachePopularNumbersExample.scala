@@ -17,9 +17,7 @@
 
 package org.apache.ignite.scalar.examples
 
-import java.util.Timer
-
-import org.apache.ignite.IgniteException
+import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
@@ -27,6 +25,7 @@ import org.apache.ignite.scalar.scalar._
 import org.apache.ignite.{IgniteCache, IgniteDataStreamer, IgniteException}
 
 import javax.cache.processor.{EntryProcessor, MutableEntry}
+import java.lang.{Integer => JavaInt, Long => JavaLong}
 import java.util
 import java.util.Map.Entry
 import java.util.Timer
@@ -47,8 +46,11 @@ import scala.util.Random
  * an overall top `10` list within the ignite.
  */
 object ScalarCachePopularNumbersExample extends App {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-compute.xml"
+
     /** Cache name. */
-    private final val CACHE_NAME = "partitioned"
+    private final val NAME = ScalarCachePopularNumbersExample.getClass.getSimpleName
 
     /** Count of most popular numbers to retrieve from cluster. */
     private final val POPULAR_NUMBERS_CNT = 10
@@ -62,35 +64,39 @@ object ScalarCachePopularNumbersExample extends App {
     /** Count of total numbers to generate. */
     private final val CNT = 1000000
 
-    scalar("examples/config/example-cache.xml") {
-        // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear()
+    scalar(CONFIG) {
+        val cache = createCache$[JavaInt, JavaLong](NAME, indexedTypes = Seq(classOf[JavaInt], classOf[JavaLong]))
 
         println()
         println(">>> Cache popular numbers example started.")
 
-        val prj = ignite$.cluster().forCacheNodes(CACHE_NAME)
+        try {
+            val prj = ignite$.cluster().forCacheNodes(NAME)
 
-        if (prj.nodes().isEmpty)
-            println("Ignite does not have cache configured: " + CACHE_NAME)
-        else {
-            val popularNumbersQryTimer = new Timer("numbers-query-worker")
+            if (prj.nodes().isEmpty)
+                println("Ignite does not have cache configured: " + NAME)
+            else {
+                val popularNumbersQryTimer = new Timer("numbers-query-worker")
 
-            try {
-                // Schedule queries to run every 3 seconds during populates cache phase.
-                popularNumbersQryTimer.schedule(timerTask(query(POPULAR_NUMBERS_CNT)), 3000, 3000)
+                try {
+                    // Schedule queries to run every 3 seconds during populates cache phase.
+                    popularNumbersQryTimer.schedule(timerTask(query(POPULAR_NUMBERS_CNT)), 3000, 3000)
 
-                streamData()
+                    streamData()
 
-                // Force one more run to get final counts.
-                query(POPULAR_NUMBERS_CNT)
+                    // Force one more run to get final counts.
+                    query(POPULAR_NUMBERS_CNT)
 
-                // Clean up caches on all nodes after run.
-                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.jcache(CACHE_NAME).clear(), null)
+                    // Clean up caches on all nodes after run.
+                    ignite$.cluster().forCacheNodes(NAME).bcastRun(() => ignite$.jcache(NAME).clear(), null)
+                }
+                finally {
+                    popularNumbersQryTimer.cancel()
+                }
             }
-            finally {
-                popularNumbersQryTimer.cancel()
-            }
+        }
+        finally {
+            cache.close()
         }
     }
 
@@ -102,7 +108,7 @@ object ScalarCachePopularNumbersExample extends App {
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
-        val smtr = dataStreamer$[Int, Long](CACHE_NAME, 2048)
+        val smtr = dataStreamer$[JavaInt, JavaLong](NAME, 2048)
 
         smtr.updater(new IncrementingUpdater())
 
@@ -117,8 +123,8 @@ object ScalarCachePopularNumbersExample extends App {
      * @param cnt Number of most popular numbers to return.
      */
     def query(cnt: Int) {
-        val results = cache$[Int, Long](CACHE_NAME).get
-            .sqlFields(clause = "select _key, _val from Long order by _val desc, _key limit " + cnt)
+        val results = cache$[JavaInt, JavaLong](NAME).get
+            .queryFields(new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit " + cnt))
             .getAll
 
         results.foreach(res => println(res.get(0) + "=" + res.get(1)))
@@ -129,17 +135,19 @@ object ScalarCachePopularNumbersExample extends App {
     /**
      * Increments value for key.
      */
-    private class IncrementingUpdater extends IgniteDataStreamer.Updater[Int, Long] {
-        private[this] final val INC = new EntryProcessor[Int, Long, Object]() {
+    private class IncrementingUpdater extends IgniteDataStreamer.Updater[JavaInt, JavaLong] {
+        private[this] final val INC = new EntryProcessor[JavaInt, JavaLong, Object]() {
             /** Process entries to increase value by entry key. */
-            override def process(e: MutableEntry[Int, Long], args: AnyRef*): Object = {
-                e.setValue(Option(e.getValue).map(_ + 1).getOrElse(1L))
+            override def process(e: MutableEntry[JavaInt, JavaLong], args: AnyRef*): Object = {
+                e.setValue(Option(e.getValue)
+                    .map(l => JavaLong.valueOf(l + 1))
+                    .getOrElse(JavaLong.valueOf(1L)))
 
                 null
             }
         }
 
-        @impl def update(cache: IgniteCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) {
+        @impl def update(cache: IgniteCache[JavaInt, JavaLong], entries: util.Collection[Entry[JavaInt, JavaLong]]) {
             entries.foreach(entry => cache.invoke(entry.getKey, INC))
         }
     }

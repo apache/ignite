@@ -37,8 +37,11 @@ import collection.JavaConversions._
  * be started with or without cache.
  */
 object ScalarCacheQueryExample {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-compute.xml"
+
     /** Cache name. */
-    private val CACHE_NAME = "partitioned" // "replicated"
+    private val NAME = ScalarCacheQueryExample.getClass.getSimpleName
 
     /**
      * Example entry point. No arguments required.
@@ -46,8 +49,16 @@ object ScalarCacheQueryExample {
      * @param args Command line arguments. None required.
      */
     def main(args: Array[String]) {
-        scalar("examples/config/example-cache.xml") {
-            example(ignite$)
+        scalar(CONFIG) {
+            val cache = createCache$(NAME, indexedTypes = Seq(classOf[UUID], classOf[Organization],
+                classOf[CacheAffinityKey[_]], classOf[Person]))
+
+            try {
+                example(ignite$)
+            }
+            finally {
+                cache.close()
+            }
         }
     }
 
@@ -85,14 +96,14 @@ object ScalarCacheQueryExample {
      *
      * @return Cache to use.
      */
-    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](CACHE_NAME).get
+    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](NAME).get
 
     /**
      * Populates cache with test data.
      */
     private def initialize() {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear()
+        cache$(NAME).get.clear()
 
         // Organization cache projection.
         val orgCache = mkCache[UUID, Organization]

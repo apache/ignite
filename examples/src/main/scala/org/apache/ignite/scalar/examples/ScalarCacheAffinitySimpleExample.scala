@@ -36,11 +36,14 @@ import org.apache.ignite.scalar.scalar._
  * be started with or without cache.
  */
 object ScalarCacheAffinitySimpleExample extends App {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-compute.xml"
+
+    /** Name of cache. */
+    private val NAME = ScalarCacheAffinitySimpleExample.getClass.getSimpleName
+
     /** Number of keys. */
     private val KEY_CNT = 20
-
-    /** Name of cache specified in spring configuration. */
-    private val NAME = "partitioned"
 
     /** Type alias. */
     type Cache = IgniteCache[Int, String]
@@ -49,14 +52,16 @@ object ScalarCacheAffinitySimpleExample extends App {
      * Note that in case of `LOCAL` configuration,
      * since there is no distribution, values may come back as `nulls`.
      */
-    scalar("examples/config/example-cache.xml") {
-        // Clean up caches on all nodes before run.
-        cache$(NAME).get.clear()
+    scalar(CONFIG) {
+        val cache = createCache$[Int, String](NAME)
 
-        val c = ignite$.jcache[Int, String](NAME)
-
-        populate(c)
-        visit(c)
+        try {
+            populate(cache)
+            visit(cache)
+        }
+        finally {
+            cache.close()
+        }
     }
 
     /**
