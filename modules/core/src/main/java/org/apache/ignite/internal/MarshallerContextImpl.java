@@ -27,8 +27,14 @@ import java.util.concurrent.*;
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
+    /** Class names cache update retries count. */
+    private static final int CACHE_UPDATE_RETRIES_CNT = 5;
+
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
+
+    /** */
+    private IgniteLogger log;
 
     /** */
     private volatile GridCacheAdapter<Integer, String> cache;
@@ -38,6 +44,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     public void onMarshallerCacheReady(GridKernalContext ctx) {
         assert ctx != null;
+
+        log = ctx.log(MarshallerContextImpl.class);
 
         cache = ctx.cache().marshallerCache();
 
@@ -52,12 +60,24 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             if (cache0 == null)
                 return false;
 
-            String old = cache0.putIfAbsent(id, clsName);
+            for (int i = 0; i < CACHE_UPDATE_RETRIES_CNT; i++) {
+                try {
+                    String old = cache0.putIfAbsent(id, clsName);
 
-            if (old != null && !old.equals(clsName))
-                throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
-                    "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
-                    "clsName2=" + old + ']');
+                    if (old != null && !old.equals(clsName))
+                        throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
+                            "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
+                            "clsName2=" + old + ']');
+
+                    break;
+                }
+                catch (IgniteCheckedException e) {
+                    if (i == CACHE_UPDATE_RETRIES_CNT - 1)
+                        throw e;
+                    else
+                        U.error(log, "Failed to update marshaller cache, will retry: " + e);
+                }
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
