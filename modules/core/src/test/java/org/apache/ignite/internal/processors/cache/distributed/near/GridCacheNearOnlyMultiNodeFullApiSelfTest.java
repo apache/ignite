@@ -55,6 +55,24 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         cnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (ignite(i).configuration().isClientMode()) {
+                if (clientHasNearCache())
+                    ignite(i).createCache(new NearCacheConfiguration<>());
+                else
+                    ignite(i).jcache(null);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return If client node has near cache.
+     */
+    protected boolean clientHasNearCache() {
+        return true;
     }
 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -83,8 +101,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).configuration().isClientMode()) {
-                ignite(i).createCache(new NearCacheConfiguration<>());
-
                 nearIdx = i;
 
                 break;
@@ -94,6 +110,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         assert nearIdx != null : "Didn't find a near-only node.";
 
         dfltIgnite = grid(nearIdx);
+
+        info("Near-only node: " + dfltIgnite.cluster().localNode().id());
 
         super.beforeTest(); // Doing initial asserts.
     }

@@ -82,14 +82,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
         this.topVer = topVer;
     }
 
-    /**
-     *
-     */
-    public AffinityTopologyVersion previous() {
-        // TODO IGNITE-45.
-        return new AffinityTopologyVersion(topVer - 1, 0);
-    }
-
     /** {@inheritDoc} */
     @Override public int compareTo(AffinityTopologyVersion o) {
         int cmp = Long.compare(topVer, o.topVer);

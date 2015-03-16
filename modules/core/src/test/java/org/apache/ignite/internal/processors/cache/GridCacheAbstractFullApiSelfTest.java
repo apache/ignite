@@ -3626,6 +3626,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         assert cache.localSize() == 0;
+
+        // Clear readers, if any.
+        cache.remove(key);
     }
 
     /**
@@ -3820,7 +3823,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys) {
-                    if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion()))) {
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
                         GridCacheEntryEx e =
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -3850,7 +3853,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys)
-                    if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                         size++;
 
                 assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize());
@@ -3949,7 +3952,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        assertFalse(cache.iterator().hasNext());
+        Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
+
+        boolean hasNext = it.hasNext();
+
+        if (hasNext)
+            assertFalse("Cache has value: " + it.next(), hasNext);
 
         final int SIZE = 10_000;
 
@@ -4225,15 +4233,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert keysToRmv.size() > 1;
 
+        info("Will clear keys on node: " + g.cluster().localNode().id());
+
         g.<String, Integer>jcache(null).localClearAll(keysToRmv);
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
-            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+            Ignite ignite = primaryIgnite(key);
+
+            boolean found = ignite.jcache(null).localPeek(key) != null;
 
             if (keysToRmv.contains(key))
-                assertFalse("Found removed key " + key, found);
+                assertFalse("Found removed key [key=" + key + ", node=" + ignite.cluster().localNode().id() + ']',
+                    found);
             else
                 assertTrue("Not found key " + key, found);
         }

@@ -566,8 +566,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id, cctx.versions().last());
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal())
-                m.addLocalPartitionMap(cacheCtx.cacheId(), cacheCtx.topology().localPartitionMap());
+            if (!cacheCtx.isLocal()) {
+                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
+
+                m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
+            }
+        }
+
+        for (GridClientPartitionTopology top : clientTops.values()) {
+            GridDhtPartitionMap locMap = top.localPartitionMap();
+
+            m.addLocalPartitionMap(top.cacheId(), locMap);
         }
 
         if (log.isDebugEnabled())
@@ -701,15 +710,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    if (!cacheCtx.isLocal()) {
-                        GridDhtPartitionTopology top = cacheCtx.topology();
+                for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
+                    Integer cacheId = entry.getKey();
 
-                        GridDhtPartitionMap parts = msg.partitions().get(cacheCtx.cacheId());
+                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                        if (parts != null)
-                            updated |= top.update(null, parts) != null;
-                    }
+                    GridDhtPartitionTopology top = null;
+
+                    if (cacheCtx == null)
+                        top = clientTops.get(cacheId);
+                    else if (!cacheCtx.isLocal())
+                        top = cacheCtx.topology();
+
+                    if (top != null)
+                        updated |= top.update(null, entry.getValue()) != null;
                 }
 
                 if (updated)

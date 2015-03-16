@@ -34,6 +34,10 @@ public class DynamicCacheChangeBatch implements Serializable {
     @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
+    /** Client nodes map. Used in discovery data exchange. */
+    @GridToStringInclude
+    private Map<String, Map<UUID, Boolean>> clientNodes;
+
     /**
      * @param reqs Requests.
      */
@@ -48,6 +52,20 @@ public class DynamicCacheChangeBatch implements Serializable {
      */
     public Collection<DynamicCacheChangeRequest> requests() {
         return reqs;
+    }
+
+    /**
+     * @return Client nodes map.
+     */
+    public Map<String, Map<UUID, Boolean>> clientNodes() {
+        return clientNodes;
+    }
+
+    /**
+     * @param clientNodes Client nodes map.
+     */
+    public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
+        this.clientNodes = clientNodes;
     }
 
     /** {@inheritDoc} */

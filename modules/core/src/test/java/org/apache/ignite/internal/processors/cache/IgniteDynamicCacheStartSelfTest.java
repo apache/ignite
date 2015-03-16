@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -61,7 +62,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @return Number of nodes for this test.
      */
     public int nodeCount() {
-        return 4;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -553,6 +554,50 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", ignite(g).jcache(DYNAMIC_CACHE_NAME).get("1"));
 
             kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
+        }
+        finally {
+            stopGrid(nodeCount());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearNodesCache() throws Exception {
+        try {
+            testAttribute = false;
+
+            Ignite ig = startGrid(nodeCount());
+
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setName(DYNAMIC_CACHE_NAME);
+            ccfg.setCacheMode(CacheMode.PARTITIONED);
+            ccfg.setNodeFilter(NODE_FILTER);
+
+            try (IgniteCache cache = ig.createCache(ccfg, new NearCacheConfiguration())) {
+                assertNotNull(cache);
+
+                GridCacheAdapter<Object, Object> cacheAdapter =
+                    ((IgniteKernal)ig).internalCache(DYNAMIC_CACHE_NAME);
+
+                assertNotNull(cacheAdapter);
+                assertFalse(cacheAdapter.affinityNode());
+                assertTrue(cacheAdapter.context().isNear());
+
+                try {
+                    IgniteKernal grid = (IgniteKernal)startGrid(nodeCount() + 1);
+
+                    // Check that new node sees near node.
+                    GridDiscoveryManager disco = grid.context().discovery();
+
+                    assertTrue(disco.cacheNearNode(disco.node(ig.cluster().localNode().id()),
+                        DYNAMIC_CACHE_NAME));
+                }
+                finally {
+                    stopGrid(nodeCount() + 1);
+                }
+            }
         }
         finally {
             stopGrid(nodeCount());

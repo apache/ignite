@@ -55,7 +55,7 @@ public class GridAffinityAssignmentCache {
     private final CacheAffinityKeyMapper affMapper;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
-    private final ConcurrentMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
+    private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
 
     /** Cache item corresponding to the head topology version. */
     private final AtomicReference<GridAffinityAssignment> head;
@@ -150,7 +150,14 @@ public class GridAffinityAssignmentCache {
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
 
-        GridAffinityAssignment prev = affCache.get(topVer.previous());
+        Iterator<AffinityTopologyVersion> it = affCache.descendingKeySet().iterator();
+
+        AffinityTopologyVersion prevVer = null;
+
+        if (it.hasNext())
+            prevVer = it.next();
+
+        GridAffinityAssignment prev = prevVer == null ? null : affCache.get(prevVer);
 
         List<ClusterNode> sorted;
 

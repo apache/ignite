@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -2696,6 +2695,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         }
                     });
             }
+        }
+        catch (RuntimeException e) {
+            for (IgniteTxEntry txEntry : txMap.values()) {
+                GridCacheEntryEx cached0 = txEntry.cached();
+
+                if (cached0 != null)
+                    txEntry.context().evicts().touch(cached0, topologyVersion());
+            }
+
+            throw e;
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();

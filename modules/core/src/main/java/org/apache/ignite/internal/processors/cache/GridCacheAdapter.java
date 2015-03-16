@@ -1420,7 +1420,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (entry != null)
                 return entry.clear(obsoleteVer, false, filter);
         }
-        catch (GridDhtInvalidPartitionException e) {
+        catch (GridDhtInvalidPartitionException ignored) {
             return false;
         }
         catch (IgniteCheckedException ex) {

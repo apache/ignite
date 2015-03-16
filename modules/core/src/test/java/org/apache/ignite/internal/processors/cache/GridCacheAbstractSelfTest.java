@@ -77,6 +77,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assert cnt >= 1 : "At least one grid must be started";
 
         startGrids(cnt);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

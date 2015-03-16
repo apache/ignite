@@ -31,8 +31,16 @@ import java.util.*;
 public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
-        // TODO IGNITE-45.
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setClientMode(true);
+
+        return cfg;
     }
 
     /**

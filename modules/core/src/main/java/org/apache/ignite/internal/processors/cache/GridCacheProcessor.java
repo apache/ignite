@@ -1392,7 +1392,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        return new DynamicCacheChangeBatch(reqs);
+        DynamicCacheChangeBatch req = new DynamicCacheChangeBatch(reqs);
+
+        req.clientNodes(ctx.discovery().clientNodesMap());
+
+        return req;
     }
 
     /** {@inheritDoc} */
@@ -1429,6 +1433,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 catch (IgniteCheckedException e) {
                     existing.validationFailed(e);
+                }
+            }
+
+            if (!F.isEmpty(batch.clientNodes())) {
+                for (Map.Entry<String, Map<UUID, Boolean>> entry : batch.clientNodes().entrySet()) {
+                    String cacheName = entry.getKey();
+
+                    for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
+                        ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                 }
             }
         }
@@ -1622,8 +1635,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ccfg.getCacheMode() == LOCAL);
                 }
 
-                if (req.nearCacheConfiguration() != null)
-                    ctx.discovery().addNearNode(req.cacheName(), req.initiatingNodeId());
+                ctx.discovery().addClientNode(req.cacheName(), req.initiatingNodeId(), req.nearCacheConfiguration() != null);
             }
             else {
                 if (desc == null) {

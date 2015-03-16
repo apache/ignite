@@ -234,13 +234,44 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Adds near node ID to cache filter.
      *
      * @param cacheName Cache name.
-     * @param nearNodeId Near node ID.
+     * @param clientNodeId Near node ID.
      */
-    public void addNearNode(String cacheName, UUID nearNodeId) {
+    public void addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
         CachePredicate predicate = registeredCaches.get(cacheName);
 
         if (predicate != null)
-            predicate.addNearNode(nearNodeId);
+            predicate.addClientNode(clientNodeId, nearEnabled);
+    }
+
+    /**
+     * @return Client nodes map.
+     */
+    public Map<String, Map<UUID, Boolean>> clientNodesMap() {
+        Map<String, Map<UUID, Boolean>> res = null;
+
+        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+            CachePredicate pred = entry.getValue();
+
+            if (!F.isEmpty(pred.clientNodes)) {
+                if (res == null)
+                    res = U.newHashMap(registeredCaches.size());
+
+                res.put(entry.getKey(), new HashMap<>(pred.clientNodes));
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * @param leftNodeId Left node ID.
+     */
+    private void updateClientNodes(UUID leftNodeId) {
+        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+            CachePredicate pred = entry.getValue();
+
+            pred.onNodeLeft(leftNodeId);
+        }
     }
 
     /**
@@ -332,6 +363,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
                         c.updateAlives(node);
+
+                    updateClientNodes(node.id());
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
@@ -1440,6 +1473,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param node Remote node this event is connected with.
          * @param topSnapshot Topology snapshot.
          */
+        @SuppressWarnings("RedundantTypeArguments")
         private void recordEvent(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
             assert node != null;
 
@@ -1806,7 +1840,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private long awaitVer;
 
         /** Empty constructor required by {@link Externalizable}. */
-        public DiscoTopologyFuture() {
+        private DiscoTopologyFuture() {
             // No-op.
         }
 
@@ -2345,15 +2379,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /**
          * @param nodeId Near node ID to add.
          */
-        public void addNearNode(UUID nodeId) {
-            clientNodes.put(nodeId, true);
-        }
-
-        /**
-         * @param nodeId Near node ID to add.
-         */
-        public void addClientNode(UUID nodeId) {
-            clientNodes.put(nodeId, false);
+        public void addClientNode(UUID nodeId, boolean nearEnabled) {
+            clientNodes.put(nodeId, nearEnabled);
         }
 
         /**
@@ -2361,6 +2388,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         public void removeNearNode(UUID nodeId) {
             clientNodes.remove(nodeId);
+        }
+
+        /**
+         * @param leftNodeId Left node ID.
+         */
+        public void onNodeLeft(UUID leftNodeId) {
+            clientNodes.remove(leftNodeId);
         }
 
         /**
