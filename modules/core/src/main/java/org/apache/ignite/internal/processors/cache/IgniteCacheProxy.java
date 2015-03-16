@@ -451,9 +451,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (!ctx.isReplicated())
             return false;
 
-        ClusterGroup grp = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name());
-
-        return grp.node(ctx.localNodeId()) != null;
+        return ctx.affinityNode();
     }
 
     /** {@inheritDoc} */
