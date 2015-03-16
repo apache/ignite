@@ -33,10 +33,10 @@ import scala.util.control.Breaks._
  */
 object ScalarCacheAffinityExample2 {
     /** Configuration file name. */
-    private val CONFIG = "examples/config/example-cache.xml" // Cache.
+    private val CONFIG = "examples/config/example-compute.xml"
 
-    /** Name of cache specified in spring configuration. */
-    private val NAME = "partitioned"
+    /** Name of cache. */
+    private val NAME = ScalarCacheAffinityExample2.getClass.getSimpleName
 
     /**
      * Example entry point. No arguments required.
@@ -46,42 +46,46 @@ object ScalarCacheAffinityExample2 {
      */
     def main(args: Array[String]) {
         scalar(CONFIG) {
-            // Clean up caches on all nodes before run.
-            cache$(NAME).get.clear()
+            val cache = createCache$[String, String](NAME)
 
-            var keys = Seq.empty[String]
+            try {
+                var keys = Seq.empty[String]
 
-            ('A' to 'Z').foreach(keys :+= _.toString)
+                ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(ignite$, keys)
+                populateCache(ignite$, keys)
 
-            // Map all keys to nodes.
-            val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
+                // Map all keys to nodes.
+                val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
 
-            mappings.foreach(mapping => {
-                val node = mapping._1
-                val mappedKeys = mapping._2
+                mappings.foreach(mapping => {
+                    val node = mapping._1
+                    val mappedKeys = mapping._2
 
-                if (node != null) {
-                    ignite$.cluster().forNode(node) *< (() => {
-                        breakable {
-                            println(">>> Executing affinity job for keys: " + mappedKeys)
+                    if (node != null) {
+                        ignite$.cluster().forNode(node) *<(() => {
+                            breakable {
+                                println(">>> Executing affinity job for keys: " + mappedKeys)
 
-                            // Get cache.
-                            val cache = cache$[String, String](NAME)
+                                // Get cache.
+                                val cache = cache$[String, String](NAME)
 
-                            // If cache is not defined at this point then it means that
-                            // job was not routed by affinity.
-                            if (!cache.isDefined)
-                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode().id() +
-                                    ", cacheName=" + NAME + ']').^^
+                                // If cache is not defined at this point then it means that
+                                // job was not routed by affinity.
+                                if (!cache.isDefined)
+                                    println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode().id() +
+                                        ", cacheName=" + NAME + ']').^^
 
-                            // Check cache without loading the value.
-                            mappedKeys.foreach(key => println(">>> Peeked at: " + cache.get.localPeek(key)))
-                        }
-                    }, null)
-                }
-            })
+                                // Check cache without loading the value.
+                                mappedKeys.foreach(key => println(">>> Peeked at: " + cache.get.localPeek(key)))
+                            }
+                        }, null)
+                    }
+                })
+            }
+            finally {
+                cache.close()
+            }
         }
     }
 

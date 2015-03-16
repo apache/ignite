@@ -33,16 +33,23 @@ import scala.collection.JavaConversions._
  * be started with or without cache.
  */
 object ScalarCacheExample extends App {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-compute.xml"
+
     /** Name of cache specified in spring configuration. */
-    private val NAME = "partitioned"
+    private val NAME = ScalarCacheExample.getClass.getSimpleName
 
-    scalar("examples/config/example-cache.xml") {
-        // Clean up caches on all nodes before run.
-        cache$(NAME).get.clear()
+    scalar(CONFIG) {
+        val cache = createCache$[String, Int](NAME)
 
-        registerListener()
+        try {
+            registerListener()
 
-        basicOperations()
+            basicOperations()
+        }
+        finally {
+            cache.close()
+        }
     }
 
     /**

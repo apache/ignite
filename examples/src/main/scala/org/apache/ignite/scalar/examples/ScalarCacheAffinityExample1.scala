@@ -37,10 +37,10 @@ import org.jetbrains.annotations.Nullable
  */
 object ScalarCacheAffinityExample1 {
     /** Configuration file name. */
-    private val CONFIG = "examples/config/example-cache.xml" // Cache.
+    private val CONFIG = "examples/config/example-compute.xml"
 
-    /** Name of cache specified in spring configuration. */
-    private val NAME = "partitioned"
+    /** Name of cache. */
+    private val NAME = ScalarCacheAffinityExample1.getClass.getSimpleName
 
     /**
      * Example entry point. No arguments required.
@@ -50,47 +50,49 @@ object ScalarCacheAffinityExample1 {
      */
     def main(args: Array[String]) {
         scalar(CONFIG) {
-            // Clean up caches on all nodes before run.
-            cache$(NAME).get.clear()
+            val cache = createCache$[String, String](NAME)
 
-            var keys = Seq.empty[String]
+            try {
+                val keys = ('A' to 'Z').map(_.toString).toSeq
 
-            ('A' to 'Z').foreach(keys :+= _.toString)
+                populateCache(ignite$, keys)
 
-            populateCache(ignite$, keys)
+                var results = Map.empty[String, String]
 
-            var results = Map.empty[String, String]
+                keys.foreach(key => {
+                    val res = ignite$.call$(
+                        new IgniteCallable[String] {
+                            @CacheAffinityKeyMapped
+                            def affinityKey(): String = key
 
-            keys.foreach(key => {
-                val res = ignite$.call$(
-                    new IgniteCallable[String] {
-                        @CacheAffinityKeyMapped
-                        def affinityKey(): String = key
+                            def cacheName(): String = NAME
 
-                        def cacheName(): String = NAME
+                            @Nullable def call: String = {
+                                println(">>> Executing affinity job for key: " + key)
 
-                        @Nullable def call: String = {
-                            println(">>> Executing affinity job for key: " + key)
+                                val cache = cache$[String, String](NAME)
 
-                            val cache = cache$[String, String](NAME)
+                                if (!cache.isDefined) {
+                                    println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode.id +
+                                        ", cacheName=" + NAME + ']')
 
-                            if (!cache.isDefined) {
-                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode.id +
-                                    ", cacheName=" + NAME + ']')
-
-                                "Error"
+                                    "Error"
+                                }
+                                else
+                                    cache.get.localPeek(key)
                             }
-                            else
-                                cache.get.localPeek(key)
-                        }
-                    },
-                    null
-                )
+                        },
+                        null
+                    )
 
-                results += (key -> res.head)
-            })
+                    results += (key -> res.head)
+                })
 
-            results.foreach(e => println(">>> Affinity job result for key '" + e._1 + "': " + e._2))
+                results.foreach(e => println(">>> Affinity job result for key '" + e._1 + "': " + e._2))
+            }
+            finally {
+                cache.close()
+            }
         }
     }
 
