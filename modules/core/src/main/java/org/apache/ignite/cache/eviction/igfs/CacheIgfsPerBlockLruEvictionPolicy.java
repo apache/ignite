@@ -36,6 +36,9 @@ import java.util.regex.*;
  */
 public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
     CacheIgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
 

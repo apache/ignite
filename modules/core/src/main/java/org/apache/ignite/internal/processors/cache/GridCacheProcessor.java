@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -918,6 +919,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.onKernalStart();
 
+        if (ctx.events().isRecordable(EventType.EVT_CACHE_STARTED))
+            ctx.events().addEvent(EventType.EVT_CACHE_STARTED);
+
         if (log.isDebugEnabled())
             log.debug("Executed onKernalStart() callback for cache [name=" + cache.name() + ", mode=" +
                 cache.configuration().getCacheMode() + ']');
@@ -957,6 +961,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         cache.onKernalStop();
+
+        if (ctx.events().isRecordable(EventType.EVT_CACHE_STOPPED))
+            ctx.events().addEvent(EventType.EVT_CACHE_STOPPED);
     }
 
     /**

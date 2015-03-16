@@ -36,6 +36,9 @@ import java.io.*;
  */
 public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
     CacheRandomEvictionPolicyMBean, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -76,6 +77,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cacheCfg.setName(STATIC_CACHE_NAME);
 
         cfg.setCacheConfiguration(cacheCfg);
+
+        cfg.setIncludeEventTypes(EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED);
 
         return cfg;
     }
@@ -558,6 +561,60 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         finally {
             stopGrid(nodeCount());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvents() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName(DYNAMIC_CACHE_NAME);
+
+        final CountDownLatch[] starts = new CountDownLatch[nodeCount()];
+        final CountDownLatch[] stops = new CountDownLatch[nodeCount()];
+
+        IgnitePredicate[] lsnrs = new IgnitePredicate[nodeCount()];
+
+        for (int i = 0; i < nodeCount(); i++) {
+            final int idx = i;
+
+            starts[i] = new CountDownLatch(1);
+            stops[i] = new CountDownLatch(1);
+
+            lsnrs[i] = new IgnitePredicate<CacheEvent>() {
+                @Override public boolean apply(CacheEvent e) {
+                    switch (e.type()) {
+                        case EventType.EVT_CACHE_STARTED:
+                            starts[idx].countDown();
+
+                            break;
+
+                        case EventType.EVT_CACHE_STOPPED:
+                            stops[idx].countDown();
+
+                            break;
+
+                        default:
+                            assert false;
+                    }
+
+                    assertEquals(DYNAMIC_CACHE_NAME, e.cacheName());
+
+                    return true;
+                }
+            };
+
+            ignite(i).events().localListen(lsnrs[i], EventType.EVTS_CACHE_LIFECYCLE);
+        }
+
+        try (IgniteCache<Object, Object> ignored = ignite(0).createCache(cfg)) {
+            for (CountDownLatch start : starts)
+                start.await();
+        }
+
+        for (CountDownLatch stop : stops)
+            stop.await();
     }
 
     /**
