@@ -53,12 +53,13 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     public static final int GRID_CNT = 3;
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TestCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -73,14 +74,6 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(3000);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setCommunicationSpi(new TestCommunicationSpi());
-
-        cfg.setDiscoverySpi(spi);
-
         return cfg;
     }
 
@@ -89,6 +82,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
