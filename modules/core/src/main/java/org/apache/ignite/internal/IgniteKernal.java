@@ -2263,7 +2263,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw CU.convertToCacheException(e);
         }
         finally {
             unguard();
@@ -2281,7 +2281,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw CU.convertToCacheException(e);
         }
         finally {
             unguard();
@@ -2299,7 +2299,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return ctx.cache().publicJCache(nearCfg.getName());
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw CU.convertToCacheException(e);
         }
         finally {
             unguard();
@@ -2308,8 +2308,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        // TODO: implement.
+        guard();
 
+        try {
+            ctx.cache().dynamicStopCache(cacheName).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /**
