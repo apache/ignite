@@ -29,14 +29,7 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Utils")
 public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /** */
-    private IgniteExceptionRegistry registry;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        registry = new IgniteExceptionRegistry(new GridStringLogger());
-    }
+    private IgniteExceptionRegistry registry = IgniteExceptionRegistry.get();
 
     /**
      * @throws Exception if failed.

@@ -112,7 +112,7 @@ public class GridTimer {
     }
 
     /**
-     * @return End time ({@code -1 if not stopped).
+     * @return End time ({@code -1} if not stopped).
      */
     public long endTime() {
         return end;

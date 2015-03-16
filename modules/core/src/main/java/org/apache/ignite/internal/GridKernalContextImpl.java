@@ -321,8 +321,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /**
      * Creates new kernal context.
-     *
-     * @param log Logger.
+     *  @param log Logger.
      * @param grid Grid instance managed by kernal.
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
@@ -340,7 +339,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
-        IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         ExecutorService execSvc,

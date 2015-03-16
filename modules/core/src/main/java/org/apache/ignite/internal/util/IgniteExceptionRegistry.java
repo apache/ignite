@@ -33,40 +33,32 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class IgniteExceptionRegistry {
     /** */
-    public static final IgniteExceptionRegistry DUMMY_REGISTRY = new DummyRegistry();
-    
-    /** */
     public static final int DEFAULT_QUEUE_SIZE = 1000;
+
+    /** */
+    private static final IgniteExceptionRegistry instance = new IgniteExceptionRegistry();
 
     /** */
     private int maxSize = IgniteSystemProperties.getInteger(IGNITE_EXCEPTION_REGISTRY_MAX_SIZE, DEFAULT_QUEUE_SIZE);
 
     /** */
-    private AtomicLong errorCnt = new AtomicLong();
+    private AtomicLong errCnt = new AtomicLong();
 
     /** */
-    private final ConcurrentLinkedDeque<ExceptionInfo> queue;
-
-    /** */
-    private final IgniteLogger log;
+    private final ConcurrentLinkedDeque<ExceptionInfo> q = new ConcurrentLinkedDeque<>();
 
     /**
-     * Constructor.
-     *
-     * @param log Ignite logger.
+     * @return Registry instance.
      */
-    public IgniteExceptionRegistry(IgniteLogger log) {
-        this.log = log;
-
-        queue = new ConcurrentLinkedDeque<>();
+    public static IgniteExceptionRegistry get() {
+        return instance;
     }
 
     /**
-     * Default constructor.
+     *
      */
-    protected IgniteExceptionRegistry() {
-        log = null;
-        queue = null;
+    private IgniteExceptionRegistry() {
+        // No-op.
     }
 
     /**
@@ -77,14 +69,20 @@ public class IgniteExceptionRegistry {
      * @param e Exception.
      */
     public void onException(String msg, Throwable e) {
-        long order = errorCnt.incrementAndGet();
+        q.offerFirst(
+            new ExceptionInfo(
+                errCnt.incrementAndGet(),
+                e,
+                msg,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                U.currentTimeMillis()));
 
-        // Remove extra entity.
-        while (queue.size() >= maxSize)
-            queue.pollLast();
+        // Remove extra entries.
+        int delta = q.size() - maxSize;
 
-        queue.offerFirst(new ExceptionInfo(order, e, msg, Thread.currentThread().getId(),
-            Thread.currentThread().getName(), U.currentTimeMillis()));
+        for (int i = 0; i < delta && q.size() > maxSize; i++)
+            q.pollLast();
     }
 
     /**
@@ -96,7 +94,7 @@ public class IgniteExceptionRegistry {
     public List<ExceptionInfo> getErrors(long order) {
         List<ExceptionInfo> errors = new ArrayList<>();
 
-        for (ExceptionInfo error : queue) {
+        for (ExceptionInfo error : q) {
             if (error.order > order)
                 errors.add(error);
         }
@@ -117,26 +115,26 @@ public class IgniteExceptionRegistry {
 
     /**
      * Prints errors.
+     *
+     * @param log Logger.
      */
-    public void printErrors() {
-        int size = queue.size();
+    public void printErrors(IgniteLogger log) {
+        int size = q.size();
 
-        int cnt = 0;
+        Iterator<ExceptionInfo> descIter = q.descendingIterator();
 
-        Iterator<ExceptionInfo> descIter = queue.descendingIterator();
-
-        while (descIter.hasNext() && cnt < size){
+        for (int i = 0; i < size && descIter.hasNext(); i++) {
             ExceptionInfo error = descIter.next();
 
-            log.error(
-                "Time of occurrence: " + new Date(error.time()) + "\n" +
-                "Error message: " + error.message() + "\n" +
-                "Thread id: " + error.threadId() + "\n" +
-                "Thread name: " + error.threadName(),
+            U.error(
+                log,
+                "Error: " + (i + 1) + U.nl() +
+                "    Time: " + new Date(error.time()) + U.nl() +
+                "    Error: " + error.message() + U.nl() +
+                "    Thread ID: " + error.threadId() + U.nl() +
+                "    Thread name: " + error.threadName(),
                 error.error()
             );
-
-            ++cnt;
         }
     }
 
@@ -146,7 +144,7 @@ public class IgniteExceptionRegistry {
      * @return Errors count.
      */
     public long errorCount() {
-        return errorCnt.get();
+        return errCnt.get();
     }
 
     /**
@@ -240,43 +238,6 @@ public class IgniteExceptionRegistry {
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(ExceptionInfo.class, this);
-        }
-    }
-
-    /**
-     * Dummy registry.
-     */
-    private static final class DummyRegistry extends IgniteExceptionRegistry {
-        /**
-         * Constructor.
-         */
-        private DummyRegistry() {
-            super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onException(String msg, Throwable e) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<ExceptionInfo> getErrors(long order) {
-            return Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setMaxSize(int maxSize) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void printErrors() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long errorCount() {
-            return -1L;
         }
     }
 }
