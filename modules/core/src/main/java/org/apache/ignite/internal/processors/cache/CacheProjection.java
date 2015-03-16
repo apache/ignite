@@ -1255,6 +1255,54 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean clearLocally(K key);
 
     /**
+     * Clears entries from this cache and swap storage only if the entry
+     * is not currently locked, and is not participating in a transaction.
+     * <p>
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * also be cleared from swap.
+     * <p>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache. It does not remove entries from
+     * remote caches or from underlying persistent storage.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link CacheFlag#READ}.
+     *
+     * @param keys Keys to clearLocally.
+     * @return {@code True} if entry was successfully cleared from cache, {@code false}
+     *      if entry was in use at the time of this method invocation and could not be
+     *      cleared.
+     */
+    public void clearLocallyAll(Set<K> keys);
+
+    /**
+     * Clears key on all nodes that store it's data. That is, caches are cleared on remote
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocally(Object)} method which only
+     * clears local node's cache.
+     * <p>
+     * Ignite will make the best attempt to clear caches on all nodes. If some caches
+     * could not be cleared, then exception will be thrown.
+     *
+     * @param key Key to clear.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
+     */
+    public void clear(K key) throws IgniteCheckedException;
+
+    /**
+     * Clears keys on all nodes that store it's data. That is, caches are cleared on remote
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocallyAll(Set)} method which only
+     * clears local node's cache.
+     * <p>
+     * Ignite will make the best attempt to clear caches on all nodes. If some caches
+     * could not be cleared, then exception will be thrown.
+     *
+     * @param keys Keys to clear.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
+     */
+    public void clearAll(Set<K> keys) throws IgniteCheckedException;
+
+    /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
      * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
@@ -1273,6 +1321,18 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Clear future.
      */
     public IgniteInternalFuture<?> clearAsync();
+
+    /**
+     * @param key Key to clear.
+     * @return Clear future.
+     */
+    public IgniteInternalFuture<?> clearAsync(K key);
+
+    /**
+     * @param keys Keys to clear.
+     * @return Clear future.
+     */
+    public IgniteInternalFuture<?> clearAsync(Set<K> keys);
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote

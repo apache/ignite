@@ -178,11 +178,5 @@
                 <property name="perTask" value="false"/>
             </bean>
         </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="sharedMemoryPort" value="-1"/>
-            </bean>
-        </property>
     </bean>
 </beans>

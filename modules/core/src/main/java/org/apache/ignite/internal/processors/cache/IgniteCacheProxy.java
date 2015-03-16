@@ -1043,6 +1043,42 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void clear(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync())
+                setFuture(delegate.clearAsync(key));
+            else
+                delegate.clear(key);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync())
+                setFuture(delegate.clearAsync(keys));
+            else
+                delegate.clearAll(keys);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1054,6 +1090,31 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localClear(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.clearLocally(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localClearAll(Set<K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            for (K key : keys)
+                delegate.clearLocally(key);
         }
         finally {
             gate.leave(prev);

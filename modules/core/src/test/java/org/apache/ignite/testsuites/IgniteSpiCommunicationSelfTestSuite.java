@@ -38,12 +38,10 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpCommunicationSpiShmemSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiStartStopSelfTest.class));
 
-        suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedTcpSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedShmemTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedSelfTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
 

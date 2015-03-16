@@ -24,6 +24,8 @@ import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
+import static org.apache.ignite.examples.datagrid.store.CacheNodeWithStoreStartup.*;
+
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
@@ -48,6 +50,7 @@ public class CacheStoreExample {
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
+            System.out.println(">>> Store: " + STORE);
 
             IgniteCache<Long, Person> cache = ignite.jcache(null);
 
@@ -71,6 +74,22 @@ public class CacheStoreExample {
             }
 
             System.out.println("Read value after commit: " + cache.get(id));
+
+            // If example run with CacheJdbcPojoStore.
+            // Example of CacheJdbcPojoStore special features.
+            if (STORE.equals(AUTO)) {
+                System.out.println(">>> Example of CacheJdbcPojoStore special feature: load from DB with custom SQL.");
+
+                cache.clear();
+
+                System.out.println("Cache size: " + cache.size());
+
+                // Load values from DB into store with custom SQL.
+                cache.loadCache(null, "java.lang.Long", "select * from PERSON where id = 2");
+
+                System.out.println("Cache size: " + cache.size());
+                System.out.println("Person: " + cache.get(2L));
+            }
         }
     }
 

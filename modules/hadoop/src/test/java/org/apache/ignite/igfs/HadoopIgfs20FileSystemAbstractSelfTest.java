@@ -185,7 +185,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             cfg.setFileSystemConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
             cfg.setLocalHost(U.getLocalHost().getHostAddress());
-            cfg.setCommunicationSpi(communicationSpi());
 
             G.start(cfg);
         }
@@ -211,7 +210,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
     }
@@ -271,15 +269,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         return cfg;
-    }
-
-    /** @return Communication SPI. */
-    private CommunicationSpi communicationSpi() {
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        return commSpi;
     }
 
     /** {@inheritDoc} */

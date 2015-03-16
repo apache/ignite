@@ -15,17 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
-
-import org.apache.ignite.testframework.junits.spi.*;
+package org.apache.ignite.schema.model;
 
 /**
- *
+ * Index item descriptor.
  */
-@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiShmemSelfTest extends GridTcpCommunicationSpiAbstractTest {
-    /** */
-    public GridTcpCommunicationSpiShmemSelfTest() {
-        super(false);
+public class IndexItem {
+    /** Column name. */
+    private final String name;
+
+    /** Sort direction. */
+    private final Boolean desc;
+
+    /**
+     * Constructor.
+     *
+     * @param name Column name.
+     * @param desc Sort direction.
+     */
+    public IndexItem(String name, Boolean desc) {
+        this.name = name;
+        this.desc = desc;
+    }
+
+    /**
+     * @return Column name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * @return Sort direction.
+     */
+    public Boolean descending() {
+        return desc;
     }
 }

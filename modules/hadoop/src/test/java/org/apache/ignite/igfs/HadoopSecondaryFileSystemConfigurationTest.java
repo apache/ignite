@@ -283,8 +283,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         cfg.setFileSystemConfiguration(igfsCfg);
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
-        cfg.setCommunicationSpi(communicationSpi());
-
         G.start(cfg);
     }
 
@@ -320,7 +318,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(fsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
     }
@@ -378,15 +375,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         return cfg;
-    }
-
-    /** @return Communication SPI. */
-    private CommunicationSpi communicationSpi() {
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        return commSpi;
     }
 
     /**

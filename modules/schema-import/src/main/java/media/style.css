@@ -39,12 +39,28 @@
 }
 
 .combo-box-popup .list-view {
-    -fx-font-size : 14pt;
+    -fx-font-size : 14;
 }
 
 .text-area {
     -fx-font-size: 14;
     -fx-background-color: transparent, transparent, transparent;
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .viewport{
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .content{
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-bar:vertical:disabled {
+    -fx-opacity: 0;
 }
 
 .text-field {
@@ -58,6 +74,7 @@
 
 .table-view {
     -fx-focus-color: gray;
+    -fx-font-size: 14;
 }
 
 .table-view .table-row-cell:selected {
