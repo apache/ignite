@@ -90,6 +90,9 @@ public abstract class GridAbstractTest extends TestCase {
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
+    /** Starting grid name. */
+    protected static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
@@ -644,7 +647,14 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+        startingGrid.set(gridName);
+
+        try {
+            return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+        }
+        finally {
+            startingGrid.set(null);
+        }
     }
 
     /**

@@ -50,10 +50,11 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.management.*;
@@ -113,6 +114,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
+
+    /** Must use JDK marshaller since it is used by discovery to fire custom events. */
+    private Marshaller marshaller = new JdkMarshaller();
 
     /** */
     private volatile boolean validateCfg = true;
@@ -580,7 +584,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
 
         for (int i = 0; i < cfgs.length; i++) {
-            CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
+            CacheConfiguration<?, ?> cfg = deepCopy(cfgs[i]);
 
             CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
 
@@ -1555,9 +1559,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.deploymentId(IgniteUuid.randomUuid());
 
             try {
-                CacheConfiguration cfg = new CacheConfiguration(ccfg);
+                CacheConfiguration cfg = deepCopy(ccfg);
 
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
 
                 initialize(cfg, cacheObjCtx);
 
@@ -2402,6 +2406,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collections.addAll(ret, objs);
 
         return ret;
+    }
+
+    /**
+     * @param src Object to copy.
+     * @return Deep copy of the object.
+     */
+    private <T> T deepCopy(T src) throws IgniteCheckedException {
+        if (src == null)
+            return null;
+
+        return marshaller.unmarshal(marshaller.marshal(src), src.getClass().getClassLoader());
     }
 
     /**

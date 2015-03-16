@@ -132,10 +132,10 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         if (cfg.getCacheWriterFactory() != null)
             cfg.setWriteThrough(true);
 
-        CacheStore<?, ?> store = cacheStore();
+        Factory<CacheStore> storeFactory = cacheStoreFactory();
 
-        if (store != null) {
-            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        if (storeFactory != null) {
+            cfg.setCacheStoreFactory(storeFactory);
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
@@ -150,7 +150,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache store.
      */
-    protected CacheStore<?, ?> cacheStore() {
+    protected Factory<CacheStore> cacheStoreFactory() {
         return null;
     }
 
@@ -222,7 +222,17 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public class TestStore extends CacheStoreAdapter<Object, Object> {
+    public static class TestStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            return new TestStore();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : storeMap.entrySet())

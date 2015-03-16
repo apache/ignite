@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 
+import javax.cache.configuration.*;
 import javax.cache.processor.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -55,8 +56,8 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 
     /** {@inheritDoc} */

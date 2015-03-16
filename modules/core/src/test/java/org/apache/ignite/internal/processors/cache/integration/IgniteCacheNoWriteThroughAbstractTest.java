@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.configuration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
@@ -37,8 +38,8 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
     private Integer lastKey = 0;
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 
     /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import org.jetbrains.annotations.*;
 import org.junit.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -178,8 +179,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 
     /**

@@ -43,8 +43,8 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 
     /** {@inheritDoc} */
