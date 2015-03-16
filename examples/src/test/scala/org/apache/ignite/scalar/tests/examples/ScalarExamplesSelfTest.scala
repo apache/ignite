@@ -70,11 +70,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
-    def testScalarPiCalculationExample() {
-        ScalarPiCalculationExample.main(EMPTY_ARGS)
-    }
-
-    /** */
     def testScalarPingPongExample() {
         scalar("modules/scalar/src/test/resources/spring-ping-pong-partner.xml") {
             ScalarPingPongExample.main(EMPTY_ARGS)
