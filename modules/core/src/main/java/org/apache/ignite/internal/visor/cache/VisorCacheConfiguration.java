@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.node.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -41,9 +40,6 @@ public class VisorCacheConfiguration implements Serializable {
 
     /** Cache mode. */
     private CacheMode mode;
-
-    /** Distribution mode. */
-    private CacheDistributionMode distributionMode;
 
     /** Cache atomicity mode */
     private CacheAtomicityMode atomicityMode;
@@ -91,7 +87,7 @@ public class VisorCacheConfiguration implements Serializable {
     private VisorCacheAffinityConfiguration affinityCfg;
 
     /** Preload config. */
-    private VisorCachePreloadConfiguration preloadCfg;
+    private VisorCacheRebalanceConfiguration rebalanceCfg;
 
     /** Eviction config. */
     private VisorCacheEvictionConfiguration evictCfg;
@@ -136,7 +132,6 @@ public class VisorCacheConfiguration implements Serializable {
 
         cfg.name = ccfg.getName();
         cfg.mode = ccfg.getCacheMode();
-//        cfg.distributionMode = ccfg.getDistributionMode(); TODO IGNITE-45.
         cfg.atomicityMode = ccfg.getAtomicityMode();
         cfg.atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
         cfg.eagerTtl = ccfg.isEagerTtl();
@@ -157,7 +152,7 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
 
         cfg.affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
-        cfg.preloadCfg = VisorCachePreloadConfiguration.from(ccfg);
+        cfg.rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
         cfg.evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
         cfg.nearCfg = VisorCacheNearConfiguration.from(ccfg);
         cfg.dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
@@ -196,13 +191,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public CacheMode mode() {
         return mode;
-    }
-
-    /**
-     * @return Distribution mode.
-     */
-    public CacheDistributionMode distributionMode() {
-        return distributionMode;
     }
 
     /**
@@ -362,8 +350,8 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Preload config.
      */
-    public VisorCachePreloadConfiguration preloadConfiguration() {
-        return preloadCfg;
+    public VisorCacheRebalanceConfiguration rebalanceConfiguration() {
+        return rebalanceCfg;
     }
 
     /**

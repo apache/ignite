@@ -24,36 +24,36 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for cache preload configuration properties.
+ * Data transfer object for cache rebalance configuration properties.
  */
-public class VisorCachePreloadConfiguration implements Serializable {
+public class VisorCacheRebalanceConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache preload mode. */
+    /** Cache rebalance mode. */
     private CacheRebalanceMode mode;
 
-    /** Preload thread pool size. */
+    /** Rebalance thread pool size. */
     private int threadPoolSize;
 
-    /** Cache preload batch size. */
+    /** Cache rebalance batch size. */
     private int batchSize;
 
-    /** Preloading partitioned delay. */
+    /** Rebalance partitioned delay. */
     private long partitionedDelay;
 
-    /** Time in milliseconds to wait between preload messages. */
+    /** Time in milliseconds to wait between rebalance messages. */
     private long throttle;
 
-    /** Preload timeout. */
+    /** Rebalance timeout. */
     private long timeout;
 
     /**
      * @param ccfg Cache configuration.
-     * @return Data transfer object for preload configuration properties.
+     * @return Data transfer object for rebalance configuration properties.
      */
-    public static VisorCachePreloadConfiguration from(CacheConfiguration ccfg) {
-        VisorCachePreloadConfiguration cfg = new VisorCachePreloadConfiguration();
+    public static VisorCacheRebalanceConfiguration from(CacheConfiguration ccfg) {
+        VisorCacheRebalanceConfiguration cfg = new VisorCacheRebalanceConfiguration();
 
         cfg.mode = ccfg.getRebalanceMode();
         cfg.batchSize = ccfg.getRebalanceBatchSize();
@@ -66,42 +66,42 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @return Cache preload mode.
+     * @return Cache rebalance mode.
      */
     public CacheRebalanceMode mode() {
         return mode;
     }
 
     /**
-     * @return Preload thread pool size.
+     * @return Rebalance thread pool size.
      */
     public int threadPoolSize() {
         return threadPoolSize;
     }
 
     /**
-     * @return Cache preload batch size.
+     * @return Cache rebalance batch size.
      */
     public int batchSize() {
         return batchSize;
     }
 
     /**
-     * @return Preloading partitioned delay.
+     * @return Rebalance partitioned delay.
      */
     public long partitionedDelay() {
         return partitionedDelay;
     }
 
     /**
-     * @return Time in milliseconds to wait between preload messages.
+     * @return Time in milliseconds to wait between rebalance messages.
      */
     public long throttle() {
         return throttle;
     }
 
     /**
-     * @return Preload timeout.
+     * @return Rebalance timeout.
      */
     public long timeout() {
         return timeout;
@@ -109,6 +109,6 @@ public class VisorCachePreloadConfiguration implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCachePreloadConfiguration.class, this);
+        return S.toString(VisorCacheRebalanceConfiguration.class, this);
     }
 }

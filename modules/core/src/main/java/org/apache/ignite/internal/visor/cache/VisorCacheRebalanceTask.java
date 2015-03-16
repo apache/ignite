@@ -30,19 +30,19 @@ import java.util.*;
  * Pre-loads caches. Made callable just to conform common pattern.
  */
 @GridInternal
-public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorCacheRebalanceTask extends VisorOneNodeTask<Set<String>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCachesPreloadJob job(Set<String> arg) {
-        return new VisorCachesPreloadJob(arg, debug);
+    @Override protected VisorCachesRebalanceJob job(Set<String> arg) {
+        return new VisorCachesRebalanceJob(arg, debug);
     }
 
     /**
-     * Job that preload caches.
+     * Job that rebalance caches.
      */
-    private static class VisorCachesPreloadJob extends VisorJob<Set<String>, Void> {
+    private static class VisorCachesRebalanceJob extends VisorJob<Set<String>, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -50,7 +50,7 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
          * @param arg Caches names.
          * @param debug Debug flag.
          */
-        private VisorCachesPreloadJob(Set<String> arg, boolean debug) {
+        private VisorCachesRebalanceJob(Set<String> arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -76,7 +76,7 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCachesPreloadJob.class, this);
+            return S.toString(VisorCachesRebalanceJob.class, this);
         }
     }
 }
