@@ -77,7 +77,8 @@ public class IgniteNode implements BenchmarkServer {
             CacheDistributionMode distroMode = args.distributionMode() == CLIENT_ONLY && !clientMode ?
                 PARTITIONED_ONLY : args.distributionMode();
 
-            // TODO IGNITE-45.
+            if (distroMode == CLIENT_ONLY)
+                c.setClientMode(true);
 
             cc.setWriteSynchronizationMode(args.syncMode());
 
