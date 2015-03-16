@@ -68,8 +68,6 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestStore store = new TestStore(); // Use the same store instance for both caches.
-
         assert cfg.getCacheConfiguration().length == 1;
 
         CacheConfiguration ccfg0 = cfg.getCacheConfiguration()[0];
@@ -81,7 +79,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         ccfg0.setWriteBehindFlushFrequency(5000);
         ccfg0.setWriteBehindEnabled(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
@@ -94,7 +92,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
