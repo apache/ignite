@@ -1382,6 +1382,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return (T)this;
         else if (clazz.isAssignableFrom(IgniteEx.class))
             return (T)ctx.grid();
+        else if (clazz.isAssignableFrom(legacyProxy.getClass()))
+            return (T)legacyProxy;
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
     }
