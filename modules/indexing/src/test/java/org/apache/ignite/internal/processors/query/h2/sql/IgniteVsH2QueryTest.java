@@ -126,7 +126,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         initializeH2Schema();
 
-        fillOutCacheAndDbWithData();
+        initCacheAndDbData();
+
+        checkAllDataEquals();
     }
     
     /** {@inheritDoc} */
@@ -142,7 +144,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * Populate cache with test data.
      */
     @SuppressWarnings("unchecked")
-    private void fillOutCacheAndDbWithData() throws SQLException {
+    private void initCacheAndDbData() throws SQLException {
         int idGen = 0;
         
         // Organizations.
@@ -212,11 +214,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     private void insertInDb(Person p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement("insert into PERSON (id, firstName, lastName, orgId) values(?, ?, ?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement("insert into PERSON (id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setString(2, p.firstName);
             st.setString(3, p.lastName);
             st.setInt(4, p.orgId);
+            st.setDouble(5, p.salary);
 
             st.executeUpdate();
         }
@@ -285,51 +288,86 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         return conn;
     }
 
-    @SuppressWarnings("unchecked")
+    private void test0(String sql, Object... args) throws SQLException {
+        test0(pCache, sql, args, Order.RANDOM);
+    }
+
     private void test0(IgniteCache cache, String sql, Object... args) throws SQLException {
+        test0(cache, sql, args, Order.RANDOM);
+    }
+
+    private void test0Ordered(String sql, Object... args) throws SQLException {
+        test0(pCache, sql, args, Order.ORDERED);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void test0(IgniteCache cache, String sql, Object[] args, Order order) throws SQLException {
         log.info("Sql=" + sql + ", args=" + Arrays.toString(args));
-        
+
         ResultSet h2Rs = null;
         PreparedStatement st = null;
 
         try {
             st = conn.prepareStatement(sql);
-            
-            //TODO apply args to statment.
+
+            for (int idx = 0; idx < args.length; idx++) {
+                Object arg = args[idx];
+
+                fillArgByType(st, idx + 1, arg);
+            }
 
             h2Rs = st.executeQuery();
 
             List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
 
-            assertRsEquals(h2Rs, cacheRes);
+            assertRsEquals(h2Rs, cacheRes, order);
         }
         finally {
             U.closeQuiet(st);
             U.closeQuiet(h2Rs);
         }
     }
-    
-    private static void assertRsEquals(ResultSet rs, List<List<?>> actualRs) throws SQLException {
+
+    private void assertRsEquals(ResultSet rs, List<List<?>> actualRs, Order order) throws SQLException {
+        if (!rs.next()) {
+            assertTrue("Actual result set have to be empty.", actualRs.isEmpty());
+
+            return;
+        }
+
+        assertTrue("Actual result set cannot be empty.", !actualRs.isEmpty());
+
+        assertEquals("Column count have to be equal.", rs.getMetaData().getColumnCount(), actualRs.get(0).size());
+
         int rsRowsCnt = 0;
 
-        assertEquals("Column count have to be equal.", rs.getMetaData().getColumnCount(), 
-            actualRs.isEmpty() ? 0 : actualRs.get(0).size());
+        do {
+            if (order == Order.ORDERED) {
+                assertTrue("Current rows counter have to be less than size of actual rs.", rsRowsCnt < actualRs.size());
 
-        while (rs.next()) {
-            boolean currRowIsFound = false;
+                List<?> row = actualRs.get(rsRowsCnt);
 
-            for (List<?> row : actualRs) {
-                if (rowEqualsCurrentRsRow(rs, row)) {
-                    currRowIsFound = true;
+                boolean rowsAreEqual = rowEqualsCurrentRsRow(rs, row);
 
-                    break;
-                }
+                assertTrue("Rows " + currentRsRow2String(rs) + " and " + row + " have to be equal.",
+                    rowsAreEqual);
             }
-            
-            assertTrue("A row " + currentRsRow2String(rs) + " not found at " + actualRs + '.', currRowIsFound);
+            else {
+                boolean currRowIsFound = false;
+
+                for (List<?> row : actualRs) {
+                    if (rowEqualsCurrentRsRow(rs, row)) {
+                        currRowIsFound = true;
+
+                        break;
+                    }
+                }
+
+                assertTrue("A row " + currentRsRow2String(rs) + " not found at " + actualRs + '.', currRowIsFound);
+            }
 
             rsRowsCnt++;
-        }
+        } while (rs.next());
 
         assertEquals("Count of results.", rsRowsCnt, actualRs.size());
     }
@@ -337,11 +375,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private static String currentRsRow2String(ResultSet rs) throws SQLException {
         GridStringBuilder sb = new GridStringBuilder("[");
 
-        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++)
-            sb.a(rs.getObject(i).toString()).a(',');
-        
+        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+            Object o = rs.getObject(i);
+            sb.a(o != null ? o.toString() : "null").a(',');
+        }
+
         sb.d(sb.length() - 1).a(']');
-        
+
         return sb.toString();
     }
 
@@ -349,16 +389,44 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         for (int colNum = 0; colNum < row.size(); colNum++) {
             Object o1 = row.get(colNum);
 
+            assertNotNull("Unexpected null value. Row=" + row + ", column=" + colNum + '.', o1);
+
             Object o2 = extractColumn(rs, colNum + 1, o1.getClass());
 
-            assertNotNull("Unexpected null value.", o1);
-            assertNotNull("Unexpected null value.", o2);
+            assertNotNull("Unexpected null value. Column=" + colNum + '.', o2);
 
             if (!(o1.equals(o2)))
                 return false;
         }
 
         return true;
+    }
+
+    private void fillArgByType(PreparedStatement st, int idx, Object arg) throws SQLException {
+        Class<?> propType = arg.getClass();
+
+        if (propType.equals(String.class))
+            st.setString(idx, (String)arg);
+        else if (propType.equals(Integer.TYPE) || propType.equals(Integer.class))
+            st.setInt(idx, (Integer)arg);
+        else if (propType.equals(Boolean.TYPE) || propType.equals(Boolean.class))
+            st.setBoolean(idx, (Boolean)arg);
+        else if (propType.equals(Long.TYPE) || propType.equals(Long.class))
+            st.setLong(idx, (Long)arg);
+        else if (propType.equals(Double.TYPE) || propType.equals(Double.class))
+            st.setDouble(idx, (Double)arg);
+        else if (propType.equals(Float.TYPE) || propType.equals(Float.class))
+            st.setFloat(idx, (Float)arg);
+        else if (propType.equals(Short.TYPE) || propType.equals(Short.class))
+            st.setShort(idx, (Short)arg);
+        else if (propType.equals(Byte.TYPE) || propType.equals(Byte.class))
+            st.setByte(idx, (Byte)arg);
+        else if (propType.equals(Timestamp.class))
+            st.setTimestamp(idx, (Timestamp)arg);
+        else if (propType.equals(SQLXML.class))
+            st.setSQLXML(idx, (SQLXML)arg);
+        else // Object.
+            st.setObject(idx, arg);
     }
 
     private static Object extractColumn(ResultSet rs, int idx, Class<?> propType) throws SQLException {
@@ -389,33 +457,38 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             return rs.getObject(idx);
     }
 
-    // TODO delete.
-    private void assertRsEquals(List<List<?>> expRs, List<List<?>> actualRs) {
-        assertEquals("Count of results.", expRs.size(), actualRs.size());
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkAllDataEquals() throws Exception {
+        test0("select id, name from Organization");
 
-        for (List<?> expectedRow : expRs)
-            assertTrue("An actual result set=" + actualRs + " have to contains row=" + expectedRow,
-                actualRs.contains(expectedRow));
+        test0("select id, firstName, lastName, orgId, salary from Person");
+
+        test0("select id, personId, productId from Purchase");
+
+        test0(rCache, "select id, name, price from Product");
     }
 
-    // TODO delete.
-    private void assertOrderedRsEquals(List<List<?>> expRs, List<List<?>> actualRs) {
-        assertEquals("Count of results.", expRs.size(), actualRs.size());
-
-        for (int rowNum = 0; rowNum < expRs.size(); rowNum++) {
-            List<?> expRow = expRs.get(rowNum);
-            List<?> actualRow = actualRs.get(rowNum);
-
-            assertEquals("Count of results at row=" + rowNum + '.', expRow.size(), actualRow.size());
-
-            for (int colNum = 0; colNum < expRow.size(); colNum++)
-                assertEquals("Values at row=" + rowNum + ", column=" + colNum + '.',
-                    expRow.get(colNum), actualRow.get(colNum));
-        }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEmptyResult() throws Exception {
+        test0("select id from Person where 0 = 1");
     }
 
-    private void test0(String sql, Object... args) throws SQLException {
-        test0(pCache, sql, args);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSelectWithStar() throws Exception {
+        test0("select * from Person");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSelectWithStar2() throws Exception {
+        test0("select Person.* from Person");
     }
 
     /**
@@ -423,7 +496,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testSqlQueryWithAggregation() throws Exception {
         test0("select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
-            + "lower(Organization.name) = lower(?)", "GridGain");
+            + "lower(Organization.name) = lower(?)", "Org1");
     }
 
     /**
@@ -445,48 +518,45 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAllColumns() throws Exception {
-        test0("select * from Organization");
+    public void testOrdered() throws Exception {
+        test0Ordered("select firstName, lastName" +
+            "  from Person" +
+            "  order by lastName, firstName");
+    }
+
+    /**
+     * //TODO Investigate
+     *  
+     * @throws Exception If failed.
+     */
+    public void testSimpleJoin() throws Exception {
+        // Have expected results.
+        test0("select id, firstName, lastName" +
+            "  from Person" +
+            "  where Person.id = ?", 3);
+
+        // Ignite cache return 0 results...
+        test0("select Person.firstName" +
+            "  from Person, Purchase" +
+            "  where Person.id = ?", 3);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCache() throws Exception {
-        log.info("-- Organizations --");
-        test0("select id, name from Organization");
-
-        log.info("-- Persons --");
-        test0("select id, firstName, lastName, orgId from Person");
-
-        log.info("-- Purchases --");
-        test0("select id, personId, productId from Purchase");
-
-        log.info("-- Products --");
-        test0(rCache, "select * from \"replicated\".Product");
-
-        log.info("-- Person.id=3 --");
-        test0("select *" +
-            "  from Person" +
-            "  where Person.id = ?", 3);
-
-        log.info("-- Person.id=3 with Purchase --"); //TODO Investigate
-        test0("select *" +
-            "  from Person, Purchase" +
-            "  where Person.id = ?", 3);
-
-        log.info("-- Person.id = Purchase.personId --"); //TODO Investigate (should be 20 results instead of 8)
-        test0("select *" +
+        //TODO Investigate (should be 20 results instead of 8)
+        test0("select firstName, lastName" +
             "  from Person, Purchase" +
             "  where Person.id = Purchase.personId");
 
-        log.info("-- Cross query --"); //TODO Investigate
+        //TODO Investigate
         test0("select concat(firstName, ' ', lastName), Product.name " +
             "  from Person, Purchase, \"replicated\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
 
-        log.info("-- Cross query with group by --"); //TODO Investigate
+        //TODO Investigate
         test0("select concat(firstName, ' ', lastName), count (Product.id) " +
             "  from Person, Purchase, \"replicated\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
@@ -642,7 +712,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /** Custom cache key to guarantee that purchase is always collocated with its person. */
         private transient CacheAffinityKey<Integer> key;
 
-        //TODO
+        /**
+         * Create Purchase.
+         *
+         * @param id Purchase ID.
+         * @param product Purchase product.
+         * @param person Purchase person.
+         */
         Purchase(int id, Product product, Person person) {
             this.id = id;
             productId = product.id;
@@ -667,5 +743,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return "Purchase [id=" + id + ", productId=" + productId + ", personId=" + personId + ']';
         }
+    }
+    
+    private enum Order {
+        /** Random. */
+        RANDOM, 
+        /** Ordered. */
+        ORDERED
     }
 }
