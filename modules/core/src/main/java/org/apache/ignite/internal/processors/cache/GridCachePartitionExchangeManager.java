@@ -332,17 +332,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param cacheId Cache ID.
-     * @param exchId Exchange ID.
+     * @param exchFut Exchange future.
      * @return Topology.
      */
-    public GridDhtPartitionTopology clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {
+    public GridDhtPartitionTopology clientTopology(int cacheId, GridDhtPartitionsExchangeFuture exchFut) {
         GridClientPartitionTopology top = clientTops.get(cacheId);
 
         if (top != null)
             return top;
 
         GridClientPartitionTopology old = clientTops.putIfAbsent(cacheId,
-            top = new GridClientPartitionTopology(cctx, cacheId, exchId));
+            top = new GridClientPartitionTopology(cctx, cacheId, exchFut));
 
         return old != null ? old : top;
     }

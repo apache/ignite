@@ -80,18 +80,21 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /**
      * @param cctx Context.
      * @param cacheId Cache ID.
-     * @param exchId Exchange ID.
+     * @param exchFut Exchange ID.
      */
-    public GridClientPartitionTopology(GridCacheSharedContext cctx, int cacheId,
-        GridDhtPartitionExchangeId exchId) {
+    public GridClientPartitionTopology(
+        GridCacheSharedContext cctx,
+        int cacheId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         this.cctx = cctx;
         this.cacheId = cacheId;
 
-        topVer = exchId.topologyVersion();
+        topVer = exchFut.topologyVersion();
 
         log = cctx.logger(getClass());
 
-        beforeExchange(exchId);
+        beforeExchange(exchFut);
     }
 
     /**
@@ -181,7 +184,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) {
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) {
         ClusterNode loc = cctx.localNode();
 
         lock.writeLock().lock();
@@ -189,6 +192,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             if (stopping)
                 return;
+
+            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
             assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
@@ -205,7 +210,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             long updateSeq = this.updateSeq.incrementAndGet();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id())) {
+            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId)) {
                 if (node2part == null) {
                     node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
 

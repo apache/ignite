@@ -106,14 +106,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         return evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED;
     }
 
-    /**
-     * @return {@code True} if cache was added with this exchange ID.
-     */
-    public boolean isCacheAdded(int cacheId) {
-        // TODO IGNITE-45 add cache added flag.
-        return evt == EVT_DISCOVERY_CUSTOM_EVT;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);

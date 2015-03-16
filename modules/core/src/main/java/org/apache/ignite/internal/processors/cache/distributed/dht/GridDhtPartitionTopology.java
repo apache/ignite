@@ -67,10 +67,10 @@ public interface GridDhtPartitionTopology {
     /**
      * Pre-initializes this topology.
      *
-     * @param exchId Exchange ID for this pre-initialization.
+     * @param exchFut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
 
     /**
      * Post-initializes this topology.

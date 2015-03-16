@@ -207,7 +207,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -217,6 +217,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
+            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+
             if (stopping)
                 return;
 
@@ -235,7 +237,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             long updateSeq = this.updateSeq.incrementAndGet();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id()) || exchId.isCacheAdded(cctx.cacheId())) {
+            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cctx.cacheId())) {
                 if (node2part == null) {
                     node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
 
@@ -262,9 +264,10 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             if (cctx.rebalanceEnabled()) {
                 for (int p = 0; p < num; p++) {
                     // If this is the first node in grid.
-                    if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId())) || exchId.isCacheAdded(
-                        cctx.cacheId())) {
-                        assert exchId.isJoined() || exchId.isCacheAdded(cctx.cacheId());
+                    boolean added = exchFut.isCacheAdded(cctx.cacheId());
+
+                    if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId()) && exchId.isJoined()) || added) {
+                        assert exchId.isJoined() || added;
 
                         try {
                             GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);

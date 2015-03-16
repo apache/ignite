@@ -275,6 +275,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param cacheId Cache ID to check.
+     * @return {@code True} if cache was added during this exchange.
+     */
+    public boolean isCacheAdded(int cacheId) {
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.isStart() && !req.clientStartOnly()) {
+                    if (CU.cacheId(req.cacheName()) == cacheId)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Rechecks topology.
      */
     private void initTopology(GridCacheContext cacheCtx) throws IgniteCheckedException {
@@ -488,13 +505,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert topVer.equals(top.topologyVersion()) :
                         "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
 
-                    top.beforeExchange(exchId);
+                    top.beforeExchange(this);
                 }
 
                 for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                     top.updateTopologyVersion(exchId, this, stopping(top.cacheId()));
 
-                    top.beforeExchange(exchId);
+                    top.beforeExchange(this);
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -549,7 +566,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if no distributed exchange is needed.
      */
     private boolean canSkipExchange() {
-        return false; // TODO ignite-45;
+        return false; // TODO ignite-23;
     }
 
     /**
@@ -907,7 +924,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx != null)
                 cacheCtx.topology().update(exchId, entry.getValue());
             else if (CU.oldest(cctx).isLocal())
-                cctx.exchange().clientTopology(cacheId, exchId).update(exchId, entry.getValue());
+                cctx.exchange().clientTopology(cacheId, this).update(exchId, entry.getValue());
         }
     }
 
@@ -922,7 +939,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
-                cctx.exchange().clientTopology(cacheId, exchId);
+                cctx.exchange().clientTopology(cacheId, this);
 
             top.update(exchId, entry.getValue());
         }
@@ -977,7 +994,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                             try {
                                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                                     if (!cacheCtx.isLocal())
-                                                        cacheCtx.topology().beforeExchange(exchId);
+                                                        cacheCtx.topology().beforeExchange(
+                                                            GridDhtPartitionsExchangeFuture.this);
                                                 }
                                             }
                                             catch (IgniteCheckedException e) {
