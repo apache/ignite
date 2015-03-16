@@ -185,7 +185,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     /**
      *
      */
-    @IgniteImmutable
+    @CacheImmutable
     private static class TestObject implements Externalizable {
         /**
          *
