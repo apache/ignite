@@ -4218,7 +4218,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 try {
                     removex(item.getKey());
                 } catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw CU.convertToCacheException(e);
                 } finally {
                     ctx.gate().leave();
                 }

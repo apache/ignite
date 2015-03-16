@@ -2193,7 +2193,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return cache;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw CU.convertToCacheException(e);
         }
     }
 

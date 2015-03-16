@@ -1346,7 +1346,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw cacheException(e);
         }
         finally {
             gate.leave();
