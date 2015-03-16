@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.examples8.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.examples8.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -32,7 +36,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
+ * Alternatively you can run {@link org.apache.ignite.examples8.ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class MessagingExample {

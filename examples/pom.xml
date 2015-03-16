@@ -254,6 +254,7 @@
                                 <configuration>
                                     <sources>
                                         <source>src/main/java8</source>
+                                        <source>src/test/java8</source>
                                     </sources>
                                 </configuration>
                             </execution>
