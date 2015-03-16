@@ -38,6 +38,13 @@ public final class TextQuery extends Query<TextQuery> {
     private String txt;
 
     /**
+     * Default constructor.
+     */
+    public TextQuery() {
+        // No-op.
+    }
+
+    /**
      * Constructs query for the given search string.
      *
      * @param txt Search string.
