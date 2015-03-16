@@ -21,13 +21,12 @@ import org.apache.ignite.IgniteCache
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
+import scala.collection.JavaConversions._
+
 /**
  * This example demonstrates the simplest code that populates the distributed cache
  * and co-locates simple closure execution with each key. The goal of this particular
  * example is to provide the simplest code example of this logic.
- *
- * Note that other examples in this package provide more detailed examples
- * of affinity co-location.
  *
  * Note also that for affinity routing is enabled for all caches.
  *
@@ -35,12 +34,12 @@ import org.apache.ignite.scalar.scalar._
  * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
-object ScalarCacheAffinitySimpleExample extends App {
+object ScalarCacheAffinityExample extends App {
     /** Configuration file name. */
     private val CONFIG = "examples/config/example-compute.xml"
 
     /** Name of cache. */
-    private val NAME = ScalarCacheAffinitySimpleExample.getClass.getSimpleName
+    private val NAME = ScalarCacheAffinityExample.getClass.getSimpleName
 
     /** Number of keys. */
     private val KEY_CNT = 20
@@ -56,8 +55,11 @@ object ScalarCacheAffinitySimpleExample extends App {
         val cache = createCache$[Int, String](NAME)
 
         try {
-            populate(cache)
-            visit(cache)
+            populate (cache)
+    
+            visitUsingAffinityRun(cache)
+    
+            visitUsingMapKeysToNodes(cache)
         }
         finally {
             cache.close()
@@ -70,11 +72,36 @@ object ScalarCacheAffinitySimpleExample extends App {
      *
      * @param c Cache to use.
      */
-    private def visit(c: Cache) {
-        (0 until KEY_CNT).foreach(i =>
-            ignite$.compute().affinityRun(NAME, i,
-                () => println("Co-located [key= " + i + ", value=" + c.localPeek(i) + ']'))
+    private def visitUsingAffinityRun(c: IgniteCache[Int, String]) {
+        (0 until KEY_CNT).foreach (i =>
+            ignite$.compute ().affinityRun (NAME, i,
+                () => println ("Co-located using affinityRun [key= " + i + ", value=" + c.localPeek (i) + ']') )
         )
+    }
+
+    /**
+     * Collocates jobs with keys they need to work.
+     *
+     * @param c Cache to use.
+     */
+    private def visitUsingMapKeysToNodes(c: IgniteCache[Int, String]) {
+        val keys = (0 until KEY_CNT).toSeq
+
+        // Map all keys to nodes.
+        val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
+
+        mappings.foreach(mapping => {
+            val node = mapping._1
+            val mappedKeys = mapping._2
+
+            if (node != null) {
+                ignite$.cluster().forNode(node) *< (() => {
+                    // Check cache without loading the value.
+                    mappedKeys.foreach(key => println("Co-located using mapKeysToNodes [key= " + key +
+                        ", value=" + c.localPeek(key) + ']'))
+                }, null)
+            }
+        })
     }
 
     /**
