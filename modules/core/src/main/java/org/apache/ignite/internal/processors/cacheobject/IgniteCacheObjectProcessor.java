@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -147,7 +148,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @param obj Value.
      * @return {@code True} if object is of known immutable type of it is marked
-     *          with {@link org.apache.ignite.cache.CacheImmutable} annotation.
+     *          with {@link IgniteImmutable} annotation.
      */
     public boolean immutable(Object obj);
 

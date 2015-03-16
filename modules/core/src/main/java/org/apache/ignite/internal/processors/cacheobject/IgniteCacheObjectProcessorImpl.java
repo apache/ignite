@@ -297,7 +297,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (immutable != null)
             return immutable;
 
-        immutable = IgniteUtils.hasAnnotation(cls, CacheImmutable.class);
+        immutable = IgniteUtils.hasAnnotation(cls, IgniteImmutable.class);
 
         reflectionCache.putIfAbsent(cls, immutable);
 

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -1606,10 +1607,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      * <p>
-     * Copies are not created for immutable types, see {@link CacheImmutable}.
+     * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *
      * @return Copy on get flag.
-     * @see CacheImmutable
+     * @see IgniteImmutable
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
