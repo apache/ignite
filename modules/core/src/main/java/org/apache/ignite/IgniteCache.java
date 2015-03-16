@@ -435,7 +435,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the {@link Entry} specified by
+     * Invokes an {@link CacheEntryProcessor} against the {@link Entry} specified by
      * the provided key. If an {@link Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
      * {@link Entry}, consisting of the key with a null value is used instead.
@@ -443,25 +443,25 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      *
      * @param key            the key to the entry
-     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
      * @param arguments      additional arguments to pass to the
-     *                       {@link IgniteEntryProcessor}
+     *                       {@link CacheEntryProcessor}
      * @return the result of the processing, if any, defined by the
-     *         {@link IgniteEntryProcessor} implementation
-     * @throws NullPointerException    if key or {@link IgniteEntryProcessor} is null
+     *         {@link CacheEntryProcessor} implementation
+     * @throws NullPointerException    if key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException   if the cache is {@link #isClosed()}
      * @throws ClassCastException    if the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
      *                               configured for the {@link Cache}
      * @throws EntryProcessorException if an exception is thrown by the {@link
-     *                                 IgniteEntryProcessor}, a Caching Implementation
+     *                                 CacheEntryProcessor}, a Caching Implementation
      *                                 must wrap any {@link Exception} thrown
      *                                 wrapped in an {@link EntryProcessorException}.
-     * @see IgniteEntryProcessor
+     * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
-    public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... arguments);
+    public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
@@ -469,7 +469,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the set of {@link Entry}s
+     * Invokes an {@link CacheEntryProcessor} against the set of {@link Entry}s
      * specified by the set of keys.
      * <p>
      * If an {@link Entry} does not exist for the specified key, an attempt is made
@@ -479,34 +479,34 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * The order that the entries for the keys are processed is undefined.
      * Implementations may choose to process the entries in any order, including
      * concurrently.  Furthermore there is no guarantee implementations will
-     * use the same {@link IgniteEntryProcessor} instance to process each entry, as
+     * use the same {@link CacheEntryProcessor} instance to process each entry, as
      * the case may be in a non-local cache topology.
      * <p>
-     * The result of executing the {@link IgniteEntryProcessor} is returned as a
+     * The result of executing the {@link CacheEntryProcessor} is returned as a
      * {@link Map} of {@link EntryProcessorResult}s, one result per key.  Should the
-     * {@link IgniteEntryProcessor} or Caching implementation throw an exception, the
+     * {@link CacheEntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
      * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
      *
      * @param keys           the set of keys for entries to process
-     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
      * @param args      additional arguments to pass to the
-     *                       {@link IgniteEntryProcessor}
+     *                       {@link CacheEntryProcessor}
      * @return the map of {@link EntryProcessorResult}s of the processing per key,
-     * if any, defined by the {@link IgniteEntryProcessor} implementation.  No mappings
-     * will be returned for {@link IgniteEntryProcessor}s that return a
+     * if any, defined by the {@link CacheEntryProcessor} implementation.  No mappings
+     * will be returned for {@link CacheEntryProcessor}s that return a
      * <code>null</code> value for a key.
-     * @throws NullPointerException    if keys or {@link IgniteEntryProcessor} are null
+     * @throws NullPointerException    if keys or {@link CacheEntryProcessor} are null
      * @throws IllegalStateException   if the cache is {@link #isClosed()}
      * @throws ClassCastException    if the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
      *                               configured for the {@link Cache}
-     * @see IgniteEntryProcessor
+     * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        IgniteEntryProcessor<K, V, T> entryProcessor, Object... args);
+        CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
      * This cache node to re-balance its partitions. This method is usually used when
