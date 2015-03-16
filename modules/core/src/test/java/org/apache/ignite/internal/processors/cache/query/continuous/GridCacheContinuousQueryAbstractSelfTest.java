@@ -131,7 +131,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
+            @Override
+            public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
                     if (grid(i).cluster().nodes().size() != gridCount())
                         return false;
@@ -343,8 +344,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+        qry.setRemoteFilter(new CacheEntryEventFilter<Integer,Integer>() {
+            @Override
+            public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -395,9 +397,10 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
+            @Override
+            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -846,7 +849,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testNodeJoinWithoutCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
