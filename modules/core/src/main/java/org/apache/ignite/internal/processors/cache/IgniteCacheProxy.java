@@ -1339,7 +1339,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void close() {
-        gate.enter();
+        if (!gate.enterIfNotClosed())
+            return;
 
         try {
             ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
@@ -1354,10 +1355,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        if (cacheMgr != null && cacheMgr.isClosed())
+        if (!gate.enterIfNotClosed())
             return true;
-        
-        gate.enter();
 
         try {
             return ctx.kernalContext().cache().context().closed(ctx);

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -30,7 +31,6 @@ import javax.cache.management.*;
 import javax.management.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -55,10 +55,10 @@ public class CacheManager implements javax.cache.CacheManager {
     private final Properties props;
 
     /** */
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final IgniteKernal ignite;
 
     /** */
-    private final IgniteKernal ignite;
+    private final GridKernalGateway kernalGateway;
 
     /**
      * @param uri Uri.
@@ -77,6 +77,8 @@ public class CacheManager implements javax.cache.CacheManager {
                 ignite = (IgniteKernal)IgnitionEx.start();
             else
                 ignite = (IgniteKernal)IgnitionEx.start(uri.toURL());
+
+            kernalGateway = ignite.context().gateway();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -109,83 +111,98 @@ public class CacheManager implements javax.cache.CacheManager {
     /** {@inheritDoc} */
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheCfg == null)
-            throw new NullPointerException();
+        try {
+            if (cacheCfg == null)
+                throw new NullPointerException();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+            if (cacheName == null)
+                throw new NullPointerException();
 
-        if (getCache0(cacheName) != null)
-            throw new CacheException("Cache already exists [cacheName=" + cacheName + ", manager=" + uri + ']');
+            CacheConfiguration<K, V> igniteCacheCfg;
 
-        CacheConfiguration<K, V> igniteCacheCfg;
+            if (cacheCfg instanceof CompleteConfiguration)
+                igniteCacheCfg = new CacheConfiguration<>((CompleteConfiguration<K, V>)cacheCfg);
+            else {
+                igniteCacheCfg = new CacheConfiguration<>();
 
-        if (cacheCfg instanceof CompleteConfiguration)
-            igniteCacheCfg = new CacheConfiguration<>((CompleteConfiguration<K, V>)cacheCfg);
-        else {
-            igniteCacheCfg = new CacheConfiguration<>();
+                igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
+            }
 
-            igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
+            igniteCacheCfg.setName(cacheName);
+
+            IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
+
+            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
+
+            if (res == null)
+                throw new CacheException();
+
+            if (igniteCacheCfg.isManagementEnabled())
+                enableManagement(cacheName, true);
+
+            if (igniteCacheCfg.isStatisticsEnabled())
+                enableStatistics(cacheName, true);
+
+            return res;
         }
-
-        igniteCacheCfg.setName(cacheName);
-
-        IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
-
-        ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
-
-        if (res == null)
-            throw new CacheException();
-
-        if (igniteCacheCfg.isManagementEnabled())
-            enableManagement(cacheName, true);
-
-        if (igniteCacheCfg.isStatisticsEnabled())
-            enableStatistics(cacheName, true);
-
-        return res;
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache<K, V> getCache(String cacheName, Class<K> keyType, Class<V> valType) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        Cache<K, V> cache = getCache0(cacheName);
+        try {
+            Cache<K, V> cache = getCache0(cacheName);
 
-        if (cache != null) {
-            if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
-                throw new ClassCastException();
+            if (cache != null) {
+                if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
+                    throw new ClassCastException();
 
-            if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
-                throw new ClassCastException();
+                if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
+                    throw new ClassCastException();
+            }
+
+            return cache;
         }
-
-        return cache;
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache<K, V> getCache(String cacheName) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        IgniteCache<K, V> cache = getCache0(cacheName);
+        try {
+            IgniteCache<K, V> cache = getCache0(cacheName);
 
-        if (cache != null) {
-            if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
-                throw new IllegalArgumentException();
+            if (cache != null) {
+                if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
+                    throw new IllegalArgumentException();
 
-            if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
-                throw new IllegalArgumentException();
+                if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
+                    throw new IllegalArgumentException();
+            }
+
+            return cache;
         }
-
-        return cache;
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /**
      * @param cacheName Cache name.
      */
-    private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
+    @Nullable private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
+        if (cacheName == null)
+            throw new NullPointerException();
+
         try {
             return ignite.jcache(cacheName);
         }
@@ -196,29 +213,38 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public Iterable<String> getCacheNames() {
-        if (isClosed())
-            return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
-                                           // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
+        kernalGateway.readLockAnyway();
 
-        Collection<String> res = new ArrayList<>();
+        try {
+            if (kernalGateway.getState() != GridKernalState.STARTED)
+                return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
+                                               // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
 
-        for (GridCache<?, ?> cache : ignite.caches())
-            res.add(cache.name());
+            Collection<String> res = new ArrayList<>();
 
-        return Collections.unmodifiableCollection(res);
+            for (GridCache<?, ?> cache : ignite.context().cache().publicCaches())
+                res.add(cache.name());
+
+            return Collections.unmodifiableCollection(res);
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+        try {
+            IgniteCache<?, ?> cache = getCache0(cacheName);
 
-        IgniteCache<?, ?> cache = getCache0(cacheName);
-
-        if (cache != null)
-            cache.close();
+            if (cache != null)
+                cache.close();
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /**
@@ -239,51 +265,55 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+        try {
+            IgniteCache<?, ?> cache = getCache0(cacheName);
 
-        IgniteCache<?, ?> cache = getCache0(cacheName);
+            if (cache == null)
+                throw new CacheException("Cache not found: " + cacheName);
 
-        if (cache == null)
-            throw new CacheException("Cache not found: " + cacheName);
+            if (enabled)
+                registerCacheObject(cache.mxBean(), cacheName, CACHE_CONFIGURATION);
+            else
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
 
-        if (enabled)
-            registerCacheObject(cache.mxBean(), cacheName, CACHE_CONFIGURATION);
-        else
-            unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
-
-        cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
+            cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+        try {
+            IgniteCache<?, ?> cache = getCache0(cacheName);
 
-        IgniteCache<?, ?> cache = getCache0(cacheName);
+            if (cache == null)
+                throw new CacheException("Cache not found: " + cacheName);
 
-        if (cache == null)
-            throw new CacheException("Cache not found: " + cacheName);
+            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 
-        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+            if (enabled)
+                registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
+            else
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
-        if (enabled)
-            registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
-        else
-            unregisterCacheObject(cacheName, CACHE_STATISTICS);
-
-        cfg.setStatisticsEnabled(enabled);
+            cfg.setStatisticsEnabled(enabled);
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /**
      * @param mxbean MXBean.
      * @param name cache name.
      */
-    public void registerCacheObject(Object mxbean, String name, String beanType) {
+    private void registerCacheObject(Object mxbean, String name, String beanType) {
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
         ObjectName registeredObjName = getObjectName(name, beanType);
@@ -325,32 +355,29 @@ public class CacheManager implements javax.cache.CacheManager {
         }
     }
 
-    /**
-     *
-     */
-    private void ensureNotClosed() throws IllegalStateException {
-        if (closed.get())
-            throw new IllegalStateException("Cache manager are closed [uri=" + uri + ", classLoader=" + clsLdr + ']');
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
-        if (closed.compareAndSet(false, true)) {
-            try {
-                ignite.close();
-            }
-            catch (Exception ignored) {
-                // Ignore any exceptions according to javadoc of javax.cache.CacheManager#close()
-            }
-            finally {
-                cachingProvider.removeClosedManager(this);
-            }
+        try {
+            ignite.close();
+        }
+        catch (Exception ignored) {
+            // Ignore any exceptions according to javadoc of javax.cache.CacheManager#close()
+        }
+        finally {
+            cachingProvider.removeClosedManager(this);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        return closed.get();
+        kernalGateway.readLockAnyway();
+
+        try {
+            return kernalGateway.getState() != GridKernalState.STARTED;
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */

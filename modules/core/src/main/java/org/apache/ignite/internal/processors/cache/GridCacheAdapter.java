@@ -201,7 +201,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return ctx.config().getName();
+        return cacheCfg.getName();
     }
 
     /** {@inheritDoc} */
