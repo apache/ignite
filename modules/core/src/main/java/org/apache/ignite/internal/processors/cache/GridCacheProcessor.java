@@ -689,6 +689,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 startCache(cache);
 
                 jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
+
+                publicProxies = null;
             }
         }
 
@@ -1347,8 +1349,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
 
-        if (proxy != null)
+        if (proxy != null) {
+            publicProxies = null;
+
             proxy.gate().onStopped();
+        }
     }
 
     /**
@@ -1389,6 +1394,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 String masked = maskNull(cacheCtx.name());
 
                 jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+
+                publicProxies = null;
             }
         }
 

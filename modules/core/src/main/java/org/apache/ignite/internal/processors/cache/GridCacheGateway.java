@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -72,6 +73,42 @@ public class GridCacheGateway<K, V> {
 
             throw e;
         }
+    }
+
+    /**
+     * Enter a cache call.
+     *
+     * @return {@code true} if enter successful, {@code false} if the cache or the node was stopped.
+     */
+    public boolean enterIfNotClosed() {
+        if (ctx.deploymentEnabled())
+            ctx.deploy().onEnter();
+
+        GridKernalGateway kernalGateway = ctx.kernalContext().gateway();
+
+        // Must unlock in case of unexpected errors to avoid
+        // deadlocks during kernal stop.
+        try {
+            kernalGateway.readLockAnyway();
+
+            if (kernalGateway.getState() != GridKernalState.STARTED || stopped) {
+                kernalGateway.readUnlock();
+
+                return false;
+            }
+        }
+        catch (RuntimeException | Error e) {
+            try {
+                kernalGateway.readUnlock();
+            }
+            catch (IllegalMonitorStateException ignore) {
+                // No-op.
+            }
+
+            throw e;
+        }
+
+        return true;
     }
 
     /**
