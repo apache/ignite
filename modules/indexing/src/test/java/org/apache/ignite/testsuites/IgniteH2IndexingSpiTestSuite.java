@@ -21,7 +21,6 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.internal.processors.query.h2.sql.*;
 
 /**
  * H2 indexing SPI tests.
@@ -51,9 +50,6 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
         suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
-
-        // H2 comparison.
-        suite.addTestSuite(IgniteVsH2QueryTest.class);
 
         return suite;
     }
