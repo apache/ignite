@@ -32,6 +32,9 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -50,6 +53,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     public static final int GRID_CNT = 3;
 
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -66,6 +72,14 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setNetworkTimeout(3000);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
+
+        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
