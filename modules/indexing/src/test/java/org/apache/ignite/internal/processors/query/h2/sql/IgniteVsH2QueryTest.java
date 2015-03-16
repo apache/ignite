@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.commons.dbutils.*;
+import org.apache.commons.dbutils.handlers.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -205,7 +207,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     private void insertInDb(Organization org) throws SQLException {
-        try (PreparedStatement st = conn.prepareStatement("insert into ORGANIZATION (id, name) values(?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement("insert into ORGANIZATION (id, name) values(?, ?)")) {
             st.setInt(1, org.id);
             st.setString(2, org.name);
 
@@ -214,7 +216,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     private void insertInDb(Person p) throws SQLException {
-        try (PreparedStatement st = conn.prepareStatement("insert into PERSON (id, firstName, lastName, orgId) values(?, ?, ?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement("insert into PERSON (id, firstName, lastName, orgId) values(?, ?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setString(2, p.firstName);
             st.setString(3, p.lastName);
@@ -225,7 +227,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     private void insertInDb(Product p) throws SQLException {
-        try (PreparedStatement st = conn.prepareStatement("insert into PRODUCT (id, name, price) values(?, ?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement("insert into PRODUCT (id, name, price) values(?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setString(2, p.name);
             st.setInt(3, p.price);
@@ -235,7 +237,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     private void insertInDb(Purchase p) throws SQLException {
-        try (PreparedStatement st = conn.prepareStatement("insert into PURCHASE (id, personId, productId) values(?, ?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement("insert into PURCHASE (id, personId, productId) values(?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setInt(2, p.personId);
             st.setInt(3, p.productId);
@@ -255,7 +257,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             "  (id number unique, " +
             "  firstName varchar(255), " +
             "  lastName varchar(255)," +
-            "  orgId number not null)");
+            "  orgId number not null," +
+            "  salary decimal )");
 
         st.execute("create table if not exists PRODUCT" +
             "  (id number unique, " +
@@ -288,36 +291,63 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
     @SuppressWarnings("unchecked")
     private void test0(IgniteCache cache, String sql, Object... args) throws SQLException {
-        log.info(">>>>> sql=" + sql + ", args=" + Arrays.toString(args));
+        log.info("Sql=" + sql + ", args=" + Arrays.toString(args));
 
-
-        log.info(">>> H2 db results :");
-
-        int dbResCount = 0;
-        
-        try (PreparedStatement st = conn.prepareStatement(sql)) {
-            ResultSet rs = st.executeQuery();
-
-            while (rs.next()) {
-                GridStringBuilder sb = new GridStringBuilder();
-                
-                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++)
-                    sb.a(rs.getObject(i) + ", ");
-                
-                log.info(sb.toString());
-                
-                dbResCount++;
-            }
-        }
+        List<List<?>> h2Res = executeQueryOnH2(sql, args);
 
         List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
 
-        log.info(">>> Cache results (count=" + cacheRes.size() + "):");
+        print("H2 query result.", h2Res);
+        print("Ignite Cache query result.", cacheRes);
 
-        for (List<?> objects : cacheRes)
-            log.info(objects.toString());
+        assertRsEquals(h2Res, cacheRes);
+    }
+
+    private List<List<?>> executeQueryOnH2(String sql, Object[] args) throws SQLException {
+        ResultSet rs = null;
+
+        try {
+            try(PreparedStatement st = conn.prepareStatement(sql)) {
+                //TODO apply args.
+
+                rs = st.executeQuery();
+
+                return new RsHandler().handle(rs);
+            }
+        }
+        finally {
+            U.closeQuiet(rs);
+        }
+    }
+
+    private void print(String msg, List<List<?>> rs) {
+        log.info(msg);
         
-        assertEquals(dbResCount, cacheRes.size());
+        for (List<?> objects : rs)
+            log.info(objects.toString());
+    }
+
+    private void assertRsEquals(List<List<?>> expRs, List<List<?>> actualRs) {
+        assertEquals("Count of results.", expRs.size(), actualRs.size());
+
+        for (List<?> expectedRow : expRs)
+            assertTrue("An actual result set=" + actualRs + " have to contains row=" + expectedRow,
+                actualRs.contains(expectedRow));
+    }
+
+    private void assertOrderedRsEquals(List<List<?>> expRs, List<List<?>> actualRs) {
+        assertEquals("Count of results.", expRs.size(), actualRs.size());
+
+        for (int rowNum = 0; rowNum < expRs.size(); rowNum++) {
+            List<?> expRow = expRs.get(rowNum);
+            List<?> actualRow = actualRs.get(rowNum);
+
+            assertEquals("Count of results at row=" + rowNum + '.', expRow.size(), actualRow.size());
+
+            for (int colNum = 0; colNum < expRow.size(); colNum++)
+                assertEquals("Values at row=" + rowNum + ", column=" + colNum + '.',
+                    expRow.get(colNum), actualRow.get(colNum));
+        }
     }
 
     private void test0(String sql, Object... args) throws SQLException {
@@ -565,6 +595,21 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Purchase [id=" + id + ", productId=" + productId + ", personId=" + personId + ']';
+        }
+    }
+    
+    private static class RsHandler implements ResultSetHandler<List<List<?>>> {
+        private final ArrayListHandler handler = new ArrayListHandler();
+
+        @Override public List<List<?>> handle(ResultSet rs) throws SQLException {
+            List<Object[]> listOfArrays = handler.handle(rs);
+
+            List<List<?>> res = new ArrayList<>(listOfArrays.size());
+
+            for (Object[] arr : listOfArrays)
+                res.add(Arrays.asList(arr));
+            
+            return res; 
         }
     }
 }
