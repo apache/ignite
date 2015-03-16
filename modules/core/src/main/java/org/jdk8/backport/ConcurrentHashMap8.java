@@ -106,7 +106,7 @@ import java.util.concurrent.locks.*;
  * same mapping value.
  *
  * <p>A ConcurrentHashMapV8 can be used as scalable frequency map (a
- * form of histogram or multiset) by using {@link LongAdder} values
+ * form of histogram or multiset) by using {@link LongAdder8} values
  * and initializing via {@link #computeIfAbsent}. For example, to add
  * a count to a {@code ConcurrentHashMapV8<String,LongAdder> freqs}, you
  * can use {@code freqs.computeIfAbsent(k -> new
@@ -554,7 +554,7 @@ public class ConcurrentHashMap8<K, V>
     /**
      * The counter maintaining number of elements.
      */
-    private transient final LongAdder counter;
+    private transient final LongAdder8 counter;
 
     /**
      * Table initialization and resizing control.  When negative, the
@@ -2477,7 +2477,7 @@ public class ConcurrentHashMap8<K, V>
      * Creates a new, empty map with the default initial table size (16).
      */
     public ConcurrentHashMap8() {
-        this.counter = new LongAdder();
+        this.counter = new LongAdder8();
     }
 
     /**
@@ -2496,7 +2496,7 @@ public class ConcurrentHashMap8<K, V>
         int cap = ((initialCapacity >= (MAXIMUM_CAPACITY >>> 1)) ?
             MAXIMUM_CAPACITY :
             tableSizeFor(initialCapacity + (initialCapacity >>> 1) + 1));
-        this.counter = new LongAdder();
+        this.counter = new LongAdder8();
         this.sizeCtl = cap;
     }
 
@@ -2506,7 +2506,7 @@ public class ConcurrentHashMap8<K, V>
      * @param m the map
      */
     public ConcurrentHashMap8(Map<? extends K, ? extends V> m) {
-        this.counter = new LongAdder();
+        this.counter = new LongAdder8();
         this.sizeCtl = DEFAULT_CAPACITY;
         internalPutAll(m);
     }
@@ -2557,7 +2557,7 @@ public class ConcurrentHashMap8<K, V>
         long size = (long)(1.0 + (long)initialCapacity / loadFactor);
         int cap = (size >= (long)MAXIMUM_CAPACITY) ?
             MAXIMUM_CAPACITY : tableSizeFor((int)size);
-        this.counter = new LongAdder();
+        this.counter = new LongAdder8();
         this.sizeCtl = cap;
     }
 
@@ -3335,7 +3335,7 @@ public class ConcurrentHashMap8<K, V>
         s.defaultReadObject();
         this.segments = null; // unneeded
         // initialize transient final field
-        UNSAFE.putObjectVolatile(this, counterOffset, new LongAdder());
+        UNSAFE.putObjectVolatile(this, counterOffset, new LongAdder8());
 
         // Create all nodes, then place in table once size is known
         long size = 0L;

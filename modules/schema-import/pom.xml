@@ -87,15 +87,15 @@
                     <value>Oracle Corporation</value>
                 </property>
             </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>javafx</groupId>
-                    <artifactId>jfxrt</artifactId>
-                    <version>${java.version}</version>
-                    <scope>system</scope>
-                    <systemPath>${java.home}/lib/jfxrt.jar</systemPath>
-                </dependency>
-            </dependencies>
+            <!--<dependencies>-->
+                <!--<dependency>-->
+                    <!--<groupId>javafx</groupId>-->
+                    <!--<artifactId>jfxrt</artifactId>-->
+                    <!--<version>${java.version}</version>-->
+                    <!--<scope>system</scope>-->
+                    <!--<systemPath>${java.home}/lib/jfxrt.jar</systemPath>-->
+                <!--</dependency>-->
+            <!--</dependencies>-->
         </profile>
     </profiles>
 </project>

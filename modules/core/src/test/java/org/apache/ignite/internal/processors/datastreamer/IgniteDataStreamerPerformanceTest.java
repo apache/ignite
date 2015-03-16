@@ -141,7 +141,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             ldr.updater(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
-            final LongAdder cnt = new LongAdder();
+            final LongAdder8 cnt = new LongAdder8();
 
             long start = U.currentTimeMillis();
 

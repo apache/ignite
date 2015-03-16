@@ -425,8 +425,8 @@ public class GridSqlQueryParser {
             return res;
         }
 
-        if (expression instanceof Parameter)
-            return new GridSqlParameter(((Parameter)expression).getIndex());
+        if (expression instanceof org.h2.expression.Parameter)
+            return new GridSqlParameter(((org.h2.expression.Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
             GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression),

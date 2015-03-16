@@ -37,13 +37,13 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private volatile long lastStageSampleTs;
 
     /** Number of running stages. */
-    private LongAdder stageActiveCnt = new LongAdder();
+    private LongAdder8 stageActiveCnt = new LongAdder8();
 
     /** Number of waiting stages. */
-    private LongAdder stageWaitingCnt = new LongAdder();
+    private LongAdder8 stageWaitingCnt = new LongAdder8();
 
     /** Total number of stages executed. */
-    private LongAdder stageTotalCnt = new LongAdder();
+    private LongAdder8 stageTotalCnt = new LongAdder8();
 
     /** Max exec time. */
     private GridAtomicLong pipelineMaxExecTime = new GridAtomicLong();
@@ -52,7 +52,7 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private GridAtomicLong pipelineMinExecTime = new GridAtomicLong(Long.MAX_VALUE);
 
     /** Pipeline average exec time sampler. */
-    private LongAdder pipelineSumExecTime = new LongAdder();
+    private LongAdder8 pipelineSumExecTime = new LongAdder8();
 
     /** Max exec nodes. */
     private GridAtomicInteger pipelineMaxExecNodes = new GridAtomicInteger();
@@ -61,10 +61,10 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private GridAtomicInteger pipelineMinExecNodes = new GridAtomicInteger(Integer.MAX_VALUE);
 
     /** Avg exec nodes. */
-    private LongAdder pipelineSumExecNodes = new LongAdder();
+    private LongAdder8 pipelineSumExecNodes = new LongAdder8();
 
     /** Total number of pipelines finished on this node. */
-    private LongAdder pipelineTotalCnt = new LongAdder();
+    private LongAdder8 pipelineTotalCnt = new LongAdder8();
 
     /** Query max exec time. */
     private GridAtomicLong qryMaxExecTime = new GridAtomicLong();
@@ -73,7 +73,7 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private GridAtomicLong qryMinExecTime = new GridAtomicLong(Long.MAX_VALUE);
 
     /** Query average exec time sampler. */
-    private LongAdder qrySumExecTime = new LongAdder();
+    private LongAdder8 qrySumExecTime = new LongAdder8();
 
     /** Query max exec nodes. */
     private GridAtomicInteger qryMaxExecNodes = new GridAtomicInteger();
@@ -82,19 +82,19 @@ public class StreamerMetricsHolder implements StreamerMetrics {
     private GridAtomicInteger qryMinExecNodes = new GridAtomicInteger(Integer.MAX_VALUE);
 
     /** Query avg exec nodes. */
-    private LongAdder qrySumExecNodes = new LongAdder();
+    private LongAdder8 qrySumExecNodes = new LongAdder8();
 
     /** Total number of queries finished on this node. */
-    private LongAdder qryTotalCnt = new LongAdder();
+    private LongAdder8 qryTotalCnt = new LongAdder8();
 
     /** Current active sessions. */
-    private LongAdder curActiveSessions = new LongAdder();
+    private LongAdder8 curActiveSessions = new LongAdder8();
 
     /** Max active sessions. */
     private GridAtomicInteger maxActiveSessions = new GridAtomicInteger();
 
     /** Failures count. */
-    private LongAdder failuresCnt = new LongAdder();
+    private LongAdder8 failuresCnt = new LongAdder8();
 
     /** Stages metrics. */
     private final StreamerStageMetricsHolder[] stageMetrics;

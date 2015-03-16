@@ -193,7 +193,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private boolean mongoMetaCache;
 
     /** Current IGFS data cache size. */
-    private LongAdder igfsDataCacheSize;
+    private LongAdder8 igfsDataCacheSize;
 
     /** Max space for IGFS. */
     private long igfsDataSpaceMax;
@@ -257,7 +257,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (F.eq(ctx.name(), igfsCfg.getDataCacheName())) {
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
-                        igfsDataCacheSize = new LongAdder();
+                        igfsDataCacheSize = new LongAdder8();
 
                         igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
 

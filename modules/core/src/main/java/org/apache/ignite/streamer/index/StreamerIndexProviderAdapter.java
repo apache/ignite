@@ -66,7 +66,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
     private StreamerIndexUpdater<E, K, V> updater;
 
     /** */
-    private final LongAdder evtsCnt = new LongAdder();
+    private final LongAdder8 evtsCnt = new LongAdder8();
 
     /** Read write lock. */
     private final GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();

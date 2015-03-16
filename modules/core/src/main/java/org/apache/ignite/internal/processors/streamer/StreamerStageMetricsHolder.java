@@ -35,7 +35,7 @@ public class StreamerStageMetricsHolder implements StreamerStageMetrics {
     private GridAtomicLong maxExecTime = new GridAtomicLong();
 
     /** Stage execution time sum. */
-    private LongAdder sumExecTime = new LongAdder();
+    private LongAdder8 sumExecTime = new LongAdder8();
 
     /** Stage minimum waiting time. */
     private GridAtomicLong minWaitTime = new GridAtomicLong(Long.MAX_VALUE);
@@ -44,16 +44,16 @@ public class StreamerStageMetricsHolder implements StreamerStageMetrics {
     private GridAtomicLong maxWaitTime = new GridAtomicLong();
 
     /** Stage average waiting time sum. */
-    private LongAdder sumWaitTime = new LongAdder();
+    private LongAdder8 sumWaitTime = new LongAdder8();
 
     /** Total number of times this stage was executed. */
-    private LongAdder totalExecCnt = new LongAdder();
+    private LongAdder8 totalExecCnt = new LongAdder8();
 
     /** Failures count. */
-    private LongAdder failuresCnt = new LongAdder();
+    private LongAdder8 failuresCnt = new LongAdder8();
 
     /** Number of threads executing this stage. */
-    private LongAdder curActive = new LongAdder();
+    private LongAdder8 curActive = new LongAdder8();
 
     /**
      * @param name Stage name.

@@ -73,7 +73,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks. */
-    private final LongAdder execTasks = new LongAdder();
+    private final LongAdder8 execTasks = new LongAdder8();
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx =

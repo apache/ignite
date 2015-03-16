@@ -272,7 +272,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     private volatile Node<E> tail;
 
     /** */
-    private final LongAdder size = new LongAdder();
+    private final LongAdder8 size = new LongAdder8();
 
     /** Previous and next terminators. */
     private static final Node<Object> PREV_TERMINATOR, NEXT_TERMINATOR;
