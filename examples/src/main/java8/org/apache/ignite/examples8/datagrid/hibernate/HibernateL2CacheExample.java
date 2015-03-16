@@ -69,7 +69,7 @@ public class HibernateL2CacheExample {
     private static final String JDBC_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
     /** Path to hibernate configuration file (will be resolved from application {@code CLASSPATH}). */
-    private static final String HIBERNATE_CFG = "hibernate/example-hibernate-L2-cache.xml";
+    private static final String HIBERNATE_CFG = "hibernate/example-hibernate-L2-cache-j8.xml";
 
     /** Entity names for stats output. */
     private static final List<String> ENTITY_NAMES =

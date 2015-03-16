@@ -50,7 +50,7 @@ public class StreamingRunningAverageExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
+        Ignite ignite = Ignition.start("examples/config/example-streamer-j8.xml");
 
         System.out.println();
         System.out.println(">>> Streaming running average example started.");

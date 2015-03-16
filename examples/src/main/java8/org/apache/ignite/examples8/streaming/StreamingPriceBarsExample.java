@@ -79,7 +79,7 @@ public class StreamingPriceBarsExample {
         Timer timer = new Timer("priceBars");
 
         // Start ignite.
-        final Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
+        final Ignite ignite = Ignition.start("examples/config/example-streamer-j8.xml");
 
         System.out.println();
         System.out.println(">>> Streaming price bars example started.");

@@ -30,6 +30,6 @@ public class StreamingNodeStartup {
      * @throws org.apache.ignite.IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/example-streamer.xml");
+        Ignition.start("examples/config/example-streamer-j8.xml");
     }
 }
