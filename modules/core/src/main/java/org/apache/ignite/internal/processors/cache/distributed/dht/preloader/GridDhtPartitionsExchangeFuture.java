@@ -519,7 +519,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 throw e;
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
 
                 onDone(e);
