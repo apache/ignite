@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.CacheManager;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -42,7 +42,6 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
@@ -111,7 +110,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         gate = ctx.gate();
 
-        legacyProxy = new GridCacheProxyImpl<K, V>(ctx, delegate, prj);
+        legacyProxy = new GridCacheProxyImpl<>(ctx, delegate, prj);
     }
 
     /**
@@ -326,7 +325,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
             /** */
-            Map.Entry<K,V> cur;
+            private Map.Entry<K,V> cur;
 
             @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
@@ -350,11 +349,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param local Enforce local.
+     * @param loc Enforce local.
      * @return Local node cluster group.
      */
-    private ClusterGroup projection(boolean local) {
-        return local || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().cluster().forLocal() : null;
+    private ClusterGroup projection(boolean loc) {
+        return loc || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().cluster().forLocal() : null;
     }
 
     /**
@@ -1586,6 +1585,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         /** */
         private X cur;
 
+        /** */
         private CacheQueryFuture<X> fut;
 
         /**
@@ -1595,6 +1595,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             this.fut = fut;
         }
 
+        /** {@inheritDoc} */
         @Override protected Y onNext() throws IgniteCheckedException {
             if (!onHasNext())
                 throw new NoSuchElementException();
@@ -1606,12 +1607,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return convert(e);
         }
 
+        /**
+         * @param x X.
+         */
         protected abstract Y convert(X x);
 
+        /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
             return cur != null || (cur = fut.next()) != null;
         }
 
+        /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
             fut.cancel();
         }
