@@ -1274,6 +1274,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param lsnr Listener to remove.
+     */
+    public void removeDisconnectListener(GridDisconnectListener lsnr) {
+        disconnectLsnrs.remove(lsnr);
+    }
+
+    /**
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */

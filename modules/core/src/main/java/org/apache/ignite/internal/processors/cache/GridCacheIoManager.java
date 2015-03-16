@@ -627,6 +627,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param lsnr Listener to remove.
+     */
+    public void removeDisconnectListener(GridDisconnectListener lsnr) {
+        cctx.kernalContext().io().removeDisconnectListener(lsnr);
+    }
+
+    /**
      * @param msgCls Message class to check.
      * @return Message index.
      */
