@@ -221,7 +221,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            new CacheObjectImpl(obj, null);
+            return new CacheObjectImpl(obj, null);
 
         return new CacheObjectImpl(obj, null) {
             @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
