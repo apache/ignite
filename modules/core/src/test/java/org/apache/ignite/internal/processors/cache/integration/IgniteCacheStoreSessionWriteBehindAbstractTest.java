@@ -68,8 +68,6 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestStore store = new TestStore(); // Use the same store instance for both caches.
-
         assert cfg.getCacheConfiguration().length == 1;
 
         CacheConfiguration ccfg0 = cfg.getCacheConfiguration()[0];
@@ -77,22 +75,24 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
         ccfg0.setWriteBehindBatchSize(10);
-        ccfg0.setWriteBehindFlushFrequency(1000);
+        ccfg0.setWriteBehindFlushSize(10);
+        ccfg0.setWriteBehindFlushFrequency(5000);
         ccfg0.setWriteBehindEnabled(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
         ccfg1.setReadThrough(true);
         ccfg1.setWriteThrough(true);
         ccfg1.setWriteBehindBatchSize(10);
-        ccfg1.setWriteBehindFlushFrequency(1000);
+        ccfg1.setWriteBehindFlushSize(10);
+        ccfg1.setWriteBehindFlushFrequency(5000);
         ccfg1.setWriteBehindEnabled(true);
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
@@ -123,7 +123,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
-            assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;
@@ -137,7 +137,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
             for (int i = 0; i < 10; i++)
                 cache.remove(i);
 
-            assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;

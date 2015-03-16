@@ -67,6 +67,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
+    /** */
+    private static final String NO_CACHE_GRID_NAME = "noCacheGrid";
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -74,19 +77,21 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        if (!gridName.equals(NO_CACHE_GRID_NAME)) {
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(cacheMode());
-        cacheCfg.setAtomicityMode(atomicityMode());
-        cacheCfg.setDistributionMode(distributionMode());
-        cacheCfg.setRebalanceMode(ASYNC);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
-        cacheCfg.setReadThrough(true);
-        cacheCfg.setWriteThrough(true);
-        cacheCfg.setLoadPreviousValue(true);
+            cacheCfg.setCacheMode(cacheMode());
+            cacheCfg.setAtomicityMode(atomicityMode());
+            cacheCfg.setDistributionMode(distributionMode());
+            cacheCfg.setRebalanceMode(ASYNC);
+            cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+            cacheCfg.setLoadPreviousValue(true);
 
-        cfg.setCacheConfiguration(cacheCfg);
+            cfg.setCacheConfiguration(cacheCfg);
+        }
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -831,6 +836,48 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
         finally {
             stopGrid("anotherGrid");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("TryFinallyCanBeTryWithResources")
+    public void testNodeJoinWithoutCache() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                latch.countDown();
+            }
+        });
+
+        QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
+
+        try {
+            try (Ignite ignite = startGrid(NO_CACHE_GRID_NAME)) {
+                log.info("Started node without cache: " + ignite);
+
+                try {
+                    ignite.jcache(null);
+
+                    fail();
+                }
+                catch (IllegalArgumentException ignore) {
+                    // Expected exception.
+                }
+            }
+
+            cache.put(1, 1);
+
+            assertTrue(latch.await(5000, MILLISECONDS));
+        }
+        finally {
+            cur.close();
         }
     }
 

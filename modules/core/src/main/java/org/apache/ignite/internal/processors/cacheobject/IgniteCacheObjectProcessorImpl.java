@@ -222,7 +222,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            new CacheObjectImpl(obj, null);
+            return new CacheObjectImpl(obj, null);
 
         return new CacheObjectImpl(obj, null) {
             @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
@@ -298,7 +298,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (immutable != null)
             return immutable;
 
-        immutable = IgniteUtils.hasAnnotation(cls, CacheImmutable.class);
+        immutable = IgniteUtils.hasAnnotation(cls, IgniteImmutable.class);
 
         reflectionCache.putIfAbsent(cls, immutable);
 
