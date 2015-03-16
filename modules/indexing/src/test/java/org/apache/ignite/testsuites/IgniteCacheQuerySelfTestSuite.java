@@ -100,9 +100,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
 
-        // H2 comparison.
-        suite.addTestSuite(IgniteVsH2QueryTest.class);
-
         return suite;
     }
 }
