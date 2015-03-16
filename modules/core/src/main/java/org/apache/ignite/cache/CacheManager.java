@@ -31,6 +31,7 @@ import javax.cache.management.*;
 import javax.management.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -41,6 +42,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** */
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
+
+    /** */
+    private static final AtomicInteger igniteCnt = new AtomicInteger();
 
     /** */
     private final URI uri;
@@ -76,8 +80,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                cfg.setGridName("CacheManager [uri=" + uri.toString() + ", classLoader="
-                    + clsLdr.getClass().getSimpleName() + '#' + clsLdr.hashCode());
+                cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
 
                 ignite = (IgniteKernal)IgnitionEx.start(cfg);
             }
