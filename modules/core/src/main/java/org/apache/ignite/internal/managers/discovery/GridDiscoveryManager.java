@@ -438,7 +438,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
+            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
                 for (Map.Entry<Integer, Object> e : data.entrySet()) {
                     GridComponent comp = null;
 
@@ -451,7 +451,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     if (comp != null)
-                        comp.onDiscoveryDataReceived(nodeId, e.getValue());
+                        comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
                     else
                         U.warn(log, "Received discovery data for unknown component: " + e.getKey());
                 }

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+
+import java.util.*;
 
 /**
  * Cache start descriptor.
@@ -37,9 +38,6 @@ public class DynamicCacheDescriptor {
     /** Cancelled flag. */
     private boolean cancelled;
 
-    /** Validation error. */
-    private IgniteCheckedException validationError;
-
     /** Locally configured flag. */
     private boolean locCfg;
 
@@ -48,6 +46,9 @@ public class DynamicCacheDescriptor {
 
     /** Started flag. */
     private boolean started;
+
+    /** */
+    private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -134,31 +135,37 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} if descriptor is valid and cache should be started.
+     * @param nodeId Remote node ID.
+     * @return Configuration.
      */
-    public boolean valid() {
-        return validationError == null;
+    public CacheConfiguration remoteConfiguration(UUID nodeId) {
+        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
+
+        return cfgs == null ? null : cfgs.get(nodeId);
     }
 
     /**
-     * @throws IgniteCheckedException If validation failed.
+     * @param nodeId Remote node ID.
+     * @param cfg Remote node configuration.
      */
-    public void checkValid() throws IgniteCheckedException {
-        if (validationError != null)
-            throw validationError;
+    public void addRemoteConfiguration(UUID nodeId, CacheConfiguration cfg) {
+        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
+
+        if (cfgs == null)
+            rmtCfgs = cfgs = new HashMap<>();
+
+        cfgs.put(nodeId, cfg);
+    }
+
+    /**
+     *
+     */
+    public void clearRemoteConfigurations() {
+        rmtCfgs = null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheDescriptor.class, this, "cacheName", cacheCfg.getName());
-    }
-
-    /**
-     * Sets validation error.
-     *
-     * @param e Validation error.
-     */
-    public void validationFailed(IgniteCheckedException e) {
-        validationError = e;
     }
 }

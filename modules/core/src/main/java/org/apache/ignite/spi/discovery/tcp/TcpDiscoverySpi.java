@@ -3652,9 +3652,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(node.id(), data);
+                        exchange.onExchange(node.id(), node.id(), data);
 
-                    msg.addDiscoveryData(exchange.collect(node.id()));
+                    msg.addDiscoveryData(locNodeId, exchange.collect(node.id()));
                 }
 
                 if (log.isDebugEnabled())
@@ -3664,7 +3664,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<Map<Integer, Object>> dataList;
+                Map<UUID, Map<Integer, Object>> dataMap;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3689,7 +3689,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataList = msg.oldNodesDiscoveryData();
+                            dataMap = msg.oldNodesDiscoveryData();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -3722,9 +3722,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
 
                 // Notify outside of synchronized block.
-                if (dataList != null) {
-                    for (Map<Integer, Object> discoData : dataList)
-                        exchange.onExchange(node.id(), discoData);
+                if (dataMap != null) {
+                    for (Map.Entry<UUID, Map<Integer, Object>> entry : dataMap.entrySet())
+                        exchange.onExchange(node.id(), entry.getKey(), entry.getValue());
                 }
             }
 

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -42,17 +41,11 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
-    /** Cache store class name. */
-    private String storeClsName;
-
     /**
      * @param cfg Cache configuration.
-     * @param store Cache store.
      */
-    public GridCacheAttributes(CacheConfiguration cfg, @Nullable CacheStore<?, ?> store) {
+    public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
-
-        storeClsName = className(store);
     }
 
     /**
@@ -187,8 +180,8 @@ public class GridCacheAttributes implements Serializable {
     /**
      * @return Store class name.
      */
-    public String storeClassName() {
-        return storeClsName;
+    public String storeFactoryClassName() {
+        return className(ccfg.getCacheStoreFactory());
     }
 
     /**
