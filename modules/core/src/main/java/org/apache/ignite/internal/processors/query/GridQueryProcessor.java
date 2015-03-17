@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -555,13 +554,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param args Arguments.
      * @return Iterator.
      */
-    public Iterator<List<?>> queryLocalFields(String space, String sql, Object[] args) {
+    public QueryCursor<List<?>> queryLocalFields(String space, String sql, Object[] args) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            IgniteSpiCloseableIterator<List<?>> iterator =
-                idx.queryFields(space, sql, F.asList(args), idx.backupFilter()).iterator();
+            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -579,10 +577,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         null));
             }
 
-            return iterator;
+            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(res.iterator());
+
+            cursor.fieldsMeta(res.metaData());
+
+            return cursor;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();

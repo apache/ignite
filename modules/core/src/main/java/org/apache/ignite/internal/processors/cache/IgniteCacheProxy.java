@@ -489,8 +489,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
-            ctx.name(), q.getSql(), q.getArgs()));
+        return ctx.kernalContext().query().queryLocalFields(
+            ctx.name(), q.getSql(), q.getArgs());
     }
 
     /**

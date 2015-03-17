@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 
 import java.util.*;
 
@@ -31,6 +32,9 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
     /** */
     private boolean iterTaken;
+
+    /** */
+    private Collection<GridQueryFieldMetadata> fieldsMeta;
 
     /**
      * @param iter Iterator.
@@ -94,5 +98,19 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 }
             }
         }
+    }
+
+    /**
+     * @param fieldsMeta SQL Fields query result metadata.
+     */
+    public void fieldsMeta(Collection<GridQueryFieldMetadata> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
+    }
+
+    /**
+     * @return SQL Fields query result metadata.
+     */
+    public Collection<GridQueryFieldMetadata> fieldsMeta() {
+        return fieldsMeta;
     }
 }

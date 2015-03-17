@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -194,7 +195,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 QueryCursor<List<?>> cursor = cache.queryFields(qry);
 
-                Collection<GridQueryFieldMetadata> meta = null; // TODO
+                Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)cursor).fieldsMeta();
+
+                assert meta != null;
 
                 tbls = new ArrayList<>(meta.size());
                 cols = new ArrayList<>(meta.size());
