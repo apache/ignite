@@ -94,16 +94,13 @@ public class VisorCache implements Serializable {
 
     /**
      * @param ignite Grid.
-     * @param c Actual cache.
+     * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
-        assert c != null;
-
-        String cacheName = c.name();
 
         GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
 
@@ -127,8 +124,9 @@ public class VisorCache implements Serializable {
 
         CacheMode mode = cfg.getCacheMode();
 
-        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED);
-//            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY; TODO IGNITE-45 use context.affinityNode()
+
+        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
+            && ca.context().affinityNode();
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;

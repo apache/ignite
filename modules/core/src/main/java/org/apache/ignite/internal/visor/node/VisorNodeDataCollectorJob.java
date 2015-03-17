@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -121,18 +121,18 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgniteConfiguration cfg = ignite.configuration();
 
-            for (GridCache cache : ignite.cachesx()) {
-                String cacheName = cache.name();
+            GridCacheProcessor cacheProc = ((IgniteKernal)ignite).context().cache();
 
+            for (String cacheName : cacheProc.cacheNames()) {
                 if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        res.caches().add(VisorCache.from(ignite, cache, arg.sample()));
+                        res.caches().add(VisorCache.from(ignite, cacheName, arg.sample()));
                     }
                     finally {
                         if (debug)
-                            log(ignite.log(), "Collected cache: " + cache.name(), getClass(), start0);
+                            log(ignite.log(), "Collected cache: " + cacheName, getClass(), start0);
                     }
                 }
             }
