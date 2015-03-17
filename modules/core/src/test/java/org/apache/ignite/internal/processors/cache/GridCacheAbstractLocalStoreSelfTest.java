@@ -124,11 +124,11 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_1));
+            cacheCfg.setCacheStoreFactory(GridTestUtils.storeFactory(LOCAL_STORE_1));
         else if (gridName.endsWith("2"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_2));
+            cacheCfg.setCacheStoreFactory(GridTestUtils.storeFactory(LOCAL_STORE_2));
         else
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_3));
+            cacheCfg.setCacheStoreFactory(GridTestUtils.storeFactory(LOCAL_STORE_3));
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);

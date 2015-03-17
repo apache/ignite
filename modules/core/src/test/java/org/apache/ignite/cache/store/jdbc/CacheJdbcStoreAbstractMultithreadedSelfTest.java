@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -35,7 +36,6 @@ import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
-import javax.cache.configuration.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
@@ -155,7 +155,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(GridTestUtils.storeFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

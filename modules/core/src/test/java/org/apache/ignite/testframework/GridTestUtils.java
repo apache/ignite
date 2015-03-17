@@ -20,6 +20,7 @@ package org.apache.ignite.testframework;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
@@ -37,6 +38,7 @@ import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -1482,14 +1484,14 @@ public final class GridTestUtils {
     public static void runGC() {
         System.gc();
 
-        ReferenceQueue queue = new ReferenceQueue();
+        ReferenceQueue<byte[]> queue = new ReferenceQueue<>();
 
-        List<SoftReference> refs = new ArrayList<>();
+        Collection<SoftReference<byte[]>> refs = new ArrayList<>();
 
         while (true) {
             byte[] bytes = new byte[128 * 1024];
 
-            refs.add(new SoftReference(bytes, queue));
+            refs.add(new SoftReference<>(bytes, queue));
 
             if (queue.poll() != null)
                 break;
@@ -1504,4 +1506,70 @@ public final class GridTestUtils {
     public static String apacheIgniteTestPath() {
         return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
     }
+
+    /**
+     *
+     */
+    public static <K, V> Factory<? extends CacheStore<K, V>> storeFactory(CacheStore<K, V> store) {
+        return new SingletonStoreFactory<>(store);
+    }
+
+    /**
+     *
+     */
+    private static class SingletonStoreFactory<T> implements Factory<T> {
+        /** */
+        private final T store;
+
+        /**
+         * @param store Store.
+         */
+        SingletonStoreFactory(T store) {
+            this.store = store;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T create() {
+            return store;
+        }
+
+        /**
+         *
+         */
+        protected Object writeReplace() throws ObjectStreamException {
+            return new SerializableStore(this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SerializableStore implements Serializable {
+        /** */
+        private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
+
+        /** */
+        private final UUID uuid;
+
+        /**
+         * @param o Object.
+         */
+        private SerializableStore(Object o) {
+            uuid = UUID.randomUUID();
+
+            serializedObj.put(uuid, o);
+        }
+
+        /**
+         *
+         */
+        protected Object readResolve() throws ObjectStreamException {
+            Object res = serializedObj.remove(uuid);
+
+            assert res != null;
+
+            return res;
+        }
+    }
+
 }
