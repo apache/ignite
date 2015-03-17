@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
@@ -74,7 +75,7 @@ public class CachePopularNumbersExample {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
-        try (Ignite ignite = Ignition.start()) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
@@ -88,8 +89,8 @@ public class CachePopularNumbersExample {
             cfg.setName(STREAM_NAME);
             cfg.setIndexedTypes(Integer.class, Long.class);
 
-            // Sliding window of 5 seconds.
-            cfg.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(SECONDS, 5))));
+            // Sliding window of 1 seconds.
+            cfg.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(SECONDS, 1))));
 
             /**
              * Start the streaming cache on all server nodes.
@@ -97,7 +98,7 @@ public class CachePopularNumbersExample {
              */
             try (IgniteCache<Integer, Long> stmCache = ignite.createCache(cfg)) {
                 // Check that that server nodes have been started.
-                if (ignite.cluster().forCacheNodes(STREAM_NAME).nodes().isEmpty()) {
+                if (ignite.cluster().forDataNodes(STREAM_NAME).nodes().isEmpty()) {
                     System.out.println("Ignite does not have streaming cache configured: " + STREAM_NAME);
 
                     return;
@@ -113,8 +114,8 @@ public class CachePopularNumbersExample {
 
                 th.start();
 
-                // Run this example for 3 minutes.
-                long duration = 3 * 60 * 60 * 1000;
+                // Run this example for 2 minutes.
+                long duration = 2 * 60 * 1000;
 
                 long start = System.currentTimeMillis();
 
@@ -135,6 +136,13 @@ public class CachePopularNumbersExample {
 
                 th.interrupt();
                 th.join();
+            }
+            catch (CacheException e) {
+                e.printStackTrace();
+
+                System.out.println("Destroying cache for name '" + STREAM_NAME + "'. Please try again.");
+
+                ignite.destroyCache(STREAM_NAME);
             }
         }
     }
