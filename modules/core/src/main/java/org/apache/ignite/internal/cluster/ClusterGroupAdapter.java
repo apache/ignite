@@ -352,6 +352,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forServers() {
+        return forPredicate(new AttributeFilter(IgniteNodeAttributes.ATTR_CLIENT_MODE, false));
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forClients() {
+        return forPredicate(new AttributeFilter(IgniteNodeAttributes.ATTR_CLIENT_MODE, true));
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterGroup forNode(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
@@ -757,13 +767,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         private final String name;
 
         /** Value. */
-        private final String val;
+        private final Object val;
 
         /**
          * @param name Name.
          * @param val Value.
          */
-        private AttributeFilter(String name, String val) {
+        private AttributeFilter(String name, Object val) {
             this.name = name;
             this.val = val;
         }

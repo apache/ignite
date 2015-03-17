@@ -198,6 +198,16 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forServers() {
+        return cluster.forServers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forClients() {
+        return cluster.forClients();
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterGroup forCacheNodes(String cacheName) {
         return cluster.forCacheNodes(cacheName);
     }

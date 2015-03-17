@@ -140,6 +140,24 @@ public interface ClusterGroup {
     public ClusterGroup forAttribute(String name, @Nullable String val);
 
     /**
+     * Creates a cluster group of nodes started in server mode.
+     *
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in server mode.
+     */
+    public ClusterGroup forServers();
+
+    /**
+     * Creates a cluster group of nodes started in client mode.
+
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in client mode.
+     */
+    public ClusterGroup forClients();
+
+    /**
      * Creates projection for all nodes that have cache with specified name running.
      *
      * @param cacheName Cache name.

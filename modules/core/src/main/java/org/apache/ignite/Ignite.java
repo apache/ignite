@@ -187,14 +187,37 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a client cache on local node.
      *
      * @param cacheCfg Cache configuration to use.
+     * @return Instance of started cache.
      */
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
 
+    /**
+     * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a near cache with the given configuration on local node.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @param nearCfg Near cache configuration to use on local node in case it is not an
+     *      affinity node.
+     * @return Instance of started cache.
+     */
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg);
 
+    /**
+     * Starts a near cache on local node if cache was previously started with one of the
+     * {@link #createCache(CacheConfiguration)} or {@link #createCache(CacheConfiguration, NearCacheConfiguration)}
+     * methods.
+     *
+     * @param nearCfg Near cache configuration.
+     * @return Cache instance.
+     */
     public <K, V> IgniteCache<K, V> createCache(NearCacheConfiguration<K, V> nearCfg);
 
     /**
