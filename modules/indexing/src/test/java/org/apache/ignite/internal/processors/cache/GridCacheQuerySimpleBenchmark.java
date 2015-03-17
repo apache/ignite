@@ -46,17 +46,13 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setSwapEnabled(false);
-        ccfg.setQueryIndexEnabled(true);
+        ccfg.setIndexedTypes(
+            Long.class, Person.class
+        );
 
         ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         c.setCacheConfiguration(ccfg);
-
-        QueryConfiguration qcfg = new QueryConfiguration();
-
-        qcfg.setMaxOffHeapMemory(0);
-
-        c.setQueryConfiguration(qcfg);
 
         return c;
     }
