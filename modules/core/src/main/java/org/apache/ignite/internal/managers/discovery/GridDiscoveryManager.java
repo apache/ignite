@@ -2410,7 +2410,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !loc || cacheFilter.apply(node);
+            return cacheFilter.apply(node) || clientNodes.containsKey(node.id());
         }
 
         /**

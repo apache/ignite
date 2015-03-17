@@ -1577,6 +1577,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near cache " +
                     "(a cache with the given name is not started): " + nearCfg.getName()));
 
+            if (ccfg.getNodeFilter().apply(ctx.discovery().localNode()))
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near cache " +
+                    "(local node is an affinity node for cache): " + nearCfg.getName()));
+
             req.deploymentId(desc.deploymentId());
             req.startCacheConfiguration(ccfg);
         }

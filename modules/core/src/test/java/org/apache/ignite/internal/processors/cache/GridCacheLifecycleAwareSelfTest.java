@@ -282,18 +282,17 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(evictionPlc);
 
-        TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
-
-
         if (near) {
+            TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
+
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
             nearCfg.setNearEvictionPolicy(nearEvictionPlc);
 
             ccfg.setNearConfiguration(nearCfg);
-        }
 
-        lifecycleAwares.add(nearEvictionPlc);
+            lifecycleAwares.add(nearEvictionPlc);
+        }
 
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 

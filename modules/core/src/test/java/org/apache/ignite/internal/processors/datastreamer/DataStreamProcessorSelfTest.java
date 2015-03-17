@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -109,15 +108,18 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             cc.setEvictSynchronized(false);
 
             if (store != null) {
-                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+                cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
             }
 
             cfg.setCacheConfiguration(cc);
         }
-        else
+        else {
             cfg.setCacheConfiguration();
+
+            cfg.setClientMode(true);
+        }
 
         return cfg;
     }
@@ -955,7 +957,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends CacheStoreAdapter<Object, Object> {
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return storeMap.get(key);
