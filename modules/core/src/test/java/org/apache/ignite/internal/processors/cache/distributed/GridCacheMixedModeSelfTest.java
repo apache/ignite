@@ -33,6 +33,9 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
+        if (F.eq(gridName, getTestGridName(0)))
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
@@ -44,9 +47,6 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
-
-        if (F.eq(gridName, getTestGridName(0)))
-            return null; // TODO IGNITE-45
 
         return cfg;
     }

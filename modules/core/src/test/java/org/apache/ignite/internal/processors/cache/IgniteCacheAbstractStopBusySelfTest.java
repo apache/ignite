@@ -90,9 +90,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         commSpi.setTcpNoDelay(true);
 
-        // TODO IGNITE-45
-//        if (gridName.endsWith(String.valueOf(CLN_GRD)))
-//            cacheCfg.setDistributionMode(CacheDistributionMode.CLIENT_ONLY);
+        if (gridName.endsWith(String.valueOf(CLN_GRD)))
+            cfg.setClientMode(true);
 
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 

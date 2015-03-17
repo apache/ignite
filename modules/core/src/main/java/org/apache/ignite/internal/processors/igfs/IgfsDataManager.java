@@ -150,8 +150,6 @@ public class IgfsDataManager extends IgfsManager {
 
         dataCacheStartLatch = new CountDownLatch(1);
 
-        grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
-
         String igfsName = igfsCtx.configuration().getName();
 
         topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
@@ -217,6 +215,10 @@ public class IgfsDataManager extends IgfsManager {
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+
+        grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
+
+        assert grpBlockSize != 0;
 
         igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
             .startFuture().listen(new CI1<IgniteInternalFuture<Object>>() {

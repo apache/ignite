@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.lru;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -63,15 +64,15 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        if (cnt == 0)
+            c.setClientMode(true);
+
         CacheConfiguration cc = new CacheConfiguration();
 
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(cacheMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
-        // TODO IGNITE-45
-//        cc.setDistributionMode(cnt == 0 ? NEAR_ONLY : PARTITIONED_ONLY);
-//        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setBackups(0);
 
@@ -135,6 +136,11 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
         startGrids(GRID_COUNT);
 
         try {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+            nearCfg.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+
+            grid(0).createCache(nearCfg);
+
             int cnt = 1000;
 
             info("Inserting " + cnt + " keys to cache.");
