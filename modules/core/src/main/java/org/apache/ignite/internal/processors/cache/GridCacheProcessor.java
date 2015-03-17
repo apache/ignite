@@ -2188,7 +2188,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.deploymentId(desc.deploymentId());
 
-                req.startCacheConfiguration(desc.cacheConfiguration());
+                CacheConfiguration cfg = new CacheConfiguration(desc.cacheConfiguration());
+
+                cfg.setNearConfiguration(null);
+
+                req.startCacheConfiguration(cfg);
 
                 req.clientStartOnly(true);
 
