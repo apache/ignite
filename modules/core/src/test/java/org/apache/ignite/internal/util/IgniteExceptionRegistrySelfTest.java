@@ -42,7 +42,13 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
 
         Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(0);
 
-        assertEquals(expCnt, errors.size());
+        if (expCnt != errors.size()) {
+            for (IgniteExceptionRegistry.ExceptionInfo e : errors)
+                if (!e.message().startsWith("Test "))
+                    info(e.message() + " " + e.error());
+
+            assert false;
+        }
 
         int i = expCnt - 1;
 
