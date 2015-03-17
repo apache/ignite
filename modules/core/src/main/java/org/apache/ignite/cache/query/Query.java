@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
@@ -42,6 +41,9 @@ import java.io.*;
 public abstract class Query<T extends Query> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default query page size. */
+    public static final int DFLT_PAGE_SIZE = 1024;
 
     /** Page size. */
     private int pageSize;
@@ -115,7 +117,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Gets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Gets optional page size, if {@code 0}, then {@link #DFLT_PAGE_SIZE} is used.
      *
      * @return Optional page size.
      */
@@ -124,7 +126,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Sets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Sets optional page size, if {@code 0}, then {@link #DFLT_PAGE_SIZE} is used.
      *
      * @param pageSize Optional page size.
      * @return {@code this} For chaining.

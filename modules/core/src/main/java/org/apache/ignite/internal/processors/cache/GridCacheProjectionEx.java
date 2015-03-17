@@ -23,10 +23,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -197,7 +197,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via {@link CacheStore#write(Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -222,7 +222,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via {@link CacheStore#write(Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -244,7 +244,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via {@link CacheStore#delete(Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -268,7 +268,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via {@link CacheStore#delete(Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

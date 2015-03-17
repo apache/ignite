@@ -333,17 +333,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgniteClosure MAP_ENTRY_KEY = new IgniteClosure() {
-        @Override public Object apply(Object o) {
-            return ((Map.Entry)o).getKey();
-        }
-
-        @Override public String toString() {
-            return "Map entry to key transformer closure.";
-        }
-    };
-
-    /** */
     private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosure() {
         @Override public Object apply(Object o) {
             return ((Cache.Entry)o).getKey();
@@ -374,18 +363,6 @@ public class GridFunc {
 
         @Override public String toString() {
             return "Cache entry to get-value transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure CACHE_ENTRY_VAL_PEEK = new IgniteClosure() {
-        @SuppressWarnings({"unchecked"})
-        @Nullable @Override public Object apply(Object o) {
-            return ((Cache.Entry<?, ?>)o).getValue();
-        }
-
-        @Override public String toString() {
-            return "Cache entry to peek-value transformer closure.";
         }
     };
 
@@ -7736,15 +7713,11 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns {@code true} if
-     * {@link javax.cache.Cache.Entry#peek() Entry.peek()} method
-     * returns {@code non-null} value.
+     * Gets predicate which returns {@code true} if entry has peek value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if
-     *      {@link javax.cache.Cache.Entry#peek() Entry.peek()}
-     *      method returns {@code non-null} value.
+     * @return Predicate which returns {@code true} if entry has peek value.
      */
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
