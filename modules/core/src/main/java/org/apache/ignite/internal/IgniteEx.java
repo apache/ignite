@@ -141,4 +141,11 @@ public interface IgniteEx extends Ignite {
      * @return Local grid node.
      */
     public ClusterNode localNode();
+
+    /**
+     * Internal context.
+     *
+     * @return Kernal context.
+     */
+    public GridKernalContext context();
 }

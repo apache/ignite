@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
@@ -150,7 +148,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void igfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgfsProcessorAdapter igfsProc = ((IgniteKernal)ignite).context().igfs();
+            IgfsProcessorAdapter igfsProc = ignite.context().igfs();
 
             for (IgniteFileSystem igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
@@ -245,6 +243,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
         if (debug)
             log(ignite.log(), "Collected streamers", getClass(), start0);
+
+        res.errorCount(ignite.context().exceptionRegistry().errorCount());
 
         return res;
     }
