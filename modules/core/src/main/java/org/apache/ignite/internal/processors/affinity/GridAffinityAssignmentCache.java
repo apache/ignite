@@ -36,9 +36,6 @@ import java.util.concurrent.atomic.*;
  * Affinity cached function.
  */
 public class GridAffinityAssignmentCache {
-    /** Node order comparator. */
-    private static final Comparator<ClusterNode> nodeCmp = new GridNodeOrderComparator();
-
     /** Cache name. */
     private final String cacheName;
 
@@ -166,9 +163,9 @@ public class GridAffinityAssignmentCache {
             sorted = Collections.singletonList(ctx.localNode());
         else {
             // Resolve nodes snapshot for specified topology version.
-            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
 
-            sorted = sort(nodes);
+            Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
         }
 
         List<List<ClusterNode>> prevAssignment = prev == null ? null : prev.assignment();
@@ -406,22 +403,6 @@ public class GridAffinityAssignmentCache {
             throw new IgniteException("Failed to wait for affinity ready future for topology version: " + topVer,
                 e);
         }
-    }
-
-    /**
-     * Sorts nodes according to order.
-     *
-     * @param nodes Nodes to sort.
-     * @return Sorted list of nodes.
-     */
-    private List<ClusterNode> sort(Collection<ClusterNode> nodes) {
-        List<ClusterNode> sorted = new ArrayList<>(nodes.size());
-
-        sorted.addAll(nodes);
-
-        Collections.sort(sorted, nodeCmp);
-
-        return sorted;
     }
 
     /**

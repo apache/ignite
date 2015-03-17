@@ -40,9 +40,6 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Nodes order comparator. */
-    private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -75,7 +72,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
         tmp.addAll(availableNodes);
-        Collections.sort(tmp, CMP);
+        Collections.sort(tmp, GridNodeOrderComparator.INSTANCE);
 
         this.availableNodes = tmp;
 
