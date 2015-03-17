@@ -54,6 +54,10 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        TestCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        cfg.setCommunicationSpi(commSpi);
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
@@ -75,6 +79,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }

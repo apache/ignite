@@ -506,7 +506,6 @@ public class GridFilenameUtils {
      * @throws IOException
      *             if an IO error occurs while checking the files.
      * @since 2.2
-     * @see FileUtils#directoryContains(File, File)
      */
     public static boolean directoryContains(final String canonicalParent, final String canonicalChild)
             throws IOException {

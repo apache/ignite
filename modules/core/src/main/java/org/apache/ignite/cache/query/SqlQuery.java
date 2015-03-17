@@ -43,6 +43,13 @@ public final class SqlQuery extends Query<SqlQuery> {
     private Object[] args;
 
     /**
+     * Default constructor.
+     */
+    public SqlQuery() {
+        // No-op.
+    }
+
+    /**
      * Constructs query for the given SQL query.
      *
      * @param sql SQL Query.

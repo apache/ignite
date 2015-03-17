@@ -23,6 +23,6 @@ import java.io.*;
 /**
  * This processor adds {@link Serializable} interface to {@link EntryProcessor} object.
  */
-public interface IgniteEntryProcessor<K, V, T> extends EntryProcessor<K, V, T>, Serializable {
+public interface CacheEntryProcessor<K, V, T> extends EntryProcessor<K, V, T>, Serializable {
     // No-op.
 }

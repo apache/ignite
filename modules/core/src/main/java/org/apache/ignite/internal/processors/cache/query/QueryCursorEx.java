@@ -15,26 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.cache.spi.*;
+import org.apache.ignite.cache.query.*;
 
 /**
- * Implementation of {@link TimestampsRegion}. This region is automatically created when query
- * caching is enabled and it holds most recent updates timestamps to queryable tables.
- * Name of timestamps region is {@code "org.hibernate.cache.spi.UpdateTimestampsCache"}.
+ * Extended query cursor interface allowing for "getAll" to output data into destination other than Collection.
  */
-public class HibernateTimestampsRegion extends HibernateGeneralDataRegion implements TimestampsRegion {
+public interface QueryCursorEx<T> extends QueryCursor<T> {
     /**
-     * @param factory Region factory.
-     * @param name Region name.
-     * @param ignite Grid.
-     * @param cache Region cache.
+     * Get all values passing them through passed consumer.
+     *
+     * @param c Consumer.
      */
-    public HibernateTimestampsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
-        super(factory, name, ignite, cache);
+    public void getAll(Consumer<T> c) throws IgniteCheckedException;
+
+    /**
+     * Query value consumer.
+     */
+    public static interface Consumer<T> {
+        /**
+         * Consume value.
+         *
+         * @param val Value.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void consume(T val) throws IgniteCheckedException;
     }
 }

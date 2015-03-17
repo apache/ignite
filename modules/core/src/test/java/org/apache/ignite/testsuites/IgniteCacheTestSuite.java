@@ -362,6 +362,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreSessionWriteBehindTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
