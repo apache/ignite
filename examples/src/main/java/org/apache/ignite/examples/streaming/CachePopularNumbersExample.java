@@ -161,6 +161,7 @@ public class CachePopularNumbersExample {
             while (!Thread.currentThread().isInterrupted())
                 stmr.addData(RAND.nextInt(RANGE), 1L);
         }
+        catch (IgniteInterruptedException ignore) {}
     }
 
     /**
