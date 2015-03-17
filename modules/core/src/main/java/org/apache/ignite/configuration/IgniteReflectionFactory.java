@@ -30,6 +30,9 @@ import java.util.*;
  */
 public class IgniteReflectionFactory<T> implements Factory<T> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private volatile boolean singleton;
 
     /** */
