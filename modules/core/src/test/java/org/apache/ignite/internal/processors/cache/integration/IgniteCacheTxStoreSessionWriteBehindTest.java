@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.cache.integration;
+
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  *
  */
-public class GridTcpCommunicationSpiMultithreadedTcpSelfTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
-    /** */
-    public GridTcpCommunicationSpiMultithreadedTcpSelfTest() {
-        super(false);
+public class IgniteCacheTxStoreSessionWriteBehindTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

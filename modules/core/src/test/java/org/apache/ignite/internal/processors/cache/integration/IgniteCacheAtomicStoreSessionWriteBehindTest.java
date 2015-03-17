@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache.integration;
 
-import javax.cache.processor.*;
-import java.io.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * This processor adds {@link Serializable} interface to {@link EntryProcessor} object.
+ *
  */
-public interface IgniteEntryProcessor<K, V, T> extends EntryProcessor<K, V, T>, Serializable {
-    // No-op.
+public class IgniteCacheAtomicStoreSessionWriteBehindTest extends IgniteCacheStoreSessionWriteBehindAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 }

@@ -109,6 +109,8 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
         taskRes.taskMonitoringEnabled().put(nid, jobRes.taskMonitoringEnabled());
 
+        taskRes.errorCounts().put(nid, jobRes.errorCount());
+
         if (!jobRes.events().isEmpty())
             taskRes.events().addAll(jobRes.events());
 

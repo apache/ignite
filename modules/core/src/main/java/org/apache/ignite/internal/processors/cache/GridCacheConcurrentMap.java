@@ -1744,7 +1744,7 @@ public class GridCacheConcurrentMap {
             curVal = null;
 
             try {
-                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key(), CU.<K, V>empty());
+                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);

@@ -26,8 +26,8 @@ import static org.apache.ignite.igfs.IgfsIpcEndpointType.*;
  * IGFS IPC endpoint configuration.
  */
 public class IgfsIpcEndpointConfiguration {
-    /** Default endpoint type; TCP for Windows, SHMEM otherwise. */
-    public static IgfsIpcEndpointType DFLT_TYP = U.isWindows() ? TCP : SHMEM;
+    /** Default endpoint type is TCP. */
+    public static IgfsIpcEndpointType DFLT_TYPE = U.hasSharedMemory() ? SHMEM : TCP;
 
     /** Default host. */
     public static String DFLT_HOST = "127.0.0.1";
@@ -48,7 +48,7 @@ public class IgfsIpcEndpointConfiguration {
     public static final String DFLT_TOKEN_DIR_PATH = "ipc/shmem";
 
     /** Endpoint type. */
-    private IgfsIpcEndpointType typ = DFLT_TYP;
+    private IgfsIpcEndpointType type = DFLT_TYPE;
 
     /** Host. */
     private String host = DFLT_HOST;
@@ -75,7 +75,7 @@ public class IgfsIpcEndpointConfiguration {
      * @param cfg Configuration to copy.
      */
     public IgfsIpcEndpointConfiguration(IgfsIpcEndpointConfiguration cfg) {
-        typ = cfg.getType();
+        type = cfg.getType();
         host = cfg.getHost();
         port = cfg.getPort();
         memSize = cfg.getMemorySize();
@@ -88,12 +88,12 @@ public class IgfsIpcEndpointConfiguration {
      * <p>
      * Shared memory is recommended approach for Linux-based systems. For Windows TCP is the only available option.
      * <p>
-     * Defaults to {@link #DFLT_TYP}.
+     * Defaults to {@link #DFLT_TYPE}.
      *
      * @return Endpoint type.
      */
     public IgfsIpcEndpointType getType() {
-        return typ;
+        return type;
     }
 
     /**
@@ -102,12 +102,12 @@ public class IgfsIpcEndpointConfiguration {
      * <p>
      * Shared memory is recommended approach for Linux-based systems. For Windows TCP is the only available option.
      * <p>
-     * Defaults to {@link #DFLT_TYP}.
+     * Defaults to {@link #DFLT_TYPE}.
      *
-     * @param typ Endpoint type.
+     * @param type Endpoint type.
      */
-    public void setType(IgfsIpcEndpointType typ) {
-        this.typ = typ;
+    public void setType(IgfsIpcEndpointType type) {
+        this.type = type;
     }
 
     /**

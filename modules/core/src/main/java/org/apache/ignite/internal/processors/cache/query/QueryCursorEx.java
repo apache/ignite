@@ -15,14 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.cache.query;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 
 /**
- *
+ * Extended query cursor interface allowing for "getAll" to output data into destination other than Collection.
  */
-public class GridTcpCommunicationSpiMultithreadedShmemTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
-    /** */
-    public GridTcpCommunicationSpiMultithreadedShmemTest() {
-        super(false);
+public interface QueryCursorEx<T> extends QueryCursor<T> {
+    /**
+     * Get all values passing them through passed consumer.
+     *
+     * @param c Consumer.
+     */
+    public void getAll(Consumer<T> c) throws IgniteCheckedException;
+
+    /**
+     * Query value consumer.
+     */
+    public static interface Consumer<T> {
+        /**
+         * Consume value.
+         *
+         * @param val Value.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void consume(T val) throws IgniteCheckedException;
     }
 }

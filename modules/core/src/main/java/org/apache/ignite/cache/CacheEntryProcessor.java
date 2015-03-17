@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.cache;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import javax.cache.processor.*;
+import java.io.*;
 
 /**
- *
+ * This processor adds {@link Serializable} interface to {@link EntryProcessor} object.
  */
-@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiShmemSelfTest extends GridTcpCommunicationSpiAbstractTest {
-    /** */
-    public GridTcpCommunicationSpiShmemSelfTest() {
-        super(false);
-    }
+public interface CacheEntryProcessor<K, V, T> extends EntryProcessor<K, V, T>, Serializable {
+    // No-op.
 }

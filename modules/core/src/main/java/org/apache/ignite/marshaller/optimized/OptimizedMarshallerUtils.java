@@ -178,14 +178,24 @@ class OptimizedMarshallerUtils {
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class cls, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws IOException {
+    static OptimizedClassDescriptor classDescriptor(Class cls,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
+        throws IOException
+    {
         OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
 
         if (desc == null) {
             int typeId = resolveTypeId(cls.getName(), mapper);
 
-            boolean registered = ctx.registerClass(typeId, cls);
+            boolean registered;
+
+            try {
+                registered = ctx.registerClass(typeId, cls);
+            }
+            catch (Exception e) {
+                throw new IOException("Failed to register class: " + cls.getName(), e);
+            }
 
             desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, ctx, mapper);
 

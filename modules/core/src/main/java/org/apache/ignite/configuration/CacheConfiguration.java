@@ -24,6 +24,7 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -1604,7 +1605,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
-     * passed to {@link CacheInterceptor} and to {@link org.apache.ignite.cache.IgniteEntryProcessor}.
+     * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      * <p>
      * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *

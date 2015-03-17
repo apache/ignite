@@ -608,7 +608,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     protected TcpCommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(10_000);
         spi.setConnectTimeout(10_000);
