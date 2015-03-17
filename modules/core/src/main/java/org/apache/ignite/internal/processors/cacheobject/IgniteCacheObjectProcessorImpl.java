@@ -320,6 +320,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      *
      */
     private static class IgniteCacheObjectImpl extends CacheObjectImpl {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
