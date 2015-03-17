@@ -18,6 +18,7 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.IgniteCache
+import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
@@ -27,12 +28,12 @@ import scala.collection.JavaConversions._
  * This example demonstrates the simplest code that populates the distributed cache
  * and co-locates simple closure execution with each key. The goal of this particular
  * example is to provide the simplest code example of this logic.
- *
- * Note also that for affinity routing is enabled for all caches.
- *
- * Remote nodes should always be started with configuration file which includes
- * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
- * be started with or without cache.
+ * <p>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * <p>
+ * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
+ * start node with `examples/config/example-compute.xml` configuration.
  */
 object ScalarCacheAffinityExample extends App {
     /** Configuration file name. */

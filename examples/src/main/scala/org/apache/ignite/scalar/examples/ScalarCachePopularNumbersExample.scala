@@ -37,10 +37,10 @@ import scala.util.Random
  * Real time popular number counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class streaming: `ignite.sh examples/config/example-cache.xml`
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  * <p>
  * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
- * start node with `examples/config/example-cache.xml` configuration.
+ * start node with `examples/config/example-compute.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the ignite.
@@ -86,9 +86,6 @@ object ScalarCachePopularNumbersExample extends App {
 
                     // Force one more run to get final counts.
                     query(POPULAR_NUMBERS_CNT)
-
-                    // Clean up caches on all nodes after run.
-                    ignite$.cluster().forCacheNodes(NAME).bcastRun(() => ignite$.jcache(NAME).clear(), null)
                 }
                 finally {
                     popularNumbersQryTimer.cancel()
