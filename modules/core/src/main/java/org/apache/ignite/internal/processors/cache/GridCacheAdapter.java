@@ -1273,7 +1273,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return values((CacheEntryPredicate[])null);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Collection of values cached on this node. You can remove
+     * elements from this collection, but you cannot add elements to this collection.
+     * All removal operation will be reflected on the cache itself.
+     * <p>
+     * Iterator over this collection will not fail if collection was
+     * concurrently updated by another thread. This means that iterator may or
+     * may not return latest values depending on whether they were added before
+     * or after current iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the values cached on this node.
+     *
+     * @param filter Filters.
+     * @return Collection of cached values.
+     */
     public Collection<V> values(CacheEntryPredicate... filter) {
         return map.values(filter);
     }
