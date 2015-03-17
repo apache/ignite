@@ -197,7 +197,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(Entry)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -222,7 +222,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(Entry)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
