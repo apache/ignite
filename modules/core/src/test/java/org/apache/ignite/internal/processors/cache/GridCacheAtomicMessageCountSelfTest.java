@@ -71,7 +71,6 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
         cCfg.setAtomicWriteOrderMode(writeOrderMode);
 
-        // TODO IGNITE-45 test hangs. (client node started first)
         if (idx == 0 && client)
             cfg.setClientMode(true);
 

@@ -158,6 +158,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     @Override public void updateTopologyVersion(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut,
+        long updSeq,
         boolean stopping
     ) {
         lock.writeLock().lock();
@@ -169,6 +170,8 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             this.stopping = stopping;
 
             topVer = exchId.topologyVersion();
+
+            updateSeq.setIfGreater(updSeq);
 
             topReadyFut = exchFut;
         }
@@ -229,7 +232,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            ClusterNode oldest = CU.oldest(cctx, topVer);
+            ClusterNode oldest = CU.oldest(cctx.shared(), topVer);
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');

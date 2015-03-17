@@ -82,7 +82,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param fullMap Full partitions map.
      */
     public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
-        parts.put(cacheId, fullMap);
+        if (!parts.containsKey(cacheId))
+            parts.put(cacheId, fullMap);
     }
 
     /** {@inheritDoc}

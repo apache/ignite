@@ -439,9 +439,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(
+                        cacheCtx.cacheId());
+
+                    long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
+
                     // Update before waiting for locks.
                     if (!cacheCtx.isLocal())
-                        cacheCtx.topology().updateTopologyVersion(exchId, this, stopping(cacheCtx.cacheId()));
+                        cacheCtx.topology().updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
                 }
 
                 // Grab all alive remote nodes with order of equal or less than last joined node.
@@ -509,7 +514,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
-                    top.updateTopologyVersion(exchId, this, stopping(top.cacheId()));
+                    top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
 
                     top.beforeExchange(this);
                 }
@@ -645,6 +650,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
         }
 
+        // It is important that client topologies be added after contexts.
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
             m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
 

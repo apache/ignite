@@ -49,12 +49,15 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         gridCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        if (!clientOnly()) {
+            grid(nearOnlyGridName).createCache(new NearCacheConfiguration());
+        }
     }
 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        // TODO IGNITE-45 test hangs
         if (gridCnt.getAndIncrement() == 0) {
             cfg.setClientMode(true);
 
@@ -65,6 +68,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 

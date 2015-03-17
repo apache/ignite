@@ -47,7 +47,12 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */
-    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut, boolean stopping);
+    public void updateTopologyVersion(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
+        long updateSeq,
+        boolean stopping
+    );
 
     /**
      * Topology version.

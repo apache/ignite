@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -36,7 +37,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -73,7 +73,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /** Preload predicate. */
     private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
-    /** Future for preload mode {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC}. */
+    /** Future for preload mode {@link CacheRebalanceMode#SYNC}. */
     @GridToStringInclude
     private SyncFuture syncFut;
 
@@ -162,7 +162,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @return Future for {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC} mode.
+     * @return Future for {@link CacheRebalanceMode#SYNC} mode.
      */
     IgniteInternalFuture<?> syncFuture() {
         return syncFut;
@@ -826,7 +826,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     try {
                         cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
                     }
-                    catch (IgniteInterruptedCheckedException e) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
                                 "[cacheName=" + cctx.name() + ']');
@@ -1081,13 +1081,6 @@ public class GridDhtPartitionDemandPool<K, V> {
             assert workers.size() == poolSize();
 
             remaining = Collections.synchronizedList(new LinkedList<>(workers));
-        }
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public SyncFuture() {
-            assert false;
         }
 
         /**

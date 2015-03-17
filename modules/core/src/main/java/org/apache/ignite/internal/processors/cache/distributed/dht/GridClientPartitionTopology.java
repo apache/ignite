@@ -136,6 +136,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @Override public void updateTopologyVersion(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut,
+        long updSeq,
         boolean stopping
     ) {
         lock.writeLock().lock();
@@ -147,6 +148,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             this.stopping = stopping;
 
             topVer = exchId.topologyVersion();
+
+            updateSeq.setIfGreater(updSeq);
 
             topReadyFut = exchFut;
         }
@@ -424,6 +427,18 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public long updateSequence() {
         return updateSeq.get();
+    }
+
+    /** {@inheritDoc} */
+    public long lastUpdateSequence() {
+        lock.writeLock().lock();
+
+        try {
+            return updateSeq.incrementAndGet();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
