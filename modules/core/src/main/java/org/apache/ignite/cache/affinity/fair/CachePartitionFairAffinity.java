@@ -19,6 +19,7 @@ package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -71,12 +72,7 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
         if (topSnapshot.size() == 1) {
             ClusterNode primary = topSnapshot.get(0);
 
-            List<List<ClusterNode>> assignments = new ArrayList<>(parts);
-
-            for (int i = 0; i < parts; i++)
-                assignments.add(Collections.singletonList(primary));
-
-            return assignments;
+            return Collections.nCopies(parts, Collections.singletonList(primary));
         }
 
         IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
