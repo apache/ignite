@@ -20,10 +20,8 @@ package org.apache.ignite.events;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
