@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -29,7 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -66,21 +64,14 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         ccfg2.setName(null);
 
-        CacheDistributionMode distrMode;
-
         if (gridName.equals(getTestGridName(1)))
-            distrMode = NEAR_ONLY;
-        else if (gridName.equals(getTestGridName(2)))
-            distrMode = NEAR_PARTITIONED;
-        else
-            distrMode = PARTITIONED_ONLY;
+            cfg.setClientMode(true);
+
+        ccfg1.setNearConfiguration(null);
+        ccfg2.setNearConfiguration(null);
 
         ccfg1.setCacheMode(PARTITIONED);
         ccfg2.setCacheMode(PARTITIONED);
-
-        // TODO IGNITE-45.
-//        ccfg1.setDistributionMode(distrMode);
-//        ccfg2.setDistributionMode(distrMode);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
@@ -95,7 +86,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion zero = new AffinityTopologyVersion(0);
         AffinityTopologyVersion one = new AffinityTopologyVersion(1);
-        AffinityTopologyVersion two = new AffinityTopologyVersion(2);
+        AffinityTopologyVersion two = new AffinityTopologyVersion(2, 2);
         AffinityTopologyVersion three = new AffinityTopologyVersion(3);
         AffinityTopologyVersion four = new AffinityTopologyVersion(4);
         AffinityTopologyVersion five = new AffinityTopologyVersion(5);
@@ -108,6 +99,14 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteKernal g1 = (IgniteKernal)startGrid(1); // NEAR_ONLY cache.
 
+        grid(1).createCache(new NearCacheConfiguration());
+
+        NearCacheConfiguration near = new NearCacheConfiguration();
+
+        near.setName(CACHE_NAME);
+
+        grid(1).createCache(near);
+
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
         assertFalse(g0.context().discovery().hasNearCache(null, one));
@@ -116,7 +115,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, two));
         assertTrue(g1.context().discovery().hasNearCache(null, two));
 
-        IgniteKernal g2 = (IgniteKernal)startGrid(2); // NEAR_PARTITIONED cache.
+        IgniteKernal g2 = (IgniteKernal)startGrid(2); // PARTITIONED_ONLY cache.
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));
@@ -133,7 +132,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, three));
         assertTrue(g2.context().discovery().hasNearCache(null, three));
 
-        stopGrid(1);
+        stopGrid(2);
 
         // Wait all nodes are on version 4.
         for (;;) {
@@ -158,12 +157,12 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g0.context().discovery().hasNearCache(null, three));
         assertTrue(g0.context().discovery().hasNearCache(null, four));
 
-        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, three));
-        assertTrue(g2.context().discovery().hasNearCache(CACHE_NAME, four));
-        assertTrue(g2.context().discovery().hasNearCache(null, three));
-        assertTrue(g2.context().discovery().hasNearCache(null, four));
+        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, three));
+        assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, four));
+        assertTrue(g1.context().discovery().hasNearCache(null, three));
+        assertTrue(g1.context().discovery().hasNearCache(null, four));
 
-        stopGrid(2);
+        stopGrid(1);
 
         // Wait all nodes are on version 5.
         for (;;) {

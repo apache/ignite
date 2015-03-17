@@ -45,7 +45,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Near only flag. */
-    private boolean nearOnly;
+    private boolean cilent;
 
     /** Use cache flag. */
     private boolean cache = true;
@@ -54,13 +54,14 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cache && !nearOnly) {
+        if (cilent)
+            cfg.setClientMode(true);
+
+        if (cache) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setBackups(1);
-            // TODO IGNITE-45
-//            cacheCfg.setDistributionMode(nearOnly ? NEAR_ONLY : NEAR_PARTITIONED);
             cacheCfg.setRebalanceMode(SYNC);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -107,9 +108,12 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 4; i++) {
-                nearOnly = i == 0;
+                cilent = i == 0;
 
-                startGrid(i);
+                Ignite ignite = startGrid(i);
+
+                if (cilent)
+                    ignite.createCache(new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 100; i++)
@@ -126,12 +130,16 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 4; i++) {
-                nearOnly = i == 0;
+                cilent = i == 0;
 
-                startGrid(i);
+                Ignite ignite = startGrid(i);
+
+                if (cilent)
+                    ignite.createCache(new NearCacheConfiguration());
             }
 
             cache = false;
+            cilent = true;
 
             Ignite compute = startGrid(4);
 
@@ -153,9 +161,12 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 2; i++) {
-                nearOnly = i == 0;
+                cilent = i == 0;
 
-                startGrid(i);
+                Ignite ignite = startGrid(i);
+
+                if (cilent)
+                    ignite.createCache(new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 10; i++)
@@ -223,9 +234,12 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < totalNodeCnt; i++) {
-                nearOnly = nearNodeIdx == i;
+                cilent = nearNodeIdx == i;
 
-                startGrid(i);
+                Ignite ignite = startGrid(i);
+
+                if (cilent)
+                    ignite.createCache(new NearCacheConfiguration());
             }
         }
         finally {

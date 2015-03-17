@@ -218,7 +218,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         boolean nearEnabled,
         boolean loc
     ) {
-        registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
+        if (!registeredCaches.containsKey(cacheName))
+            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
     }
 
     /**
@@ -2381,13 +2382,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         public void addClientNode(UUID nodeId, boolean nearEnabled) {
             clientNodes.put(nodeId, nearEnabled);
-        }
-
-        /**
-         * @param nodeId Near node ID to remove.
-         */
-        public void removeNearNode(UUID nodeId) {
-            clientNodes.remove(nodeId);
         }
 
         /**
