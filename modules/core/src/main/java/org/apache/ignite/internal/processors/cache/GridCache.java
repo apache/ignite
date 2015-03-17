@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -157,7 +156,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * may be modified concurrently with iteration over swap.
      * <p>
      * Returned iterator supports {@code remove} operation which delegates to
-     * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> method.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
      * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
@@ -175,7 +174,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * the keys and values deserialized on demand, whenever accessed.
      * <p>
      * Returned iterator supports {@code remove} operation which delegates to
-     * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])}</code> method.
      *
      * @return Iterator over keys.
      * @throws IgniteCheckedException If failed.

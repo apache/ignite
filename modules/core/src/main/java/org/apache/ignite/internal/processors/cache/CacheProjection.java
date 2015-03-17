@@ -1270,9 +1270,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * {@link CacheFlag#READ}.
      *
      * @param keys Keys to clearLocally.
-     * @return {@code True} if entry was successfully cleared from cache, {@code false}
-     *      if entry was in use at the time of this method invocation and could not be
-     *      cleared.
      */
     public void clearLocallyAll(Set<K> keys);
 
