@@ -48,7 +48,9 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
                 if (!e.message().startsWith("Test ")) {
                     info("----------------------------");
 
-                    info("!!! Found unexpected suppressed exception: msg=" + e.message() + ", err=" + e.error());
+                    info("!!! Found unexpected suppressed exception: msg=" + e.message() +
+                        ", threadId=" + e.threadId() + ", threadName=" + e.threadName() +
+                        ", err=" + e.error());
 
                     StringWriter sw = new StringWriter(1024);
                     e.error().printStackTrace(new PrintWriter(sw));
