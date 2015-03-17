@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.lang;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
 import java.lang.annotation.*;
 
 /**
+ * Immutable types should be annotated with this annotation to avoid unnecessary
+ * copying (e.g. in case of stateless compute closures or cache values).
+ * <p>
  * If cache configuration flag {@link CacheConfiguration#isCopyOnRead()} is set
  * then for each operation implying return value copy of the value stored in cache is created.
  * Also if this flag is set copies are created for values passed to {@link CacheInterceptor} and
  * to {@link CacheEntryProcessor}.
  * <p>
- * Copies are not created for types marked with {@link CacheImmutable} annotation and for known
+ * Copies are not created for types marked with {@link IgniteImmutable} annotation and for known
  * immutable types:
  * <ul>
  *     <li>Boxed primitives ({@link Integer}, {@link Long}, ...)</li>
@@ -40,6 +44,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface CacheImmutable {
+public @interface IgniteImmutable {
     // No-op.
 }
