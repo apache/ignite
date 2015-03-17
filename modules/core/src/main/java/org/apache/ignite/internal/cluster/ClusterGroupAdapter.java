@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -184,7 +182,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteCompute} for this cluster group.
+     * @return {@link IgniteCompute} for this cluster group.
      */
     public final IgniteCompute compute() {
         if (compute == null) {
@@ -197,7 +195,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteMessaging} for this cluster group.
+     * @return {@link IgniteMessaging} for this cluster group.
      */
     public final IgniteMessaging message() {
         if (messaging == null) {
@@ -210,7 +208,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteEvents} for this cluster group.
+     * @return {@link IgniteEvents} for this cluster group.
      */
     public final IgniteEvents events() {
         if (evts == null) {
@@ -223,7 +221,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteServices} for this cluster group.
+     * @return {@link IgniteServices} for this cluster group.
      */
     public IgniteServices services() {
         if (svcs == null) {
@@ -665,14 +663,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     private static class CachesFilter implements IgnitePredicate<ClusterNode> {
         /** */
-        private static final Set<CacheDistributionMode> DATA_MODES = EnumSet.of(CacheDistributionMode.NEAR_PARTITIONED,
-            CacheDistributionMode.PARTITIONED_ONLY);
-
-        /** */
-        private static final Set<CacheDistributionMode> CLIENT_MODES = EnumSet.of(CacheDistributionMode.CLIENT_ONLY,
-            CacheDistributionMode.NEAR_ONLY);
-
-        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
@@ -708,6 +698,9 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
             if (affNodes && disco.cacheAffinityNode(n, cacheName))
                 return true;
+
+            if (!affNodes && disco.cacheAffinityNode(n, cacheName))
+                return false;
 
             if (nearNodes && disco.cacheNearNode(n, cacheName))
                 return true;
