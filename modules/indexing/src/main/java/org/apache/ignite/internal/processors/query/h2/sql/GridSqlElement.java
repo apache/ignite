@@ -26,7 +26,11 @@ public abstract class GridSqlElement implements Cloneable {
     /** */
     protected List<GridSqlElement> children = new ArrayList<>();
 
-    /** {@inheritDoc} */
+    /**
+     * Get the SQL expression.
+     *
+     * @return the SQL expression.
+     */
     public abstract String getSQL();
 
     /**
