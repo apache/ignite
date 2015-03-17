@@ -135,7 +135,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(Cache.Entry)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -384,10 +384,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the {@link Cache.Entry} specified by
-     * the provided key. If an {@link Cache.Entry} does not exist for the specified key,
+     * Invokes an {@link IgniteEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
-     * {@link Cache.Entry}, consisting of the key with a null value is used instead.
+     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
      * This method different
      * <p>
      *
@@ -418,11 +418,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the set of {@link Cache.Entry}s
+     * Invokes an {@link IgniteEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.
      * <p>
-     * If an {@link Cache.Entry} does not exist for the specified key, an attempt is made
-     * to load it (if a loader is configured) or a surrogate {@link Cache.Entry},
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
      * consisting of the key and a value of null is provided.
      * <p>
      * The order that the entries for the keys are processed is undefined.

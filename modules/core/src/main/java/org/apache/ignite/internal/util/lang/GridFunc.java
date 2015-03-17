@@ -7680,7 +7680,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for cache entry. The closure internally
-     * delegates to {@link Entry#getKey()} method.
+     * delegates to {@link javax.cache.Cache.Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
@@ -7692,7 +7692,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link Entry#getValue()} method.
+     * delegates to {@link javax.cache.Cache.Entry#getValue()} method.
      *
      * @param <V> Value type.
      * @return Closure that returns key for an entry.
@@ -7704,7 +7704,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link org.apache.ignite.cache.Entry#get()} method.
+     * delegates to {@link javax.cache.Cache.Entry#get()} method.
      *
      * @param <K> Key type.
      * @param <V> Value type.
@@ -7737,44 +7737,18 @@ public class GridFunc {
 
     /**
      * Gets predicate which returns {@code true} if
-     * {@link org.apache.ignite.cache.Entry#peek() Entry.peek()} method
+     * {@link javax.cache.Cache.Entry#peek() Entry.peek()} method
      * returns {@code non-null} value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if
-     *      {@link org.apache.ignite.cache.Entry#peek() Entry.peek()}
+     *      {@link javax.cache.Cache.Entry#peek() Entry.peek()}
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
         return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
-    }
-
-    /**
-     * Gets predicate which returns true if {@link org.apache.ignite.cache.Entry#get()}
-     * method returns value that is contained in given collection. Note that if collection
-     * of provided values is empty this method returns predicate that evaluates to {@code false}
-     * when applying.
-     *
-     * @param vals Values to check in predicate.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns true if {@link org.apache.ignite.cache.Entry#get()} methods returns
-     *      value that is contained in given collection.
-     */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsGet(
-        @Nullable final Collection<? extends V> vals) {
-        return isEmpty(vals) ? F.<Cache.Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Cache.Entry<K, V>>() {
-                @Override public boolean apply(Cache.Entry<K, V> e) {
-                    V v = e.getValue();
-
-                    assert vals != null;
-
-                    return v != null && vals.contains(v);
-                }
-            };
     }
 
     /**

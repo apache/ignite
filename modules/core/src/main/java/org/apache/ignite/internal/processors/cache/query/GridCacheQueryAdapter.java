@@ -123,7 +123,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /**
      * @param cctx Context.
-     * @param prjPred Cache projection filter.
      * @param type Query type.
      * @param log Logger.
      * @param pageSize Page size.

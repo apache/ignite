@@ -25,7 +25,7 @@ import java.util.*;
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
  * {@code 'CacheProjection.peek(..)'} and {@code Entry.peek(..)} methods,
  * such as {@link CacheProjection#peek(Object, Collection)},
- * {@link org.apache.ignite.cache.Entry#peek()}, and others.
+ * {@link javax.cache.Cache.Entry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>
