@@ -29,19 +29,19 @@ import java.util.*;
  */
 public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFunctionContext {
     /** Topology snapshot. */
-    private List<ClusterNode> topSnapshot;
+    private final List<ClusterNode> topSnapshot;
 
     /** Previous affinity assignment. */
-    private List<List<ClusterNode>> prevAssignment;
+    private final List<List<ClusterNode>> prevAssignment;
 
     /** Discovery event that caused this topology change. */
-    private DiscoveryEvent discoEvt;
+    private final DiscoveryEvent discoEvt;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Number of backups to assign. */
-    private int backups;
+    private final int backups;
 
     /**
      * @param topSnapshot Topology snapshot.
@@ -58,7 +58,7 @@ public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFuncti
 
     /** {@inheritDoc} */
     @Nullable @Override public List<ClusterNode> previousAssignment(int part) {
-        return prevAssignment.get(part);
+        return prevAssignment == null ? null : prevAssignment.get(part);
     }
 
     /** {@inheritDoc} */
