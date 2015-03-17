@@ -7226,13 +7226,13 @@ public class GridFunc {
     }
 
     /**
-     * Gets utility predicate that accepts {@link Map.Entry} value and compares
+     * Gets utility predicate that accepts {@link java.util.Map.Entry} value and compares
      * its value to the given value.
      *
      * @param val Value to compare entry's value.
      * @param <K> Map key type.
      * @param <V> Map value type.
-     * @return Predicate that accepts {@link Map.Entry} value and compares its value
+     * @return Predicate that accepts {@link java.util.Map.Entry} value and compares its value
      *      to the given value.
      */
     public static <K, V> IgnitePredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
@@ -7244,13 +7244,13 @@ public class GridFunc {
     }
 
     /**
-     * Gets utility predicate that accepts {@code Map.Entry} value and compares its key
+     * Gets utility predicate that accepts {@code java.util.Map.Entry} value and compares its key
      * to the given value.
      *
      * @param key Value to compare entry's key.
      * @param <K> Map key type.
      * @param <V> Map value type.
-     * @return Predicate that accepts {@code Map.Entry} value and compares its key
+     * @return Predicate that accepts {@code java.util.Map.Entry} value and compares its key
      *      to the given value.
      */
     public static <K, V> IgnitePredicate<Map.Entry<K, V>> mapKey(@Nullable final K key) {
@@ -7704,7 +7704,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link javax.cache.Cache.Entry#get()} method.
+     * delegates to {@link javax.cache.Cache.Entry#get(Object)} method.
      *
      * @param <K> Key type.
      * @param <V> Value type.
