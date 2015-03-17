@@ -92,50 +92,6 @@ import java.util.concurrent.*;
  * then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} will be bypassed, and computation will be routed to the grid node
  * where the specified affinity key is cached.
  * <p>
- * Here is how this annotation can be used to route a job to a node where Person object
- * is cached with ID "1234":
- * <pre name="code" class="java">
- * G.grid().run(new Runnable() {
- *     // This annotation is optional. If omitted, then default
- *     // no-name cache will be used.
- *     &#64;CacheName
- *     private String cacheName = "myCache";
- *
- *     // This annotation specifies that computation should be routed
- *     // precisely to the node where key '1234' is cached.
- *     &#64;CacheAffinityKeyMapped
- *     private String personKey = "1234";
- *
- *     &#64;Override public void run() {
- *         // Some computation logic here.
- *         ...
- *     }
- * };
- * </pre>
- * The same can be achieved by annotating method instead of field as follows:
- * <pre name="code" class="java">
- * G.grid().run(new Runnable() {
- *     &#64;Override public void run() {
- *         // Some computation logic here.
- *         ...
- *     }
- *
- *     // This annotation is optional. If omitted, then default
- *     // no-name cache will be used.
- *     &#64;CacheName
- *     public String cacheName() {
- *         return "myCache";
- *     }
- *
- *     // This annotation specifies that computation should be routed
- *     // precisely to the node where key '1234' is cached.
- *     &#64;CacheAffinityKeyMapped
- *     public String personKey() {
- *         return "1234";
- *     }
- * };
- * </pre>
- * <p>
  * For more information about cache affinity also see {@link CacheAffinityKeyMapper} and
  * {@link CacheAffinityFunction} documentation.
  * Affinity for a key can be found from any node, regardless of whether it has cache started
