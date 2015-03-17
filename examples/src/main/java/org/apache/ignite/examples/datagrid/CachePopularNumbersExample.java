@@ -127,9 +127,9 @@ public class CachePopularNumbersExample {
                 IgniteCache<Integer, Long> cache = ignite.jcache(CACHE_NAME);
 
                 try {
-                    List<List<?>> results = new ArrayList<>(cache.queryFields(
+                    List<List<?>> results = cache.queryFields(
                         new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt))
-                        .getAll());
+                        .getAll();
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
@@ -152,8 +152,8 @@ public class CachePopularNumbersExample {
      */
     private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
         /** Process entries to increase value by entry key. */
-        private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
-            @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
+        private static final EntryProcessor<Integer, Long, ?> INC = new EntryProcessor<Integer, Long, Object>() {
+            @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();
 
                 e.setValue(val == null ? 1L : val + 1);
