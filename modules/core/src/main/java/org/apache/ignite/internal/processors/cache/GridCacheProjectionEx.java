@@ -52,7 +52,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     @Nullable public CacheEntryPredicate predicate();
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -66,7 +66,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -79,7 +79,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         @Nullable CacheEntryPredicate... filter);
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -93,7 +93,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -126,7 +126,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
@@ -138,7 +138,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Optional cached entry.
@@ -168,7 +168,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
@@ -180,7 +180,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
