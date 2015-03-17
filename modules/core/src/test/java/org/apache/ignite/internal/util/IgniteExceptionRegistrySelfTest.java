@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -44,8 +45,17 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
 
         if (expCnt != errors.size()) {
             for (IgniteExceptionRegistry.ExceptionInfo e : errors)
-                if (!e.message().startsWith("Test "))
-                    info(e.message() + " " + e.error());
+                if (!e.message().startsWith("Test ")) {
+                    info("----------------------------");
+
+                    info("!!! Found unexpected suppressed exception: msg=" + e.message() + ", err=" + e.error());
+
+                    StringWriter sw = new StringWriter(1024);
+                    e.error().printStackTrace(new PrintWriter(sw));
+                    info(sw.toString());
+
+                    info("----------------------------");
+                }
 
             assert false;
         }
