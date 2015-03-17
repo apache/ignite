@@ -36,12 +36,14 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testOnException() throws Exception {
+        awaitPartitionMapExchange();
+
         int expCnt = 150;
 
         for (int i = 0; i < expCnt; i++)
             registry.onException("Test " + i, new Exception("Test " + i));
 
-        Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(0);
+        Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(registry.errorCount());
 
         if (expCnt != errors.size()) {
             for (IgniteExceptionRegistry.ExceptionInfo e : errors)
