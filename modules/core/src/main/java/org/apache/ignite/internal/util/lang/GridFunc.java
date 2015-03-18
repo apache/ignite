@@ -333,6 +333,17 @@ public class GridFunc {
     };
 
     /** */
+    private static final IgniteClosure MAP_ENTRY_KEY = new IgniteClosure() {
+        @Override public Object apply(Object o) {
+            return ((Map.Entry)o).getKey();
+        }
+
+        @Override public String toString() {
+            return "Map entry to key transformer closure.";
+        }
+    };
+
+    /** */
     private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosure() {
         @Override public Object apply(Object o) {
             return ((Cache.Entry)o).getKey();
@@ -7653,6 +7664,18 @@ public class GridFunc {
             ret.add(curry(c, pdc.apply()));
 
         return ret;
+    }
+
+    /**
+     * Gets closure that returns key for an entry. The closure internally
+     * delegates to {@link Map.Entry#getKey()} method.
+     *
+     * @param <K> Key type.
+     * @return Closure that returns key for an entry.
+     */
+    @SuppressWarnings({"unchecked"})
+    public static <K> IgniteClosure<Map.Entry<K, ?>, K> mapEntry2Key() {
+        return (IgniteClosure<Map.Entry<K, ?>, K>)MAP_ENTRY_KEY;
     }
 
     /**

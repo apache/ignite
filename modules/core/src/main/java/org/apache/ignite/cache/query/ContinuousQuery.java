@@ -37,8 +37,6 @@ import javax.cache.event.*;
  * Note that in case query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins topology,
  * so no updates will be missed.
- * <p>
- * To create a new instance of continuous query use {@link Query#continuous()} factory method.
  * <h1 class="header">Example</h1>
  * As an example, suppose we have cache with {@code 'Person'} objects and we need
  * to query all persons with salary above 1000.
@@ -59,7 +57,7 @@ import javax.cache.event.*;
  * You can create and execute continuous query like so:
  * <pre name="code" class="java">
  * // Create new continuous query.
- * ContinuousQuery qry = Query.continuous();
+ * ContinuousQuery&lt;UUID, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
  * // Initial iteration query will return all persons with salary above 1000.
  * qry.setInitialQuery(Query.scan(new IgniteBiPredicate&lt;UUID, Person&gt;() {
