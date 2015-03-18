@@ -1223,7 +1223,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param em Entry mapping.
      * @param key Key object.
      * @return Next index for parameters.
-     * @throws CacheException If failed to set statement parameter.
+     * @throws CacheException If failed to set statement parameters.
      */
     protected int fillKeyParameters(PreparedStatement stmt, int idx, EntryMapping em,
         Object key) throws CacheException {
@@ -1241,7 +1241,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param m Type mapping description.
      * @param key Key object.
      * @return Next index for parameters.
-     * @throws CacheException If failed to set statement parameter.
+     * @throws CacheException If failed to set statement parameters.
      */
     protected int fillKeyParameters(PreparedStatement stmt, EntryMapping m, Object key) throws CacheException {
         return fillKeyParameters(stmt, 1, m, key);
@@ -1253,7 +1253,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param em Type mapping description.
      * @param val Value object.
      * @return Next index for parameters.
-     * @throws CacheException If failed to set statement parameter.
+     * @throws CacheException If failed to set statement parameters.
      */
     protected int fillValueParameters(PreparedStatement stmt, int idx, EntryMapping em, Object val)
         throws CacheWriterException {
