@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  * Grid-aware adapter for {@link Callable} implementations. It adds {@link Serializable} interface
  * to {@link Callable} object. Use this class for executing distributed computations on the grid,
- * like in {@link org.apache.ignite.IgniteCompute#call(Callable)} method.
+ * like in {@link org.apache.ignite.IgniteCompute#call(IgniteCallable)} method.
  */
 public interface IgniteCallable<V> extends Callable<V>, Serializable {
 }

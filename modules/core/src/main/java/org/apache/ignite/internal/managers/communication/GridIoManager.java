@@ -1168,11 +1168,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
 
-            if (locNode != null)
-                send(locNode, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
-
             if (!rmtNodes.isEmpty())
                 send(rmtNodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
+
+            // Will call local listeners in current thread synchronously, so must go the last
+            // to allow remote nodes execute the requested operation in parallel.
+            if (locNode != null)
+                send(locNode, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
         }
     }
 

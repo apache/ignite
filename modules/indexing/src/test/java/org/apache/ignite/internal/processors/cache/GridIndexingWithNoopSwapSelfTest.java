@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractQuerySelfTest.*;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -58,7 +58,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -69,12 +69,9 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cc.setQueryConfiguration(qcfg);
+        cc.setIndexedTypes(
+            Integer.class, ObjectValue.class
+        );
 
         c.setCacheConfiguration(cc);
 

@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.transactions.*;
@@ -99,10 +100,6 @@ import java.util.concurrent.*;
  *  operations within a transaction (see {@link Transaction} for more information).
  * </li>
  * <li>
- *  {@link #queries()} method to get an instance of {@link CacheQueries} service for working
- *  with distributed cache queries.
- * </li>
- * <li>
  *  Various {@code 'gridProjection(..)'} methods which provide {@link org.apache.ignite.cluster.ClusterGroup} only
  *  for nodes on which given keys reside. All {@code 'gridProjection(..)'} methods are not
  *  transactional and will not enlist keys into ongoing transaction.
@@ -136,13 +133,13 @@ import java.util.concurrent.*;
  * only keys with identical affinity-key (see {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-group-locked} transactions are started via
- * {@link #txStartAffinity(Object, TransactionConcurrency, TransactionIsolation, long, int)} method.
+ * <code>txStartAffinity(Object, TransactionConcurrency, TransactionIsolation, long, int)</code> method.
  * <p>
  * With {@code partition-based-group-locking} the keys are grouped by partition ID. This means that
  * only keys belonging to identical partition (see {@link org.apache.ignite.cache.affinity.CacheAffinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-group-locked} transactions are started via
- * {@link #txStartPartition(int, TransactionConcurrency, TransactionIsolation, long, int)} method.
+ * <code>txStartPartition(int, TransactionConcurrency, TransactionIsolation, long, int)</code> method.
  * <p>
  * <i>Group locking</i> should always be used for transactions whenever possible. If your requirements fit either
  * <i>affinity-based</i> or <i>partition-based</i> scenarios outlined above then <i>group-locking</i>
@@ -235,7 +232,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets cache projection based on given entry filter. This filter will be simply passed through
-     * to all cache operations on this projection. Unlike {@link #projection(org.apache.ignite.lang.IgniteBiPredicate)}
+     * to all cache operations on this projection. Unlike <code>projection(org.apache.ignite.lang.IgniteBiPredicate)</code>
      * method, this filter will <b>not</b> be used for pre-filtering.
      *
      * @param filter Filter to be passed through to all cache operations. If {@code null}, then the
@@ -273,7 +270,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
+     *     <li><code>org.gridgain.grid.portables.PortableObject</code> for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -298,7 +295,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * (<code>org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()</code> returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.
@@ -354,7 +351,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Reloads a single key from persistent storage. This method
-     * delegates to {@link CacheStore#load(Transaction, Object)}
+     * delegates to <code>CacheStore#load(Transaction, Object)</code>
      * method.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in transactions, however it does not violate
@@ -368,7 +365,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Asynchronously reloads a single key from persistent storage. This method
-     * delegates to {@link CacheStore#load(Transaction, Object)}
+     * delegates to <code>CacheStore#load(Transaction, Object)</code>
      * method.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in transactions, however it does not violate
@@ -442,7 +439,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If the value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disable, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
-     * {@link CacheStore#load(Transaction, Object)} method.
+     * <code>CacheStore#load(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -467,7 +464,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If the value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
-     * {@link CacheStore#load(Transaction, Object)} method.
+     * <code>CacheStore#load(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -491,7 +488,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
-     * {@link CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
+     * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -515,7 +512,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
-     * {@link CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
+     * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -537,13 +534,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage,  {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage,  <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method <code>#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])</code> should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -576,13 +573,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap and read-through is allowed,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage,  {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage,  <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method <code>#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])</code> should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -606,12 +603,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, it does not return previous
+     * Unlike <code>#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])</code> method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning a value. It
      * should be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -639,12 +636,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, it does not return previous
+     * Unlike <code>#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])</code> method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -671,14 +668,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putxIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -702,14 +699,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putxIfAbsentAsync(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -735,7 +732,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -761,7 +758,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -783,14 +780,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
      * If the returned value is not needed, method {@link #replacex(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -813,14 +810,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * {@link CacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
      * which in its turn may load the value from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
      * If the returned value is not needed, method {@link #replacex(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -845,7 +842,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -871,7 +868,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -894,7 +891,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -919,7 +916,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via <code>CacheStore#put(Transaction, Object, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -942,7 +939,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link CacheStore}
-     * via {@link CacheStore#putAll(Transaction, Map)} method.
+     * via <code>CacheStore#putAll(Transaction, Map)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -965,7 +962,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link CacheStore}
-     * via {@link CacheStore#putAll(Transaction, Map)} method.
+     * via <code>CacheStore#putAll(Transaction, Map)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1270,9 +1267,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * {@link CacheFlag#READ}.
      *
      * @param keys Keys to clearLocally.
-     * @return {@code True} if entry was successfully cleared from cache, {@code false}
-     *      if entry was in use at the time of this method invocation and could not be
-     *      cleared.
      */
     public void clearLocallyAll(Set<K> keys);
 
@@ -1354,14 +1348,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the disk-based swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method <code>#removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1387,14 +1381,14 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link CacheStore#load(Transaction, Object)} method will be used.
+     * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
+     * If the returned value is not needed, method <code>#removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1418,7 +1412,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1445,7 +1439,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1469,7 +1463,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1494,7 +1488,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via <code>CacheStore#remove(Transaction, Object)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1516,7 +1510,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * pass.
      * <p>
      * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via {@link CacheStore#removeAll(Transaction, Collection)} method.
+     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1538,7 +1532,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * passed in filters do pass.
      * <p>
      * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via {@link CacheStore#removeAll(Transaction, Collection)} method.
+     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1567,7 +1561,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * other concurrent transactional updates.
      * <p>
      * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via {@link CacheStore#removeAll(Transaction, Collection)} method.
+     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

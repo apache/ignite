@@ -59,8 +59,6 @@ public enum CacheFlag {
      * update values that are returned from cache, this flag will provide
      * automatic cloning of values prior to returning so they can be directly
      * updated.
-     *
-     * @see org.apache.ignite.configuration.CacheConfiguration#getCloner()
      */
     CLONE,
 

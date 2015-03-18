@@ -295,6 +295,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             loc ? cctx.grid().cluster().forLocal() : null);
     }
 
+    /**
+     * @param routineId Consume ID.
+     */
     public void cancelInternalQuery(UUID routineId) {
         try {
             cctx.kernalContext().continuous().stopRoutine(routineId).get();
@@ -308,7 +311,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /**
      * @param cfg Listener configuration.
      * @param onStart Whether listener is created on node start.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void executeJCacheQuery(CacheEntryListenerConfiguration cfg, boolean onStart)
         throws IgniteCheckedException {

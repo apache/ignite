@@ -652,7 +652,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    @CacheImmutable
+    @IgniteImmutable
     public static class TestImmutableKey extends TestKey {
         /**
          *
@@ -673,7 +673,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    @CacheImmutable
+    @IgniteImmutable
     public static class TestImmutableValue {
         /** */
         public int val;

@@ -68,6 +68,9 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node streamers. */
     private Throwable streamersEx;
 
+    /** Errors count. */
+    private long errCnt;
+
     /**
      * @return Grid name.
      */
@@ -199,5 +202,19 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     public void streamersEx(Throwable streamersEx) {
         this.streamersEx = streamersEx;
+    }
+
+    /**
+     * @return Errors count.
+     */
+    public long errorCount() {
+        return errCnt;
+    }
+
+    /**
+     * @param errorCount Errors count.
+     */
+    public void errorCount(long errorCount) {
+        errCnt = errorCount;
     }
 }

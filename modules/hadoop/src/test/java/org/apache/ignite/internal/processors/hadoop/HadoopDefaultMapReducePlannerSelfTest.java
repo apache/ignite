@@ -1001,5 +1001,10 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         @Override public String latestVersion() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public GridKernalContext context() {
+            return null;
+        }
     }
 }

@@ -31,7 +31,7 @@ public class GridCacheSqlQuery implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final Object[] EMPTY_PARAMS = {};
+    public static final Object[] EMPTY_PARAMS = {};
 
     /** */
     String alias;

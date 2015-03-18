@@ -398,7 +398,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void printLastErrors() {
-        ctx.exceptionRegistry().printErrors();
+        ctx.exceptionRegistry().printErrors(log);
     }
 
     /** {@inheritDoc} */
@@ -662,7 +662,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 this,
                 cfg,
                 gw,
-                new IgniteExceptionRegistry(log),
                 utilityCachePool,
                 marshCachePool,
                 execSvc,

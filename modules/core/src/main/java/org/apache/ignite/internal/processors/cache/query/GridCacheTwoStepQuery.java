@@ -75,7 +75,7 @@ public class GridCacheTwoStepQuery implements Serializable {
      * @return Map queries.
      */
     public Collection<GridCacheSqlQuery> mapQueries() {
-        return mapQrys.values();
+        return new ArrayList<>(mapQrys.values()); // Copy to make it Serializable.
     }
 
     /** {@inheritDoc} */

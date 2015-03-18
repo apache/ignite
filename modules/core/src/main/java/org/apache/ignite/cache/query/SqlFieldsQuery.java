@@ -39,6 +39,13 @@ public final class SqlFieldsQuery extends Query<SqlFieldsQuery>{
     private Object[] args;
 
     /**
+     * Default constructor.
+     */
+    public SqlFieldsQuery() {
+        // No-op.
+    }
+
+    /**
      * Constructs sql fields query.
      *
      * @param sql SQL Query.

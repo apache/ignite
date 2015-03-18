@@ -73,7 +73,13 @@ public class GridExternalAffinityFunction implements CacheAffinityFunction {
         return res;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Assigns nodes to one partition.
+     *
+     * @param part Partition to assign nodes for.
+     * @param nodes Cache topology nodes.
+     * @return Assigned nodes, first node is primary, others are backups.
+     */
     public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
         List<ClusterNode> sorted = new ArrayList<>(nodes);
 

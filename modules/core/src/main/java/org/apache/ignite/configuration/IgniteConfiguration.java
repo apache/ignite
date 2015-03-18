@@ -362,9 +362,6 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private QueryConfiguration qryCfg;
-
-    /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /** User's class loader. */
@@ -441,7 +438,6 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1457,7 +1453,7 @@ public class IgniteConfiguration {
     /**
      * Sets fully configured instances of {@link IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link IndexingSpi}.
+     * @param indexingSpi Fully configured instance of {@link IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
     public void setIndexingSpi(IndexingSpi indexingSpi) {
@@ -1883,20 +1879,6 @@ public class IgniteConfiguration {
      */
     public void setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public QueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(QueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
     }
 
     /**
