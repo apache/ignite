@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
@@ -38,6 +39,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Load cache test.
  */
+@SuppressWarnings("unchecked")
 public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /** */
     private static ConcurrentMap<String, Object[]> map;
@@ -180,7 +182,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Factory<CacheStore> cacheStoreFactory() {
-        return new TestStoreFactory();
+        return (Factory)GridTestUtils.storeFactory(new TestStore());
     }
 
     /**

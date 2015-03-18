@@ -56,6 +56,8 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setCacheStoreFactory(null);
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
 
         return ccfg;
     }

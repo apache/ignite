@@ -27,6 +27,8 @@ public class GridCacheAtomicLocalMetricsNoStoreSelfTest extends GridCacheAtomicL
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
         ccfg.setCacheStoreFactory(null);
 
         return ccfg;
