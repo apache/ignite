@@ -302,7 +302,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
+     * @see IgniteCluster#startNodes(java.io.File, boolean, int, int)
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file,
       boolean restart,
@@ -330,7 +330,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     * @see IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts,
