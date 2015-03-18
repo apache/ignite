@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
@@ -168,7 +169,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** Eviction policy. */
-    private static class EvictionPolicy implements CacheEvictionPolicy<Object, Object> {
+    private static class EvictionPolicy implements CacheEvictionPolicy<Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry<Object, Object> entry) {
             touchCnt.incrementAndGet();
