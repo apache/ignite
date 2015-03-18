@@ -35,8 +35,6 @@
                     <property name="name" value="cache"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
             </list>
         </property>

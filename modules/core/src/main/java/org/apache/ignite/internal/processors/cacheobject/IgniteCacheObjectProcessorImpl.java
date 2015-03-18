@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -244,7 +245,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             return new CacheObjectContext(ctx,
                 new GridCacheDefaultAffinityKeyMapper(),
                 ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
-                ctx.config().isPeerClassLoadingEnabled() || ccfg.isQueryIndexEnabled());
+                ctx.config().isPeerClassLoadingEnabled() || GridQueryProcessor.isEnabled(ccfg));
         }
         else
             return new CacheObjectContext(
@@ -320,6 +321,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      *
      */
     private static class IgniteCacheObjectImpl extends CacheObjectImpl {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */

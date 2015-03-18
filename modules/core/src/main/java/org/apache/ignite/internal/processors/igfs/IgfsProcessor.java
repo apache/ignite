@@ -267,16 +267,10 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (dataCache == null)
                 throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
 
-            if (dataCache.configuration().isQueryIndexEnabled())
-                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
-
             GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
 
             if (metaCache == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
-
-            if (metaCache.configuration().isQueryIndexEnabled())
-                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());

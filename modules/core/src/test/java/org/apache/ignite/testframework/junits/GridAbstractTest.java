@@ -1115,7 +1115,6 @@ public abstract class GridAbstractTest extends TestCase {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setStartSize(1024);
-        cfg.setQueryIndexEnabled(true);
         cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);

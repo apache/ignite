@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * Tests for replicated cache {@link GridReplicatedPreloader preloader}.
+ * Tests for replicated cache preloader.
  */
 public class GridCacheReplicatedPreloadOffHeapSelfTest extends GridCacheReplicatedPreloadSelfTest {
     /** {@inheritDoc} */
@@ -30,7 +30,6 @@ public class GridCacheReplicatedPreloadOffHeapSelfTest extends GridCacheReplicat
     CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);
 
