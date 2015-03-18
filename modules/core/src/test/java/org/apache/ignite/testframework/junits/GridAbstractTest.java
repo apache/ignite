@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -48,6 +47,7 @@ import org.springframework.context.support.*;
 import javax.cache.configuration.*;
 import java.io.*;
 import java.lang.reflect.*;
+import java.lang.reflect.Proxy;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1358,7 +1358,30 @@ public abstract class GridAbstractTest extends TestCase {
      * @param store Store.
      */
     protected <T> Factory<T> singletonFactory(T store) {
-        return new SingletonStoreFactory<>(store);
+        return notSerializableProxy(new FactoryBuilder.SingletonFactory<T>(store), Factory.class);
+    }
+
+    /**
+     * @param obj Object that should be wrap proxy
+     * @param itfCls Interface that should be implemented by proxy
+     * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
+     * @return Created proxy.
+     */
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
+        Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
+
+        itfs[itfClses.length] = itfCls;
+        itfs[itfClses.length + 1] = Serializable.class;
+        itfs[itfClses.length + 2] = WriteReplaceOwner.class;
+
+        return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), itfs, new InvocationHandler() {
+            @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                if ("writeReplace".equals(mtd.getName()) && mtd.getParameterTypes().length == 0)
+                    return supressSerialization(proxy);
+
+                return mtd.invoke(obj, args);
+            }
+        });
     }
 
     /**
@@ -1367,12 +1390,22 @@ public abstract class GridAbstractTest extends TestCase {
      * @param obj Object that must not be changed after serialization/deserialization.
      * @return An object to return from writeReplace()
      */
-    protected Object supressSerialization(Object obj) {
+    private Object supressSerialization(Object obj) {
         SerializableProxy res = new SerializableProxy(UUID.randomUUID());
 
         serializedObj.put(res.uuid, obj);
 
         return res;
+    }
+
+    /**
+     *
+     */
+    private static interface WriteReplaceOwner {
+        /**
+         *
+         */
+        Object writeReplace();
     }
 
     /**
@@ -1398,33 +1431,6 @@ public abstract class GridAbstractTest extends TestCase {
             assert res != null;
 
             return res;
-        }
-    }
-
-    /**
-     *
-     */
-    private class SingletonStoreFactory<T> implements Factory<T> {
-        /** */
-        private final T store;
-
-        /**
-         * @param store Store.
-         */
-        SingletonStoreFactory(T store) {
-            this.store = store;
-        }
-
-        /** {@inheritDoc} */
-        @Override public T create() {
-            return store;
-        }
-
-        /**
-         *
-         */
-        protected Object writeReplace() {
-            return supressSerialization(this);
         }
     }
 

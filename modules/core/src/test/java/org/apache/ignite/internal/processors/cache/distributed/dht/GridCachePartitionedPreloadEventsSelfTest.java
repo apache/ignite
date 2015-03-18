@@ -49,7 +49,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         if (replicatedAffinity)
             // replicate entries to all nodes
-            cacheCfg.setAffinity(new CacheAffinityFunction() {
+            cacheCfg.setAffinity(notSerializableProxy(new CacheAffinityFunction() {
                 /** {@inheritDoc} */
                 @Override public void reset() {
                 }
@@ -74,7 +74,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 /** {@inheritDoc} */
                 @Override public void removeNode(UUID nodeId) {
                 }
-            });
+            }, CacheAffinityFunction.class));
 
         cacheCfg.setRebalanceMode(preloadMode);
 
