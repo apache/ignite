@@ -190,15 +190,15 @@ public enum GridSqlOperationType {
 
             buff.append(operation.child(0).getSQL()).append(" IN(");
 
-            assert operation.children().size() > 1;
+            assert operation.size() > 1;
 
-            if (operation.children().size() == 2) {
+            if (operation.size() == 2) {
                 String child = operation.child(1).getSQL();
 
                 buff.append(' ').append(StringUtils.unEnclose(child)).append(' ');
             }
             else {
-                for (int i = 1; i < operation.children().size(); i++) {
+                for (int i = 1; i < operation.size(); i++) {
                     buff.appendExceptFirst(", ");
                     buff.append(operation.child(i).getSQL());
                 }

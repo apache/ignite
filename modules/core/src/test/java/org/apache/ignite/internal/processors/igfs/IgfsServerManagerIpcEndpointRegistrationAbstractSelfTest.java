@@ -133,14 +133,12 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         cc.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cc.setBackups(0);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
 
         metaCfg.setName("replicated");
         metaCfg.setCacheMode(CacheMode.REPLICATED);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
-        metaCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(metaCfg, cc);
 

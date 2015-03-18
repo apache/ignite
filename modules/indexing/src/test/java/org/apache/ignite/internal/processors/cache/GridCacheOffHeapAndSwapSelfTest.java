@@ -120,7 +120,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
@@ -132,15 +132,11 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setIndexedTypes(
+            Long.class, Long.class
+        );
 
         cacheCfg.setEvictionPolicy(null);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

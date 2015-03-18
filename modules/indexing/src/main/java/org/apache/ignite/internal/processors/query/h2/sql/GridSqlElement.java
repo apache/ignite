@@ -22,9 +22,26 @@ import java.util.*;
 /**
  * Abstract SQL element.
  */
-public abstract class GridSqlElement implements Cloneable {
+public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlElement> {
     /** */
     protected List<GridSqlElement> children = new ArrayList<>();
+
+    /** */
+    private GridSqlType expressionResultType;
+
+    /**
+     * @return Optional expression result type (if this is an expression and result type is known).
+     */
+    public GridSqlType expressionResultType() {
+        return expressionResultType;
+    }
+
+    /**
+     * @param type Optional expression result type (if this is an expression and result type is known).
+     */
+    public void expressionResultType(GridSqlType type) {
+        expressionResultType = type;
+    }
 
     /**
      * Get the SQL expression.
@@ -34,10 +51,11 @@ public abstract class GridSqlElement implements Cloneable {
     public abstract String getSQL();
 
     /**
-     * @return Children.
+     * Clears all children.
      */
-    public List<GridSqlElement> children() {
-        return children;
+    public void clearChildren() {
+        if (size() != 0)
+            children = new ArrayList<>();
     }
 
     /**
@@ -70,7 +88,7 @@ public abstract class GridSqlElement implements Cloneable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override protected GridSqlElement clone() {
+    @Override public GridSqlElement clone() {
         try {
             GridSqlElement res = (GridSqlElement)super.clone();
 
@@ -81,5 +99,25 @@ public abstract class GridSqlElement implements Cloneable {
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * @param idx Index.
+     * @param child New child.
+     */
+    public void child(int idx, GridSqlElement child) {
+        children.set(idx, child);
+    }
+
+    /**
+     * @return Number of children.
+     */
+    public int size() {
+        return children.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<GridSqlElement> iterator() {
+        return children.iterator();
     }
 }

@@ -43,18 +43,13 @@ public final class SqlQuery extends Query<SqlQuery> {
     private Object[] args;
 
     /**
-     * Default constructor.
-     */
-    public SqlQuery() {
-        // No-op.
-    }
-
-    /**
-     * Constructs query for the given SQL query.
+     * Constructs query for the given type name and SQL query.
      *
+     * @param type Type.
      * @param sql SQL Query.
      */
-    public SqlQuery(String sql) {
+    public SqlQuery(String type, String sql) {
+        setType(type);
         setSql(sql);
     }
 
@@ -65,9 +60,8 @@ public final class SqlQuery extends Query<SqlQuery> {
      * @param sql SQL Query.
      */
     public SqlQuery(Class<?> type, String sql) {
-        this(sql);
-
         setType(type);
+        setSql(sql);
     }
 
     /**

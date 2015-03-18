@@ -24,13 +24,23 @@ import org.jetbrains.annotations.*;
  * Join of two tables or subqueries.
  */
 public class GridSqlJoin extends GridSqlElement {
+    /** */
+    private boolean leftOuter;
+
     /**
      * @param leftTbl Left table.
      * @param rightTbl Right table.
+     * @param leftOuter Left outer join.
+     * @param on Join condition.
      */
-    public GridSqlJoin(GridSqlElement leftTbl, GridSqlElement rightTbl) {
+    public GridSqlJoin(GridSqlElement leftTbl, GridSqlElement rightTbl, boolean leftOuter, @Nullable GridSqlElement on) {
         addChild(leftTbl);
         addChild(rightTbl);
+
+        if (on != null)
+            addChild(on);
+
+        this.leftOuter = leftOuter;
     }
 
     /**
@@ -48,17 +58,10 @@ public class GridSqlJoin extends GridSqlElement {
     }
 
     /**
-     * @return {@code ON} Condition.
+     * @return {@code JOIN ON} condition.
      */
     @Nullable public GridSqlElement on() {
-        return child(2);
-    }
-
-    /**
-     * @return {@code true} If it is a {@code LEFT JOIN}.
-     */
-    public boolean leftJoin() {
-        return false; // TODO
+        return size() < 3 ? null : child(2);
     }
 
     /** {@inheritDoc} */
@@ -67,9 +70,14 @@ public class GridSqlJoin extends GridSqlElement {
 
         buff.append(leftTable().getSQL());
 
-        buff.append(leftJoin() ? " \n LEFT JOIN " : " \n INNER JOIN ");
+        buff.append(leftOuter ? " \n LEFT OUTER JOIN " : " \n INNER JOIN ");
 
         buff.append(rightTable().getSQL());
+
+        GridSqlElement on = on();
+
+        if (on != null)
+            buff.append(" \n ON ").append(StringUtils.unEnclose(on.getSQL()));
 
         return buff.toString();
     }

@@ -34,7 +34,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
 
     /** Iterators futures. */
-    private final Map<WeakReference<WeakQueryFutureIterator>, CacheQueryFuture<V>> futs =
+    private final Map<WeakReference<WeakQueryFutureIterator>,CacheQueryFuture<V>> futs =
         new ConcurrentHashMap8<>();
 
     /** Logger. */

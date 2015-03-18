@@ -19,8 +19,6 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 
 import java.io.*;
 
@@ -28,10 +26,6 @@ import java.io.*;
  * Base class for all Ignite cache queries.
  * Use {@link SqlQuery} and {@link TextQuery} for SQL and
  * text queries accordingly.
- * <p>
- * Also contains convenience shortcuts for query object construction:
- * {@link #sql(Class, String)}, {@link #sql(String)}, {@link #text(Class, String)},
- * {@link #scan(IgniteBiPredicate)} and {@link #spi()}.
  *
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
@@ -41,9 +35,6 @@ import java.io.*;
 public abstract class Query<T extends Query> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Default query page size. */
-    public static final int DFLT_PAGE_SIZE = 1024;
 
     /** Page size. */
     private int pageSize;
@@ -56,68 +47,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Factory method for SQL fields queries.
-     *
-     * @param sql SQL Query string.
-     * @return SQL Fields query instance.
-     */
-    public static SqlFieldsQuery sql(String sql) {
-        return new SqlFieldsQuery(sql);
-    }
-
-    /**
-     * Factory method for SQL queries.
-     *
-     * @param type Type to be queried.
-     * @param sql SQL Query string.
-     * @return SQL Query instance.
-     */
-    public static SqlQuery sql(Class<?> type, String sql) {
-        return new SqlQuery(type, sql);
-    }
-
-    /**
-     * Factory method for Lucene fulltext queries.
-     *
-     * @param type Type to be queried.
-     * @param txt Search string.
-     * @return Fulltext query.
-     */
-    public static TextQuery text(Class<?> type, String txt) {
-        return new TextQuery(txt).setType(type);
-    }
-
-    /**
-     * Factory method for SPI queries.
-     *
-     * @param filter Filter.
-     * @return SPI Query.
-     */
-    public static <K, V> ScanQuery<K, V> scan(final IgniteBiPredicate<K, V> filter) {
-        return new ScanQuery<>(filter);
-    }
-
-    /**
-     * Factory method for SPI queries.
-     *
-     * @return SPI Query.
-     * @see IndexingSpi
-     */
-    public static SpiQuery spi() {
-        return new SpiQuery();
-    }
-
-    /**
-     * Factory method for continuous queries.
-     *
-     * @return Continuous query.
-     */
-    public static <K, V> ContinuousQuery<K, V> continuous() {
-        return new ContinuousQuery<>();
-    }
-
-    /**
-     * Gets optional page size, if {@code 0}, then {@link #DFLT_PAGE_SIZE} is used.
+     * Gets optional page size, if {@code 0}, then default is used.
      *
      * @return Optional page size.
      */
@@ -126,7 +56,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Sets optional page size, if {@code 0}, then {@link #DFLT_PAGE_SIZE} is used.
+     * Sets optional page size, if {@code 0}, then default is used.
      *
      * @param pageSize Optional page size.
      * @return {@code this} For chaining.
