@@ -78,7 +78,7 @@
         </plugins>
     </build>
 
-    <profiles>
+    <!--<profiles>
         <profile>
             <id>jfxrt.jar</id>
             <activation>
@@ -97,5 +97,5 @@
                 </dependency>
             </dependencies>
         </profile>
-    </profiles>
+    </profiles>-->
 </project>
