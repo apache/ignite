@@ -806,8 +806,6 @@ object VisorCacheCommand {
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
-        cacheT += ("Query Indexing Enabled", bool2Str(cfg.queryIndexEnabled()))
-        cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
         cacheT += ("Metadata type count", cfg.typeMeta().size())
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 
@@ -841,19 +839,23 @@ object VisorCacheCommand {
 
         val sqlFxs = queryCfg.sqlFunctionClasses()
 
-        if (sqlFxs.isEmpty)
+        val hasSqlFxs = sqlFxs != null && sqlFxs.nonEmpty
+
+        if (!hasSqlFxs)
             cacheT +=("Query SQL functions", NA)
 
         val indexedTypes = queryCfg.indexedTypes()
 
-        if (indexedTypes.isEmpty)
+        val hasIndexedTypes = indexedTypes != null && indexedTypes.nonEmpty
+
+        if (!hasIndexedTypes)
             cacheT +=("Query Indexed Types", NA)
 
         println(title)
 
         cacheT.render()
 
-        if (sqlFxs.nonEmpty) {
+        if (hasSqlFxs) {
             println("\nQuery SQL functions:")
 
             val sqlFxsT = VisorTextTable()
@@ -865,7 +867,7 @@ object VisorCacheCommand {
             sqlFxsT.render()
         }
 
-        if (indexedTypes.nonEmpty) {
+        if (hasIndexedTypes) {
             println("\nQuery Indexed Types:")
 
             val indexedTypesT = VisorTextTable()
