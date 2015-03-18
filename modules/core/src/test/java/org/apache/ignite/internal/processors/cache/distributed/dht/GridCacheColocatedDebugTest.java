@@ -76,7 +76,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setSwapEnabled(false);
 
         if (storeEnabled) {
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new GridCacheTestStore()));
+            cacheCfg.setCacheStoreFactory(singletonFactory(new GridCacheTestStore()));
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
             cacheCfg.setLoadPreviousValue(true);

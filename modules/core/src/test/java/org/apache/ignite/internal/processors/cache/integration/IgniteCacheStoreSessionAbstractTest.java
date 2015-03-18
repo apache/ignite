@@ -58,7 +58,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg0.setCacheStoreFactory(singletonFactory(store));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
@@ -67,7 +67,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg1.setCacheStoreFactory(singletonFactory(store));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 

@@ -87,7 +87,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setAtomicityMode(atomicityMode());
         cc.setRebalanceMode(SYNC);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

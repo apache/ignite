@@ -86,7 +86,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         ccfg.setRebalanceMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(BACKUP_CNT);
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);

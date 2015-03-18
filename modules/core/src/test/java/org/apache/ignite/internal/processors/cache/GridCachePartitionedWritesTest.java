@@ -60,7 +60,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         assert store != null;
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

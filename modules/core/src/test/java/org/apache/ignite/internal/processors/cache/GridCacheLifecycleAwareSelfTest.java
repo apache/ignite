@@ -263,7 +263,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         TestStore store = new TestStore();
 
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);

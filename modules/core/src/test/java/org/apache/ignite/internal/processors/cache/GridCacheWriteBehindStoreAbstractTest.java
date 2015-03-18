@@ -90,7 +90,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

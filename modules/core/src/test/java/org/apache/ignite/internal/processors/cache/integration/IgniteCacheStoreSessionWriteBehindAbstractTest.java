@@ -89,7 +89,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg1.setCacheStoreFactory(singletonFactory(new TestStore()));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
