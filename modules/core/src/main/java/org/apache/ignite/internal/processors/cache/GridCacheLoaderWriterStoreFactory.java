@@ -28,6 +28,9 @@ import javax.cache.integration.*;
  */
 class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V>> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final Factory<CacheLoader<K, V>> ldrFactory;
 
     /** */
