@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -66,23 +67,22 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setEvictionPolicy(plc);
+        cc.setEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
         cc.setEvictSynchronized(false);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionFilter(filter);
+        cc.setEvictionFilter(notSerializableProxy(filter, CacheEvictionFilter.class));
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-            nearCfg.setNearEvictionPolicy(plc);
+            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
 
             cc.setNearConfiguration(nearCfg);
         }
         else
             cc.setNearConfiguration(null);
-
 
         if (mode == PARTITIONED)
             cc.setBackups(1);
