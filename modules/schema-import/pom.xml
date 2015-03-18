@@ -78,7 +78,7 @@
         </plugins>
     </build>
 
-    <!--<profiles>
+    <profiles>
         <profile>
             <id>jfxrt.jar</id>
             <activation>
@@ -86,6 +86,9 @@
                     <name>java.vendor</name>
                     <value>Oracle Corporation</value>
                 </property>
+                <jdk>
+                    [1.7,1.8)
+                </jdk>
             </activation>
             <dependencies>
                 <dependency>
@@ -97,5 +100,26 @@
                 </dependency>
             </dependencies>
         </profile>
-    </profiles>-->
+        <profile>
+            <id>jfxrt8.jar</id>
+            <activation>
+                <property>
+                    <name>java.vendor</name>
+                    <value>Oracle Corporation</value>
+                </property>
+                <jdk>
+                    [1.8,)
+                </jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>javafx</groupId>
+                    <artifactId>jfxrt</artifactId>
+                    <version>${java.version}</version>
+                    <scope>system</scope>
+                    <systemPath>${java.home}/lib/ext/jfxrt.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
