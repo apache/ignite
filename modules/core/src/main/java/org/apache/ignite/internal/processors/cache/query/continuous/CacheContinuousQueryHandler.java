@@ -159,6 +159,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
+        if (ctx.cache().internalCache(cacheName) == null)
+            return false;
+
         if (locLsnr != null)
             ctx.resource().injectGeneric(locLsnr);
 

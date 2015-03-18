@@ -349,11 +349,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param loc Enforce local.
+     * @param local Enforce local.
      * @return Local node cluster group.
      */
-    private ClusterGroup projection(boolean loc) {
-        return loc || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().cluster().forLocal() : null;
+    private ClusterGroup projection(boolean local) {
+        if (local || ctx.isLocal() || isReplicatedDataNode())
+            return ctx.kernalContext().grid().cluster().forLocal();
+
+        if (ctx.isReplicated())
+            return ctx.kernalContext().grid().cluster().forDataNodes(ctx.name()).forRandom();
+
+        return null;
     }
 
     /**
@@ -498,8 +504,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
-            ctx.name(), q.getSql(), q.getArgs()));
+        return ctx.kernalContext().query().queryLocalFields(
+            ctx.name(), q.getSql(), q.getArgs());
     }
 
     /**
@@ -1208,7 +1214,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... args)
+    @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -1272,8 +1278,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-                                                                   IgniteEntryProcessor<K, V, T> entryProcessor,
-                                                                   Object... args) {
+        CacheEntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

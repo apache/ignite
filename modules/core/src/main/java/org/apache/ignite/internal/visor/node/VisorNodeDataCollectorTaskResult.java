@@ -44,6 +44,9 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** All task monitoring state collected from nodes. */
     private final Map<UUID, Boolean> taskMonitoringEnabled = new HashMap<>();
 
+    /** Nodes error counts. */
+    private final Map<UUID, Long> errCnts = new HashMap<>();
+
     /** All events collected from nodes. */
     private final List<VisorGridEvent> evts = new ArrayList<>();
 
@@ -180,5 +183,12 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      */
     public Map<UUID, Throwable> streamersEx() {
         return streamersEx;
+    }
+
+    /**
+     * @return Nodes error counts.
+     */
+    public Map<UUID, Long> errorCounts() {
+        return errCnts;
     }
 }

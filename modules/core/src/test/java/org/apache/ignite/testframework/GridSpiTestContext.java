@@ -512,11 +512,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteExceptionRegistry exceptionRegistry() {
-        return IgniteExceptionRegistry.DUMMY_REGISTRY;
-    }
-
-    /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
             factory = new GridIoMessageFactory(null);

@@ -18,19 +18,23 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 
 import java.util.*;
 
 /**
  * Query cursor implementation.
  */
-public class QueryCursorImpl<T> implements QueryCursor<T> {
+public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /** */
     private Iterator<T> iter;
 
     /** */
     private boolean iterTaken;
+
+    /** */
+    private Collection<GridQueryFieldMetadata> fieldsMeta;
 
     /**
      * @param iter Iterator.
@@ -68,6 +72,17 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public void getAll(QueryCursorEx.Consumer<T> clo) throws IgniteCheckedException {
+        try {
+            for (T t : this)
+                clo.consume(t);
+        }
+        finally {
+            close();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         Iterator<T> i;
 
@@ -83,5 +98,19 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
                 }
             }
         }
+    }
+
+    /**
+     * @param fieldsMeta SQL Fields query result metadata.
+     */
+    public void fieldsMeta(Collection<GridQueryFieldMetadata> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
+    }
+
+    /**
+     * @return SQL Fields query result metadata.
+     */
+    public Collection<GridQueryFieldMetadata> fieldsMeta() {
+        return fieldsMeta;
     }
 }

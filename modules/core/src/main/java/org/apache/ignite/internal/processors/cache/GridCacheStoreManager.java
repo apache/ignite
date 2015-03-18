@@ -152,7 +152,8 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
         if (cfgStore == null || !cfg.isWriteBehindEnabled())
             return cfgStore;
 
-        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(ctx.gridName(),
+        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(this,
+            ctx.gridName(),
             cfg.getName(),
             ctx.log(GridCacheWriteBehindStore.class),
             cfgStore);
@@ -286,7 +287,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -462,7 +463,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -516,7 +517,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -573,7 +574,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -637,7 +638,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 }
                 finally {
                     if (ses)
-                        sesHolder.set(null);
+                        endSession();
                 }
 
                 if (log.isDebugEnabled())
@@ -685,7 +686,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -740,7 +741,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             }
             finally {
                 if (ses)
-                    sesHolder.set(null);
+                    endSession();
             }
 
             if (log.isDebugEnabled())
@@ -782,7 +783,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
         }
         finally {
             if (ses) {
-                sesHolder.set(null);
+                endSession();
 
                 tx.removeMeta(SES_ATTR);
             }
@@ -805,10 +806,19 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * Clears session holder.
+     */
+    void endSession() {
+        assert sesEnabled;
+
+        sesHolder.set(null);
+    }
+
+    /**
      * @param tx Current transaction.
      * @return {@code True} if session was initialized.
      */
-    private boolean initSession(@Nullable IgniteInternalTx tx) {
+    boolean initSession(@Nullable IgniteInternalTx tx) {
         if (!sesEnabled)
             return false;
 

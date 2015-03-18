@@ -306,9 +306,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
-    /** Exception registry. */
-    private IgniteExceptionRegistry registry;
-
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
 
@@ -340,7 +337,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
-        IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         ExecutorService execSvc,
@@ -356,7 +352,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.registry = registry;
         this.utilityCachePool = utilityCachePool;
         this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
@@ -879,7 +874,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
-        return registry;
+        return IgniteExceptionRegistry.get();
     }
 
     /** {@inheritDoc} */

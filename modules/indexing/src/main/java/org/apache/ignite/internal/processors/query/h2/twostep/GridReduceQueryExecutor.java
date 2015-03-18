@@ -200,24 +200,37 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
-        idx.addPage(new GridResultPage(node.id(), msg, false) {
-            @Override public void fetchNextPage() {
-                if (r.rmtErr != null)
-                    throw new CacheException("Next page fetch failed.", r.rmtErr);
+        GridResultPage page;
 
-                try {
-                    GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+        try {
+            page = new GridResultPage(node.id(), msg, false) {
+                @Override public void fetchNextPage() {
+                    if (r.rmtErr != null)
+                        throw new CacheException("Next page fetch failed.", r.rmtErr);
 
-                    if (node.isLocal())
-                        h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
-                    else
-                        ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
+                    try {
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+
+                        if (node.isLocal())
+                            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                        else
+                            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
-                }
-            }
-        });
+            };
+        }
+        catch (Exception e) {
+            U.error(log, "Error in message.", e);
+
+            fail(r, node.id(), "Error in message.");
+
+            return;
+        }
+
+        idx.addPage(page);
 
         if (msg.allRows() != -1) // Only the first page contains row count.
             r.latch.countDown();

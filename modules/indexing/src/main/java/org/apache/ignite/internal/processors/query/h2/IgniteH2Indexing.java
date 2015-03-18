@@ -66,7 +66,6 @@ import java.sql.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
@@ -510,18 +509,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (rs != null) {
                 try {
-                    ResultSetMetaData rsMeta = rs.getMetaData();
-
-                    meta = new ArrayList<>(rsMeta.getColumnCount());
-
-                    for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
-                        String schemaName = rsMeta.getSchemaName(i);
-                        String typeName = rsMeta.getTableName(i);
-                        String name = rsMeta.getColumnLabel(i);
-                        String type = rsMeta.getColumnClassName(i);
-
-                        meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
-                    }
+                    meta = meta(rs.getMetaData());
                 }
                 catch (SQLException e) {
                     throw new IgniteSpiException("Failed to get meta data.", e);
@@ -533,6 +521,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             setFilters(null);
         }
+    }
+
+    /**
+     * @param rsMeta Metadata.
+     * @return List of fields metadata.
+     * @throws SQLException If failed.
+     */
+    private static List<GridQueryFieldMetadata> meta(ResultSetMetaData rsMeta) throws SQLException {
+        ArrayList<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
+
+        for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
+            String schemaName = rsMeta.getSchemaName(i);
+            String typeName = rsMeta.getTableName(i);
+            String name = rsMeta.getColumnLabel(i);
+            String type = rsMeta.getColumnClassName(i);
+
+            meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
+        }
+
+        return meta;
     }
 
     /**
@@ -753,12 +761,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params) {
         Connection c = connectionForSpace(space);
 
-        GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(c, sqlQry, params);
+        PreparedStatement stmt;
+
+        try {
+            stmt = c.prepareStatement(sqlQry);
+        }
+        catch (SQLException e) {
+            throw new CacheException("Failed to parse query: " + sqlQry, e);
+        }
+
+        GridCacheTwoStepQuery twoStepQry;
+        Collection<GridQueryFieldMetadata> meta;
+
+        try {
+            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, params);
+
+            meta = meta(stmt.getMetaData());
+        }
+        catch (SQLException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        return queryTwoStep(space, twoStepQry);
+        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)queryTwoStep(space, twoStepQry);
+
+        cursor.fieldsMeta(meta);
+
+        return cursor;
     }
 
     /**
@@ -1063,7 +1097,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (Utils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
-        Utils.serializer = h2Serializer(ctx != null && ctx.deploy().enabled());
+        Utils.serializer = h2Serializer();
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
@@ -1111,83 +1145,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param p2pEnabled If peer-deployment is enabled.
      * @return Serializer.
      */
-    protected JavaObjectSerializer h2Serializer(boolean p2pEnabled) {
-        return p2pEnabled ?
-            new JavaObjectSerializer() {
-                /** */
-                private volatile Map<ClassLoader, Byte> ldr2id = Collections.emptyMap();
-
-                /** */
-                private volatile Map<Byte, ClassLoader> id2ldr = Collections.emptyMap();
-
-                /** */
-                private byte ldrIdGen = Byte.MIN_VALUE;
-
-                /** */
-                private final Lock lock = new ReentrantLock();
-
-                @Override public byte[] serialize(Object obj) throws Exception {
-                    ClassLoader ldr = obj.getClass().getClassLoader();
-
-                    Byte ldrId = ldr2id.get(ldr);
-
-                    if (ldrId == null) {
-                        lock.lock();
-
-                        try {
-                            ldrId = ldr2id.get(ldr);
-
-                            if (ldrId == null) {
-                                ldrId = ldrIdGen++;
-
-                                if (id2ldr.containsKey(ldrId)) // Overflow.
-                                    throw new IgniteException("Failed to add new peer-to-peer class loader.");
-
-                                Map<Byte, ClassLoader> id2ldr0 = new HashMap<>(id2ldr);
-                                Map<ClassLoader, Byte> ldr2id0 = new IdentityHashMap<>(ldr2id);
-
-                                id2ldr0.put(ldrId, ldr);
-                                ldr2id0.put(ldr, ldrId);
-
-                                ldr2id = ldr2id0;
-                                id2ldr = id2ldr0;
-                            }
-                        }
-                        finally {
-                            lock.unlock();
-                        }
-                    }
-
-                    byte[] bytes = marshaller.marshal(obj);
-
-                    int len = bytes.length;
-
-                    bytes = Arrays.copyOf(bytes, len + 1); // The last byte is for ldrId.
-
-                    bytes[len] = ldrId;
-
-                    return bytes;
-                }
-
-                @Override public Object deserialize(byte[] bytes) throws Exception {
-                    int last = bytes.length - 1;
-
-                    byte ldrId = bytes[last];
-
-                    ClassLoader ldr = id2ldr.get(ldrId);
-
-                    if (ldr == null)
-                        throw new IllegalStateException("Class loader was not found: " + ldrId);
-
-                    bytes = Arrays.copyOf(bytes, last); // Trim the last byte.
-
-                    return marshaller.unmarshal(bytes, ldr);
-                }
-            } :
-            new JavaObjectSerializer() {
+    protected JavaObjectSerializer h2Serializer() {
+        return new JavaObjectSerializer() {
                 @Override public byte[] serialize(Object obj) throws Exception {
                     return marshaller.marshal(obj);
                 }

@@ -65,7 +65,7 @@ import scala.util.control.Breaks._
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr|cn} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
@@ -83,7 +83,7 @@ import scala.util.control.Breaks._
  *         If neither is specified statistics will be gathered from all nodes.
  *     -c=<cache-name>
  *         Name of the cache.
- *     -s=hi|mi|re|wr|cn
+ *     -s=hi|mi|rd|wr|cn
  *         Defines sorting type. Sorted by:
  *            hi Hits.
  *            mi Misses.
@@ -630,7 +630,7 @@ object VisorCacheCommand {
         spec = Seq(
             "cache",
             "cache -i",
-            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr} {-a} {-r}",
+            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
@@ -660,7 +660,7 @@ object VisorCacheCommand {
             "-swap" -> Seq(
                 "Swaps backup entries in cache."
             ),
-            "-s=hi|mi|re|wr|cn" -> Seq(
+            "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
                 "   hi Hits.",
                 "   mi Misses.",
