@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -58,7 +57,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setCacheStoreFactory(storeFactory(new TestStore()));
+        cfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
         cfg.setLoadPreviousValue(true);

@@ -1357,7 +1357,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @param store Store.
      */
-    protected <K, V> Factory<CacheStore<K, V>> storeFactory(CacheStore<K, V> store) {
+    protected <T> Factory<T> singletonFactory(T store) {
         return new SingletonStoreFactory<>(store);
     }
 

@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -124,11 +123,11 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
-            cacheCfg.setCacheStoreFactory(storeFactory(LOCAL_STORE_1));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
         else if (gridName.endsWith("2"))
-            cacheCfg.setCacheStoreFactory(storeFactory(LOCAL_STORE_2));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
         else
-            cacheCfg.setCacheStoreFactory(storeFactory(LOCAL_STORE_3));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);

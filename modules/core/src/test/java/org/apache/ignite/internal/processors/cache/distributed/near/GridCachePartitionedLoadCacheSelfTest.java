@@ -27,7 +27,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -58,7 +57,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setCacheStoreFactory(storeFactory(new TestStore()));
+        ccfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);

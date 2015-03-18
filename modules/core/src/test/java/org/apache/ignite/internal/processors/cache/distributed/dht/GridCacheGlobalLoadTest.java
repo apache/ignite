@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
@@ -182,7 +181,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Factory<CacheStore> cacheStoreFactory() {
-        return (Factory)storeFactory(new TestStore());
+        return (Factory)singletonFactory(new TestStore());
     }
 
     /**

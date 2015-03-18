@@ -74,7 +74,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setCacheStoreFactory(storeFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
