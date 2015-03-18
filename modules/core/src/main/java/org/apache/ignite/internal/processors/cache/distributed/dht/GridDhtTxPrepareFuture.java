@@ -49,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  *
  */
+@SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
@@ -123,6 +124,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
     /** Locks ready flag. */
     private volatile boolean locksReady;
+
+    /** */
+    private boolean invoke;
 
     /** */
     private IgniteInClosure<GridNearTxPrepareResponse> completeCb;
@@ -307,6 +311,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                     if (retVal) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
+                            invoke = true;
+
                             KeyCacheObject key = txEntry.key();
 
                             Object procRes = null;
@@ -1232,6 +1238,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                         (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null);
+
+                                if (retVal && !invoke)
+                                    ret.value(cacheCtx, info.value());
                             }
 
                             break;

@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -48,6 +51,9 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Cache name which differs from the default one. */
     private static final String CACHE_NAME_OTHER = "cache_name_other";
 
+    /** Test attribute name. */
+    private static final String TEST_ATTRIBUTE = "TestAttribute";
+
     /** VM IP finder for TCP discovery SPI. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -66,11 +72,14 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         ccfg.setName(cacheName);
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setNodeFilter(new AttributeFilter(cacheName));
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, cacheName));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -101,6 +110,8 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         cacheName = CACHE_NAME_OTHER;
 
         startGrid(GRID_CNT - 1);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -162,5 +173,23 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
         // ... but cache with another name should remain untouched.
         assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
+    }
+
+    /** {@inheritDoc} */
+    private static class AttributeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private String attrValue;
+
+        /**
+         * @param attrValue Attribute value.
+         */
+        private AttributeFilter(String attrValue) {
+            this.attrValue = attrValue;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return F.eq(attrValue, clusterNode.attribute(TEST_ATTRIBUTE));
+        }
     }
 }

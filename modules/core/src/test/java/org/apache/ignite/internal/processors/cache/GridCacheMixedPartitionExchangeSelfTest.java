@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -39,6 +41,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Test case checks partition exchange when non-cache node joins topology (partition
  * exchange should be skipped in this case).
  */
+@SuppressWarnings("unchecked")
 public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractTest {
     /** Flag indicating whether to include cache to the node configuration. */
     private boolean cache;
@@ -49,6 +52,8 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
+        else
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -93,14 +98,20 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         IgniteCache<Integer, Integer> prj = grid(g).jcache(null);
 
-                        try (Transaction tx = grid(g).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            Integer val = prj.get(key);
+                        try {
+                            try (Transaction tx = grid(g).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                Integer val = prj.get(key);
 
-                            val = val == null ? 1 : val + 1;
+                                val = val == null ? 1 : val + 1;
 
-                            prj.put(key, val);
+                                prj.put(key, val);
 
-                            tx.commit();
+                                tx.commit();
+                            }
+                        }
+                        catch (Exception e) {
+                            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+                                throw e;
                         }
                     }
 
