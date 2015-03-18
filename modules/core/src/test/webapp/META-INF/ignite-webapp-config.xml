@@ -103,9 +103,6 @@
                     <!-- Enable primary sync write mode. -->
                     <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
 
-                    <!-- Disable near cache in atomic mode. -->
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>
 
@@ -131,7 +128,9 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>

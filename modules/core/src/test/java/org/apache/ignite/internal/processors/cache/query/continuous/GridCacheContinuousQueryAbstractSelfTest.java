@@ -79,18 +79,20 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         if (!gridName.equals(NO_CACHE_GRID_NAME)) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(cacheMode());
-        cacheCfg.setAtomicityMode(atomicityMode());
-        cacheCfg.setNearConfiguration(nearConfiguration());
-        cacheCfg.setRebalanceMode(ASYNC);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setCacheStoreFactory(new StoreFactory());
-        cacheCfg.setReadThrough(true);
-        cacheCfg.setWriteThrough(true);
-        cacheCfg.setLoadPreviousValue(true);
+            cacheCfg.setCacheMode(cacheMode());
+            cacheCfg.setAtomicityMode(atomicityMode());
+            cacheCfg.setNearConfiguration(nearConfiguration());
+            cacheCfg.setRebalanceMode(ASYNC);
+            cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+            cacheCfg.setCacheStoreFactory(new StoreFactory());
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+            cacheCfg.setLoadPreviousValue(true);
 
             cfg.setCacheConfiguration(cacheCfg);
         }
+        else
+            cfg.setClientMode(true);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -174,7 +176,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = grid(i).context().continuous();
 
             assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
@@ -184,8 +186,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStopAck")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
-            CacheContinuousQueryManager mgr =
-                ((IgniteKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
+            CacheContinuousQueryManager mgr = grid(i).context().cache().internalCache().context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
         }
@@ -863,15 +864,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         try {
             try (Ignite ignite = startGrid(NO_CACHE_GRID_NAME)) {
                 log.info("Started node without cache: " + ignite);
-
-                try {
-                    ignite.jcache(null);
-
-                    fail();
-                }
-                catch (IllegalArgumentException ignore) {
-                    // Expected exception.
-                }
             }
 
             cache.put(1, 1);
