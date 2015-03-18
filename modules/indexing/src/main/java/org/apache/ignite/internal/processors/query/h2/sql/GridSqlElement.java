@@ -43,7 +43,11 @@ public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlEleme
         expressionResultType = type;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Get the SQL expression.
+     *
+     * @return the SQL expression.
+     */
     public abstract String getSQL();
 
     /**
