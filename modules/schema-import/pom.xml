@@ -86,10 +86,6 @@
                 <jdk>
                     [1.7,1.8)
                 </jdk>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
             </activation>
             <dependencies>
                 <dependency>
@@ -108,10 +104,6 @@
                 <jdk>
                     [1.8,)
                 </jdk>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
             </activation>
             <dependencies>
                 <dependency>
