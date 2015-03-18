@@ -7668,7 +7668,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for an entry. The closure internally
-     * delegates to {@link Map.Entry#getKey()} method.
+     * delegates to {@link java.util.Map.Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.
