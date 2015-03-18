@@ -86,7 +86,6 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
             new CacheLruEvictionPolicy(maxOnheapSize));
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
-        cacheCfg.setQueryIndexEnabled(memoryMode != CacheMemoryMode.OFFHEAP_VALUES);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setMarshaller(new OptimizedMarshaller(false));

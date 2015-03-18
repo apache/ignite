@@ -86,7 +86,6 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }

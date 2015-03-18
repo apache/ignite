@@ -141,6 +141,14 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int ENTRY_CNT = 10000;
 
+    /** {@inheritDoc} */
+    @Override protected Class<?>[] indexedTypes() {
+        return new Class<?>[] {
+            Integer.class, TestValue1.class,
+            Integer.class, TestValue2.class
+        };
+    }
+
     /**
      * @throws Exception if failed.
      */

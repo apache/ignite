@@ -89,7 +89,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
             cacheCfg.setLoadPreviousValue(true);
-            cacheCfg.setQueryIndexEnabled(false);
 
             cfg.setCacheConfiguration(cacheCfg);
         }
@@ -132,7 +131,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
+            @Override
+            public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
                     if (grid(i).cluster().nodes().size() != gridCount())
                         return false;
@@ -209,7 +209,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIllegalArguments() throws Exception {
-        final ContinuousQuery<Object, Object> q = Query.continuous();
+        final ContinuousQuery<Object, Object> q = new ContinuousQuery<>();
 
         GridTestUtils.assertThrows(
             log,
@@ -253,7 +253,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testAllEntries() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
@@ -319,7 +319,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(4);
@@ -344,8 +344,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
-            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+        qry.setRemoteFilter(new CacheEntryEventFilter<Integer,Integer>() {
+            @Override
+            public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -391,14 +392,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         if (((IgniteKernal)grid(0)).cache(null).configuration().getCacheMode() != PARTITIONED)
             return;
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
+            @Override
+            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
 
@@ -462,7 +464,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
@@ -547,7 +549,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
@@ -624,9 +626,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testInitialQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(new ScanQuery<>(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }
@@ -669,9 +671,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testInitialQueryAndUpdates() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(new ScanQuery<>(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }
@@ -731,7 +733,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
@@ -767,7 +769,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Object, Object> qry = Query.continuous();
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
         final Map<Object, Object> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
@@ -803,7 +805,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testNodeJoin() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Collection<CacheEntryEvent<? extends Integer, ? extends Integer>> all = new ConcurrentLinkedDeque8<>();
         final CountDownLatch latch = new CountDownLatch(2);
@@ -847,7 +849,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testNodeJoinWithoutCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -945,7 +947,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-            ContinuousQuery<Integer, Integer> qry = Query.continuous();
+            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
             qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {

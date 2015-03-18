@@ -49,6 +49,7 @@ import java.util.concurrent.locks.*;
  *  These methods don't specify any keys to load, and leave it to the underlying storage to load cache
  *  data based on the optionally passed in arguments.
  * </li>
+ * <li>Various {@code 'query(..)'} methods to allow cache data querying.</li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
@@ -136,7 +137,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(Cache.Entry)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -234,7 +235,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry);
 
+    /**
+     * Allows for iteration over local cache entries.
+     *
+     * @param peekModes Peek modes.
+     * @return Iterable over local cache entries.
+     * @throws CacheException If failed.
+     */
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
+
+    /**
+     * Gets query metrics.
+     *
+     * @return Metrics.
+     */
+    public QueryMetrics queryMetrics();
 
     /**
      * Attempts to evict all entries associated with keys. Note,
@@ -295,7 +310,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached on this nodes.
+     * Gets the number of all entries cached on this node.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size on this node.
@@ -435,10 +450,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the {@link Entry} specified by
-     * the provided key. If an {@link Entry} does not exist for the specified key,
+     * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
-     * {@link Entry}, consisting of the key with a null value is used instead.
+     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
      * This method different
      * <p>
      *
@@ -469,11 +484,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link CacheEntryProcessor} against the set of {@link Entry}s
+     * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.
      * <p>
-     * If an {@link Entry} does not exist for the specified key, an attempt is made
-     * to load it (if a loader is configured) or a surrogate {@link Entry},
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
      * consisting of the key and a value of null is provided.
      * <p>
      * The order that the entries for the keys are processed is undefined.

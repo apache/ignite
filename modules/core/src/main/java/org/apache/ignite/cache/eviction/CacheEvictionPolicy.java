@@ -19,10 +19,9 @@ package org.apache.ignite.cache.eviction;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
- * cache entries based on {@link #onEntryAccessed(boolean, org.apache.ignite.cache.Entry)} notifications and
- * whenever an element needs to be evicted, {@link org.apache.ignite.cache.Entry#evict()}
- * method should be called. If you need to access the underlying cache directly
- * from this policy, you can get it via {@link org.apache.ignite.cache.Entry#projection()} method.
+ * cache entries based on {@link #onEntryAccessed(boolean, EvictableEntry)} notifications and
+ * whenever an element needs to be evicted, {@link EvictableEntry#evict()}
+ * method should be called.
  * <p>
  * Ignite comes with following eviction policies out-of-the-box:
  * <ul>

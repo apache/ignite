@@ -110,21 +110,6 @@
                     <property name="startSize" value="1500000"/>
 
                     <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
-                    <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
                     -->
@@ -159,21 +144,6 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
-                    <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
                     -->
@@ -204,21 +174,6 @@
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="150000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
 
                 <!--
@@ -233,21 +188,6 @@
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="150000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
             </list>
         </property>

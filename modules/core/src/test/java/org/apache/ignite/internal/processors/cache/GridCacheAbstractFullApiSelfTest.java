@@ -134,7 +134,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         if (offHeapValues()) {
-            ccfg.setQueryIndexEnabled(false);
             ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
             ccfg.setOffHeapMaxMemory(0);
         }
@@ -4124,7 +4123,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param keyToRmv Removed key.
      */
-    private void checkLocalRemovedKey(String keyToRmv) {
+    protected void checkLocalRemovedKey(String keyToRmv) {
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
@@ -4190,7 +4189,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @return Map grid's name to its primary keys.
      */
-    private Map<String, List<String>> addKeys() {
+    protected Map<String, List<String>> addKeys() {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         Map<String, List<String>> keys = new HashMap<>();

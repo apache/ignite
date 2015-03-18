@@ -57,7 +57,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleRequest() throws Exception {
-        testSingleRequest("/examples/config/example-cache.xml");
+        testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
     }
 
     /**

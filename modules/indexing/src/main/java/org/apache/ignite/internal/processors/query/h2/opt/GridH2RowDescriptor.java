@@ -56,11 +56,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public int valueType();
 
     /**
-     * @return {@code true} If we need to store {@code toString()} of value.
-     */
-    public boolean valueToString();
-
-    /**
      * @return Total fields count.
      */
     public int fieldsCount();
@@ -76,17 +71,12 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     /**
      * Gets column value by column index.
      *
-     * @param obj Object to extract value from.
+     * @param key Key.
+     * @param val Value.
      * @param col Column index.
      * @return  Column value.
      */
-    public Object columnValue(Object obj, int col);
-
-    /**
-     * @param col Column index.
-     * @return {@code True} if column relates to key, false if it relates to value.
-     */
-    public boolean isKeyColumn(int col);
+    public Object columnValue(Object key, Object val, int col);
 
     /**
      * @return Unsafe memory.

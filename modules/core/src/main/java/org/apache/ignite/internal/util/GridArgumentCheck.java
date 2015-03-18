@@ -24,7 +24,6 @@ import java.util.*;
 /**
  * This class encapsulates argument check (null and range) for public facing APIs. Unlike asserts
  * it throws "normal" exceptions with standardized messages.
- * @see A
  */
 public class GridArgumentCheck {
     /** Null pointer error message prefix. */

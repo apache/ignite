@@ -74,7 +74,6 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
         cc.setRebalanceMode(SYNC);
         cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
-        cc.setQueryIndexEnabled(true);
         cc.setBackups(0);
 
         c.setCacheConfiguration(cc);
