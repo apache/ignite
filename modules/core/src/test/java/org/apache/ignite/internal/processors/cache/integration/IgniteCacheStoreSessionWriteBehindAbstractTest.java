@@ -76,7 +76,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         ccfg0.setWriteBehindFlushFrequency(60_000);
         ccfg0.setWriteBehindEnabled(true);
 
-        ccfg0.setCacheStoreFactory(new TestStoreFactory());
+        ccfg0.setCacheStoreFactory(singletonFactory(new TestStore()));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
