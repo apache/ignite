@@ -39,9 +39,6 @@ public class VisorCacheQueryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final String[] EMPTY_STR_ARR = new String[0];
-
-    /** */
     private String[] sqlFuncClss;
 
     /** */
@@ -61,7 +58,7 @@ public class VisorCacheQueryConfiguration implements Serializable {
      */
     private static String[] compactClasses(Class<?>[] clss) {
         if (clss == null)
-            return EMPTY_STR_ARR;
+            return null;
 
         int len = clss.length;
 

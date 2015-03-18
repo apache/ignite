@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.node.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -60,9 +59,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Swap enabled flag. */
     private boolean swapEnabled;
 
-    /** Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache. */
-    private boolean qryIdxEnabled;
-
     /** Invalidate. */
     private boolean invalidate;
 
@@ -74,9 +70,6 @@ public class VisorCacheConfiguration implements Serializable {
 
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
-
-    /** Max query iterator count */
-    private int maxQryIterCnt;
 
     /** Max concurrent async operations */
     private int maxConcurrentAsyncOps;
@@ -241,13 +234,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache.
-     */
-    public boolean queryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
      * @return Invalidate.
      */
     public boolean invalidate() {
@@ -273,13 +259,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public long offsetHeapMaxMemory() {
         return offHeapMaxMemory;
-    }
-
-    /**
-     * @return Max query iterator count
-     */
-    public int maxQueryIteratorCount() {
-        return maxQryIterCnt;
     }
 
     /**
