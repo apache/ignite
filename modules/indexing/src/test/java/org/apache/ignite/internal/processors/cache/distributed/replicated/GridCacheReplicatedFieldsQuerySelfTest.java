@@ -125,7 +125,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
         CacheQueryFuture<List<?>> fut = null;
 
-        for (int i = 0; i < cache.configuration().getMaximumQueryIteratorCount() + 1; i++) {
+        for (int i = 0; i < GridCacheQueryManager.MAX_ITERATORS + 1; i++) {
             CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
                 "select _key from Integer where _key >= 0 order by _key").projection(grid(0).cluster());
 

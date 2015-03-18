@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -736,7 +737,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private Long id;
 
         /** */
@@ -808,7 +809,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private String terminalId;
 
         /**

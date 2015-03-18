@@ -318,7 +318,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     protected TcpCommunicationSpi getSpi(int ackCnt, int idleTimeout, int queueLimit) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(idleTimeout);
         spi.setTcpNoDelay(true);

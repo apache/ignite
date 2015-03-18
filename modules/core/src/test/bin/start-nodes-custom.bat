@@ -19,6 +19,5 @@ set SCRIPT_DIR=%~dp0
 
 if %SCRIPT_DIR:~-1,1% == \ set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
-:: -np option is mandatory, if it is not provided then we will wait for a user input,
-:: as a result igniteservice windows service hangs forever
+:: -np option is mandatory, if it is not provided then we will wait for a user input.
 call "%SCRIPT_DIR%\..\..\..\..\..\bin\ignite.bat" -v -np modules\core\src\test\config\spring-start-nodes-attr.xml

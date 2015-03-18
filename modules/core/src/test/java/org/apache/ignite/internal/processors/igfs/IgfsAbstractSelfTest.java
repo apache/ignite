@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -226,7 +227,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setMemoryMode(memoryMode);
         dataCacheCfg.setOffHeapMaxMemory(0);
@@ -236,7 +236,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();

@@ -84,6 +84,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
+        dfltCacheCfg.setIndexedTypes(
+            Integer.class, String.class
+        );
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();

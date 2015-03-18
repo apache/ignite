@@ -78,8 +78,6 @@
 
                     <property name="distributionMode" value="NEAR_PARTITIONED"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
-
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).

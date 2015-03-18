@@ -79,21 +79,6 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is true.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
-                    <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
                     -->

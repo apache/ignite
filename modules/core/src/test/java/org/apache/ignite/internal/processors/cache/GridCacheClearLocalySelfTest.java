@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -36,7 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
 
 /**
- * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} operations in multinode environment with nodes having caches with different names.
+ * Test {@link GridCache#clearLocally()} operations in multinode environment with nodes having caches with different names.
  */
 public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     /** Local cache. */
@@ -149,7 +148,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with no split.
+     * Test {@link GridCache#clearLocally()} on LOCAL cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -158,7 +157,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with split.
+     * Test {@link GridCache#clearLocally()} on LOCAL cache with split.
      *
      * @throws Exception If failed.
      */
@@ -167,7 +166,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with no split.
+     * Test {@link GridCache#clearLocally()} on PARTITIONED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -176,7 +175,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with split.
+     * Test {@link GridCache#clearLocally()} on PARTITIONED cache with split.
      *
      * @throws Exception If failed.
      */
@@ -185,7 +184,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with no split.
+     * Test {@link GridCache#clearLocally()} on co-located cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -194,7 +193,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with split.
+     * Test {@link GridCache#clearLocally()} on co-located cache with split.
      *
      * @throws Exception If failed.
      */
@@ -203,7 +202,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with no split.
+     * Test {@link GridCache#clearLocally()} on REPLICATED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -212,7 +211,7 @@ public class GridCacheClearLocalySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with split.
+     * Test {@link GridCache#clearLocally()} on REPLICATED cache with split.
      *
      * @throws Exception If failed.
      */

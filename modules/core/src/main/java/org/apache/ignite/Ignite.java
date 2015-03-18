@@ -41,7 +41,7 @@ import java.util.concurrent.*;
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
- * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
+ * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>

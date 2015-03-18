@@ -17,7 +17,7 @@
 #
 
 #
-# Ignite Schema Load Utility.
+# Ignite Schema Import Utility.
 #
 
 #
@@ -56,7 +56,7 @@ CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=Ignite Schema Load Utility"
+    DOCK_OPTS="-Xdock:name=Ignite Schema Import Utility"
 fi
 
 #

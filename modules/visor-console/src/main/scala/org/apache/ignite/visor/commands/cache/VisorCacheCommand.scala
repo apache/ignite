@@ -65,7 +65,7 @@ import scala.util.control.Breaks._
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr|cn} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
@@ -83,7 +83,7 @@ import scala.util.control.Breaks._
  *         If neither is specified statistics will be gathered from all nodes.
  *     -c=<cache-name>
  *         Name of the cache.
- *     -s=hi|mi|re|wr|cn
+ *     -s=hi|mi|rd|wr|cn
  *         Defines sorting type. Sorted by:
  *            hi Hits.
  *            mi Misses.
@@ -630,7 +630,7 @@ object VisorCacheCommand {
         spec = Seq(
             "cache",
             "cache -i",
-            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr} {-a} {-r}",
+            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
@@ -660,7 +660,7 @@ object VisorCacheCommand {
             "-swap" -> Seq(
                 "Swaps backup entries in cache."
             ),
-            "-s=hi|mi|re|wr|cn" -> Seq(
+            "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
                 "   hi Hits.",
                 "   mi Misses.",
@@ -809,10 +809,7 @@ object VisorCacheCommand {
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
         cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
-        cacheT += ("Query Indexing Enabled", bool2Str(cfg.queryIndexEnabled()))
-        cacheT += ("Query Iterators Number", cfg.maxQueryIteratorCount())
         cacheT += ("Metadata type count", cfg.typeMeta().size())
-        cacheT += ("Indexing SPI Name", safe(cfg.indexingSpiName()))
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 
         cacheT += ("Store Enabled", bool2Str(storeCfg.enabled()))
@@ -839,18 +836,50 @@ object VisorCacheCommand {
         cacheT += ("Writer Factory Class Name", safe(cfg.writerFactory()))
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.expiryPolicyFactory()))
 
-        if (queryCfg != null) {
-            cacheT +=("Query Type Resolver", safe(queryCfg.typeResolver()))
-            cacheT +=("Query Indexing Primitive Key", bool2Str(queryCfg.indexPrimitiveKey()))
-            cacheT +=("Query Indexing Primitive Value", bool2Str(queryCfg.indexPrimitiveValue()))
-            cacheT +=("Query Fixed Typing", bool2Str(queryCfg.indexFixedTyping()))
-            cacheT +=("Query Escaped Names", bool2Str(queryCfg.escapeAll()))
-        }
-        else
-            cacheT += ("Query Configuration", NA)
+        cacheT +=("Query Execution Time Threshold", queryCfg.longQueryWarningTimeout())
+        cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
+        cacheT +=("Query Onheap Cache Size", queryCfg.sqlOnheapRowCacheSize())
+
+        val sqlFxs = queryCfg.sqlFunctionClasses()
+
+        val hasSqlFxs = sqlFxs != null && sqlFxs.nonEmpty
+
+        if (!hasSqlFxs)
+            cacheT +=("Query SQL functions", NA)
+
+        val indexedTypes = queryCfg.indexedTypes()
+
+        val hasIndexedTypes = indexedTypes != null && indexedTypes.nonEmpty
+
+        if (!hasIndexedTypes)
+            cacheT +=("Query Indexed Types", NA)
 
         println(title)
 
         cacheT.render()
+
+        if (hasSqlFxs) {
+            println("\nQuery SQL functions:")
+
+            val sqlFxsT = VisorTextTable()
+
+            sqlFxsT #= "Function Class Name"
+
+            sqlFxs.foreach(s => sqlFxsT += s)
+
+            sqlFxsT.render()
+        }
+
+        if (hasIndexedTypes) {
+            println("\nQuery Indexed Types:")
+
+            val indexedTypesT = VisorTextTable()
+
+            indexedTypesT #= ("Key Class Name", "Value Class Name")
+
+            indexedTypes.grouped(2).foreach(types => indexedTypesT += (types(0), types(1)))
+
+            indexedTypesT.render()
+        }
     }
 }

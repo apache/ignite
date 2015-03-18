@@ -16,7 +16,7 @@
 ::
 
 ::
-:: Ignite Schema Load Utility.
+:: Ignite Schema Import Utility.
 ::
 
 @echo off
