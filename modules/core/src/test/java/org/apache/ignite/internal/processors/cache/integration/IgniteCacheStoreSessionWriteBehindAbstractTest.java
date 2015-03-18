@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -32,8 +31,6 @@ import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
@@ -59,8 +56,8 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -79,7 +76,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         ccfg0.setWriteBehindFlushFrequency(60_000);
         ccfg0.setWriteBehindEnabled(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg0.setCacheStoreFactory(new TestStoreFactory());
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
