@@ -97,7 +97,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setCacheStoreFactory(GridTestUtils.storeFactory(store));
+        cacheCfg.setCacheStoreFactory(storeFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

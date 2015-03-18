@@ -160,7 +160,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
-        cc.setCacheStoreFactory(GridTestUtils.storeFactory(store));
+        cc.setCacheStoreFactory(storeFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

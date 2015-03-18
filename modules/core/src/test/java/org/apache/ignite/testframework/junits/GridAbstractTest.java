@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -44,6 +45,8 @@ import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 
+import javax.cache.configuration.*;
+import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
@@ -106,6 +109,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         timer.start();
     }
+
+    /** */
+    private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
 
     /** */
     protected GridAbstractTest() {
@@ -1166,6 +1172,8 @@ public abstract class GridAbstractTest extends TestCase {
             afterTest();
         }
         finally {
+            serializedObj.clear();
+
             if (isLastTest()) {
                 info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
@@ -1193,7 +1201,6 @@ public abstract class GridAbstractTest extends TestCase {
                 OptimizedMarshaller.clearCache();
                 MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
-                GridTestUtils.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
@@ -1345,6 +1352,80 @@ public abstract class GridAbstractTest extends TestCase {
             return Long.parseLong(timeout);
 
         return DFLT_TEST_TIMEOUT;
+    }
+
+    /**
+     * @param store Store.
+     */
+    protected <K, V> Factory<CacheStore<K, V>> storeFactory(CacheStore<K, V> store) {
+        return new SingletonStoreFactory<>(store);
+    }
+
+    /**
+     * Returns an object that should be returned from writeReplace() method.
+     *
+     * @param obj Object that must not be changed after serialization/deserialization.
+     * @return An object to return from writeReplace()
+     */
+    protected Object supressSerialization(Object obj) {
+        SerializableProxy res = new SerializableProxy(UUID.randomUUID());
+
+        serializedObj.put(res.uuid, obj);
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private static class SerializableProxy implements Serializable {
+        /** */
+        private final UUID uuid;
+
+        /**
+         * @param uuid Uuid.
+         */
+        private SerializableProxy(UUID uuid) {
+            this.uuid = uuid;
+        }
+
+        /**
+         *
+         */
+        protected Object readResolve() throws ObjectStreamException {
+            Object res = serializedObj.get(uuid);
+
+            assert res != null;
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private class SingletonStoreFactory<T> implements Factory<T> {
+        /** */
+        private final T store;
+
+        /**
+         * @param store Store.
+         */
+        SingletonStoreFactory(T store) {
+            this.store = store;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T create() {
+            return store;
+        }
+
+        /**
+         *
+         */
+        protected Object writeReplace() {
+            return supressSerialization(this);
+        }
     }
 
     /**

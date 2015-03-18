@@ -117,7 +117,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setCacheStoreFactory(GridTestUtils.storeFactory(store));
+        cacheCfg.setCacheStoreFactory(storeFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

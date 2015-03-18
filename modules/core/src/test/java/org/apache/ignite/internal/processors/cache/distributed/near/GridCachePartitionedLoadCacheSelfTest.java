@@ -58,7 +58,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setCacheStoreFactory(GridTestUtils.storeFactory(new TestStore()));
+        ccfg.setCacheStoreFactory(storeFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);

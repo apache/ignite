@@ -104,7 +104,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         stores.add(store);
 
-        cc.setCacheStoreFactory(GridTestUtils.storeFactory(store));
+        cc.setCacheStoreFactory(storeFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

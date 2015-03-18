@@ -76,7 +76,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
 
         CacheStore store = stores[idx] = new GridCacheTestStore();
 
-        cc.setCacheStoreFactory(GridTestUtils.storeFactory(store));
+        cc.setCacheStoreFactory(storeFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

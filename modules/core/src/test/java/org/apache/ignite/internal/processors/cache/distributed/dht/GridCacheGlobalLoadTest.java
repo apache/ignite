@@ -182,7 +182,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Factory<CacheStore> cacheStoreFactory() {
-        return (Factory)GridTestUtils.storeFactory(new TestStore());
+        return (Factory)storeFactory(new TestStore());
     }
 
     /**

@@ -58,7 +58,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setCacheStoreFactory(GridTestUtils.storeFactory(new TestStore()));
+        cfg.setCacheStoreFactory(storeFactory(new TestStore()));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
         cfg.setLoadPreviousValue(true);
