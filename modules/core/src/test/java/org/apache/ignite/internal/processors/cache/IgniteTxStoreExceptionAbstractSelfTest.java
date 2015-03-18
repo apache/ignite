@@ -93,6 +93,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         store = null;
     }
 
