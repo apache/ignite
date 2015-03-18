@@ -752,11 +752,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         for (String cacheName : stopSeq) {
-            GridCacheAdapter<?, ?> cache = caches.get(maskNull(cacheName));
+            GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
             if (cache != null)
                 stopCache(cache, cancel);
         }
+
+        for (GridCacheAdapter<?, ?> cache : caches.values())
+            stopCache(cache, cancel);
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
@@ -783,6 +786,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cache != null)
                 onKernalStop(cache, cancel);
+        }
+
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> entry : caches.entrySet()) {
+            if (!stopSeq.contains(entry.getKey()))
+                onKernalStop(entry.getValue(), cancel);
         }
 
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();

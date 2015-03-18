@@ -1517,6 +1517,13 @@ public final class GridTestUtils {
     /**
      *
      */
+    public static void clear() {
+        SerializableStore.serializedObj.clear();
+    }
+
+    /**
+     *
+     */
     private static class SingletonStoreFactory<T> implements Factory<T> {
         /** */
         private final T store;

@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.logger.*;
 import org.apache.log4j.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
@@ -124,7 +125,7 @@ public abstract class GridAbstractTest extends TestCase {
         // Initialize properties. Logger initialized here.
         GridTestProperties.init();
 
-        log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
+        log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
     }
@@ -1192,11 +1193,40 @@ public abstract class GridAbstractTest extends TestCase {
                 OptimizedMarshaller.clearCache();
                 MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
+                GridTestUtils.clear();
             }
 
             Thread.currentThread().setContextClassLoader(clsLdr);
 
             clsLdr = null;
+
+            cleanReferences();
+        }
+    }
+
+    /**
+     *
+     */
+    protected void cleanReferences() {
+        Class cls = getClass();
+
+        while (cls != null) {
+            Field[] fields = getClass().getDeclaredFields();
+
+            for (Field f : fields) {
+                if (Modifier.isStatic(f.getModifiers()))
+                    continue;
+
+                f.setAccessible(true);
+
+                try {
+                    f.set(this, null);
+                }
+                catch (Exception ignored) {
+                }
+            }
+
+            cls = cls.getSuperclass();
         }
     }
 

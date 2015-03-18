@@ -64,6 +64,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
+
         cfg.setNetworkTimeout(3000);
 
         return cfg;

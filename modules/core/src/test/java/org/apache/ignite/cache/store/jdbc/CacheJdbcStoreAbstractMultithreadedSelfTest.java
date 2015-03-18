@@ -74,6 +74,11 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        store = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
 
@@ -224,8 +229,12 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
                     List<Integer> ids = new ArrayList<>(cnt);
 
-                    for (int j = 0; j < cnt; j++)
-                        ids.add(rnd.nextInt());
+                    for (int j = 0; j < cnt; j++) {
+                        int id = rnd.nextInt(5000);
+
+                        if (!ids.contains(id))
+                            ids.add(id);
+                    }
 
                     Collections.sort(ids);
 
