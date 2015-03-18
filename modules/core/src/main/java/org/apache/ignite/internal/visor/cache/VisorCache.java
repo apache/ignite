@@ -104,6 +104,10 @@ public class VisorCache implements Serializable {
 
         GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
 
+        // Cache was not started.
+        if (ca == null)
+            return null;
+
         long swapSize;
         long swapKeys;
 
