@@ -227,13 +227,13 @@ public class GridAffinityAssignmentCache {
      *
      * @param topVer Actual topology version, older versions will be removed.
      */
-    public void cleanUpCache(long topVer) {
+    public void cleanUpCache(AffinityTopologyVersion topVer) {
         if (log.isDebugEnabled())
             log.debug("Cleaning up cache for version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
         for (Iterator<AffinityTopologyVersion> it = affCache.keySet().iterator(); it.hasNext(); )
-            if (it.next().topologyVersion() < topVer)
+            if (it.next().compareTo(topVer) < 0)
                 it.remove();
     }
 
