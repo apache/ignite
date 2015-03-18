@@ -215,28 +215,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getCacheStoreFactory() == null) {
             Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
+            Factory<CacheWriter> writerFactory = cfg.isWriteThrough() ? cfg.getCacheWriterFactory() : null;
 
-            CacheLoader ldr = null;
-
-            if (ldrFactory != null)
-                ldr = ldrFactory.create();
-
-            Factory<CacheWriter> writerFactory = cfg.getCacheWriterFactory();
-
-            CacheWriter writer = null;
-
-            if (cfg.isWriteThrough() && writerFactory != null)
-                writer = writerFactory.create();
-
-            if (ldr != null || writer != null) {
-                final CacheStore store = new GridCacheLoaderWriterStore(ldr, writer);
-
-                cfg.setCacheStoreFactory(new Factory<CacheStore<? super Object, ? super Object>>() {
-                    @Override public CacheStore<? super Object, ? super Object> create() {
-                        return store;
-                    }
-                });
-            }
+            if (ldrFactory != null || writerFactory != null)
+                cfg.setCacheStoreFactory(new GridCacheLoaderWriterStoreFactory(ldrFactory, writerFactory));
         }
         else {
             if (cfg.getCacheLoaderFactory() != null)
@@ -462,7 +444,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param objs Extra components.
      * @throws IgniteCheckedException If failed to inject.
      */
-    private void prepare(CacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
+    private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
@@ -993,17 +975,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!sysCaches.contains(cfg.getName()))
             suggestOptimizations(cfg, cfgStore != null);
 
-        List<Object> toPrepare = new ArrayList<>();
+        Collection<Object> toPrepare = new ArrayList<>();
 
         toPrepare.add(jta.tmLookup());
-        toPrepare.add(cfgStore);
 
         if (cfgStore instanceof GridCacheLoaderWriterStore) {
             toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
             toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).writer());
         }
+        else
+            toPrepare.add(cfgStore);
 
-        prepare(cfg, toPrepare.toArray(new Object[toPrepare.size()]));
+        prepare(cfg, toPrepare);
 
         U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
 
