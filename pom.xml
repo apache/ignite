@@ -752,6 +752,8 @@
                                     <author>false</author>
                                     <version>false</version>
                                     <source>1.7</source>
+                                    <!--jdk8 support-->
+                                    <additionalparam>-Xdoclint:none</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
@@ -946,6 +948,8 @@
                                     <author>false</author>
                                     <version>false</version>
                                     <source>1.7</source>
+                                    <!--jdk8 support-->
+                                    <additionalparam>-Xdoclint:none</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
