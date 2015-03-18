@@ -188,7 +188,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
 
                 cacheAsync.get("key" + rnd);
 
-                assert cacheAsync.future().get() == rnd;
+                assert (Integer)cacheAsync.future().get() == rnd;
 
                 cache.get("wrongKey");
 

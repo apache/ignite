@@ -2031,7 +2031,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndReplace("key", 2);
 
-        assert cacheAsync.future().get() == 1;
+        assert (Integer)cacheAsync.future().get() == 1;
 
         assert cache.get("key") == 2;
 
@@ -2264,7 +2264,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndRemove("key2");
 
-        assert cacheAsync.future().get() == 2;
+        assert (Integer)cacheAsync.future().get() == 2;
 
         assert cache.get("key2") == null;
 
