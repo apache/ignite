@@ -487,7 +487,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
     protected void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
 

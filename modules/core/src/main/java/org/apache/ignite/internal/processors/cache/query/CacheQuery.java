@@ -187,11 +187,8 @@ import org.jetbrains.annotations.*;
  * </pre>
  */
 public interface CacheQuery<T> {
-    /** Default query page size. */
-    public static final int DFLT_PAGE_SIZE = 1024;
-
     /**
-     * Sets result page size. If not provided, {@link #DFLT_PAGE_SIZE} will be used.
+     * Sets result page size. If not provided, {@link Query#DFLT_PAGE_SIZE} will be used.
      * Results are returned from queried nodes one page at a tme.
      *
      * @param pageSize Page size.

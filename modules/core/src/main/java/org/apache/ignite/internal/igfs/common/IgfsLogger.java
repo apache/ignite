@@ -419,7 +419,9 @@ public final class IgfsLogger {
             null, null, null, null, null, null, recursive, null));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Close logger.
+     */
     public void close() {
         boolean close = false;
 
