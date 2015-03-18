@@ -181,29 +181,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
-        CacheConfiguration[] dataCaches = dataCaches(1024);
-
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
-
-        checkGridStartFails(g1Cfg, "IGFS data cache cannot start with enabled query indexing", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
-        CacheConfiguration[] metaCaches = metaCaches();
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
-
-        checkGridStartFails(g1Cfg, "IGFS metadata cache cannot start with enabled query indexing", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @SuppressWarnings("NullableProblems")
     public void testLocalNullIgfsNameIsSupported() throws Exception {
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
