@@ -67,8 +67,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             try {
                 cls = Class.forName(clsName);
 
-                if (simple = (Number.class.isAssignableFrom(cls) || String.class.isAssignableFrom(cls) ||
-                    java.util.Date.class.isAssignableFrom(cls)) || Boolean.class.isAssignableFrom(cls))
+                if (simple = simpleType(cls))
                     return;
 
                 ctor = cls.getDeclaredConstructor();
@@ -188,7 +187,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object extractField(String cacheName, String typeName, String fieldName, Object obj)
+    @Nullable @Override protected Object extractParameter(String cacheName, String typeName, String fieldName,
+        Object obj)
         throws CacheException {
         try {
             PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);
