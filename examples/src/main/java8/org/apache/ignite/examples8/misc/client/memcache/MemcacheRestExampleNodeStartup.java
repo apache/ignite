@@ -75,13 +75,6 @@ public class MemcacheRestExampleNodeStartup {
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
-
-        qryCfg.setIndexPrimitiveKey(true);
-        qryCfg.setIndexFixedTyping(false);
-
-        cacheCfg.setQueryConfiguration(qryCfg);
-
         cfg.setCacheConfiguration(cacheCfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

@@ -18,12 +18,11 @@
 package org.apache.ignite.examples8.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 
 import javax.cache.processor.*;
 import java.util.*;
-
-import static org.apache.ignite.cache.query.Query.*;
 
 /**
  * Real time popular numbers counter.
@@ -54,7 +53,7 @@ public class CachePopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws org.apache.ignite.IgniteException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
@@ -89,7 +88,7 @@ public class CachePopularNumbersExample {
      * Populates cache in real time with numbers and keeps count for every number.
      *
      * @param ignite Ignite.
-     * @throws org.apache.ignite.IgniteException If failed.
+     * @throws IgniteException If failed.
      */
     private static void streamData(final Ignite ignite) throws IgniteException {
         try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(CACHE_NAME)) {
@@ -119,7 +118,8 @@ public class CachePopularNumbersExample {
 
                 try {
                     List<List<?>> results = new ArrayList<>(cache.queryFields(
-                        sql("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt)).getAll());
+                        new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt))
+                        .getAll());
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
@@ -142,12 +142,14 @@ public class CachePopularNumbersExample {
      */
     private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
         /** Process entries to increase value by entry key. */
-        private static final EntryProcessor<Integer, Long, Void> INC = (e, args) -> {
-            Long val = e.getValue();
+        private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
+            @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
+                Long val = e.getValue();
 
-            e.setValue(val == null ? 1L : val + 1);
+                e.setValue(val == null ? 1L : val + 1);
 
-            return null;
+                return null;
+            }
         };
 
         /** {@inheritDoc} */

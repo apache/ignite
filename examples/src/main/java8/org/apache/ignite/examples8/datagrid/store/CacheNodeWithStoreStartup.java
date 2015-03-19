@@ -40,16 +40,16 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  * Starts up an empty node with example cache and store configuration.
  */
 public class CacheNodeWithStoreStartup {
-    /** Use org.apache.ignite.examples8.datagrid.store.dummy.CacheDummyPersonStore to run example. */
+    /** Use org.apache.ignite.examples.datagrid.store.dummy.CacheDummyPersonStore to run example. */
     public static final String DUMMY = "DUMMY";
 
-    /** Use org.apache.ignite.examples8.datagrid.store.jdbc.CacheJdbcPersonStore to run example. */
+    /** Use org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPersonStore to run example. */
     public static final String SIMPLE_JDBC = "SIMPLE_JDBC";
 
-    /** Use org.apache.ignite.examples8.datagrid.store.hibernate.CacheHibernatePersonStore to run example. */
+    /** Use org.apache.ignite.examples.datagrid.store.hibernate.CacheHibernatePersonStore to run example. */
     public static final String HIBERNATE = "HIBERNATE";
 
-    /** Use org.apache.ignite.examples8.datagrid.store.jdbc.CacheJdbcPojoPersonStore to run example. */
+    /** Use org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPojoPersonStore to run example. */
     public static final String AUTO = "AUTO";
 
     /** Store to use. */
@@ -59,7 +59,7 @@ public class CacheNodeWithStoreStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws org.apache.ignite.IgniteException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
         Ignition.start(configure());
@@ -69,7 +69,7 @@ public class CacheNodeWithStoreStartup {
      * Configure ignite.
      *
      * @return Ignite configuration.
-     * @throws org.apache.ignite.IgniteException If failed.
+     * @throws IgniteException If failed.
      */
     public static IgniteConfiguration configure() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -89,9 +89,6 @@ public class CacheNodeWithStoreStartup {
 
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        // Set query indexing enabled for use query in example.
-        cacheCfg.setQueryIndexEnabled(true);
 
         CacheStore<Long, Person> store;
 
@@ -133,7 +130,7 @@ public class CacheNodeWithStoreStartup {
         tm.setDatabaseTable("PERSON");
 
         tm.setKeyType("java.lang.Long");
-        tm.setValueType("org.apache.ignite.examples8.datagrid.store.model.Person");
+        tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
 
         tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
 
