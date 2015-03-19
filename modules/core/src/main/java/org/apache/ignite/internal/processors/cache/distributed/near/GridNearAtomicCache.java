@@ -117,7 +117,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (ver == null)
             ver = res.nearVersion();
 
-        assert ver != null;
+        assert ver != null : "Failed to find version [req=" + req + ", res=" + res + ']';
 
         int nearValIdx = 0;
 
