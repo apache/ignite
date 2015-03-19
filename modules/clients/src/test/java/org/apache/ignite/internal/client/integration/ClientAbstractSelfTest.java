@@ -19,7 +19,6 @@ package org.apache.ignite.internal.client.integration;
 
 import junit.framework.*;
 import net.sf.json.*;
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -42,7 +41,6 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Tests for Java client.
