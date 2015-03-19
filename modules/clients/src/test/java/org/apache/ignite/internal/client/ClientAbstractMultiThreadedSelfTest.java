@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -33,7 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.junit.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -112,13 +110,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
      * @return SSL context factory to use if SSL is enabled.
      */
     protected abstract GridSslContextFactory sslContextFactory();
-
-    /**
-     * @return Count of iterations for sync commit test.
-     */
-    protected int syncCommitIterCount() {
-        return 1000;
-    }
 
     /**
      * @return Topology refresh frequency interval.
@@ -236,86 +227,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         GridClientFactory.stop(client.id(), false);
 
         client = null;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSyncCommitFlagReplicated() throws Exception {
-        doTestSyncCommitFlag(client.data(REPLICATED_ASYNC_CACHE_NAME));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSyncCommitFlagPartitioned() throws Exception {
-        doTestSyncCommitFlag(client.data(PARTITIONED_ASYNC_BACKUP_CACHE_NAME));
-    }
-
-    /**
-     * Extracts array from given iterator.
-     *
-     * @param nodes Iterator of nodes.
-     * @return Nodes array.
-     */
-    private GridClientNode[] toArray(Iterator<? extends GridClientNode> nodes) {
-        ArrayList<GridClientNode> res = new ArrayList<>();
-
-        while (nodes.hasNext())
-            res.add(nodes.next());
-
-        return res.toArray(new GridClientNode[res.size()]);
-    }
-
-    /**
-     * Runs test on SYNC_COMMIT flag.
-     *
-     * @param data Client data to run test on.
-     * @throws Exception If failed.
-     */
-    private void doTestSyncCommitFlag(final GridClientData data) throws Exception {
-        final String key = "k0";
-
-        Collection<UUID> affNodesIds = F.viewReadOnly(
-            affinity(grid(0).jcache(data.cacheName())).mapKeyToPrimaryAndBackups(key),
-            F.node2id());
-
-        final GridClientData dataFirst = data.pinNodes(F.first(client.compute().nodes()));
-
-        List<GridClientNode> affNodes = new ArrayList<>();
-
-        for (GridClientNode node : client.compute().nodes()) {
-            if (affNodesIds.contains(node.nodeId()))
-                affNodes.add(node);
-        }
-
-        Assert.assertFalse(affNodes.isEmpty());
-
-        Iterator<? extends GridClientNode> it = affNodes.iterator();
-
-        final GridClientData dataOthers = data.pinNodes(it.next(), toArray(it));
-
-        for (int i = 0; i < syncCommitIterCount(); i++) {
-            final CountDownLatch l = new CountDownLatch(1);
-
-            final String val = "v" + i;
-
-            IgniteInternalFuture<?> f = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    l.await();
-
-                    assertEquals(val, dataOthers.get(key));
-
-                    return null;
-                }
-            }, THREAD_CNT);
-
-            dataFirst.flagsOn(GridClientCacheFlag.SYNC_COMMIT).put(key, val);
-
-            l.countDown();
-
-            f.get();
-        }
     }
 
     /**
