@@ -36,6 +36,9 @@ public abstract class Query<T extends Query> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default query page size. */
+    public static final int DFLT_PAGE_SIZE = 1024;
+
     /** Page size. */
     private int pageSize;
 

@@ -510,6 +510,38 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void testLocalClearKeys() throws Exception {
+        IgniteCache<String, Integer> nearCache = jcache();
+        IgniteCache<String, Integer> primary = fullCache();
+
+        Collection<String> keys = primaryKeysForCache(primary, 3);
+
+        int i = 0;
+
+        for (String key : keys)
+            nearCache.put(key, i++);
+
+        String lastKey = F.last(keys);
+
+        Set<String> keysToRmv = new HashSet<>(keys);
+
+        keysToRmv.remove(lastKey);
+
+        assert keysToRmv.size() > 1;
+
+        nearCache.localClearAll(keysToRmv);
+
+        for (String key : keys) {
+            boolean found = nearCache.localPeek(key, CachePeekMode.ONHEAP) != null;
+
+            if (keysToRmv.contains(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
+        }
+    }
+
     /**
      * @param async If {@code true} uses async method.
      * @throws Exception If failed.

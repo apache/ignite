@@ -19,13 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'CacheProjection.peek(..)'} and {@code Entry.peek(..)} methods,
- * such as {@link CacheProjection#peek(Object, Collection)},
- * {@link org.apache.ignite.cache.Entry#peek()}, and others.
+ * {@code 'CacheProjection.peek(..)'} and {@code Entry.peek(..)} methods.
  * <p>
  * The following modes are supported:
  * <ul>

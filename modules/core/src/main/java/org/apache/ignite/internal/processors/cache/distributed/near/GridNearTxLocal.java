@@ -1052,7 +1052,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         return fut;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param cacheCtx Cache context.
+     * @param keys Keys.
+     * @param implicit Implicit flag.
+     * @param read Read flag.
+     * @param accessTtl Access ttl.
+     * @param <K> Key type.
+     * @return Future with respond.
+     */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
         boolean implicit,
