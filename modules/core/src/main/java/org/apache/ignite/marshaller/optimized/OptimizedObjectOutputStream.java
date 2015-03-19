@@ -115,6 +115,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         reset();
 
         ctx = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */

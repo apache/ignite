@@ -122,6 +122,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         ctx = null;
         clsLdr = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */
