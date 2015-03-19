@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    
+
     /** Partitioned cache. */
     private static IgniteCache pCache;
 
@@ -66,8 +66,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         c.setMarshaller(new OptimizedMarshaller(true));
 
-        c.setCacheConfiguration(createCache("partitioned", CacheMode.PARTITIONED),
-            createCache("replicated", CacheMode.REPLICATED)
+        c.setCacheConfiguration(createCache("part", CacheMode.PARTITIONED),
+            createCache("repl", CacheMode.REPLICATED)
         );
 
         return c;
@@ -113,9 +113,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrids(4);
 
-        pCache = ignite.jcache("partitioned");
+        pCache = ignite.jcache("part");
         
-        rCache = ignite.jcache("replicated");
+        rCache = ignite.jcache("repl");
 
         awaitPartitionMapExchange();
         
@@ -212,7 +212,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Organization org) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement("insert into ORGANIZATION (id, name) values(?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement(
+            "insert into \"part\".ORGANIZATION (id, name) values(?, ?)")) {
             st.setInt(1, org.id);
             st.setString(2, org.name);
 
@@ -228,7 +229,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void insertInDb(Person p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into PERSON (id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?)")) {
+            "insert into \"part\".PERSON (id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setString(2, p.firstName);
             st.setString(3, p.lastName);
@@ -246,7 +247,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Product p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement("insert into PRODUCT (id, name, price) values(?, ?, ?)")) {
+        try(PreparedStatement st = conn.prepareStatement(
+            "insert into \"repl\".PRODUCT (id, name, price) values(?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setString(2, p.name);
             st.setInt(3, p.price);
@@ -263,7 +265,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void insertInDb(Purchase p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into PURCHASE (id, personId, productId) values(?, ?, ?)")) {
+            "insert into \"part\".PURCHASE (id, personId, productId) values(?, ?, ?)")) {
             st.setInt(1, p.id);
             st.setInt(2, p.personId);
             st.setInt(3, p.productId);
@@ -279,24 +281,27 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void initializeH2Schema() throws SQLException {
         Statement st = conn.createStatement();
-        
-        st.execute("create table ORGANIZATION" +
+
+        st.execute("CREATE SCHEMA \"part\"");
+        st.execute("CREATE SCHEMA \"repl\"");
+
+        st.execute("create table \"part\".ORGANIZATION" +
             "  (id int unique," +
             "  name varchar(255))");
         
-        st.execute("create table PERSON" +
+        st.execute("create table \"part\".PERSON" +
             "  (id int unique, " +
             "  firstName varchar(255), " +
             "  lastName varchar(255)," +
             "  orgId int not null," +
             "  salary double )");
 
-        st.execute("create table PRODUCT" +
+        st.execute("create table \"repl\".PRODUCT" +
             "  (id int unique, " +
             "  name varchar(255), " +
             "  price int)");
 
-        st.execute("create table PURCHASE" +
+        st.execute("create table \"part\".PURCHASE" +
             "  (id int unique, " +
             "  personId int, " +
             "  productId int)");
@@ -312,7 +317,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException In case of error.
      */
     private Connection openH2Connection(boolean autocommit) throws SQLException {
-        Connection conn = DriverManager.getConnection("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
+        String dbName = "test";
+        
+        Connection conn = DriverManager.getConnection("jdbc:h2:mem:" + dbName + ";DB_CLOSE_DELAY=-1");
 
         conn.setAutoCommit(autocommit);
 
@@ -454,41 +461,48 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkAllDataEquals() throws Exception {
-        testQuery("select id, name from Organization");
+        testQuery("select id, name from \"part\".Organization");
 
-        testQuery("select id, firstName, lastName, orgId, salary from Person");
+        testQuery("select id, firstName, lastName, orgId, salary from \"part\".Person");
 
-        testQuery("select id, personId, productId from Purchase");
+        testQuery("select id, personId, productId from \"part\".Purchase");
 
-        testQuery(rCache, "select id, name, price from Product");
+        testQuery(rCache, "select id, name, price from \"repl\".Product");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleReplSelect() throws Exception {
+        testQuery("select id, name, price from \"repl\".Product");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testEmptyResult() throws Exception {
-        testQuery("select id from Person where 0 = 1");
+        testQuery("select id from \"part\".Person where 0 = 1");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSelectWithStar() throws Exception {
-        testQuery("select * from Person");
+        testQuery("select * from \"part\".Person");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSelectWithStar2() throws Exception {
-        testQuery("select Person.* from Person");
+        testQuery("select Person.* from \"part\".Person");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSqlQueryWithAggregation() throws Exception {
-        testQuery("select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
+        testQuery("select avg(salary) from \"part\".Person, \"part\".Organization where Person.orgId = Organization.id and "
             + "lower(Organization.name) = lower(?)", "Org1");
     }
 
@@ -496,7 +510,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSqlFieldsQuery() throws Exception {
-        testQuery("select concat(firstName, ' ', lastName) from Person");
+        testQuery("select concat(firstName, ' ', lastName) from \"part\".Person");
     }
 
     /**
@@ -504,7 +518,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testSqlFieldsQueryWithJoin() throws Exception {
         testQuery("select concat(firstName, ' ', lastName), "
-            + "Organization.name from Person, Organization where "
+            + "Organization.name from \"part\".Person, \"part\".Organization where "
             + "Person.orgId = Organization.id");
     }
 
@@ -513,7 +527,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testOrdered() throws Exception {
         testOrderedQuery("select firstName, lastName" +
-                " from Person" +
+                " from \"part\".Person" +
                 " order by lastName, firstName"
         );
     }
@@ -526,12 +540,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     public void testSimpleJoin() throws Exception {
         // Have expected results.
         testQuery("select id, firstName, lastName" +
-            "  from Person" +
+            "  from \"part\".Person" +
             "  where Person.id = ?", 3);
 
         // Ignite cache return 0 results...
         testQuery("select Person.firstName" +
-            "  from Person, Purchase" +
+            "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = ?", 3);
     }
 
@@ -539,7 +553,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleReplicatedSelect() throws Exception {
-        testQuery(rCache, "select id, name from Product");
+        testQuery(rCache, "select id, name from \"repl\".Product");
     }
 
     /**
@@ -548,18 +562,18 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     public void testCrossCache() throws Exception {
         //TODO Investigate (should be 20 results instead of 0).
         testQuery("select firstName, lastName" +
-            "  from Person, Purchase" +
+            "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = Purchase.personId");
 
         //TODO Investigate.
         testQuery("select concat(firstName, ' ', lastName), Product.name " +
-            "  from Person, Purchase, \"replicated\".Product " +
+            "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
 
         //TODO Investigate.
         testQuery("select concat(firstName, ' ', lastName), count (Product.id) " +
-            "  from Person, Purchase, \"replicated\".Product " +
+            "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
     }
