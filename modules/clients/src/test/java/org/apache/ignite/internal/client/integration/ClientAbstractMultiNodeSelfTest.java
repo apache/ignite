@@ -227,36 +227,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testSyncCommitRollbackFlags() throws Exception {
-        commSpiEnabled = true;
-
-        try {
-            GridClientData data = client.data(REPLICATED_ASYNC_CACHE_NAME);
-
-            info("Before put x1");
-
-            data.put("x1", "y1");
-
-            info("Before put x2");
-
-            data.flagsOn(GridClientCacheFlag.SYNC_COMMIT).put("x2", "y2");
-
-            info("Before put x3");
-
-            data.put("x3", "y3");
-
-            info("Before put x4");
-
-            data.flagsOn(GridClientCacheFlag.SYNC_COMMIT).put("x4", "y4");
-        }
-        finally {
-            commSpiEnabled = false;
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testEmptyProjections() throws Exception {
         final GridClientCompute dflt = client.compute();
 
@@ -527,56 +497,5 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
                 assertTrue("Invalid tx flags: " + t, t.syncCommit());
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultithreadedCommand() throws Exception {
-        final GridClientData data = client.data(PARTITIONED_CACHE_NAME);
-        final GridClientCompute compute = client.compute();
-        final AtomicInteger cnt = new AtomicInteger(0);
-
-        multithreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (int i = 0; i < 20; i++) {
-                    String key = UUID.randomUUID().toString();
-                    String val = UUID.randomUUID().toString();
-
-                    switch (cnt.incrementAndGet() % 4) {
-                        case 0: {
-                            assertTrue(data.put(key, val));
-                            assertEquals(val, data.get(key));
-                            assertTrue(data.remove(key));
-
-                            break;
-                        }
-
-                        case 1: {
-                            assertNotNull(data.metrics());
-
-                            break;
-                        }
-
-                        case 2: {
-                            String nodeId = compute.execute(TestTask.class.getName(), null);
-
-                            assertNotNull(nodeId);
-                            assertNotNull(compute.refreshNode(UUID.fromString(nodeId), true, true));
-
-                            break;
-                        }
-
-                        case 3: {
-                            assertEquals(NODES_CNT, compute.refreshTopology(true, true).size());
-
-                            break;
-                        }
-                    }
-                }
-
-                return null;
-            }
-        }, 50, "multithreaded-client-access");
     }
 }
