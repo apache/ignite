@@ -266,7 +266,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         // 4th grid with null cache mode (legal case, it should turn to REPLICATED mode).
         cacheEnabled = true;
-        cacheName = "replicated";
+        cacheName = "partitioned";
         cacheMode = null;
         depMode = SHARED;
 
