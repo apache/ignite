@@ -79,7 +79,7 @@ public class ComputeBroadcastExample {
      */
     private static void gatherSystemInfo(Ignite ignite) throws IgniteException {
         // Gather system info from all nodes.
-        Collection<String> res = ignite.compute().broadcast(
+        Collection<String> res = ignite.compute().broadcast(//Todo:fix IGNITE-10 before converting to lambda
             new IgniteCallable<String>() {
                 // Automatically inject ignite instance.
                 @IgniteInstanceResource

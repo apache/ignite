@@ -85,17 +85,15 @@ public class CacheApiExample {
         IgniteFuture<String> fut = asyncCache.future();
 
         //Asynchronously wait for result.
-        fut.listen(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override
-            public void apply(IgniteFuture<String> fut) {
+        fut.listen((future) -> {
                 try {
-                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
+                    System.out.println("Put operation completed [previous-value=" + future.get() + ']');
                 }
                 catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }
-        });
+        );
 
         // Put-if-absent.
         boolean b1 = cache.putIfAbsent(4, "4");
