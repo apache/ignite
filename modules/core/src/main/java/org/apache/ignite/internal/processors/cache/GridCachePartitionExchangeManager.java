@@ -88,7 +88,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
     /** */
-    private volatile GridDhtPartitionsExchangeFuture lastInitializedFuture;
+    private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /**
      * Partition map futures.
@@ -105,9 +105,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!enterBusy())
                 return;
 
-            DiscoveryEvent e = (DiscoveryEvent)evt;
-
             try {
+                DiscoveryEvent e = (DiscoveryEvent)evt;
+
                 ClusterNode loc = cctx.localNode();
 
                 assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED ||
@@ -370,14 +370,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
-        return lastInitializedFuture.exchangeId().topologyVersion();
+        return lastInitializedFut.exchangeId().topologyVersion();
     }
 
     /**
      * @return Last completed topology future.
      */
     public GridDhtTopologyFuture lastTopologyFuture() {
-        return lastInitializedFuture;
+        return lastInitializedFut;
     }
 
     /**
@@ -893,7 +893,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
 
                         if (!exchFut.dummy() && !exchFut.forcePreload()) {
-                            lastInitializedFuture = exchFut;
+                            lastInitializedFut = exchFut;
 
                             exchFut.init();
 
