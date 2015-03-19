@@ -5779,7 +5779,7 @@ public class GridFunc {
     public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
         A.notNull(c, "c");
 
-        return viewReadOnly(c, IDENTITY);
+        return (Collection<R>)c;
     }
 
     /**
