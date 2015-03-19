@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.stream.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -105,7 +106,7 @@ public class CachePopularNumbersExample {
             // Set larger per-node buffer size since our state is relatively small.
             stmr.perNodeBufferSize(2048);
 
-            stmr.updater(new IncrementingUpdater());
+            stmr.receiver(new IncrementingUpdater());
 
             for (int i = 0; i < CNT; i++)
                 stmr.addData(RAND.nextInt(RANGE), 1L);
@@ -150,7 +151,7 @@ public class CachePopularNumbersExample {
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements StreamReceiver<Integer, Long> {
         /** Process entries to increase value by entry key. */
         private static final EntryProcessor<Integer, Long, ?> INC = new EntryProcessor<Integer, Long, Object>() {
             @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
@@ -163,7 +164,7 @@ public class CachePopularNumbersExample {
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
+        @Override public void receive(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

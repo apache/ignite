@@ -18,7 +18,7 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.IgniteCache
-import org.apache.ignite.examples.ExampleNodeStartup
+import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 

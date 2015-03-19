@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.examples.java8;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;

@@ -19,7 +19,7 @@ package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.events.Event
 import org.apache.ignite.events.EventType._
-import org.apache.ignite.examples.ExampleNodeStartup
+import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._

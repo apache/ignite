@@ -17,18 +17,19 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.examples.ExampleNodeStartup
-import org.apache.ignite.internal.util.scala.impl
-import org.apache.ignite.scalar.scalar
-import org.apache.ignite.scalar.scalar._
-import org.apache.ignite.{IgniteCache, IgniteDataStreamer, IgniteException}
-
-import javax.cache.processor.{EntryProcessor, MutableEntry}
 import java.lang.{Integer => JavaInt, Long => JavaLong}
 import java.util
 import java.util.Map.Entry
 import java.util.Timer
+import javax.cache.processor.{EntryProcessor, MutableEntry}
+
+import org.apache.ignite.cache.query.SqlFieldsQuery
+import org.apache.ignite.examples.java8.ExampleNodeStartup
+import org.apache.ignite.internal.util.scala.impl
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+import org.apache.ignite.stream.StreamReceiver
+import org.apache.ignite.{IgniteCache, IgniteException}
 
 import scala.collection.JavaConversions._
 import scala.util.Random
@@ -107,7 +108,7 @@ object ScalarCachePopularNumbersExample extends App {
         // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
         val smtr = dataStreamer$[JavaInt, JavaLong](NAME, 2048)
 
-        smtr.updater(new IncrementingUpdater())
+        smtr.receiver(new IncrementingUpdater())
 
         (0 until CNT) foreach (_ => smtr.addData(RAND.nextInt(RANGE), 1L))
 
@@ -132,7 +133,7 @@ object ScalarCachePopularNumbersExample extends App {
     /**
      * Increments value for key.
      */
-    private class IncrementingUpdater extends IgniteDataStreamer.Updater[JavaInt, JavaLong] {
+    private class IncrementingUpdater extends StreamReceiver[JavaInt, JavaLong] {
         private[this] final val INC = new EntryProcessor[JavaInt, JavaLong, Object]() {
             /** Process entries to increase value by entry key. */
             override def process(e: MutableEntry[JavaInt, JavaLong], args: AnyRef*): Object = {
@@ -144,7 +145,7 @@ object ScalarCachePopularNumbersExample extends App {
             }
         }
 
-        @impl def update(cache: IgniteCache[JavaInt, JavaLong], entries: util.Collection[Entry[JavaInt, JavaLong]]) {
+        @impl def receive(cache: IgniteCache[JavaInt, JavaLong], entries: util.Collection[Entry[JavaInt, JavaLong]]) {
             entries.foreach(entry => cache.invoke(entry.getKey, INC))
         }
     }

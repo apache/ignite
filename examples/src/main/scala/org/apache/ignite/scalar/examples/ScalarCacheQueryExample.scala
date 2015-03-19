@@ -17,18 +17,17 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.configuration.CacheConfiguration
-
 import java.util._
 
-import org.apache.ignite.{IgniteCache, Ignite}
-import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.affinity.CacheAffinityKey
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
+import org.apache.ignite.{Ignite, IgniteCache}
 
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
