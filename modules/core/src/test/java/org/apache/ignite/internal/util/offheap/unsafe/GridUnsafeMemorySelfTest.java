@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
+import org.jdk8.backport.LongAdder;
 
 import java.util.*;
 import java.util.concurrent.*;

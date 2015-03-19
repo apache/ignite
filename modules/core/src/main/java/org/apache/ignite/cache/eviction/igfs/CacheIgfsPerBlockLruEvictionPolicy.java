@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
