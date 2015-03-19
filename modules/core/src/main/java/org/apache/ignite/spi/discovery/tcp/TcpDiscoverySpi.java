@@ -642,17 +642,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleRemoteNodes());
+        return F.upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Object> injectables() {
-        Collection<Object> res = new LinkedList<>();
-
-        if (ipFinder != null)
-            res.add(ipFinder);
-
-        return res;
+        return F.<Object>asList(ipFinder);
     }
 
     /** {@inheritDoc} */

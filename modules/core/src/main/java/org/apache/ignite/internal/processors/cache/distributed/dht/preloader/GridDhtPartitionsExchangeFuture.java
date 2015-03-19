@@ -740,9 +740,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         singleMsgs.clear();
         fullMsgs.clear();
         rcvdIds.clear();
-        rmtNodes.clear();
         oldestNode.set(null);
         partReleaseFut = null;
+
+        Collection<ClusterNode> rmtNodes = this.rmtNodes;
+
+        if (rmtNodes != null)
+            rmtNodes.clear();
     }
 
     /**
