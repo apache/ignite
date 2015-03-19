@@ -55,7 +55,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
-    private final LongAdder curSize = new LongAdder();
+    private final LongAdder8 curSize = new LongAdder8();
 
     /**
      * Default constructor.

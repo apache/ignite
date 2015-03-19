@@ -164,11 +164,11 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Opened connections. */
     @GridToStringExclude
-    private final LongAdder opened = new LongAdder();
+    private final LongAdder8 opened = new LongAdder8();
 
     /** Closed connections. */
     @GridToStringExclude
-    private final LongAdder closed = new LongAdder();
+    private final LongAdder8 closed = new LongAdder8();
 
     /** Test mode flag. */
     @GridToStringExclude

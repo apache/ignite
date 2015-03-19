@@ -301,7 +301,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean finished = new AtomicBoolean();
 
-        final LongAdder cntr = new LongAdder();
+        final LongAdder8 cntr = new LongAdder8();
 
         final GridUnsafeGuard guard = new GridUnsafeGuard();
 
@@ -315,7 +315,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             X.println("__ starting threads: " + threads + " time: " + time + " sec");
 
-            final LongAdder locAdder = new LongAdder();
+            final LongAdder8 locAdder = new LongAdder8();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -409,12 +409,12 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         private AtomicBoolean deallocated = new AtomicBoolean();
 
         /** */
-        private LongAdder cntr;
+        private LongAdder8 cntr;
 
         /**
          * @param cntr Counter.
          */
-        CmpMem(LongAdder cntr) {
+        CmpMem(LongAdder8 cntr) {
             this.cntr = cntr;
 
             cntr.increment();

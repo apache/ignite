@@ -108,9 +108,9 @@ import java.util.concurrent.locks.*;
  * <p>A ConcurrentHashMapV8 can be used as scalable frequency map (a
  * form of histogram or multiset) by using {@link LongAdder8} values
  * and initializing via {@link #computeIfAbsent}. For example, to add
- * a count to a {@code ConcurrentHashMapV8<String,LongAdder> freqs}, you
+ * a count to a {@code ConcurrentHashMapV8<String,LongAdder8> freqs}, you
  * can use {@code freqs.computeIfAbsent(k -> new
- * LongAdder()).increment();}
+ * LongAdder8()).increment();}
  *
  * <p>This class and its views and iterators implement all of the
  * <em>optional</em> methods of the {@link Map} and {@link Iterator}
@@ -457,7 +457,7 @@ public class ConcurrentHashMap8<K, V>
      * These cases attempt to override the initial capacity settings,
      * but harmlessly fail to take effect in cases of races.
      *
-     * The element count is maintained using a LongAdder, which avoids
+     * The element count is maintained using a LongAdder8, which avoids
      * contention on updates but can encounter cache thrashing if read
      * too frequently during concurrent access. To avoid reading so
      * often, resizing is attempted either when a bin lock is
