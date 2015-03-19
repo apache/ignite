@@ -167,7 +167,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     @Override public int compareTo(GridDhtPartitionMap o) {
         assert nodeId.equals(o.nodeId);
 
-        return updateSeq < o.updateSeq ? -1 : updateSeq == o.updateSeq ? 0 : 1;
+        return Long.compare(updateSeq, o.updateSeq);
     }
 
     /** {@inheritDoc} */

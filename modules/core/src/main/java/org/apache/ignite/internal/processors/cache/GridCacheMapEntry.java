@@ -43,7 +43,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -3756,11 +3755,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache.Entry<K, V> wrapLazyValue() {
-        return new LazyValueEntry(key);
+        return new LazyValueEntry<>(key);
     }
 
     /** {@inheritDoc} */
-    @Nullable public CacheObject peekVisibleValue() {
+    @Override @Nullable public CacheObject peekVisibleValue() {
         try {
             IgniteInternalTx tx = cctx.tm().userTx();
 

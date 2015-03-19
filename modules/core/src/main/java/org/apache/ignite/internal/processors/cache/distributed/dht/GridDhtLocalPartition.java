@@ -587,7 +587,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         if (part == null)
             return 1;
 
-        return id == part.id() ? 0 : id > part.id() ? 1 : -1;
+        return Integer.compare(id, part.id());
     }
 
     /** {@inheritDoc} */

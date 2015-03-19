@@ -509,7 +509,10 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
         @Override public int compareTo(Key<V> o) {
             int res = cmp != null ? cmp.compare(val, o.val) : ((Comparable<V>)val).compareTo(o.val);
 
-            return res == 0 ? (seed < o.seed ? -1 : seed > o.seed ? 1 : 0) : res;
+            if (res == 0)
+                res = Long.compare(seed, o.seed);
+
+            return res;
         }
 
         /** {@inheritDoc} */

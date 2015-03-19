@@ -125,8 +125,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         if (o == this)
             return 0;
 
-
-
         return topVer.compareTo(o.topVer);
     }
 

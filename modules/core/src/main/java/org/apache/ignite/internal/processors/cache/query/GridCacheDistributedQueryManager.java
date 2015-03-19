@@ -747,10 +747,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         /** {@inheritDoc} */
         @Override public int compareTo(CancelMessageId m) {
-            if (m.reqId == reqId)
-                return m.nodeId.compareTo(nodeId);
+            int res = Long.compare(reqId, m.reqId);
 
-            return reqId < m.reqId ? -1 : 1;
+            if (res == 0)
+                res = m.nodeId.compareTo(nodeId);
+
+            return res;
         }
 
         /** {@inheritDoc} */
