@@ -66,7 +66,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** */
-    private boolean stopping;
+    private volatile boolean stopping;
 
     /** A future that will be completed when topology with version topVer will be ready to use. */
     private GridDhtTopologyFuture topReadyFut;
@@ -184,6 +184,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopping() {
+        return stopping;
     }
 
     /** {@inheritDoc} */

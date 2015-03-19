@@ -2279,8 +2279,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             try {
                 ctx.cache().dynamicStartCache(cacheCfg, null).get();
             }
-            catch (IgniteCacheExistsException ignore) {
-                // Ignore the error if cache already exists.
+            catch (IgniteCheckedException e) {
+                // Ignore error if cache exists.
+                if (!e.hasCause(IgniteCacheExistsException.class))
+                    throw e;
             }
 
             return ctx.cache().publicJCache(cacheCfg.getName());

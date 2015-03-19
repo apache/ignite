@@ -1069,6 +1069,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 topology().readLock();
 
                 try {
+                    if (topology().stopping()) {
+                        res.addFailedKeys(keys, new IgniteCheckedException("Failed to perform cache operation " +
+                            "(cache is stopped): " + name()));
+
+                        completionCb.apply(req, res);
+
+                        return;
+                    }
+
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
                     if (topology().topologyVersion().equals(req.topologyVersion()) ||
@@ -2351,7 +2360,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             Collection<ClusterNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer);
 
             // We are on primary node for some key.
-            assert !nodes.isEmpty();
+            assert !nodes.isEmpty() : "Failed to find affinity nodes [name=" + name() + ", topVer=" + topVer +
+                ctx.kernalContext().discovery().discoCache(topVer) + ']';
 
             if (nodes.size() == 1) {
                 if (log.isDebugEnabled())

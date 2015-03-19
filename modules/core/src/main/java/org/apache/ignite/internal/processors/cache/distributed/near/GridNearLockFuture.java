@@ -676,6 +676,13 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         cctx.topology().readLock();
 
         try {
+            if (cctx.topology().stopping()) {
+                onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
+                    cctx.name()));
+
+                return;
+            }
+
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {

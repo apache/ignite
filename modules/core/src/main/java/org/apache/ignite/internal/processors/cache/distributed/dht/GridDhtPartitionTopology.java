@@ -70,6 +70,11 @@ public interface GridDhtPartitionTopology {
     public GridDhtTopologyFuture topologyVersionFuture();
 
     /**
+     * @return {@code True} if cache is being stopped.
+     */
+    public boolean stopping();
+
+    /**
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.

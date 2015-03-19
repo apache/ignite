@@ -414,6 +414,15 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         AffinityTopologyVersion topVer = null;
 
         try {
+            if (cache.topology().stopping()) {
+                futVer = cctx.versions().next(cctx.affinity().affinityTopologyVersion());
+
+                onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
+                    cache.name()));
+
+                return;
+            }
+
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {

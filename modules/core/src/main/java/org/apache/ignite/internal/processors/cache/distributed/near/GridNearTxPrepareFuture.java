@@ -311,6 +311,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             GridDhtTopologyFuture topFut = topologyReadLock();
 
             try {
+                if (topFut == null) {
+                    assert isDone();
+
+                    return;
+                }
+
                 if (topFut.isDone()) {
                     try {
                         if (!tx.state(PREPARING)) {
@@ -385,6 +391,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             return cctx.exchange().lastTopologyFuture();
 
         nonLocCtx.topology().readLock();
+
+        if (nonLocCtx.topology().stopping()) {
+            onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
+                nonLocCtx.name()));
+
+            return null;
+        }
 
         return nonLocCtx.topology().topologyVersionFuture();
     }
