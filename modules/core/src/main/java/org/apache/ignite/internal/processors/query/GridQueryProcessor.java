@@ -433,7 +433,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return idx.queryTwoStep(space, qry);
+            return idx.queryTwoStep(ctx.cache().internalCache(space).context(), qry);
         }
         finally {
             busyLock.leaveBusy();
@@ -441,17 +441,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params) {
+    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return idx.queryTwoStep(space, sqlQry, params);
+            return idx.queryTwoStep(cctx, qry);
         }
         finally {
             busyLock.leaveBusy();
@@ -459,18 +458,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
-     * @param type Type.
-     * @param sqlQry Query.
-     * @param params Parameters.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry, Object[] params) {
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return idx.queryTwoStep(space, type, sqlQry, params);
+            return idx.queryTwoStep(cctx, qry);
         }
         finally {
             busyLock.leaveBusy();
@@ -478,17 +475,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
-     * @param type Type.
-     * @param sqlQry Query.
-     * @param params Parameters.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(String space, String type, String sqlQry, Object[] params) {
+    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(GridCacheContext<?,?> cctx, SqlQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            String space = cctx.name();
+            String type = qry.getType();
+            String sqlQry = qry.getSql();
+            Object[] params = qry.getArgs();
+
             TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
 
             if (typeDesc == null || !typeDesc.registered())
@@ -549,16 +549,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
-     * @param sql SQL Query.
-     * @param args Arguments.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Iterator.
      */
-    public QueryCursor<List<?>> queryLocalFields(String space, String sql, Object[] args) {
+    public QueryCursor<List<?>> queryLocalFields(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            String space = cctx.name();
+            String sql = qry.getSql();
+            Object[] args = qry.getArgs();
+
             GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -577,7 +580,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         null));
             }
 
-            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(res.iterator());
+            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
+                new GridQueryPortableFieldsIterator(res.iterator(), cctx, cctx.keepPortable()));
 
             cursor.fieldsMeta(res.metaData());
 
