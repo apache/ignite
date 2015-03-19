@@ -18,8 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import sun.misc.*;
 
@@ -337,10 +336,7 @@ class OptimizedClassDescriptor {
 
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
-                    List<List<Field>> fields = new ArrayList<>();
-                    List<List<T2<OptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
-                    List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
-                    List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
+                    List<ClassFields> fields = new ArrayList<>();
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -381,33 +377,14 @@ class OptimizedClassDescriptor {
 
                         Field[] clsFields0 = c.getDeclaredFields();
 
-                        Arrays.sort(clsFields0, new Comparator<Field>() {
-                            @Override public int compare(Field f1, Field f2) {
-                                return f1.getName().compareTo(f2.getName());
-                            }
-                        });
+                        Map<String, Field> fieldNames = new HashMap<>();
 
-                        List<Field> clsFields = new ArrayList<>(clsFields0.length);
-                        List<T2<OptimizedFieldType, Long>> clsFieldOffs =
-                            new ArrayList<>(clsFields0.length);
+                        for (Field f : clsFields0)
+                            fieldNames.put(f.getName(), f);
 
-                        for (int i = 0; i < clsFields0.length; i++) {
-                            Field f = clsFields0[i];
+                        List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
 
-                            int mod = f.getModifiers();
-
-                            if (!isStatic(mod) && !isTransient(mod)) {
-                                OptimizedFieldType type = fieldType(f.getType());
-
-                                clsFields.add(f);
-                                clsFieldOffs.add(new T2<>(type, UNSAFE.objectFieldOffset(f)));
-                            }
-                        }
-
-                        fields.add(clsFields);
-                        fieldOffs.add(clsFieldOffs);
-
-                        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap = null;
+                        boolean hasSerialPersistentFields  = false;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -416,16 +393,33 @@ class OptimizedClassDescriptor {
 
                             if (serFieldsDesc.getType() == ObjectStreamField[].class &&
                                 isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
+                                hasSerialPersistentFields = true;
+
                                 serFieldsDesc.setAccessible(true);
 
-                                ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
-
-                                fieldInfoMap = new HashMap<>();
+                                ObjectStreamField[] serFields = (ObjectStreamField[]) serFieldsDesc.get(null);
 
                                 for (int i = 0; i < serFields.length; i++) {
                                     ObjectStreamField serField = serFields[i];
 
-                                    fieldInfoMap.put(serField.getName(), F.t(i, fieldType(serField.getType())));
+                                    FieldInfo fieldInfo;
+
+                                    if (!fieldNames.containsKey(serField.getName())) {
+                                        fieldInfo = new FieldInfo(null,
+                                            serField.getName(),
+                                            -1,
+                                            fieldType(serField.getType()));
+                                    }
+                                    else {
+                                        Field f = fieldNames.get(serField.getName());
+
+                                        fieldInfo = new FieldInfo(f,
+                                            serField.getName(),
+                                            UNSAFE.objectFieldOffset(f),
+                                            fieldType(serField.getType()));
+                                    }
+
+                                    clsFields.add(fieldInfo);
                                 }
                             }
                         }
@@ -437,39 +431,35 @@ class OptimizedClassDescriptor {
                                 cls.getName(), e);
                         }
 
-                        if (fieldInfoMap == null) {
-                            fieldInfoMap = new HashMap<>();
+                        if (!hasSerialPersistentFields) {
+                            for (int i = 0; i < clsFields0.length; i++) {
+                                Field f = clsFields0[i];
 
-                            for (int i = 0; i < clsFields.size(); i++) {
-                                Field f = clsFields.get(i);
+                                int mod = f.getModifiers();
 
-                                fieldInfoMap.put(f.getName(), F.t(i, fieldType(f.getType())));
+                                if (!isStatic(mod) && !isTransient(mod)) {
+                                    FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
+                                        UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
+
+                                    clsFields.add(fieldInfo);
+                                }
                             }
                         }
 
-                        fieldInfoMaps.add(fieldInfoMap);
-
-                        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList =
-                            new ArrayList<>(fieldInfoMap.values());
-
-                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, OptimizedFieldType>>() {
-                            @Override public int compare(IgniteBiTuple<Integer, OptimizedFieldType> t1,
-                                IgniteBiTuple<Integer, OptimizedFieldType> t2) {
-                                return t1.get1().compareTo(t2.get1());
+                        Collections.sort(clsFields, new Comparator<FieldInfo>() {
+                            @Override public int compare(FieldInfo t1, FieldInfo t2) {
+                                return t1.name().compareTo(t2.name());
                             }
                         });
 
-                        fieldInfoLists.add(fieldInfoList);
+                        fields.add(new ClassFields(clsFields));
                     }
 
                     Collections.reverse(writeObjMtds);
                     Collections.reverse(readObjMtds);
                     Collections.reverse(fields);
-                    Collections.reverse(fieldOffs);
-                    Collections.reverse(fieldInfoMaps);
-                    Collections.reverse(fieldInfoLists);
 
-                    this.fields = new Fields(fields, fieldOffs, fieldInfoLists, fieldInfoMaps);
+                    this.fields = new Fields(fields);
                 }
             }
         }
@@ -810,37 +800,147 @@ class OptimizedClassDescriptor {
     }
 
     /**
+     * Information about one field.
+     */
+    @SuppressWarnings("PackageVisibleInnerClass")
+    static class FieldInfo {
+        /** Field. */
+        private final Field field;
+
+        /** Field offset. */
+        private final long fieldOffs;
+
+        /** Field type. */
+        private final OptimizedFieldType fieldType;
+
+        /** Field name. */
+        private final String fieldName;
+
+        /**
+         * @param field Field.
+         * @param name Field name.
+         * @param offset Field offset.
+         * @param type Grid optimized field type.
+         */
+        FieldInfo(Field field, String name, long offset, OptimizedFieldType type) {
+            this.field = field;
+            fieldOffs = offset;
+            fieldType = type;
+            fieldName = name;
+        }
+
+        /**
+         * @return Returns field.
+         */
+        Field field() {
+            return field;
+        }
+
+        /**
+         * @return Offset.
+         */
+        long offset() {
+            return fieldOffs;
+        }
+
+        /**
+         * @return Type.
+         */
+        OptimizedFieldType type() {
+            return fieldType;
+        }
+
+        /**
+         * @return Name.
+         */
+        String name() {
+            return fieldName;
+        }
+    }
+
+    /**
+     * Information about one class.
+     */
+    static class ClassFields {
+        /** Fields. */
+        private final List<FieldInfo> fields;
+
+        private final Map<String, Integer> nameToIndex;
+
+        /**
+         * @param fields Field infos.
+         */
+        ClassFields(List<FieldInfo> fields) {
+            this.fields = fields;
+
+            nameToIndex = U.newHashMap(fields.size());
+
+            for (int i = 0; i < fields.size(); ++i)
+                nameToIndex.put(fields.get(i).name(), i);
+        }
+
+        /**
+         * @return Class fields.
+         */
+        List<FieldInfo> fields() {
+            return fields;
+        }
+
+        /**
+         * @return Fields count.
+         */
+        int size() {
+            return fields.size();
+        }
+
+        /**
+         * @param i Field's index.
+         * @return FieldInfo.
+         */
+        FieldInfo get(int i) {
+            return fields.get(i);
+        }
+
+        /**
+         * @param name Field's name.
+         * @return Field's index.
+         */
+        int getIndex(String name) {
+            assert nameToIndex.containsKey(name);
+
+            return nameToIndex.get(name);
+        }
+    }
+
+    /**
      * Encapsulates data about class fields.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
     static class Fields {
         /** Fields. */
-        private final List<List<Field>> fields;
+        private final List<ClassFields> fields;
 
-        /** Fields offsets. */
-        private final List<List<T2<OptimizedFieldType, Long>>> fieldOffs;
-
-        /** Fields details lists. */
-        private final List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists;
-
-        /** Fields details maps. */
-        private final List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps;
+        /** Own fields (excluding inherited). */
+        private final List<Field> ownFields;
 
         /**
          * Creates new instance.
          *
          * @param fields Fields.
-         * @param fieldOffs Field offsets.
-         * @param fieldInfoLists List of field details sequences for each type in the object's class hierarchy.
-         * @param fieldInfoMaps List of field details maps for each type in the object's class hierarchy.
          */
-        Fields(List<List<Field>> fields, List<List<T2<OptimizedFieldType, Long>>> fieldOffs,
-            List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists,
-            List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps) {
+        Fields(List<ClassFields> fields) {
             this.fields = fields;
-            this.fieldOffs = fieldOffs;
-            this.fieldInfoLists = fieldInfoLists;
-            this.fieldInfoMaps = fieldInfoMaps;
+
+            if (fields.isEmpty())
+                ownFields = null;
+            else {
+                ownFields = new ArrayList<>(fields.size());
+
+                for (FieldInfo f : fields.get(fields.size() - 1).fields()) {
+                    if (f.field() != null)
+                        ownFields.add(f.field);
+                }
+            }
         }
 
         /**
@@ -849,7 +949,7 @@ class OptimizedClassDescriptor {
          * @return List of fields or {@code null} if fields list is empty.
          */
         List<Field> ownFields() {
-            return fields.isEmpty() ? null : fields.get(fields.size() - 1);
+            return ownFields;
         }
 
         /**
@@ -858,28 +958,8 @@ class OptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs where first value is field type and second value is its offset.
          */
-        List<T2<OptimizedFieldType, Long>> fieldOffs(int i) {
-            return fieldOffs.get(i);
-        }
-
-        /**
-         * Returns field sequence numbers and their types as list.
-         *
-         * @param i hierarchy level where 0 corresponds to top level.
-         * @return list of pairs (field number, field type) for the given hierarchy level.
-         */
-        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList(int i) {
-            return fieldInfoLists.get(i);
-        }
-
-        /**
-         * Returns field sequence numbers and their types as map where key is a field name,
-         *
-         * @param i hierarchy level where 0 corresponds to top level.
-         * @return map of field names and their details.
-         */
-        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap(int i) {
-            return fieldInfoMaps.get(i);
+        ClassFields fields(int i) {
+            return fields.get(i);
         }
     }
 }
