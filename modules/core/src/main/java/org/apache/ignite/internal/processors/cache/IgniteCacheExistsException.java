@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.*;
 
 /**
  * Exception thrown when cache already exists.
  */
-public class IgniteCacheExistsException extends IgniteCheckedException {
+public class IgniteCacheExistsException extends CacheException {
     /** */
     private static final long serialVersionUID = 0L;
 
