@@ -368,7 +368,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!desc.valueClass().equals(valCls))
+            if (!desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
@@ -1057,6 +1057,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 d.addProperty(prop, false);
         }
 
+        if (F.isEmpty(meta.getValueType()))
+            throw new IgniteCheckedException("Value type is not set: " + meta);
+
+        d.name(meta.getValueType());
+
+        d.valueClass(U.classForName(meta.getValueType(), Object.class));
+        d.keyClass(meta.getKeyType() == null ? Object.class : U.classForName(meta.getKeyType(), Object.class));
+
         return d;
     }
 
@@ -1364,8 +1372,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 int isKeyProp0 = isKeyProp;
 
-                if (isKeyProp0 == 0) {
-                    if (ctx.cacheObjects().hasField(key, propName))
+                if (isKeyProp0 == 0) { // Key is allowed to be a non-portable object here.
+                    if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
                     else if (ctx.cacheObjects().hasField(val, propName))
                         isKeyProp = isKeyProp0 = -1;
