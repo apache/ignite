@@ -25,6 +25,12 @@ import java.util.*;
 
 /**
  * Stream random numbers into the streaming cache.
+ * To start the example, you should:
+ * <ul>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
+ *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ * </ul>
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -46,7 +52,7 @@ public class StreamRandomNumbers {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             // Create new cache or get existing one.
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            try (IgniteCache<Integer, Long> stmCache = ignite.createCache(CacheConfig.configure())) {
+            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure())) {
                 if (!ExamplesUtils.hasServerNodes(ignite))
                     return;
 
