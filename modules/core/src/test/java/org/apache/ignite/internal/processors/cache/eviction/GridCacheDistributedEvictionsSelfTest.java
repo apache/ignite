@@ -57,9 +57,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     private boolean evictSync;
 
     /** */
-    private boolean evictNearSync;
-
-    /** */
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** {@inheritDoc} */
@@ -116,43 +113,13 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Throwable If failed. */
-    public void testNearSyncBackupUnsync() throws Throwable {
-        gridCnt = 3;
-        mode = PARTITIONED;
-        evictNearSync = true;
-        evictSync = false;
-        nearEnabled = true;
-
-        checkEvictions();
-    }
-
-    /** @throws Throwable If failed. */
     public void testNearSyncBackupSync() throws Throwable {
         gridCnt = 3;
         mode = PARTITIONED;
-        evictNearSync = true;
         evictSync = true;
         nearEnabled = true;
 
         checkEvictions();
-    }
-
-    /** @throws Throwable If failed. */
-    public void testNearUnsyncBackupSync() throws Throwable {
-        gridCnt = 1;
-        mode = PARTITIONED;
-        evictNearSync = false;
-        evictSync = true;
-        nearEnabled = true;
-
-        try {
-            startGrid(0);
-
-            assert false : "Grid was started with illegal configuration.";
-        }
-        catch (IgniteCheckedException e) {
-            info("Caught expected exception: " + e);
-        }
     }
 
     /**
@@ -161,7 +128,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     public void testLocalSync() throws Throwable {
         gridCnt = 1;
         mode = LOCAL;
-        evictNearSync = true;
         evictSync = true;
         nearEnabled = true;
 
