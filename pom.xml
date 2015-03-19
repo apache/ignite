@@ -580,7 +580,6 @@
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
-                                        <exclude>**/package-info.java</exclude>
                                         <exclude>DEVNOTES.txt</exclude>
                                         <exclude>src/main/java/com/romix/scala/**</exclude><!--Apache License, Version 2.0 (Copyright)-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--Stanford University license-->

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Shared memory IPC utility classes.
+ * Contains default no-op indexing SPI implementation.
  */
-package org.apache.ignite.internal.util.ipc.shmem;
+package org.apache.ignite.spi.indexing.noop;
