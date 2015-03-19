@@ -24,11 +24,18 @@ import javax.cache.processor.*;
 import java.util.*;
 
 /**
- * Created by Dmitriy on 3/18/15.
+ * Convenience adapter to transform update existing values in streaming cache
+ * based on the previously cached value.
  */
 public class StreamTransformer<K, V> implements StreamReceiver<K, V> {
+    /** Entry processor. */
     private EntryProcessor<K, V, Object> ep;
 
+    /**
+     * Entry processor to update cache values based on the previously cached value.
+     *
+     * @param ep Entry processor.
+     */
     public StreamTransformer(CacheEntryProcessor<K, V, Object> ep) {
         this.ep = ep;
     }
