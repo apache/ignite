@@ -107,11 +107,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(topVer ^ (topVer >>> 32));
-
-        result = 31 * result + minorTopVer;
-
-        return result;
+        return 31 * (int)topVer + minorTopVer;
     }
 
     /** {@inheritDoc} */

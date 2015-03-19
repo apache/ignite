@@ -1061,9 +1061,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     assert t2.topologyVersion() > 0;
 
                     // Reverse order.
-                    int cmp = t1.compareTo(t2);
-
-                    return cmp < 0 ? 1 : cmp == 0 ? 0 : -1;
+                    return t2.compareTo(t1);
                 }
             }, /*not strict*/false);
         }
