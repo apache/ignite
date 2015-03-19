@@ -25,7 +25,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.hadoop.fs.*;
-import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
+import org.apache.ignite.hadoop.fs.v1.*;
 import org.apache.ignite.internal.processors.hadoop.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.*;
@@ -33,8 +33,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -75,10 +73,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static final String SECONDARY_CFG_PATH = "/work/core-site-test.xml";
 
     /** Secondary endpoint configuration. */
-    protected static final Map<String, String> SECONDARY_ENDPOINT_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    protected static final IgfsIpcEndpointConfiguration SECONDARY_ENDPOINT_CFG;
 
     /** Group size. */
     public static final int GRP_SIZE = 128;
@@ -115,6 +110,13 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** Primary file system configuration. */
     protected Configuration primaryFsCfg;
+
+    static {
+        SECONDARY_ENDPOINT_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_ENDPOINT_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_ENDPOINT_CFG.setPort(11500);
+    }
 
     /** File statuses comparator. */
     private static final Comparator<FileStatus> STATUS_COMPARATOR = new Comparator<FileStatus>() {
@@ -212,8 +214,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             cfg.setFileSystemConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
-            cfg.setCommunicationSpi(communicationSpi());
-
             G.start(cfg);
         }
 
@@ -258,7 +258,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract Map<String, String> primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
 
     /** {@inheritDoc} */
     @Override public String getTestGridName() {
@@ -277,7 +277,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-        cfg.setCommunicationSpi(communicationSpi());
 
         return cfg;
     }
@@ -333,15 +332,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         return cfg;
-    }
-
-    /** @return Communication SPI. */
-    private CommunicationSpi communicationSpi() {
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        return commSpi;
     }
 
     /** @throws Exception If failed. */

@@ -56,7 +56,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     protected void initStore(int flushThreadCnt) throws Exception {
-        store = new GridCacheWriteBehindStore<>("", "", log, delegate);
+        store = new GridCacheWriteBehindStore<>(null, "", "", log, delegate);
 
         store.setFlushFrequency(FLUSH_FREQUENCY);
 

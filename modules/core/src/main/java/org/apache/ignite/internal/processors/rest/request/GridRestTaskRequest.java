@@ -40,9 +40,6 @@ public class GridRestTaskRequest extends GridRestRequest {
     /** Timeout. */
     private long timeout;
 
-    /** Keep portables flag. */
-    private boolean keepPortables;
-
     /**
      * @return Task name, if specified, {@code null} otherwise.
      */
@@ -111,20 +108,6 @@ public class GridRestTaskRequest extends GridRestRequest {
      */
     public void timeout(long timeout) {
         this.timeout = timeout;
-    }
-
-    /**
-     * @return Keep portables flag.
-     */
-    public boolean keepPortables() {
-        return keepPortables;
-    }
-
-    /**
-     * @param keepPortables Keep portables flag.
-     */
-    public void keepPortables(boolean keepPortables) {
-        this.keepPortables = keepPortables;
     }
 
     /** {@inheritDoc} */

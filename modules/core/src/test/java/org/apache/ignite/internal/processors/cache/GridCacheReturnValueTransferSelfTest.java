@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.processor.*;
@@ -185,6 +186,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     /**
      *
      */
+    @IgniteImmutable
     private static class TestObject implements Externalizable {
         /**
          *

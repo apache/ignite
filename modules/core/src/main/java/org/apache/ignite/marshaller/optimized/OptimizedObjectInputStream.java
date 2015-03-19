@@ -17,16 +17,19 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import sun.misc.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
@@ -42,6 +45,12 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
     /** */
     private final HandleTable handles = new HandleTable(10);
+
+    /** */
+    private MarshallerContext ctx;
+
+    /** */
+    private OptimizedMarshallerIdMapper mapper;
 
     /** */
     private ClassLoader clsLdr;
@@ -64,6 +73,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** */
     private Class<?> curCls;
 
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -73,24 +85,21 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
-     * @throws IOException In case of error.
-     */
-    OptimizedObjectInputStream() throws IOException {
-        // No-op.
-    }
-
-    /**
+     * @param clsMap Class descriptors by class map.
+     * @param ctx Context.
+     * @param mapper ID mapper.
      * @param clsLdr Class loader.
      */
-    void classLoader(ClassLoader clsLdr) {
+    void context(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        ClassLoader clsLdr)
+    {
+        this.clsMap = clsMap;
+        this.ctx = ctx;
+        this.mapper = mapper;
         this.clsLdr = clsLdr;
-    }
-
-    /**
-     * @return Class loader.
-     */
-    ClassLoader classLoader() {
-        return clsLdr;
     }
 
     /**
@@ -111,7 +120,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @Override public void close() throws IOException {
         reset();
 
+        ctx = null;
         clsLdr = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */
@@ -142,8 +153,111 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             case HANDLE:
                 return handles.lookup(readInt());
 
-            case OBJECT:
-                OptimizedClassDescriptor desc = OptimizedClassResolver.readClass(this, clsLdr);
+            case JDK:
+                try {
+                    return JDK_MARSH.unmarshal(this, clsLdr);
+                }
+                catch (IgniteCheckedException e) {
+                    IOException ioEx = e.getCause(IOException.class);
+
+                    if (ioEx != null)
+                        throw ioEx;
+                    else
+                        throw new IOException("Failed to deserialize object with JDK marshaller.", e);
+                }
+
+            case BYTE:
+                return readByte();
+
+            case SHORT:
+                return readShort();
+
+            case INT:
+                return readInt();
+
+            case LONG:
+                return readLong();
+
+            case FLOAT:
+                return readFloat();
+
+            case DOUBLE:
+                return readDouble();
+
+            case CHAR:
+                return readChar();
+
+            case BOOLEAN:
+                return readBoolean();
+
+            case BYTE_ARR:
+                return readByteArray();
+
+            case SHORT_ARR:
+                return readShortArray();
+
+            case INT_ARR:
+                return readIntArray();
+
+            case LONG_ARR:
+                return readLongArray();
+
+            case FLOAT_ARR:
+                return readFloatArray();
+
+            case DOUBLE_ARR:
+                return readDoubleArray();
+
+            case CHAR_ARR:
+                return readCharArray();
+
+            case BOOLEAN_ARR:
+                return readBooleanArray();
+
+            case OBJ_ARR:
+                return readArray(readClass());
+
+            case STR:
+                return readString();
+
+            case UUID:
+                return readUuid();
+
+            case PROPS:
+                return readProperties();
+
+            case ARRAY_LIST:
+                return readArrayList();
+
+            case HASH_MAP:
+                return readHashMap(false);
+
+            case HASH_SET:
+                return readHashSet(HASH_SET_MAP_OFF);
+
+            case LINKED_LIST:
+                return readLinkedList();
+
+            case LINKED_HASH_MAP:
+                return readLinkedHashMap(false);
+
+            case LINKED_HASH_SET:
+                return readLinkedHashSet(HASH_SET_MAP_OFF);
+
+            case DATE:
+                return readDate();
+
+            case CLS:
+                return readClass();
+
+            case ENUM:
+            case EXTERNALIZABLE:
+            case SERIALIZABLE:
+                int typeId = readInt();
+
+                OptimizedClassDescriptor desc = typeId == 0 ?
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
 
@@ -165,6 +279,18 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
+     * @return Class.
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IOException In case of other error.
+     */
+    private Class<?> readClass() throws ClassNotFoundException, IOException {
+        int compTypeId = readInt();
+
+        return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
+    }
+
+    /**
      * Reads array from this stream.
      *
      * @param compType Array component type.
@@ -172,6 +298,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     <T> T[] readArray(Class<T> compType) throws ClassNotFoundException, IOException {
         int len = in.readInt();
 
@@ -436,6 +563,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             HashSet<Object> set = (HashSet<Object>)UNSAFE.allocateInstance(HashSet.class);
@@ -507,6 +635,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
+    @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             LinkedHashSet<Object> set = (LinkedHashSet<Object>)UNSAFE.allocateInstance(LinkedHashSet.class);
@@ -1011,6 +1140,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          * @param dflt Default value.
          * @return Value.
          */
+        @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
             return objs[fieldInfoMap.get(name).get1()] != null ? (T)objs[fieldInfoMap.get(name).get1()] : dflt;
         }

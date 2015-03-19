@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -113,7 +112,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return set != null ? set.size() : 0;
             }
 
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
@@ -344,7 +343,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iterator0() {
         try {
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());

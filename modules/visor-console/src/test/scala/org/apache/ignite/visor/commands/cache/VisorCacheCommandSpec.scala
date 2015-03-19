@@ -26,6 +26,7 @@ import org.apache.ignite.configuration._
 import org.apache.ignite.spi.discovery.tcp._
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm._
 
+import java.lang.{Integer => JavaInt}
 import org.jetbrains.annotations._
 
 import org.apache.ignite.visor._
@@ -50,6 +51,10 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg.setCacheMode(REPLICATED)
         cfg.setAtomicityMode(TRANSACTIONAL)
         cfg.setName(name)
+
+        val arr = Seq(classOf[JavaInt], classOf[Foo]).toArray
+
+        cfg.setIndexedTypes(arr:_*)
 
         cfg
     }
@@ -93,7 +98,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     it should "run query and display information about caches" in {
         val g = Ignition.ignite("node-1")
 
-        val c = g.jcache[Int, Foo]("replicated")
+        val c = g.jcache[JavaInt, Foo]("replicated")
 
         c.put(0, Foo(20))
         c.put(1, Foo(100))
@@ -101,12 +106,12 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         c.put(3, Foo(150))
 
         // Create and execute query that mast return 2 rows.
-        val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(1))).getAll()
+        val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(1))).getAll()
 
         assert(q1.size() == 2)
 
         // Create and execute query that mast return 0 rows.
-        val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(100))).getAll()
+        val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(100))).getAll()
 
         assert(q2.size() == 0)
 

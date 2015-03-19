@@ -806,7 +806,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -836,7 +836,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -866,7 +866,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -900,7 +900,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx<Object, Object> curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());

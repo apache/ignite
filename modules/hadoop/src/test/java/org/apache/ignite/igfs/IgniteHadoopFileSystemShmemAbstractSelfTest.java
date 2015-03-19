@@ -42,11 +42,13 @@ public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends Ignite
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
-        return new HashMap<String, String>() {{
-            put("type", "shmem");
-            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
-        }};
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+
+        return endpointCfg;
     }
 
     /**

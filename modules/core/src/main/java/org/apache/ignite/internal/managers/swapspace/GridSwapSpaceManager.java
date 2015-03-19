@@ -368,7 +368,14 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets raw iterator over space entries.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @return Iterator over space entries or {@code null} if space is unknown.
+     * @throws IgniteCheckedException If failed.
+     */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
         throws IgniteCheckedException{
         try {

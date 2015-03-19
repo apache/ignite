@@ -57,6 +57,9 @@ public class VisorCacheQueryConfiguration implements Serializable {
      * @param clss Classes to compact.
      */
     private static String[] compactClasses(Class<?>[] clss) {
+        if (clss == null)
+            return null;
+
         int len = clss.length;
 
         String[] res = new String[len];
@@ -72,7 +75,7 @@ public class VisorCacheQueryConfiguration implements Serializable {
      * @return Fill data transfer object with cache query configuration data.
      */
     public static VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
-        VisorCacheQueryConfiguration cfg = null;
+        VisorCacheQueryConfiguration cfg = new VisorCacheQueryConfiguration();
 
         cfg.sqlFuncClss = compactClasses(ccfg.getSqlFunctionClasses());
         cfg.longQryWarnTimeout = ccfg.getLongQueryWarningTimeout();

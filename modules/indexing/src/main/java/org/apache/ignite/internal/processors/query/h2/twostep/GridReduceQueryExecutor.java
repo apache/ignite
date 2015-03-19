@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
@@ -38,9 +40,10 @@ import org.h2.index.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.h2.tools.*;
+import org.h2.util.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
@@ -107,12 +110,26 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         log = ctx.log(GridReduceQueryExecutor.class);
 
-        // TODO handle node failure.
-
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
 
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                for (QueryRun r : runs.values()) {
+                    for (GridMergeTable tbl : r.tbls) {
+                        if (tbl.getScanIndex(null).hasSource(nodeId)) {
+                            fail(r, nodeId, "Node left the topology.");
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
         h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
-            " FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
+            " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
     }
 
     /** {@inheritDoc} */
@@ -146,11 +163,23 @@ public class GridReduceQueryExecutor implements GridMessageListener {
     private void onFail(ClusterNode node, GridQueryFailResponse msg) {
         QueryRun r = runs.get(msg.queryRequestId());
 
-        if (r != null && r.latch.getCount() != 0) {
-            r.rmtErr = new CacheException("Failed to execute map query on the node: " + node.id() + "\n " + msg.error());
+        fail(r, node.id(), msg.error());
+    }
 
-            while(r.latch.getCount() > 0)
+    /**
+     * @param r Query run.
+     * @param nodeId Failed node ID.
+     * @param msg Error message.
+     */
+    private void fail(QueryRun r, UUID nodeId, String msg) {
+        if (r != null) {
+            r.rmtErr = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+
+            while(r.latch.getCount() != 0)
                 r.latch.countDown();
+
+            for (GridMergeTable tbl : r.tbls)
+                tbl.getScanIndex(null).fail(nodeId);
         }
     }
 
@@ -171,21 +200,37 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
-        idx.addPage(new GridResultPage(node.id(), msg, false) {
-            @Override public void fetchNextPage() {
-                try {
-                    GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+        GridResultPage page;
 
-                    if (node.isLocal())
-                        h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
-                    else
-                        ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
+        try {
+            page = new GridResultPage(node.id(), msg, false) {
+                @Override public void fetchNextPage() {
+                    if (r.rmtErr != null)
+                        throw new CacheException("Next page fetch failed.", r.rmtErr);
+
+                    try {
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+
+                        if (node.isLocal())
+                            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                        else
+                            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
+            };
+        }
+        catch (Exception e) {
+            U.error(log, "Error in message.", e);
+
+            fail(r, node.id(), "Error in message.");
+
+            return;
+        }
+
+        idx.addPage(page);
 
         if (msg.allRows() != -1) // Only the first page contains row count.
             r.latch.countDown();
@@ -208,7 +253,15 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         r.conn = h2.connectionForSpace(space);
 
         // TODO Add topology version.
-        final Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(space).nodes();
+        ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
+
+        if (ctx.cache().internalCache(space).context().isReplicated()) {
+            assert dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
+
+            dataNodes = dataNodes.forRandom(); // Select random data node to run query on a replicated data.
+        }
+
+        final Collection<ClusterNode> nodes = dataNodes.nodes();
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl;
@@ -280,14 +333,18 @@ public class GridReduceQueryExecutor implements GridMessageListener {
     private void send(Collection<ClusterNode> nodes, Message msg) throws IgniteCheckedException {
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
-                ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
+                if (nodes.size() > 1) {
+                    ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
 
-                for (ClusterNode node0 : nodes) {
-                    if (node0 != node)
-                        remotes.add(node0);
+                    for (ClusterNode node0 : nodes) {
+                        if (!node0.isLocal())
+                            remotes.add(node0);
+                    }
+
+                    assert remotes.size() == nodes.size() - 1;
+
+                    ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
                 }
-
-                ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
 
                 // Local node goes the last to allow parallel execution.
                 h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -322,9 +379,53 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         String url = c.getMetaData().getURL();
 
         // URL is either "jdbc:default:connection" or "jdbc:columnlist:connection"
-        Cursor cursor = url.charAt(5) == 'c' ? null : tbl.getScanIndex(ses).find(ses, null, null);
+        final Cursor cursor = url.charAt(5) == 'c' ? null : tbl.getScanIndex(ses).find(ses, null, null);
 
-        return CONSTRUCTOR.newInstance(c, null, new Result0(cursor, tbl.getColumns()), 0, false, false, false);
+        final Column[] cols = tbl.getColumns();
+
+        SimpleResultSet rs = new SimpleResultSet(cursor == null ? null : new SimpleRowSource() {
+            @Override public Object[] readRow() throws SQLException {
+                if (!cursor.next())
+                    return null;
+
+                Row r = cursor.get();
+
+                Object[] row = new Object[cols.length];
+
+                for (int i = 0; i < row.length; i++)
+                    row[i] = r.getValue(i).getObject();
+
+                return row;
+            }
+
+            @Override public void close() {
+                // No-op.
+            }
+
+            @Override public void reset() throws SQLException {
+                throw new SQLException("Unsupported.");
+            }
+        }) {
+            @Override public byte[] getBytes(int colIdx) throws SQLException {
+                assert cursor != null;
+
+                return cursor.get().getValue(colIdx - 1).getBytes();
+            }
+
+            @Override public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
+                throw new UnsupportedOperationException();
+            }
+        };
+
+        for (Column col : cols)
+            rs.addColumn(col.getName(), DataType.convertTypeToSQLType(col.getType()),
+                MathUtils.convertLongToInt(col.getPrecision()), col.getScale());
+
+        return rs;
     }
 
     /**
@@ -431,7 +532,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         private int pageSize;
 
         /** */
-        private volatile Throwable rmtErr;
+        private volatile CacheException rmtErr;
     }
 
     /**
@@ -456,135 +557,6 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             Collections.addAll(res, row);
 
             return res;
-        }
-    }
-
-    /**
-     * Query result for H2.
-     */
-    private static class Result0 implements ResultInterface {
-        /** */
-        private Cursor cursor;
-
-        /** */
-        private Column[] cols;
-
-        /** */
-        private int rowId;
-
-        /**
-         * @param cursor Cursor.
-         * @param cols Columns.
-         */
-        Result0(@Nullable Cursor cursor, Column[] cols) {
-            this.cursor = cursor != null ? cursor : new SingleRowCursor(null);
-            this.cols = cols;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value[] currentRow() {
-            return cursor.get().getValueList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            if (cursor.next()) {
-                rowId++;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getRowId() {
-            return rowId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVisibleColumnCount() {
-            return cols.length;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getRowCount() {
-            return Integer.MAX_VALUE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needToClose() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getAlias(int i) {
-            return cols[i].getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getSchemaName(int i) {
-            return cols[i].getTable().getSchema().getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getTableName(int i) {
-            return cols[i].getTable().getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getColumnName(int i) {
-            return cols[i].getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnType(int i) {
-            return cols[i].getType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getColumnPrecision(int i) {
-            return cols[i].getPrecision();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnScale(int i) {
-            return cols[i].getScale();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getDisplaySize(int i) {
-            return cols[i].getDisplaySize();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAutoIncrement(int i) {
-            return cols[i].isAutoIncrement();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getNullable(int i) {
-            return Column.NULLABLE_UNKNOWN;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setFetchSize(int fetchSize) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getFetchSize() {
-            throw new UnsupportedOperationException();
         }
     }
 }

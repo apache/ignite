@@ -34,7 +34,7 @@ import scala.io._
 // Note the importing of implicit conversions.
 import org.apache.ignite.visor.commands.ack.VisorAckCommand
 import org.apache.ignite.visor.commands.alert.VisorAlertCommand
-import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheCompactCommand, VisorCacheSwapCommand}
+import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheSwapCommand}
 import org.apache.ignite.visor.commands.config.VisorConfigurationCommand
 import org.apache.ignite.visor.commands.deploy.VisorDeployCommand
 import org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand
@@ -75,7 +75,6 @@ object VisorConsole extends App {
     VisorAlertCommand
     VisorCacheCommand
     VisorCacheClearCommand
-    VisorCacheCompactCommand
     VisorCacheSwapCommand
     VisorConfigurationCommand
     VisorDeployCommand

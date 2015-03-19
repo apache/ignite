@@ -26,7 +26,28 @@ public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlEleme
     /** */
     protected List<GridSqlElement> children = new ArrayList<>();
 
-    /** {@inheritDoc} */
+    /** */
+    private GridSqlType expressionResultType;
+
+    /**
+     * @return Optional expression result type (if this is an expression and result type is known).
+     */
+    public GridSqlType expressionResultType() {
+        return expressionResultType;
+    }
+
+    /**
+     * @param type Optional expression result type (if this is an expression and result type is known).
+     */
+    public void expressionResultType(GridSqlType type) {
+        expressionResultType = type;
+    }
+
+    /**
+     * Get the SQL expression.
+     *
+     * @return the SQL expression.
+     */
     public abstract String getSQL();
 
     /**

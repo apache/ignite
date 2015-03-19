@@ -40,7 +40,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -87,7 +87,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setAtomicityMode(atomicityMode());
         cache.setDistributionMode(distributionMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
         cache.setIndexedTypes(
             String.class, Organization.class,
             CacheAffinityKey.class, Person.class
@@ -221,26 +221,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //        assertNotNull("Average", avg);
 //        assertEquals("Average", 25, avg.intValue());
 //    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOnProjection() throws Exception {
-        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
-            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
-                return val.orgId == 1;
-            }
-        };
-
-        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
-            ((IgniteKernal)grid(0)).<CacheAffinityKey<String>, Person>cache(null).projection(p);
-
-        CacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
-
-        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
-
-        assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
-    }
 
 //    /**
 //     * @throws Exception If failed.

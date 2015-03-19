@@ -20,43 +20,34 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo<K, V> implements Externalizable {
+public class GridCacheEntryInfo implements Message {
+    /** */
+    private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache key. */
     @GridToStringInclude
-    @GridDirectTransient
-    private K key;
+    private KeyCacheObject key;
+
+    /** Key bytes, set when entry is read from swap and there is no key instance. */
+    private byte[] keyBytes;
 
     /** Cache ID. */
     private int cacheId;
 
-    /** Key bytes. */
-    private byte[] keyBytes;
-
-    /** Key bytes sent. */
-    private boolean keyBytesSent;
-
     /** Cache value. */
-    @GridDirectTransient
-    private V val;
-
-    /** Value bytes. */
-    private byte[] valBytes;
-
-    /** Value bytes sent. */
-    private boolean valBytesSent;
+    private CacheObject val;
 
     /** Time to live. */
     private long ttl;
@@ -68,10 +59,12 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     private GridCacheVersion ver;
 
     /** New flag. */
+    @GridDirectTransient
     private boolean isNew;
 
     /** Deleted flag. */
-    private transient boolean deleted;
+    @GridDirectTransient
+    private boolean deleted;
 
     /**
      * @return Cache ID.
@@ -90,15 +83,15 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     /**
      * @param key Entry key.
      */
-    public void key(K key) {
+    public void key(KeyCacheObject key) {
         this.key = key;
     }
 
     /**
-     * @return Entry key.
+     * @param bytes Key bytes.
      */
-    public K key() {
-        return key;
+    public void keyBytes(byte[] bytes) {
+        this.keyBytes = bytes;
     }
 
     /**
@@ -109,38 +102,24 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     }
 
     /**
-     * @param keyBytes Key bytes.
+     * @return Entry key.
      */
-    public void keyBytes(byte[] keyBytes) {
-        this.keyBytes = keyBytes;
+    public KeyCacheObject key() {
+        return key;
     }
 
     /**
      * @return Entry value.
      */
-    public V value() {
+    public CacheObject value() {
         return val;
     }
 
     /**
      * @param val Entry value.
      */
-    public void value(V val) {
+    public void value(CacheObject val) {
         this.val = val;
-    }
-
-    /**
-     * @return Value bytes.
-     */
-    public byte[] valueBytes() {
-        return valBytes;
-    }
-
-    /**
-     * @param valBytes Value bytes.
-     */
-    public void valueBytes(byte[] valBytes) {
-        this.valBytes = valBytes;
     }
 
     /**
@@ -213,34 +192,197 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
         this.deleted = deleted;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("expireTime", expireTime))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeByteArray("keyBytes", keyBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLong("ttl", ttl))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeMessage("ver", ver))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                expireTime = reader.readLong("expireTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                keyBytes = reader.readByteArray("keyBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                ver = reader.readMessage("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 91;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
+    }
+
     /**
      * @param ctx Context.
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshalValue(GridCacheContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val == null && valBytes != null)
-            val = ctx.marshaller().unmarshal(valBytes, ldr);
+    public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /**
+     * @return Marshalled size.
+     */
+    public int marshalledSize(GridCacheContext ctx) throws IgniteCheckedException {
+        int size = 0;
+
+        CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
+
+        if (val != null)
+            size += val.valueBytes(cacheObjCtx).length;
+
+        if (key == null) {
+            assert keyBytes != null;
+
+            size += keyBytes.length;
+        }
+        else
+            size += key.valueBytes(cacheObjCtx).length;
+
+        return SIZE_OVERHEAD + size;
     }
 
     /**
      * @param ctx Cache context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        boolean depEnabled = ctx.gridDeploy().enabled();
+    public void marshal(GridCacheContext ctx) throws IgniteCheckedException {
+        assert key != null ^ keyBytes != null;
 
-        boolean valIsByteArr = val != null && val instanceof byte[];
+        if (key != null)
+            key.prepareMarshal(ctx.cacheObjectContext());
 
-        if (keyBytes == null && depEnabled)
-            keyBytes = CU.marshal(ctx, key);
+        if (val != null)
+            val.prepareMarshal(ctx.cacheObjectContext());
 
-        keyBytesSent = depEnabled || key == null;
+        if (expireTime == 0)
+            expireTime = -1;
+        else {
+            expireTime = expireTime - U.currentTimeMillis();
 
-        if (valBytes == null && val != null && !valIsByteArr)
-            valBytes = CU.marshal(ctx, val);
-
-        valBytesSent = (valBytes != null && !valIsByteArr) || val == null;
+            if (expireTime < 0)
+                expireTime = 0;
+        }
     }
 
     /**
@@ -250,96 +392,33 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        Marshaller mrsh = ctx.marshaller();
+    public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (key == null) {
+            assert keyBytes != null;
 
-        if (key == null)
-            key = mrsh.unmarshal(keyBytes, clsLdr);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjectContext();
 
-        if (ctx.isUnmarshalValues() && val == null && valBytes != null)
-            val = mrsh.unmarshal(valBytes, clsLdr);
-    }
+            Object key0 = ctx.cacheObjects().unmarshal(cacheObjCtx, keyBytes, clsLdr);
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
-        out.writeBoolean(keyBytesSent);
-        out.writeBoolean(valBytesSent);
-
-        if (keyBytesSent)
-            U.writeByteArray(out, keyBytes);
-        else
-            out.writeObject(key);
-
-        if (valBytesSent)
-            U.writeByteArray(out, valBytes);
-        else {
-            if (val != null && val instanceof byte[]) {
-                out.writeBoolean(true);
-
-                U.writeByteArray(out, (byte[]) val);
-            }
-            else {
-                out.writeBoolean(false);
-
-                out.writeObject(val);
-            }
+            key = ctx.cacheObjects().toCacheKeyObject(cacheObjCtx, key0, false);
         }
-
-        out.writeLong(ttl);
-
-        long remaining;
-
-        // 0 means never expires.
-        if (expireTime == 0)
-            remaining = -1;
-        else {
-            remaining = expireTime - U.currentTimeMillis();
-
-            if (remaining < 0)
-                remaining = 0;
-        }
-
-        // Write remaining time.
-        out.writeLong(remaining);
-
-        CU.writeVersion(out, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
-        keyBytesSent = in.readBoolean();
-        valBytesSent = in.readBoolean();
-
-        if (keyBytesSent)
-            keyBytes = U.readByteArray(in);
         else
-            key = (K)in.readObject();
+            key.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
 
-        if (valBytesSent)
-            valBytes = U.readByteArray(in);
-        else
-            val = in.readBoolean() ? (V) U.readByteArray(in) : (V)in.readObject();
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
 
-        ttl = in.readLong();
-
-        long remaining = in.readLong();
+        long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
 
         // Account for overflow.
         if (expireTime < 0)
             expireTime = 0;
-
-        ver = CU.readVersion(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheEntryInfo.class, this,
-            "isNull", val == null,
-            "keyBytesSize", (keyBytes == null ? "null" : Integer.toString(keyBytes.length)),
-            "valBytesSize", (valBytes == null ? "null" : Integer.toString(valBytes.length)));
+        return S.toString(GridCacheEntryInfo.class, this);
     }
 }

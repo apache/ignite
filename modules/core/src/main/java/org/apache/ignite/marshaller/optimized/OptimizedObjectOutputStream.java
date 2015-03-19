@@ -17,14 +17,17 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
@@ -43,10 +46,16 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 
     /** */
-    private boolean requireSer;
+    private final GridDataOutput out;
 
     /** */
-    private GridDataOutput out;
+    private MarshallerContext ctx;
+
+    /** */
+    private OptimizedMarshallerIdMapper mapper;
+
+    /** */
+    private boolean requireSer;
 
     /** */
     private Object curObj;
@@ -60,13 +69,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private PutFieldImpl curPut;
 
-
-    /**
-     * @throws IOException In case of error.
-     */
-    OptimizedObjectOutputStream() throws IOException {
-        // No-op.
-    }
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /**
      * @param out Output.
@@ -77,9 +81,18 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     }
 
     /**
+     * @param clsMap Class descriptors by class map.
+     * @param ctx Context.
+     * @param mapper ID mapper.
      * @param requireSer Require {@link Serializable} flag.
      */
-    void requireSerializable(boolean requireSer) {
+    void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        boolean requireSer) {
+        this.clsMap = clsMap;
+        this.ctx = ctx;
+        this.mapper = mapper;
         this.requireSer = requireSer;
     }
 
@@ -88,13 +101,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      */
     boolean requireSerializable() {
         return requireSer;
-    }
-
-    /**
-     * @param out Output.
-     */
-    public void out(GridDataOutput out) {
-        this.out = out;
     }
 
     /**
@@ -107,6 +113,9 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         reset();
+
+        ctx = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */
@@ -154,45 +163,62 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            Class<?> cls = obj.getClass();
+            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+                writeByte(JDK);
 
-            OptimizedClassDescriptor desc = classDescriptor(cls, obj);
+                try {
+                    JDK_MARSH.marshal(obj, this);
+                }
+                catch (IgniteCheckedException e) {
+                    IOException ioEx = e.getCause(IOException.class);
 
-            if (desc.excluded()) {
-                writeByte(NULL);
-
-                return;
-            }
-
-            Object obj0 = desc.replace(obj);
-
-            if (obj0 == null) {
-                writeByte(NULL);
-
-                return;
-            }
-
-            int handle = -1;
-
-            if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
-                handle = handles.lookup(obj);
-
-            if (obj0 != obj) {
-                obj = obj0;
-
-                desc = classDescriptor(obj.getClass(), obj);
-            }
-
-            if (handle >= 0) {
-                writeByte(HANDLE);
-                writeInt(handle);
+                    if (ioEx != null)
+                        throw ioEx;
+                    else
+                        throw new IOException("Failed to serialize object with JDK marshaller: " + obj, e);
+                }
             }
             else {
-                writeByte(OBJECT);
+                OptimizedClassDescriptor desc = classDescriptor(
+                    clsMap,
+                    obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    ctx,
+                    mapper);
 
-                OptimizedClassResolver.writeClass(this, desc);
+                if (desc.excluded()) {
+                    writeByte(NULL);
 
-                desc.write(this, obj);
+                    return;
+                }
+
+                Object obj0 = desc.replace(obj);
+
+                if (obj0 == null) {
+                    writeByte(NULL);
+
+                    return;
+                }
+
+                int handle = -1;
+
+                if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
+                    handle = handles.lookup(obj);
+
+                if (obj0 != obj) {
+                    obj = obj0;
+
+                    desc = classDescriptor(clsMap,
+                        obj instanceof Object[] ? Object[].class : obj.getClass(),
+                        ctx,
+                        mapper);
+                }
+
+                if (handle >= 0) {
+                    writeByte(HANDLE);
+                    writeInt(handle);
+                }
+                else
+                    desc.write(this, obj);
             }
         }
     }
@@ -762,7 +788,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /**
          * @param out Output stream.
-         * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
         private PutFieldImpl(OptimizedObjectOutputStream out) {

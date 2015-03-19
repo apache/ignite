@@ -224,7 +224,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -255,7 +255,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             info("Checking grid: " + grid(i).localNode().id());
 
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -299,7 +299,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -340,7 +340,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntryEx<String, Integer> entry = null;
+            GridCacheEntryEx entry = null;
 
             if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
@@ -405,7 +405,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -414,7 +414,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         // Ensure that next update will not pick old expire time.
-        tx = inTx ? c.txStart() : null;
+        tx = inTx ? transactions().txStart() : null;
 
         try {
             c.put(key, 10);
@@ -435,7 +435,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (dht.context().isNear())
                 dht = dht.context().near().dht();
 
-            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+            GridCacheEntryEx entry = dht.peekEx(key);
 
             assert entry != null;
 
@@ -493,6 +493,38 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalClearKeys() throws Exception {
+        IgniteCache<String, Integer> nearCache = jcache();
+        IgniteCache<String, Integer> primary = fullCache();
+
+        Collection<String> keys = primaryKeysForCache(primary, 3);
+
+        int i = 0;
+
+        for (String key : keys)
+            nearCache.put(key, i++);
+
+        String lastKey = F.last(keys);
+
+        Set<String> keysToRmv = new HashSet<>(keys);
+
+        keysToRmv.remove(lastKey);
+
+        assert keysToRmv.size() > 1;
+
+        nearCache.localClearAll(keysToRmv);
+
+        for (String key : keys) {
+            boolean found = nearCache.localPeek(key, CachePeekMode.ONHEAP) != null;
+
+            if (keysToRmv.contains(key))
+                assertFalse("Found removed key " + key, found);
+            else
+                assertTrue("Not found key " + key, found);
         }
     }
 

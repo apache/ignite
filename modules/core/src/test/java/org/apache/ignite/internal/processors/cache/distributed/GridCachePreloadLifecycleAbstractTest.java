@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -41,10 +41,10 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
     protected static final String TEST_STRING = "ABC";
 
     /** */
-    protected static final CachePreloadMode DFLT_PRELOAD_MODE = SYNC;
+    protected static final CacheRebalanceMode DFLT_PRELOAD_MODE = SYNC;
 
     /** */
-    protected CachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
+    protected CacheRebalanceMode preloadMode = DFLT_PRELOAD_MODE;
 
     /** */
     protected LifecycleBean lifecycleBean;

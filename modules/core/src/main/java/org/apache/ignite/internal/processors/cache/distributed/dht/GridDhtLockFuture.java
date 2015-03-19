@@ -36,7 +36,6 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -47,7 +46,10 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  * Cache lock future.
  */
 public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
-    implements GridCacheMvccFuture<K, V, Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    implements GridCacheMvccFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -73,10 +75,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** Keys locked so far. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
-    private List<GridDhtCacheEntry<K, V>> entries;
+    private List<GridDhtCacheEntry> entries;
 
     /** DHT mappings. */
-    private Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtMap =
+    private Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap =
         new ConcurrentHashMap8<>();
 
     /** Future ID. */
@@ -102,10 +104,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private long timeout;
 
     /** Filter. */
-    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+    private CacheEntryPredicate[] filter;
 
     /** Transaction. */
-    private GridDhtTxLocalAdapter<K, V> tx;
+    private GridDhtTxLocalAdapter tx;
 
     /** All replies flag. */
     private AtomicBoolean mapped = new AtomicBoolean(false);
@@ -120,7 +122,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private final Object mux = new Object();
 
     /** Pending locks. */
-    private final Collection<K> pendingLocks = new GridConcurrentHashSet<>();
+    private final Collection<KeyCacheObject> pendingLocks = new GridConcurrentHashSet<>();
 
     /** TTL for read operation. */
     private long accessTtl;
@@ -146,10 +148,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         int cnt,
         boolean read,
         long timeout,
-        GridDhtTxLocalAdapter<K, V> tx,
+        GridDhtTxLocalAdapter tx,
         long threadId,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -248,14 +250,14 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @return Entries.
      */
-    public Collection<GridDhtCacheEntry<K, V>> entries() {
+    public Collection<GridDhtCacheEntry> entries() {
         return F.view(entries, F.notNull());
     }
 
     /**
      * @return Entries.
      */
-    public Collection<GridDhtCacheEntry<K, V>> entriesCopy() {
+    public Collection<GridDhtCacheEntry> entriesCopy() {
         synchronized (mux) {
             return new ArrayList<>(entries());
         }
@@ -313,7 +315,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return {@code True} if locked.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
+    private boolean locked(GridCacheEntryEx cached) throws GridCacheEntryRemovedException {
         return (cached.lockedLocally(lockVer) && filter(cached)); // If filter failed, lock is failed.
     }
 
@@ -322,7 +324,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param owner Lock owner.
      * @return {@code True} if locked.
      */
-    private boolean locked(GridCacheEntryEx<K, V> cached, GridCacheMvccCandidate<K> owner) {
+    private boolean locked(GridCacheEntryEx cached, GridCacheMvccCandidate owner) {
         // Reentry-aware check (if filter failed, lock is failed).
         return owner != null && owner.matches(lockVer, cctx.nodeId(), threadId) && filter(cached);
     }
@@ -335,7 +337,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
      */
-    @Nullable public GridCacheMvccCandidate<K> addEntry(GridDhtCacheEntry<K, V> entry)
+    @Nullable public GridCacheMvccCandidate addEntry(GridDhtCacheEntry entry)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (log.isDebugEnabled())
             log.debug("Adding entry: " + entry);
@@ -348,7 +350,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             return null;
 
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
-        GridCacheMvccCandidate<K> c = entry.addDhtLocal(
+        GridCacheMvccCandidate c = entry.addDhtLocal(
             nearNodeId,
             nearLockVer,
             topVer,
@@ -393,12 +395,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      */
     private void undoLocks(boolean dist) {
         // Transactions will undo during rollback.
-        Collection<GridDhtCacheEntry<K, V>> entriesCp = entriesCopy();
+        Collection<GridDhtCacheEntry> entriesCp = entriesCopy();
 
         if (dist && tx == null) {
             cctx.dhtTx().removeLocks(nearNodeId, lockVer, F.viewReadOnly(entriesCp,
-                new C1<GridDhtCacheEntry<K, V>, K>() {
-                    @Override public K apply(GridDhtCacheEntry<K, V> e) {
+                new C1<GridDhtCacheEntry, KeyCacheObject>() {
+                    @Override public KeyCacheObject apply(GridDhtCacheEntry e) {
                         return e.key();
                     }
                 }), false);
@@ -413,7 +415,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
 
-            for (GridCacheEntryEx<K, V> e : entriesCp) {
+            for (GridCacheEntryEx e : entriesCp) {
                 try {
                     e.removeLock(lockVer);
                 }
@@ -475,7 +477,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridDhtLockResponse<K, V> res) {
+    void onResult(UUID nodeId, GridDhtLockResponse res) {
         if (!isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
@@ -521,13 +523,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         for (int i = 0; i < entries.size(); i++) {
             while (true) {
-                GridDistributedCacheEntry<K, V> entry = entries.get(i);
+                GridDistributedCacheEntry entry = entries.get(i);
 
                 if (entry == null)
                     break; // While.
 
                 try {
-                    GridCacheMvccCandidate<K> owner = entry.readyLock(lockVer);
+                    GridCacheMvccCandidate owner = entry.readyLock(lockVer);
 
                     if (timeout < 0) {
                         if (owner == null || !owner.version().equals(lockVer)) {
@@ -552,7 +554,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     if (log.isDebugEnabled())
                         log.debug("Failed to ready lock because entry was removed (will renew).");
 
-                    entries.set(i, (GridDhtCacheEntry<K, V>)cctx.cache().entryEx(entry.key(), topVer));
+                    entries.set(i, (GridDhtCacheEntry)cctx.cache().entryEx(entry.key(), topVer));
                 }
             }
         }
@@ -578,7 +580,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param cached Entry to check.
      * @return {@code True} if filter passed.
      */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
+    private boolean filter(GridCacheEntryEx cached) {
         try {
             if (!cctx.isAll(cached, filter)) {
                 if (log.isDebugEnabled())
@@ -603,7 +605,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      * @param entry Entry whose lock ownership changed.
      */
-    @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
+    @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
         if (isDone())
             return false; // Check other futures.
 
@@ -718,7 +720,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @param entries Entries.
      */
-    private void map(Iterable<GridDhtCacheEntry<K, V>> entries) {
+    private void map(Iterable<GridDhtCacheEntry> entries) {
         if (!mapped.compareAndSet(false, true)) {
             if (log.isDebugEnabled())
                 log.debug("Will not map DHT lock future (other thread is mapping): " + this);
@@ -733,13 +735,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             boolean hasRmtNodes = false;
 
             // Assign keys to primary nodes.
-            for (GridDhtCacheEntry<K, V> entry : entries) {
+            for (GridDhtCacheEntry entry : entries) {
                 try {
                     while (true) {
                         try {
                             hasRmtNodes = cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
 
-                            GridCacheMvccCandidate<K> cand = entry.mappings(lockVer);
+                            GridCacheMvccCandidate cand = entry.mappings(lockVer);
 
                             // Possible in case of lock cancellation.
                             if (cand == null) {
@@ -778,10 +780,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) + ", dhtLockFut=" + this + ']');
 
             // Create mini futures.
-            for (Map.Entry<ClusterNode, List<GridDhtCacheEntry<K, V>>> mapped : dhtMap.entrySet()) {
+            for (Map.Entry<ClusterNode, List<GridDhtCacheEntry>> mapped : dhtMap.entrySet()) {
                 ClusterNode n = mapped.getKey();
 
-                List<GridDhtCacheEntry<K, V>> dhtMapping = mapped.getValue();
+                List<GridDhtCacheEntry> dhtMapping = mapped.getValue();
 
                 int cnt = F.size(dhtMapping);
 
@@ -790,7 +792,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                     MiniFuture fut = new MiniFuture(n, dhtMapping);
 
-                    GridDhtLockRequest<K, V> req = new GridDhtLockRequest<>(
+                    GridDhtLockRequest req = new GridDhtLockRequest(
                         cctx.cacheId(),
                         nearNodeId,
                         inTx() ? tx.nearXidVersion() : null,
@@ -814,8 +816,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         read ? accessTtl : -1L);
 
                     try {
-                        for (ListIterator<GridDhtCacheEntry<K, V>> it = dhtMapping.listIterator(); it.hasNext();) {
-                            GridDhtCacheEntry<K, V> e = it.next();
+                        for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {
+                            GridDhtCacheEntry e = it.next();
 
                             // Must unswap entry so that isNewLocked returns correct value.
                             e.unswap(true, false);
@@ -847,7 +849,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             req.addDhtKey(
                                 e.key(),
-                                e.getOrMarshalKeyBytes(),
                                 invalidateRdr,
                                 cctx);
 
@@ -886,17 +887,17 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return Entry.
      * @throws IgniteCheckedException If failed.
      */
-    private GridDhtCacheEntry<K, V> addOwned(GridDhtLockRequest<K, V> req, GridDhtCacheEntry<K, V> e)
+    private GridDhtCacheEntry addOwned(GridDhtLockRequest req, GridDhtCacheEntry e)
         throws IgniteCheckedException {
         while (true) {
             try {
-                GridCacheMvccCandidate<K> added = e.candidate(lockVer);
+                GridCacheMvccCandidate added = e.candidate(lockVer);
 
                 assert added != null;
                 assert added.dhtLocal();
 
                 if (added.ownerVersion() != null)
-                    req.owned(e.key(), e.getOrMarshalKeyBytes(), added.ownerVersion());
+                    req.owned(e.key(), added.ownerVersion());
 
                 break;
             }
@@ -955,6 +956,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node. */
@@ -963,13 +967,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         /** DHT mapping. */
         @GridToStringInclude
-        private List<GridDhtCacheEntry<K, V>> dhtMapping;
+        private List<GridDhtCacheEntry> dhtMapping;
 
         /**
          * @param node Node.
          * @param dhtMapping Mapping.
          */
-        MiniFuture(ClusterNode node, List<GridDhtCacheEntry<K, V>> dhtMapping) {
+        MiniFuture(ClusterNode node, List<GridDhtCacheEntry> dhtMapping) {
             assert node != null;
 
             this.node = node;
@@ -1017,7 +1021,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @param res Result callback.
          */
-        void onResult(GridDhtLockResponse<K, V> res) {
+        void onResult(GridDhtLockResponse res) {
             if (res.error() != null)
                 // Fail the whole compound future.
                 onError(res.error());
@@ -1026,8 +1030,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {
-                    for (Iterator<GridDhtCacheEntry<K, V>> it = dhtMapping.iterator(); it.hasNext();) {
-                        GridDhtCacheEntry<K, V> entry = it.next();
+                    for (Iterator<GridDhtCacheEntry> it = dhtMapping.iterator(); it.hasNext();) {
+                        GridDhtCacheEntry entry = it.next();
 
                         if (invalidParts.contains(entry.partition())) {
                             it.remove();
@@ -1047,17 +1051,17 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                 boolean replicate = cctx.isDrEnabled();
 
-                boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+                boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
-                for (GridCacheEntryInfo<K, V> info : res.preloadEntries()) {
+                for (GridCacheEntryInfo info : res.preloadEntries()) {
                     try {
-                        GridCacheEntryEx<K,V> entry = cctx.cache().entryEx(info.key(), topVer);
+                        GridCacheEntryEx entry = cctx.cache().entryEx(info.key(), topVer);
 
-                        if (entry.initialValue(info.value(), info.valueBytes(), info.version(), info.ttl(),
+                        if (entry.initialValue(info.value(), info.version(), info.ttl(),
                             info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null);
                         }
                     }
@@ -1085,13 +1089,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param entries Entries to check.
          */
         @SuppressWarnings({"ForLoopReplaceableByForEach"})
-        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<IgniteTxKey<K>> keys, UUID nodeId, long msgId,
-            @Nullable List<GridDhtCacheEntry<K, V>> entries) {
+        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<IgniteTxKey> keys, UUID nodeId, long msgId,
+            @Nullable List<GridDhtCacheEntry> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
                 return;
 
-            for (ListIterator<GridDhtCacheEntry<K, V>> it = entries.listIterator(); it.hasNext(); ) {
-                GridDhtCacheEntry<K, V> cached = it.next();
+            for (ListIterator<GridDhtCacheEntry> it = entries.listIterator(); it.hasNext(); ) {
+                GridDhtCacheEntry cached = it.next();
 
                 if (keys.contains(cached.txKey())) {
                     while (true) {
@@ -1104,7 +1108,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             break;
                         }
                         catch (GridCacheEntryRemovedException ignore) {
-                            GridDhtCacheEntry<K, V> e = cacheCtx.dht().peekExx(cached.key());
+                            GridDhtCacheEntry e = cacheCtx.dht().peekExx(cached.key());
 
                             if (e == null)
                                 break;

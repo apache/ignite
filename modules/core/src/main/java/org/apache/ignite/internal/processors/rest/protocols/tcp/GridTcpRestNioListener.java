@@ -252,7 +252,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restCacheReq.key(req.key());
             restCacheReq.value(req.value());
             restCacheReq.value2(req.value2());
-            restCacheReq.portableMode(proto.portableMode(ses));
 
             Map vals = req.values();
             if (vals != null)
@@ -295,8 +294,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restTaskReq.taskName(req.taskName());
             restTaskReq.params(Arrays.asList(req.argument()));
-            restTaskReq.keepPortables(req.keepPortables());
-            restTaskReq.portableMode(proto.portableMode(ses));
 
             restReq = restTaskReq;
         }

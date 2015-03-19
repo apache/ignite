@@ -37,7 +37,7 @@ import static org.apache.ignite.events.EventType.*;
  * like, for example GridCacheContext, as it may be reused between different
  * caches.
  */
-public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 

@@ -364,7 +364,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
-                catch (IgfsFileNotFoundException ignore) {
+                catch (IgfsPathNotFoundException ignore) {
                     data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
                     throw new IOException("File was concurrently deleted: " + path);

@@ -83,9 +83,9 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<String, int[]> c = ((IgniteKernal)g).cache(null);
+            IgniteCache<String, int[]> c = g.jcache(null);
 
-            assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
+            assertEquals("Cache is not empty, node: " + g.name(), 0, c.size());
         }
     }
 
@@ -165,10 +165,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             for (int g = 0; g < GRID_CNT; g++) {
                 info("Will check grid: " + g);
 
-                GridCacheEntryEx<Object, Object> testEntry =
-                    ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
-
-                info("Entry: " + testEntry);
+                info("Value: " + grid(i).jcache(null).localPeek("TestKey"));
             }
 
             IgniteCache<String, int[]> c = grid(i).jcache(null);

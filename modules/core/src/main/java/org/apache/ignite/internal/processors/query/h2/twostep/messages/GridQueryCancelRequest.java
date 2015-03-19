@@ -27,6 +27,9 @@ import java.nio.*;
  */
 public class GridQueryCancelRequest implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long qryReqId;
 
     /**
@@ -101,7 +104,7 @@ public class GridQueryCancelRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 90;
+        return 106;
     }
 
     /** {@inheritDoc} */

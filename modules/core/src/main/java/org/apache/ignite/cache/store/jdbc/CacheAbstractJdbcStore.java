@@ -34,6 +34,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.integration.*;
 import javax.sql.*;
+import java.nio.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -127,7 +128,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private int parallelLoadCacheMinThreshold = DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 
     /**
-     * Get field value from object.
+     * Get field value from object for use as query parameter.
      *
      * @param cacheName Cache name.
      * @param typeName Type name.
@@ -135,8 +136,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param obj Cache object.
      * @return Field value from object.
      */
-    @Nullable protected abstract Object extractField(String cacheName, String typeName, String fieldName, Object obj)
-        throws CacheException;
+    @Nullable protected abstract Object extractParameter(@Nullable String cacheName, String typeName, String fieldName,
+        Object obj) throws CacheException;
 
     /**
      * Construct object from query result.
@@ -149,8 +150,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String cacheName, String typeName, Collection<CacheTypeFieldMetadata> fields,
-        Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException;
+    protected abstract <R> R buildObject(@Nullable String cacheName, String typeName,
+        Collection<CacheTypeFieldMetadata> fields, Map<String, Integer> loadColIdxs, ResultSet rs)
+        throws CacheLoaderException;
 
     /**
      * Extract key type id from key object.
@@ -386,7 +388,26 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 return EMPTY_COLUMN_VALUE;
         }
 
-        return rs.getObject(colIdx);
+        Object val = rs.getObject(colIdx);
+
+        if (type == UUID.class && val != null) {
+            if (val instanceof UUID)
+                return val;
+
+            if (val instanceof byte[]) {
+                ByteBuffer bb = ByteBuffer.wrap((byte[])val);
+
+                long most = bb.getLong();
+                long least = bb.getLong();
+
+                return new UUID(most, least);
+            }
+
+            if (val instanceof String)
+                return UUID.fromString((String)val);
+        }
+
+        return val;
     }
 
     /**
@@ -460,6 +481,65 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * Object is a simple type.
+     *
+     * @param cls Class.
+     * @return {@code True} if object is a simple type.
+     */
+    protected static boolean simpleType(Class<?> cls) {
+        return (Number.class.isAssignableFrom(cls) || String.class.isAssignableFrom(cls) ||
+            java.util.Date.class.isAssignableFrom(cls) || Boolean.class.isAssignableFrom(cls) ||
+            UUID.class.isAssignableFrom(cls));
+    }
+
+    /**
+     * @param clsName Class name.
+     * @param fields Fields descriptors.
+     * @throws CacheException If failed.
+     */
+    private static void checkMapping(@Nullable String cacheName, String clsName,
+        Collection<CacheTypeFieldMetadata> fields) throws CacheException {
+        try {
+            Class<?> cls = Class.forName(clsName);
+
+            if (simpleType(cls)) {
+                if (fields.size() != 1)
+                    throw new CacheException("More than one field for simple type [cache name=" + cacheName
+                        + ", type=" + clsName + " ]");
+
+                CacheTypeFieldMetadata field = F.first(fields);
+
+                if (field.getDatabaseName() == null)
+                    throw new CacheException("Missing database name in mapping description [cache name=" + cacheName
+                        + ", type=" + clsName + " ]");
+
+                if (field.getJavaName() != null)
+                    throw new CacheException("Missing field name in mapping description [cache name=" + cacheName
+                        + ", type=" + clsName + " ]");
+
+                field.setJavaType(cls);
+            }
+            else
+                for (CacheTypeFieldMetadata field : fields) {
+                    if (field.getDatabaseName() == null)
+                        throw new CacheException("Missing database name in mapping description [cache name=" + cacheName
+                            + ", type=" + clsName + " ]");
+
+                    if (field.getJavaName() == null)
+                        throw new CacheException("Missing field name in mapping description [cache name=" + cacheName
+                            + ", type=" + clsName + " ]");
+
+                    if (field.getJavaType() == null)
+                        throw new CacheException("Missing field type in mapping description [cache name=" + cacheName
+                            + ", type=" + clsName + " ]");
+                }
+        }
+        catch (ClassNotFoundException e) {
+            throw new CacheException("Failed to find class: " + clsName, e);
+        }
+    }
+
+    /**
      * @return Type mappings for specified cache name.
      * @throws CacheException If failed to initialize.
      */
@@ -477,13 +557,24 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheTypeMetadata> types = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class)
-                .getTypeMetadata();
+            CacheConfiguration ccfg = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            Collection<CacheTypeMetadata> types = ccfg.getTypeMetadata();
 
             entryMappings = U.newHashMap(types.size());
 
-            for (CacheTypeMetadata type : types)
+            for (CacheTypeMetadata type : types) {
+                Object keyTypeId = keyTypeId(type.getKeyType());
+
+                if (entryMappings.containsKey(keyTypeId))
+                    throw new CacheException("Key type must be unique in type metadata [cache name=" + cacheName +
+                        ", key type=" + type.getKeyType() + "]");
+
+                checkMapping(cacheName, type.getKeyType(), type.getKeyFields());
+                checkMapping(cacheName, type.getValueType(), type.getValueFields());
+
                 entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(cacheName, dialect, type));
+            }
 
             Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
 
@@ -963,7 +1054,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             if (delCnt != 1)
                 U.warn(log, "Unexpected number of deleted entries [table=" + em.fullTableName() + ", key=" + key +
-                    "expected=1, actual=" + delCnt + "]");
+                    ", expected=1, actual=" + delCnt + "]");
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to remove value from database [table=" + em.fullTableName() +
@@ -1091,29 +1182,59 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * Sets the value of the designated parameter using the given object.
+     *
      * @param stmt Prepare statement.
-     * @param i Start index for parameters.
+     * @param i Index for parameters.
+     * @param field Field descriptor.
+     * @param fieldVal Field value.
+     * @throws CacheException If failed to set statement parameter.
+     */
+    protected void fillParameter(PreparedStatement stmt, int i, CacheTypeFieldMetadata field, @Nullable Object fieldVal)
+        throws CacheException {
+        try {
+            if (fieldVal != null) {
+                if (field.getJavaType() == UUID.class) {
+                    switch (field.getDatabaseType()) {
+                        case Types.BINARY:
+                            fieldVal = U.uuidToBytes((UUID)fieldVal);
+
+                            break;
+                        case Types.CHAR:
+                        case Types.VARCHAR:
+                            fieldVal = fieldVal.toString();
+
+                            break;
+                    }
+                }
+
+                stmt.setObject(i, fieldVal);
+            }
+            else
+                stmt.setNull(i, field.getDatabaseType());
+        }
+        catch (SQLException e) {
+            throw new CacheException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
+        }
+    }
+
+    /**
+     * @param stmt Prepare statement.
+     * @param idx Start index for parameters.
      * @param em Entry mapping.
      * @param key Key object.
      * @return Next index for parameters.
+     * @throws CacheException If failed to set statement parameters.
      */
-    protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping em,
+    protected int fillKeyParameters(PreparedStatement stmt, int idx, EntryMapping em,
         Object key) throws CacheException {
         for (CacheTypeFieldMetadata field : em.keyColumns()) {
-            Object fieldVal = extractField(em.cacheName, em.keyType(), field.getJavaName(), key);
+            Object fieldVal = extractParameter(em.cacheName, em.keyType(), field.getJavaName(), key);
 
-            try {
-                if (fieldVal != null)
-                    stmt.setObject(i++, fieldVal);
-                else
-                    stmt.setNull(i++, field.getDatabaseType());
-            }
-            catch (SQLException e) {
-                throw new CacheException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
-            }
+            fillParameter(stmt, idx++, field, fieldVal);
         }
 
-        return i;
+        return idx;
     }
 
     /**
@@ -1121,6 +1242,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param m Type mapping description.
      * @param key Key object.
      * @return Next index for parameters.
+     * @throws CacheException If failed to set statement parameters.
      */
     protected int fillKeyParameters(PreparedStatement stmt, EntryMapping m, Object key) throws CacheException {
         return fillKeyParameters(stmt, 1, m, key);
@@ -1132,21 +1254,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param em Type mapping description.
      * @param val Value object.
      * @return Next index for parameters.
+     * @throws CacheException If failed to set statement parameters.
      */
     protected int fillValueParameters(PreparedStatement stmt, int idx, EntryMapping em, Object val)
         throws CacheWriterException {
         for (CacheTypeFieldMetadata field : em.uniqValFields) {
-            Object fieldVal = extractField(em.cacheName, em.valueType(), field.getJavaName(), val);
+            Object fieldVal = extractParameter(em.cacheName, em.valueType(), field.getJavaName(), val);
 
-            try {
-                if (fieldVal != null)
-                    stmt.setObject(idx++, fieldVal);
-                else
-                    stmt.setNull(idx++, field.getDatabaseType());
-            }
-            catch (SQLException e) {
-                throw new CacheWriterException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
-            }
+            fillParameter(stmt, idx++, field, fieldVal);
         }
 
         return idx;
@@ -1312,20 +1427,22 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * @param dialect JDBC dialect.
          * @param typeMeta Type metadata.
          */
-        public EntryMapping(String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
+        public EntryMapping(@Nullable String cacheName, JdbcDialect dialect, CacheTypeMetadata typeMeta) {
             this.cacheName = cacheName;
 
             this.dialect = dialect;
 
             this.typeMeta = typeMeta;
 
-            final Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
+            Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
 
             Collection<CacheTypeFieldMetadata> valFields = typeMeta.getValueFields();
 
+            keyCols = databaseColumns(keyFields);
+
             uniqValFields = F.view(valFields, new IgnitePredicate<CacheTypeFieldMetadata>() {
                 @Override public boolean apply(CacheTypeFieldMetadata col) {
-                    return !keyFields.contains(col);
+                    return !keyCols.contains(col.getDatabaseName());
                 }
             });
 
@@ -1334,8 +1451,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             String tblName = typeMeta.getDatabaseTable();
 
             fullTblName = F.isEmpty(schema) ? tblName : schema + "." + tblName;
-
-            keyCols = databaseColumns(keyFields);
 
             Collection<String> uniqValCols = databaseColumns(uniqValFields);
 
@@ -1573,16 +1688,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             try {
                 stmt = conn.prepareStatement(em.loadQuery(keys.size()));
 
-                int i = 1;
+                int idx = 1;
 
                 for (Object key : keys)
                     for (CacheTypeFieldMetadata field : em.keyColumns()) {
-                        Object fieldVal = extractField(em.cacheName, em.keyType(), field.getJavaName(), key);
+                        Object fieldVal = extractParameter(em.cacheName, em.keyType(), field.getJavaName(), key);
 
-                        if (fieldVal != null)
-                            stmt.setObject(i++, fieldVal);
-                        else
-                            stmt.setNull(i++, field.getDatabaseType());
+                        fillParameter(stmt, idx++, field, fieldVal);
                     }
 
                 ResultSet rs = stmt.executeQuery();

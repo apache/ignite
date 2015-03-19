@@ -86,56 +86,11 @@ import java.util.concurrent.*;
  * It is also possible to route computations to the nodes where the data is cached. This concept
  * is otherwise known as {@code Collocation Of Computations And Data}. In this case,
  * {@code @CacheAffinityKeyMapped} annotation allows to specify a routing affinity key for a
- * {@link org.apache.ignite.compute.ComputeJob} or any other grid computation, such as {@link Runnable}, {@link Callable}, or
- * {@link org.apache.ignite.lang.IgniteClosure}. It should be attached to a method or field that provides affinity key
- * for the computation. Only one annotation per class is allowed. Whenever such annotation is detected,
- * then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi} will be bypassed, and computation will be routed to the grid node
- * where the specified affinity key is cached. You can also use optional {@link org.apache.ignite.cache.CacheName @CacheName}
- * annotation whenever non-default cache name needs to be specified.
- * <p>
- * Here is how this annotation can be used to route a job to a node where Person object
- * is cached with ID "1234":
- * <pre name="code" class="java">
- * G.grid().run(new Runnable() {
- *     // This annotation is optional. If omitted, then default
- *     // no-name cache will be used.
- *     &#64;CacheName
- *     private String cacheName = "myCache";
- *
- *     // This annotation specifies that computation should be routed
- *     // precisely to the node where key '1234' is cached.
- *     &#64;CacheAffinityKeyMapped
- *     private String personKey = "1234";
- *
- *     &#64;Override public void run() {
- *         // Some computation logic here.
- *         ...
- *     }
- * };
- * </pre>
- * The same can be achieved by annotating method instead of field as follows:
- * <pre name="code" class="java">
- * G.grid().run(new Runnable() {
- *     &#64;Override public void run() {
- *         // Some computation logic here.
- *         ...
- *     }
- *
- *     // This annotation is optional. If omitted, then default
- *     // no-name cache will be used.
- *     &#64;CacheName
- *     public String cacheName() {
- *         return "myCache";
- *     }
- *
- *     // This annotation specifies that computation should be routed
- *     // precisely to the node where key '1234' is cached.
- *     &#64;CacheAffinityKeyMapped
- *     public String personKey() {
- *         return "1234";
- *     }
- * };
- * </pre>
+ * {@link org.apache.ignite.compute.ComputeJob} or any other grid computation, such as {@link Runnable},
+ * {@link Callable}, or {@link org.apache.ignite.lang.IgniteClosure}. It should be attached to a method or
+ * field that provides affinity key for the computation. Only one annotation per class is allowed.
+ * Whenever such annotation is detected, then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
+ * will be bypassed, and computation will be routed to the grid node where the specified affinity key is cached.
  * <p>
  * For more information about cache affinity also see {@link CacheAffinityKeyMapper} and
  * {@link CacheAffinityFunction} documentation.
@@ -143,7 +98,6 @@ import java.util.concurrent.*;
  * or not. If cache is not started, affinity function will be fetched from the remote node
  * which does have the cache running.
  *
- * @see org.apache.ignite.cache.CacheName
  * @see CacheAffinityFunction
  * @see CacheAffinityKeyMapper
  * @see CacheAffinityKey

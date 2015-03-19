@@ -725,7 +725,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
-                evt.message() != null && !evt.message().contains("GridTopic"))
+                evt.message() != null && evt.message().contains("TestAopTarget"))
                 cnt.addAndGet(1);
 
             return true;

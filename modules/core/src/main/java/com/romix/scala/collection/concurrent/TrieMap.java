@@ -482,7 +482,7 @@ public class TrieMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K,
      * If it is the original TrieMap or a non-readonly snapshot, it would return
      * an iterator that would allow for updates.
      *
-     * @return
+     * @return iterator
      */
     public Iterator<Entry<K, V>> iterator() {
         if (!nonReadOnly())
@@ -495,7 +495,7 @@ public class TrieMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K,
      * Return an iterator over a TrieMap.
      * This is a read-only iterator.
      *
-     * @return
+     * @return iterator
      */
     public Iterator<Entry<K, V>> readOnlyIterator() {
         if (nonReadOnly())

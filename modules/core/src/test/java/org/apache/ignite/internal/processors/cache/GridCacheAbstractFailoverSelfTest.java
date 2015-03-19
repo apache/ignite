@@ -30,7 +30,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -76,7 +76,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setPreloadMode(SYNC);
+        cfg.setRebalanceMode(SYNC);
 
         return cfg;
     }

@@ -110,6 +110,13 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeByteArray(String name, byte[] val, long off, int len) {
+        stream.writeByteArray(val, off, len);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeShortArray(String name, @Nullable short[] val) {
         stream.writeShortArray(val);
 

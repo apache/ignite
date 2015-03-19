@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
-
-import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 
 /**
  * Tests for {@link IgfsServer} that checks all IPC endpoint registration types
@@ -36,8 +35,8 @@ public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
 
         cfg.setFileSystemConfiguration(
             igfsConfiguration(null, null, null), // Check null IPC endpoint config won't bring any hassles.
-            igfsConfiguration("tcp", DFLT_IPC_PORT + 1, null),
-            igfsConfiguration("shmem", DFLT_IPC_PORT + 2, null));
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1, null),
+            igfsConfiguration(IgfsIpcEndpointType.SHMEM, IgfsIpcEndpointConfiguration.DFLT_PORT + 2, null));
 
         G.start(cfg);
 

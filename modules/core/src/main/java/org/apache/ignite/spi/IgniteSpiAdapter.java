@@ -221,7 +221,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @return Exception registry.
      */
     public IgniteExceptionRegistry getExceptionRegistry() {
-        return spiCtx.exceptionRegistry();
+        return IgniteExceptionRegistry.get();
     }
 
     /** {@inheritDoc} */
@@ -599,24 +599,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-            @Nullable ClassLoader ldr) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public int partition(String cacheName, Object key) {
             return -1;
         }
@@ -705,11 +687,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteExceptionRegistry exceptionRegistry() {
-            return IgniteExceptionRegistry.DUMMY_REGISTRY;
         }
     }
 }

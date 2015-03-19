@@ -39,6 +39,7 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTupleSelfTest.class));
         suite.addTest(new TestSuite(GridByteArrayListSelfTest.class));
         suite.addTest(new TestSuite(GridLeanMapSelfTest.class));
+        suite.addTest(new TestSuite(GridLeanIdentitySetSelfTest.class));
         suite.addTest(new TestSuite(GridListSetSelfTest.class));
         suite.addTest(new TestSuite(GridSetWrapperSelfTest.class));
         suite.addTest(new TestSuite(GridConcurrentWeakHashSetSelfTest.class));

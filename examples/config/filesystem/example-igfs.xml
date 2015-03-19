@@ -87,9 +87,9 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="tcp"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
                     </property>
                     -->
 
@@ -98,10 +98,9 @@
                     -->
                     <!--
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="shmem"/>
-                            <entry key="port" value="10500"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="SHMEM" />
+                        </bean>
                     </property>
                     -->
                 </bean>

@@ -201,7 +201,7 @@ public class GridQueryRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 94;
+        return 110;
     }
 
     /** {@inheritDoc} */

@@ -162,7 +162,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assert "2".equals(near.get(2));
             assert "3".equals(near.get(3));
 
-            GridCacheEntryEx<Integer, String> entry = dht.peekEx(2);
+            GridCacheEntryEx entry = dht.peekEx(2);
 
             assert entry == null || entry.rawGetOrUnmarshal(false) == null : "Invalid entry: " + entry;
             assert dht.peek(3) != null;

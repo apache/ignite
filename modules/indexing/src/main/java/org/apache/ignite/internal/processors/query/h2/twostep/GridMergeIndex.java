@@ -61,6 +61,14 @@ public abstract class GridMergeIndex extends BaseIndex {
         initBaseIndex(tbl, 0, name, cols, type);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @return {@code true} If this index needs data from the given source node.
+     */
+    public boolean hasSource(UUID nodeId) {
+        return remainingRows.containsKey(nodeId);
+    }
+
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
         return rowsCnt.get();
@@ -77,6 +85,13 @@ public abstract class GridMergeIndex extends BaseIndex {
     public void addSource(UUID nodeId) {
         if (remainingRows.put(nodeId, new Counter()) != null)
             throw new IllegalStateException();
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    public void fail(UUID nodeId) {
+        addPage0(new GridResultPage(nodeId, null, false));
     }
 
     /**

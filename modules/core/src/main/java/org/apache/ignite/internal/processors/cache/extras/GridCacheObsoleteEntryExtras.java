@@ -22,10 +22,12 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * Extras where obsolete version is set.
  */
-public class GridCacheObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheObsoleteEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Obsolete version. */
     private GridCacheVersion obsoleteVer;
 
@@ -41,13 +43,13 @@ public class GridCacheObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesObsoleteEntryExtras<K>(attrData, obsoleteVer) : this;
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+        return attrData != null ? new GridCacheAttributesObsoleteEntryExtras(attrData, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
-        return mvcc != null ? new GridCacheMvccObsoleteEntryExtras<>(mvcc, obsoleteVer) : this;
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
+        return mvcc != null ? new GridCacheMvccObsoleteEntryExtras(mvcc, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +58,7 @@ public class GridCacheObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
         if (obsoleteVer != null) {
             this.obsoleteVer = obsoleteVer;
 
@@ -67,8 +69,8 @@ public class GridCacheObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
-        return ttl != 0 ? new GridCacheObsoleteTtlEntryExtras<K>(obsoleteVer, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
+        return ttl != 0 ? new GridCacheObsoleteTtlEntryExtras(obsoleteVer, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

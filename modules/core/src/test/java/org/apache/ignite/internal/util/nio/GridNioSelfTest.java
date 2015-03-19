@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -63,14 +64,19 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Count of statistics segments. */
     private static final int STATISTICS_SEGMENTS_CNT = 10;
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        getTestResources().stopThreads();
-    }
+    /** Marshaller. */
+    private static volatile Marshaller marsh;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         getTestResources().startThreads(true);
+
+        marsh = getTestResources().getMarshaller();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        getTestResources().stopThreads();
     }
 
     /**
@@ -1115,7 +1121,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private <T extends Serializable> byte[] serializeMessage(T msg) throws IgniteCheckedException {
-        return getTestResources().getMarshaller().marshal(msg);
+        return marsh.marshal(msg);
     }
 
     /**
@@ -1128,7 +1134,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     private <T> T deserializeMessage(byte[] data) throws IgniteCheckedException {
-        return getTestResources().getMarshaller().<T>unmarshal(data, getClass().getClassLoader());
+        return marsh.<T>unmarshal(data, getClass().getClassLoader());
     }
 
     /**

@@ -36,6 +36,8 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.integration.*;
+import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -158,8 +160,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
-        cache.loadCache(new P2<Integer, ValueObject>() {
-            @Override public boolean apply(Integer key, ValueObject val) {
+        cache.loadCache(new P2<Integer,ValueObject>() {
+            @Override
+            public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
         });
@@ -235,7 +238,11 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PUT_CNT - 5; i++)
             keys[i] = i + 5;
 
-        cache.reloadAll(F.asList(keys));
+        CompletionListenerFuture fut = new CompletionListenerFuture();
+
+        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
+
+        fut.get();
 
         assert cache.size() == PUT_CNT - 5;
 
@@ -251,7 +258,11 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert cache.isEmpty();
         assertEquals(0, cache.size());
 
-        cache.reloadAll(Arrays.asList(keys));
+        fut = new CompletionListenerFuture();
+
+        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
+
+        fut.get();
 
         assertEquals(PUT_CNT - 5, cache.size());
 
@@ -301,7 +312,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * Value object class.
      */
-    private static class ValueObject {
+    private static class ValueObject implements Serializable {
         /** Value. */
         @QuerySqlField
         private final int val;

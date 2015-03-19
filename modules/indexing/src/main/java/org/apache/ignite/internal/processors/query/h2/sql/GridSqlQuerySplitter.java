@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.h2.jdbc.*;
+import org.h2.value.*;
 
-import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
@@ -55,16 +56,15 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param conn Connection.
-     * @param query Query.
+     * @param stmt Prepared statement.
      * @param params Parameters.
      * @return Two step query.
      */
-    public static GridCacheTwoStepQuery split(Connection conn, String query, Object[] params) {
+    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params) {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
+        GridSqlSelect srcQry = GridSqlQueryParser.parse(stmt);
 
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
@@ -298,20 +298,23 @@ public class GridSqlQuerySplitter {
             String mapColAlias = columnName(idx);
             String rdcColAlias;
 
-            if (alias == null) { // Wrap map column with generated alias if none.
+            if (alias == null)  // Original column name for reduce column.
                 rdcColAlias = el instanceof GridSqlColumn ? ((GridSqlColumn)el).columnName() : mapColAlias;
-
-                alias = alias(mapColAlias, el); // `el` is known not to be alias.
-
-                mapSelect.set(idx, alias);
-            }
             else // Set initial alias for reduce column.
                 rdcColAlias = alias.alias();
+
+            // Always wrap map column into generated alias.
+            mapSelect.set(idx, alias(mapColAlias, el)); // `el` is known not to be an alias.
 
             if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
                 GridSqlElement rdcEl = column(mapColAlias);
 
-                if (colNames.add(rdcColAlias))
+                GridSqlType type = el.expressionResultType();
+
+                if (type != null && type.type() == Value.UUID) // There is no JDBC type UUID, so conversion to bytes occurs.
+                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl);
+
+                if (colNames.add(rdcColAlias)) // To handle column name duplication (usually wildcard for few tables).
                     rdcEl = alias(rdcColAlias, rdcEl);
 
                 rdcSelect[idx] = rdcEl;

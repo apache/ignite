@@ -38,8 +38,8 @@ import java.util.*;
  * {@link #setDataCacheName(String)} configuration property.
  * <p>
  * Under the hood, this cache manager will create a cache projection
- * for each cache name provided in {@link org.springframework.cache.annotation.Cacheable},
- * {@link org.springframework.cache.annotation.CachePut},
+ * for each cache name provided in {@ignitelink org.springframework.cache.annotation.Cacheable},
+ * {@ignitelink org.springframework.cache.annotation.CachePut},
  * etc. annotations. Note that you're still able to use caches configured in
  * Ignite configuration. Cache projection will be created only
  * cache with provided name doesn't exist.
@@ -120,12 +120,10 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
             cache = metaCache.get(key);
 
             if (cache == null) {
-                cache = new SpringCache(name, grid, dataCache.projection(new ProjectionFilter(name)),
-                    new IgniteClosure<Object, Object>() {
-                        @Override public Object apply(Object o) {
-                            return new DataKey(name, o);
-                        }
-                    });
+                cache = new SpringCache(name,
+                    grid,
+                    dataCache.projection(new CacheEntrySerializablePredicate(new ProjectionFilter(name))),
+                    new DataKeyFactory(name));
 
                 org.springframework.cache.Cache old = metaCache.putIfAbsent(key, cache);
 
@@ -158,6 +156,26 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
                         return e.getKey().name;
                     }
                 }));
+    }
+
+    /**
+     *
+     */
+    private static class DataKeyFactory implements IgniteClosure<Object, Object> {
+        /** */
+        private String name;
+
+        /**
+         * @param name Name.
+         */
+        public DataKeyFactory(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Object o) {
+            return new DataKey(name, o);
+        }
     }
 
     /**
@@ -278,7 +296,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     /**
      * Projection filter.
      */
-    private static class ProjectionFilter implements IgniteBiPredicate<DataKey, Object>, Externalizable {
+    private static class ProjectionFilter extends CacheEntryPredicateAdapter implements Externalizable {
         /** Cache name. */
         private String name;
 
@@ -297,7 +315,9 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(DataKey key, Object val) {
+        @Override public boolean apply(GridCacheEntryEx e) {
+            DataKey key = e.key().value(e.context().cacheObjectContext(), false);
+
             return name != null ? name.equals(key.name) : key.name == null;
         }
 

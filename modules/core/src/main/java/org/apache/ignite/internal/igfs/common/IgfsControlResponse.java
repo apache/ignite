@@ -261,7 +261,7 @@ public class IgfsControlResponse extends IgfsMessage {
         assert errCode != -1;
 
         if (errCode == ERR_FILE_NOT_FOUND)
-            throw new IgfsFileNotFoundException(err);
+            throw new IgfsPathNotFoundException(err);
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
             throw new IgfsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
@@ -332,7 +332,7 @@ public class IgfsControlResponse extends IgfsMessage {
      */
     @SuppressWarnings("unchecked")
     private int errorCode(IgniteCheckedException e, boolean checkIo) {
-        if (X.hasCause(e, IgfsFileNotFoundException.class))
+        if (X.hasCause(e, IgfsPathNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
         else if (e.hasCause(IgfsPathAlreadyExistsException.class))
             return ERR_PATH_ALREADY_EXISTS;

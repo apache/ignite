@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
+import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
 import org.h2.expression.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
-import java.sql.*;
 import java.util.*;
 import java.util.Set;
 
@@ -150,17 +151,34 @@ public class GridSqlQueryParser {
     private static final Getter<JavaFunction, FunctionAlias> FUNC_ALIAS = getter(JavaFunction.class, "functionAlias");
 
     /** */
+    private static final Getter<JdbcPreparedStatement,Command> COMMAND = getter(JdbcPreparedStatement.class, "command");
+
+    /** */
+    private static volatile Getter<Command,Prepared> prepared;
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
-     * @param conn Connection.
-     * @param select Select query.
-     * @return Parsed select query.
+     * @param stmt Prepared statement.
+     * @return Parsed select.
      */
-    public static GridSqlSelect parse(Connection conn, String select) {
-        Session ses = (Session)((JdbcConnection)conn).getSession();
+    public static GridSqlSelect parse(JdbcPreparedStatement stmt) {
+        Command cmd = COMMAND.get(stmt);
 
-        return new GridSqlQueryParser().parse((Select)ses.prepare(select));
+        Getter<Command,Prepared> p = prepared;
+
+        if (p == null) {
+            Class<? extends Command> cls = cmd.getClass();
+
+            assert cls.getSimpleName().equals("CommandContainer");
+
+            prepared = p = getter(cls, "prepared");
+        }
+
+        Prepared select = p.get(cmd);
+
+        return new GridSqlQueryParser().parse((Select)select);
     }
 
     /**
@@ -307,6 +325,14 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseExpression0(expression);
 
+            if (expression.getType() != Value.UNKNOWN) {
+                Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
+                    expression.getDisplaySize());
+
+                res.expressionResultType(new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(),
+                    c.getCreateSQL()));
+            }
+
             h2ObjToGridObj.put(expression, res);
         }
 
@@ -383,13 +409,13 @@ public class GridSqlQueryParser {
 
             assert0(qry instanceof Select, expression);
 
-            return new GridSqlSubquery(parse((Select) qry));
+            return new GridSqlSubquery(parse((Select)qry));
         }
 
         if (expression instanceof ConditionIn) {
             GridSqlOperation res = new GridSqlOperation(IN);
 
-            res.addChild(parseExpression(LEFT_CI.get((ConditionIn) expression)));
+            res.addChild(parseExpression(LEFT_CI.get((ConditionIn)expression)));
 
             List<Expression> vals = VALUE_LIST_CI.get((ConditionIn)expression);
 
@@ -501,7 +527,7 @@ public class GridSqlQueryParser {
      * @param cls Class.
      * @param fldName Fld name.
      */
-    private static <T, R> Getter<T, R> getter(Class<T> cls, String fldName) {
+    private static <T, R> Getter<T, R> getter(Class<? extends T> cls, String fldName) {
         Field field;
 
         try {

@@ -23,6 +23,8 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -76,7 +78,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         // Query should be executed without ongoing transactions.
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(0);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setIndexedTypes(

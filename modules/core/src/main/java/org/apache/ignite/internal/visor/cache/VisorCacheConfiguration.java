@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.node.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -60,9 +59,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Swap enabled flag. */
     private boolean swapEnabled;
 
-    /** Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache. */
-    private boolean qryIdxEnabled;
-
     /** Invalidate. */
     private boolean invalidate;
 
@@ -75,9 +71,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
 
-    /** Max query iterator count */
-    private int maxQryIterCnt;
-
     /** Max concurrent async operations */
     private int maxConcurrentAsyncOps;
 
@@ -86,9 +79,6 @@ public class VisorCacheConfiguration implements Serializable {
 
     /** Cache interceptor. */
     private String interceptor;
-
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean valBytes;
 
     /** Cache affinityCfg config. */
     private VisorCacheAffinityConfiguration affinityCfg;
@@ -152,7 +142,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         cfg.memoryMode = ccfg.getMemoryMode();
         cfg.interceptor = compactClass(ccfg.getInterceptor());
-        cfg.valBytes = ccfg.isStoreValueBytes();
         cfg.typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
         cfg.statisticsEnabled = ccfg.isStatisticsEnabled();
         cfg.mgmtEnabled = ccfg.isManagementEnabled();
@@ -245,13 +234,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache.
-     */
-    public boolean queryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
      * @return Invalidate.
      */
     public boolean invalidate() {
@@ -280,13 +262,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Max query iterator count
-     */
-    public int maxQueryIteratorCount() {
-        return maxQryIterCnt;
-    }
-
-    /**
      * @return Max concurrent async operations
      */
     public int maxConcurrentAsyncOperations() {
@@ -312,13 +287,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     @Nullable public String interceptor() {
         return interceptor;
-    }
-
-    /**
-     * @return {@code true} if cached values should be additionally stored in serialized form.
-     */
-    public boolean valueBytes() {
-        return valBytes;
     }
 
     /**
