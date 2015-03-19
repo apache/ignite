@@ -2418,7 +2418,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return cacheFilter.apply(node);
+            return !node.isDaemon() && cacheFilter.apply(node);
         }
 
         /**
@@ -2426,7 +2426,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return cacheFilter.apply(node) || clientNodes.containsKey(node.id());
+            return !node.isDaemon() && (cacheFilter.apply(node) || clientNodes.containsKey(node.id()));
         }
 
         /**
@@ -2434,6 +2434,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if near cache is present on the given nodes.
          */
         public boolean nearNode(ClusterNode node) {
+            if (node.isDaemon())
+                return false;
+
             if (nearEnabled && cacheFilter.apply(node))
                 return true;
 
@@ -2447,6 +2450,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if near cache is present on the given nodes.
          */
         public boolean clientNode(ClusterNode node) {
+            if (node.isDaemon())
+                return false;
+
             Boolean near = clientNodes.get(node.id());
 
             return near != null && !near;
