@@ -495,7 +495,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, IgniteCacheExpiryPolicy, boolean)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}

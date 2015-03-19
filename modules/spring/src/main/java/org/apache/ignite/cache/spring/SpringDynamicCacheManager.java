@@ -38,8 +38,8 @@ import java.util.*;
  * {@link #setDataCacheName(String)} configuration property.
  * <p>
  * Under the hood, this cache manager will create a cache projection
- * for each cache name provided in {@link org.springframework.cache.annotation.Cacheable},
- * {@link org.springframework.cache.annotation.CachePut},
+ * for each cache name provided in {@ignitelink org.springframework.cache.annotation.Cacheable},
+ * {@ignitelink org.springframework.cache.annotation.CachePut},
  * etc. annotations. Note that you're still able to use caches configured in
  * Ignite configuration. Cache projection will be created only
  * cache with provided name doesn't exist.

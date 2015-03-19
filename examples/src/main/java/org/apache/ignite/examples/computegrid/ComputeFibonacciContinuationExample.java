@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
  * numbers on the cluster. Continuations
  * functionality is exposed via {@link ComputeJobContext#holdcc()} and
- * {@link ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * {@link ComputeJobContext#callcc()} method calls in {@link ComputeFibonacciContinuationExample.FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.

@@ -994,7 +994,7 @@ public class GridFilenameUtils {
      * @param filename1  the first filename to query, may be null
      * @param filename2  the second filename to query, may be null
      * @return true if the filenames are equal, null equals null
-     * @see IOCase#SENSITIVE
+     * @see GridFilenameUtils.IOCase#SENSITIVE
      */
     public static boolean equals(String filename1, String filename2) {
         return equals(filename1, filename2, false, IOCase.SENSITIVE);
@@ -1009,7 +1009,7 @@ public class GridFilenameUtils {
      * @param filename1  the first filename to query, may be null
      * @param filename2  the second filename to query, may be null
      * @return true if the filenames are equal, null equals null
-     * @see IOCase#SYSTEM
+     * @see GridFilenameUtils.IOCase#SYSTEM
      */
     public static boolean equalsOnSystem(String filename1, String filename2) {
         return equals(filename1, filename2, false, IOCase.SYSTEM);
@@ -1025,7 +1025,7 @@ public class GridFilenameUtils {
      * @param filename1  the first filename to query, may be null
      * @param filename2  the second filename to query, may be null
      * @return true if the filenames are equal, null equals null
-     * @see IOCase#SENSITIVE
+     * @see GridFilenameUtils.IOCase#SENSITIVE
      */
     public static boolean equalsNormalized(String filename1, String filename2) {
         return equals(filename1, filename2, true, IOCase.SENSITIVE);
@@ -1042,7 +1042,7 @@ public class GridFilenameUtils {
      * @param filename1  the first filename to query, may be null
      * @param filename2  the second filename to query, may be null
      * @return true if the filenames are equal, null equals null
-     * @see IOCase#SYSTEM
+     * @see GridFilenameUtils.IOCase#SYSTEM
      */
     public static boolean equalsNormalizedOnSystem(String filename1, String filename2) {
         return equals(filename1, filename2, true, IOCase.SYSTEM);
@@ -1168,7 +1168,7 @@ public class GridFilenameUtils {
      * @param filename  the filename to match on
      * @param wildcardMatcher  the wildcard string to match against
      * @return true if the filename matches the wilcard string
-     * @see IOCase#SENSITIVE
+     * @see GridFilenameUtils.IOCase#SENSITIVE
      */
     public static boolean wildcardMatch(String filename, String wildcardMatcher) {
         return wildcardMatch(filename, wildcardMatcher, IOCase.SENSITIVE);
@@ -1194,7 +1194,7 @@ public class GridFilenameUtils {
      * @param filename  the filename to match on
      * @param wildcardMatcher  the wildcard string to match against
      * @return true if the filename matches the wilcard string
-     * @see IOCase#SYSTEM
+     * @see GridFilenameUtils.IOCase#SYSTEM
      */
     public static boolean wildcardMatchOnSystem(String filename, String wildcardMatcher) {
         return wildcardMatch(filename, wildcardMatcher, IOCase.SYSTEM);
