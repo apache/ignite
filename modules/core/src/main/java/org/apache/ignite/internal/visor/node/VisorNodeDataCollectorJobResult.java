@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.node;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.igfs.*;
-import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
 import java.util.*;
@@ -61,9 +60,6 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
 
     /** Exception while collecting node IGFSs. */
     private Throwable igfssEx;
-
-    /** Node streamers. */
-    private final Collection<VisorStreamer> streamers = new ArrayList<>();
 
     /** Exception while collecting node streamers. */
     private Throwable streamersEx;
@@ -181,13 +177,6 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     public void igfssEx(Throwable igfssEx) {
         this.igfssEx = igfssEx;
-    }
-
-    /**
-     * @return Collection of streamers metrics.
-     */
-    public Collection<VisorStreamer> streamers() {
-        return streamers;
     }
 
     /**

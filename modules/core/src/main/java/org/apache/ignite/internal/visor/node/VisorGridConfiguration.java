@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.cache.*;
-import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
 import java.util.*;
@@ -75,9 +74,6 @@ public class VisorGridConfiguration implements Serializable {
     /** Igfss. */
     private Iterable<VisorIgfsConfiguration> igfss;
 
-    /** Streamers. */
-    private Iterable<VisorStreamerConfiguration> streamers;
-
     /** Environment. */
     private Map<String, String> env;
 
@@ -112,7 +108,6 @@ public class VisorGridConfiguration implements Serializable {
         userAttrs = c.getUserAttributes();
         caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
-        streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
@@ -210,13 +205,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public Iterable<VisorIgfsConfiguration> igfss() {
         return igfss;
-    }
-
-    /**
-     * @return Streamers.
-     */
-    public Iterable<VisorStreamerConfiguration> streamers() {
-        return streamers;
     }
 
     /**

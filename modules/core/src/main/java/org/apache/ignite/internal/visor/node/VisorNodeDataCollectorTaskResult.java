@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.node;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.igfs.*;
-import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
 import java.util.*;
@@ -68,9 +67,6 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** Exceptions caught during collecting IGFS from nodes. */
     private final Map<UUID, Throwable> igfssEx = new HashMap<>();
 
-    /** All streamers collected from nodes. */
-    private final Map<UUID, Collection<VisorStreamer>> streamers = new HashMap<>();
-
     /** Exceptions caught during collecting streamers from nodes. */
     private final Map<UUID, Throwable> streamersEx = new HashMap<>();
 
@@ -90,7 +86,6 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
                 igfss.isEmpty() &&
                 igfsEndpoints.isEmpty() &&
                 igfssEx.isEmpty() &&
-                streamers.isEmpty() &&
                 streamersEx.isEmpty();
     }
 
@@ -169,13 +164,6 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      */
     public Map<UUID, Throwable> igfssEx() {
         return igfssEx;
-    }
-
-    /**
-     * @return All streamers collected from nodes.
-     */
-    public Map<UUID, Collection<VisorStreamer>> streamers() {
-        return streamers;
     }
 
     /**
