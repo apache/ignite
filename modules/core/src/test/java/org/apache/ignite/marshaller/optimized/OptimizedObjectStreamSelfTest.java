@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -42,6 +43,9 @@ import static org.junit.Assert.*;
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
+
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
 
     /**
      * @throws Exception If failed.
@@ -1022,7 +1026,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
-            out.context(CTX, null, true);
+            out.context(clsMap, CTX, null, true);
 
             out.writeObject(obj);
 
@@ -1030,7 +1034,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.context(CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
 
