@@ -15,32 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.streamer;
+package org.apache.ignite.stream;
 
-import org.apache.ignite.streamer.index.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+
+import javax.cache.processor.*;
+import java.util.*;
 
 /**
- * Streamer benchmark window index receiver.
+ * Created by Dmitriy on 3/18/15.
  */
-class IndexUpdater implements StreamerIndexUpdater<Integer, Integer, Long> {
-    /** {@inheritDoc} */
-    @Override public Integer indexKey(Integer evt) {
-        return evt;
+public class StreamTransformer<K, V> implements StreamReceiver<K, V> {
+    private EntryProcessor<K, V, Object> ep;
+
+    public StreamTransformer(CacheEntryProcessor<K, V, Object> ep) {
+        this.ep = ep;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Long onAdded(StreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
-        return entry.value() + 1;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Long onRemoved(StreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
-        return entry.value() - 1 == 0 ? null : entry.value() - 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Long initialValue(Integer evt, Integer key) {
-        return 1L;
+    @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
+        for (Map.Entry<K, V> entry : entries)
+            cache.invoke(entry.getKey(), ep);
     }
 }

@@ -151,7 +151,7 @@ public class GridExternalAffinityFunction implements CacheAffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return key instanceof Integer ? 0 == key ? 0 : 1 : 1;
+        return key instanceof Integer ? 0 == (Integer)key ? 0 : 1 : 1;
     }
 
     /** {@inheritDoc}

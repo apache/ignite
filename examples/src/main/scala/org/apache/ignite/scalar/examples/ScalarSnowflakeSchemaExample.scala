@@ -17,16 +17,16 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.lang.{Integer => JavaInt}
+import java.util.ConcurrentModificationException
+import javax.cache.Cache
+
 import org.apache.ignite.IgniteCache
-import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.cache.CacheMode
+import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jdk8.backport.ThreadLocalRandom8
-
-import javax.cache.Cache
-import java.lang.{Integer => JavaInt}
-import java.util.ConcurrentModificationException
 
 import scala.collection.JavaConversions._
 

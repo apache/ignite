@@ -33,6 +33,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.stream.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -184,7 +185,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -226,7 +227,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
-            rmvLdr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -425,7 +426,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>individual());
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.
@@ -891,8 +892,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
-                ldr.updater(new IgniteDataStreamer.Updater<String, TestObject>() {
-                    @Override public void update(IgniteCache<String, TestObject> cache,
+                ldr.receiver(new StreamReceiver<String, TestObject>() {
+                    @Override
+                    public void receive(IgniteCache<String, TestObject> cache,
                         Collection<Map.Entry<String, TestObject>> entries) {
                         for (Map.Entry<String, TestObject> e : entries) {
                             assertTrue(e.getKey() instanceof String);

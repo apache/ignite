@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming;
+package org.apache.ignite.examples.java8.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.java8.*;
 import org.apache.ignite.stream.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
-import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class StreamingPopularNumbersExample {
@@ -61,7 +61,7 @@ public class StreamingPopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws org.apache.ignite.IgniteException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
@@ -130,7 +130,7 @@ public class StreamingPopularNumbersExample {
     }
 
     /**
-     * Populates cache in real time with numbers and keeps count for every number.
+     * Populates the streaming cache in real time with numbers and keeps count for every number.
      *
      * @param ignite Ignite.
      */
@@ -138,27 +138,23 @@ public class StreamingPopularNumbersExample {
         ExecutorService exe = Executors.newSingleThreadExecutor();
 
         // Stream random numbers from another thread.
-        exe.submit(new Runnable() {
-            @Override public void run() {
-                try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(STREAM_NAME)) {
-                    // Allow data updates.
-                    stmr.allowOverwrite(true);
+        exe.submit(() -> {
+            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(STREAM_NAME)) {
+                // Allow data updates.
+                stmr.allowOverwrite(true);
 
-                    // Transform data when processing.
-                    stmr.receiver(new StreamTransformer<>(new EntryProcessor<Integer, Long, Object>() {
-                        @Override
-                        public Object process(MutableEntry<Integer, Long> e, Object... args) {
-                            Long val = e.getValue();
+                // Configure data transformation to count instances of the same word.
+                stmr.receiver(new StreamTransformer<>((e, args) -> {
+                    Long val = e.getValue();
 
-                            e.setValue(val == null ? 1L : val + 1);
+                    e.setValue(val == null ? 1L : val + 1);
 
-                            return null;
-                        }
-                    }));
+                    return null;
+                }));
 
-                    while (!finished)
-                        stmr.addData(RAND.nextInt(RANGE), 1L);
-                }
+
+                while (!finished)
+                    stmr.addData(RAND.nextInt(RANGE), 1L);
             }
         });
 
