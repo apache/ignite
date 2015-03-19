@@ -29,6 +29,7 @@ import sun.misc.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
@@ -72,6 +73,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** */
     private Class<?> curCls;
 
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -81,11 +85,18 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
+     * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param clsLdr Class loader.
      */
-    void context(MarshallerContext ctx, OptimizedMarshallerIdMapper mapper, ClassLoader clsLdr) {
+    void context(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        ClassLoader clsLdr)
+    {
+        this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
@@ -111,6 +122,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         ctx = null;
         clsLdr = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */
@@ -244,8 +256,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(U.forName(readUTF(), clsLdr), ctx, mapper):
-                    classDescriptor(typeId, clsLdr, ctx, mapper);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
 
@@ -275,7 +287,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int compTypeId = readInt();
 
         return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(compTypeId, clsLdr, ctx, mapper).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
     }
 
     /**
