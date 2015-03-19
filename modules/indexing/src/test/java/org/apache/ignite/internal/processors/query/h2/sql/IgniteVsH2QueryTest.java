@@ -334,8 +334,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * then results will compare as ordered queries.
      * @throws SQLException If exception.
      */
-    private void testQuery(String sql, Object... args) throws SQLException {
-        testQuery(pCache, sql, args, Order.RANDOM);
+    private void compareQueryRes0(String sql, Object... args) throws SQLException {
+        compareQueryRes0(pCache, sql, args, Order.RANDOM);
     }
 
     /**
@@ -348,8 +348,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * then results will compare as ordered queries.
      * @throws SQLException If exception.
      */
-    private void testQuery(IgniteCache cache, String sql, Object... args) throws SQLException {
-        testQuery(cache, sql, args, Order.RANDOM);
+    private void compareQueryRes0(IgniteCache cache, String sql, Object... args) throws SQLException {
+        compareQueryRes0(cache, sql, args, Order.RANDOM);
     }
 
     /**
@@ -361,8 +361,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * then results will compare as ordered queries.
      * @throws SQLException If exception.
      */
-    private void testOrderedQuery(String sql, Object... args) throws SQLException {
-        testQuery(pCache, sql, args, Order.ORDERED);
+    private void compareOrderedQueryRes0(String sql, Object... args) throws SQLException {
+        compareQueryRes0(pCache, sql, args, Order.ORDERED);
     }
 
     /**
@@ -376,7 +376,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException If exception.
      */
     @SuppressWarnings("unchecked")
-    private void testQuery(IgniteCache cache, String sql, Object[] args, Order order) throws SQLException {
+    private void compareQueryRes0(IgniteCache cache, String sql, Object[] args, Order order) throws SQLException {
         log.info("Sql=" + sql + ", args=" + Arrays.toString(args));
 
         List<List<?>> h2Res = executeH2Query(sql, args);
@@ -461,48 +461,48 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkAllDataEquals() throws Exception {
-        testQuery("select id, name from \"part\".Organization");
+        compareQueryRes0("select id, name from \"part\".Organization");
 
-        testQuery("select id, firstName, lastName, orgId, salary from \"part\".Person");
+        compareQueryRes0("select id, firstName, lastName, orgId, salary from \"part\".Person");
 
-        testQuery("select id, personId, productId from \"part\".Purchase");
+        compareQueryRes0("select id, personId, productId from \"part\".Purchase");
 
-        testQuery(rCache, "select id, name, price from \"repl\".Product");
+        compareQueryRes0(rCache, "select id, name, price from \"repl\".Product");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSimpleReplSelect() throws Exception {
-        testQuery("select id, name, price from \"repl\".Product");
+        compareQueryRes0("select id, name, price from \"repl\".Product");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testEmptyResult() throws Exception {
-        testQuery("select id from \"part\".Person where 0 = 1");
+        compareQueryRes0("select id from \"part\".Person where 0 = 1");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSelectWithStar() throws Exception {
-        testQuery("select * from \"part\".Person");
+        compareQueryRes0("select * from \"part\".Person");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSelectWithStar2() throws Exception {
-        testQuery("select Person.* from \"part\".Person");
+        compareQueryRes0("select Person.* from \"part\".Person");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSqlQueryWithAggregation() throws Exception {
-        testQuery("select avg(salary) from \"part\".Person, \"part\".Organization where Person.orgId = Organization.id and "
+        compareQueryRes0("select avg(salary) from \"part\".Person, \"part\".Organization where Person.orgId = Organization.id and "
             + "lower(Organization.name) = lower(?)", "Org1");
     }
 
@@ -510,14 +510,14 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSqlFieldsQuery() throws Exception {
-        testQuery("select concat(firstName, ' ', lastName) from \"part\".Person");
+        compareQueryRes0("select concat(firstName, ' ', lastName) from \"part\".Person");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSqlFieldsQueryWithJoin() throws Exception {
-        testQuery("select concat(firstName, ' ', lastName), "
+        compareQueryRes0("select concat(firstName, ' ', lastName), "
             + "Organization.name from \"part\".Person, \"part\".Organization where "
             + "Person.orgId = Organization.id");
     }
@@ -526,7 +526,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOrdered() throws Exception {
-        testOrderedQuery("select firstName, lastName" +
+        compareOrderedQueryRes0("select firstName, lastName" +
                 " from \"part\".Person" +
                 " order by lastName, firstName"
         );
@@ -539,12 +539,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testSimpleJoin() throws Exception {
         // Have expected results.
-        testQuery("select id, firstName, lastName" +
+        compareQueryRes0("select id, firstName, lastName" +
             "  from \"part\".Person" +
             "  where Person.id = ?", 3);
 
         // Ignite cache return 0 results...
-        testQuery("select Person.firstName" +
+        compareQueryRes0("select Person.firstName" +
             "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = ?", 3);
     }
@@ -553,7 +553,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleReplicatedSelect() throws Exception {
-        testQuery(rCache, "select id, name from \"repl\".Product");
+        compareQueryRes0(rCache, "select id, name from \"repl\".Product");
     }
 
     /**
@@ -561,18 +561,18 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testCrossCache() throws Exception {
         //TODO Investigate (should be 20 results instead of 0).
-        testQuery("select firstName, lastName" +
+        compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = Purchase.personId");
 
         //TODO Investigate.
-        testQuery("select concat(firstName, ' ', lastName), Product.name " +
+        compareQueryRes0("select concat(firstName, ' ', lastName), Product.name " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
 
         //TODO Investigate.
-        testQuery("select concat(firstName, ' ', lastName), count (Product.id) " +
+        compareQueryRes0("select concat(firstName, ' ', lastName), count (Product.id) " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
