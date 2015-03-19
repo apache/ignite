@@ -22,7 +22,6 @@ import java.util._
 import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.affinity.CacheAffinityKey
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.apache.ignite.{Ignite, IgniteCache}
@@ -35,7 +34,7 @@ import scala.collection.JavaConversions._
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  * <p>
- * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-compute.xml` configuration.
  */
 object ScalarCacheQueryExample {

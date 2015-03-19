@@ -24,7 +24,6 @@ import java.util.Timer
 import javax.cache.processor.{EntryProcessor, MutableEntry}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.examples.java8.ExampleNodeStartup
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -40,7 +39,7 @@ import scala.util.Random
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  * <p>
- * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-compute.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
