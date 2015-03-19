@@ -928,27 +928,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean alive(UUID nodeId) {
         assert nodeId != null;
 
-        boolean alive = getSpi().getNode(nodeId) != null; // Go directly to SPI without checking disco cache.
-
-        // Refresh disco cache if some node died.
-        if (!alive) {
-            while (true) {
-                Snapshot snap = topSnap.get();
-                DiscoCache c = snap.discoCache;
-
-                if (c == null)
-                    return false;
-
-                if (c.node(nodeId) != null) {
-                    if (topSnap.compareAndSet(snap, null))
-                        break;
-                }
-                else
-                    break;
-            }
-        }
-
-        return alive;
+        return getSpi().getNode(nodeId) != null; // Go directly to SPI without checking disco cache.
     }
 
     /**

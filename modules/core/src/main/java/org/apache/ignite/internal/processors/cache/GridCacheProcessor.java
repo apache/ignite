@@ -1370,12 +1370,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqs Change requests.
      */
     @SuppressWarnings("unchecked")
-    public void onExchangeDone(AffinityTopologyVersion topVer, Collection<DynamicCacheChangeRequest> reqs) {
+    public void onExchangeDone(
+        AffinityTopologyVersion topVer,
+        Collection<DynamicCacheChangeRequest> reqs,
+        Throwable err
+    ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
-                cacheCtx.preloader().onInitialExchangeComplete(null);
+                cacheCtx.preloader().onInitialExchangeComplete(err);
 
                 String masked = maskNull(cacheCtx.name());
 
@@ -1383,7 +1387,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs)) {
+        if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 

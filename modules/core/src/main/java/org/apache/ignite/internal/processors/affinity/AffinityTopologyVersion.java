@@ -82,6 +82,13 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
         this.topVer = topVer;
     }
 
+    /**
+     * @return Minor topology version.
+     */
+    public int minorTopologyVersion() {
+        return minorTopVer;
+    }
+
     /** {@inheritDoc} */
     @Override public int compareTo(AffinityTopologyVersion o) {
         int cmp = Long.compare(topVer, o.topVer);
