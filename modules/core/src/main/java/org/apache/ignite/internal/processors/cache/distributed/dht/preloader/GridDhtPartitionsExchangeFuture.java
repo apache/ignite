@@ -705,16 +705,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (err == null) {
-                if (!cacheCtx.isLocal())
-                    cacheCtx.affinity().cleanUpCache(res.topologyVersion() - 10);
-            }
-        }
-
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs);
 
-        cctx.exchange().onExchangeDone(this);
+        cctx.exchange().onExchangeDone(this, err);
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())

@@ -2086,7 +2086,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndReplace("key", 2);
 
-        assert cacheAsync.future().get() == 1;
+        assert cacheAsync.<Integer>future().get() == 1;
 
         assert cache.get("key") == 2;
 
@@ -2319,7 +2319,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndRemove("key2");
 
-        assert cacheAsync.future().get() == 2;
+        assert cacheAsync.<Integer>future().get() == 2;
 
         assert cache.get("key2") == null;
 
@@ -4186,7 +4186,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param keyToRmv Removed key.
      */
-    private void checkLocalRemovedKey(String keyToRmv) {
+    protected void checkLocalRemovedKey(String keyToRmv) {
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
@@ -4257,7 +4257,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @return Map grid's name to its primary keys.
      */
-    private Map<String, List<String>> addKeys() {
+    protected Map<String, List<String>> addKeys() {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         Map<String, List<String>> keys = new HashMap<>();

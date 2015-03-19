@@ -46,7 +46,7 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testessagingPingPongListenActorExample() throws Exception {
+    public void testMessagingPingPongListenActorExample() throws Exception {
         MessagingPingPongListenActorExample.main(EMPTY_ARGS);
     }
 }

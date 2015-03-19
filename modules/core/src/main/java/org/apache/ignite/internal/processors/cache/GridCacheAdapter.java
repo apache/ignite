@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
@@ -1271,7 +1270,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return values((CacheEntryPredicate[])null);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Collection of values cached on this node. You can remove
+     * elements from this collection, but you cannot add elements to this collection.
+     * All removal operation will be reflected on the cache itself.
+     * <p>
+     * Iterator over this collection will not fail if collection was
+     * concurrently updated by another thread. This means that iterator may or
+     * may not return latest values depending on whether they were added before
+     * or after current iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the values cached on this node.
+     *
+     * @param filter Filters.
+     * @return Collection of cached values.
+     */
     public Collection<V> values(CacheEntryPredicate... filter) {
         return map.values(filter);
     }
@@ -1833,7 +1846,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void evictAll(Collection<? extends K> keys) {
-        evictAll(keys, (CacheEntryPredicate[]) null);
+        evictAll(keys, (CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
@@ -1869,7 +1882,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             fut =  fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override
                 public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                    return (V) ctx.config().getInterceptor().onGet(key, f.get());
+                    return (V)ctx.config().getInterceptor().onGet(key, f.get());
                 }
             });
 
@@ -1962,7 +1975,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return res;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param keys Keys.
+     * @param forcePrimary Force primary.
+     * @param skipTx Skip tx.
+     * @param entry Entry.
+     * @param subjId Subj Id.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable.
+     * @param skipVals Skip values.
+     * @return Future for the get operation.
+     * @see GridCacheAdapter#getAllAsync(Collection)
+     */
     protected IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
@@ -1989,7 +2013,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 skipVals);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param keys Keys.
+     * @param readThrough Read through.
+     * @param cached Cached.
+     * @param checkTx Check tx.
+     * @param subjId Subj Id.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable.
+     * @param forcePrimary Froce primary.
+     * @param expiry Expiry policy.
+     * @param skipVals Skip values.
+     * @return Future for the get operation.
+     * @see GridCacheAdapter#getAllAsync(Collection)
+     */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         boolean readThrough,
         @Nullable GridCacheEntryEx cached,
@@ -3789,7 +3826,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
+                ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
@@ -3983,7 +4020,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
-                ldr.updater(new IgniteDrDataStreamerCacheUpdater());
+                ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 

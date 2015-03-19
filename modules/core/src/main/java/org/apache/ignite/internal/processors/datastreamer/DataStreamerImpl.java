@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.stream.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -55,11 +56,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
-    /** Isolated updater. */
-    private static final Updater ISOLATED_UPDATER = new IsolatedUpdater();
+    /** Isolated receiver. */
+    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
-    /** Cache updater. */
-    private Updater<K, V> updater = ISOLATED_UPDATER;
+    /** Cache receiver. */
+    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
 
     /** */
     private byte[] updaterBytes;
@@ -286,15 +287,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @Override public void updater(Updater<K, V> updater) {
-        A.notNull(updater, "updater");
+    @Override public void receiver(StreamReceiver<K, V> rcvr) {
+        A.notNull(rcvr, "rcvr");
 
-        this.updater = updater;
+        this.rcvr = rcvr;
     }
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return updater != ISOLATED_UPDATER;
+        return rcvr != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -307,7 +308,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new IgniteException("Failed to get node for cache: " + cacheName);
 
-        updater = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        rcvr = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -537,7 +538,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (initPda) {
                     jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                         entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                        updater);
+                        rcvr);
 
                     initPda = false;
                 }
@@ -1068,7 +1069,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, updater), false);
+                    new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, rcvr), false);
 
                 locFuts.add(fut);
 
@@ -1099,9 +1100,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
 
                     if (updaterBytes == null) {
-                        assert updater != null;
+                        assert rcvr != null;
 
-                        updaterBytes = ctx.config().getMarshaller().marshal(updater);
+                        updaterBytes = ctx.config().getMarshaller().marshal(rcvr);
                     }
 
                     if (topicBytes == null)
@@ -1348,15 +1349,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * Isolated updater which only loads entry initial value.
+     * Isolated receiver which only loads entry initial value.
      */
-    private static class IsolatedUpdater implements Updater<KeyCacheObject, CacheObject>,
+    private static class IsolatedUpdater implements StreamReceiver<KeyCacheObject, CacheObject>,
         DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<KeyCacheObject, CacheObject> cache,
+        @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 

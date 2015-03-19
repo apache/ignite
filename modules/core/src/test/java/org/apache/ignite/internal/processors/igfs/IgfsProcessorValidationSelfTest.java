@@ -184,6 +184,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
         CacheConfiguration[] dataCaches = dataCaches(1024);
 
+        dataCaches[0].setIndexedTypes(Integer.class, String.class);
 
         g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
 
@@ -195,6 +196,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
         CacheConfiguration[] metaCaches = metaCaches();
+
+        metaCaches[0].setIndexedTypes(Integer.class, String.class);
 
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
 

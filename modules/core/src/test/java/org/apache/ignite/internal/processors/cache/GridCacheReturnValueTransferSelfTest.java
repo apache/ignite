@@ -55,16 +55,17 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cache) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-            ccfg.setBackups(backups);
-            ccfg.setCacheMode(PARTITIONED);
-            ccfg.setAtomicityMode(atomicityMode);
-            ccfg.setAtomicWriteOrderMode(writeOrderMode);
+        ccfg.setBackups(backups);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setAtomicWriteOrderMode(writeOrderMode);
 
-            cfg.setCacheConfiguration(ccfg);
-        }
+        cfg.setCacheConfiguration(ccfg);
+
+        if (!cache)
+            cfg.setClientMode(true);
 
         return cfg;
     }

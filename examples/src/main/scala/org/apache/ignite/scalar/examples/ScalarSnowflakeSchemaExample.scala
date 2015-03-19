@@ -17,16 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.lang.{Integer => JavaInt}
+import java.util.ConcurrentModificationException
+import javax.cache.Cache
+
 import org.apache.ignite.IgniteCache
-import org.apache.ignite.examples.ExampleNodeStartup
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jdk8.backport.ThreadLocalRandom8
-
-import javax.cache.Cache
-import java.lang.{Integer => JavaInt}
-import java.util.ConcurrentModificationException
 
 import scala.collection.JavaConversions._
 
@@ -49,7 +48,7 @@ import scala.collection.JavaConversions._
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  * <p>
- * Alternatively you can run [[ExampleNodeStartup]] in another JVM which will
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-compute.xml` configuration.
  */
 object ScalarSnowflakeSchemaExample {

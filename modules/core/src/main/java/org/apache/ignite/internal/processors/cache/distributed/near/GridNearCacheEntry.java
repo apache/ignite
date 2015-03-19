@@ -601,6 +601,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
+        primaryNodeId = null;
         dhtVer = null;
     }
 

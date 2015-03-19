@@ -90,7 +90,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
 
             fail();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException | IgniteException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }

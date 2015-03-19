@@ -51,7 +51,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         if (gridName.endsWith("1"))
-            cfg.setCacheConfiguration(); // Empty cache configuration.
+            cfg.setClientMode(true);
         else {
             assert gridName.endsWith("2");
 

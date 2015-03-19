@@ -58,6 +58,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
+    /** Cleanup history size. */
+    public static final int EXCH_FUT_CLEANUP_HISTORY_SIZE = 10;
+
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
@@ -638,12 +641,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param exchFut Exchange.
      */
-    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, Throwable err) {
         ExchangeFutureSet exchFuts0 = exchFuts;
 
         if (exchFuts0 != null) {
+            int skipped = 0;
+
             for (GridDhtPartitionsExchangeFuture fut : exchFuts0.values()) {
-                if (fut.exchangeId().topologyVersion().topologyVersion() < exchFut.exchangeId().topologyVersion().topologyVersion() - 10)
+                skipped++;
+
+                if (skipped == EXCH_FUT_CLEANUP_HISTORY_SIZE) {
+                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                        if (err == null) {
+                            if (!cacheCtx.isLocal())
+                                cacheCtx.affinity().cleanUpCache(fut.topologyVersion());
+                        }
+                    }
+                }
+                if (skipped > 10)
                     fut.cleanUp();
             }
         }

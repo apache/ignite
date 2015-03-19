@@ -21,7 +21,7 @@ import org.apache.ignite.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Streamer benchmark window index updater.
+ * Streamer benchmark window index receiver.
  */
 class IndexUpdater implements StreamerIndexUpdater<Integer, Integer, Long> {
     /** {@inheritDoc} */

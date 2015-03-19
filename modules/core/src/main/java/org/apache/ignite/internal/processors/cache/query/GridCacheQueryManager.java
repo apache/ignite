@@ -88,13 +88,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** Event listener. */
+    private GridLocalEventListener lsnr;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
         space = cctx.name();
         maxIterCnt = MAX_ITERATORS;
 
-        cctx.events().addListener(new GridLocalEventListener() {
+        lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
@@ -106,7 +109,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         entry.getValue().listen(new CIX1<IgniteInternalFuture<QueryResult<K, V>>>() {
                             @Override
-                            public void applyx(IgniteInternalFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
+                            public void applyx(IgniteInternalFuture<QueryResult<K, V>> f)
+                                throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
                         });
@@ -128,12 +132,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                 }
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        };
+
+        cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         busyLock.block();
+
+        cctx.events().removeListener(lsnr);
 
         if (cancel)
             onCancelAtStop();

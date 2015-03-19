@@ -28,7 +28,9 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="indexedTypes">
                         <list>
@@ -45,7 +47,6 @@
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
                 </bean>
 
@@ -54,7 +55,6 @@
                     <property name="name" value="partitioned_tx"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
                     <property name="backups" value="1"/>
                 </bean>
 

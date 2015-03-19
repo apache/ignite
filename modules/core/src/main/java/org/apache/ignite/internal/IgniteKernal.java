@@ -2270,6 +2270,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            try {
+                ctx.cache().dynamicStartCache(cacheCfg, null).get();
+            }
+            catch (IgniteCacheExistsException ignore) {
+                // Ignore the error if cache already exists.
+            }
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(
         CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg

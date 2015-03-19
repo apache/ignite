@@ -74,6 +74,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
         for (int i = 0; i < ITER_CNT; i++) {
             int idx = i % gridCount();
 
+            // Check that entry was loaded by user's classloader.
             if (idx == 0)
                 assertEquals(testClassLdr, jcache.get(i).getClass().getClassLoader());
             else

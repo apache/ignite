@@ -1233,8 +1233,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     taskName);
             }
 
-                if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                    cctx.continuousQueries().onEntryUpdated(this, key, null, old, false);
+            if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
+                cctx.continuousQueries().onEntryUpdated(this, key, null, old, false);
 
             cctx.dataStructures().onEntryUpdated(key, true);
         }

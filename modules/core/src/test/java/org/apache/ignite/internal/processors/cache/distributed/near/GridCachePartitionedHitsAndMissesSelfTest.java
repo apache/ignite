@@ -24,6 +24,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.stream.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
@@ -138,7 +139,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             ldr.perNodeParallelOperations(1);
 
             // Count closure which increments a count on remote node.
-            ldr.updater(new IncrementingUpdater());
+            ldr.receiver(new IncrementingUpdater());
 
             for (int i = 0; i < CNT; i++)
                 ldr.addData(i % (CNT / 2), 1L);
@@ -148,7 +149,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements StreamReceiver<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
@@ -161,7 +162,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
+        @Override public void receive(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

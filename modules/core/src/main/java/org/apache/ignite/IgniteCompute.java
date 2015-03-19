@@ -117,8 +117,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
-     * @see ComputeJobContext#cacheName()
-     * @see ComputeJobContext#affinityKey()
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
@@ -135,8 +133,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
      * @throws IgniteException If job failed.
-     * @see ComputeJobContext#cacheName()
-     * @see ComputeJobContext#affinityKey()
      */
     @IgniteAsyncSupported
     public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;

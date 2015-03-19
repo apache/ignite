@@ -63,7 +63,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
-    private volatile int pageSize = DFLT_PAGE_SIZE;
+    private volatile int pageSize = Query.DFLT_PAGE_SIZE;
 
     /** */
     private volatile long timeout;

@@ -21,12 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.stream.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 
@@ -40,30 +42,20 @@ import static java.util.concurrent.TimeUnit.*;
  * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class StreamingPopularNumbersExample {
-    /**
-     * Cache name.
-     */
+    /** Cache name. */
     private static final String STREAM_NAME = StreamingPopularNumbersExample.class.getSimpleName();
 
-    /**
-     * Count of most popular numbers to retrieve from cluster.
-     */
-    private static final int POPULAR_NUMBERS_CNT = 10;
-
-    /**
-     * Random number generator.
-     */
+    /** Random number generator. */
     private static final Random RAND = new Random();
 
-    /**
-     * Range within which to generate numbers.
-     */
+    /** Range within which to generate numbers. */
     private static final int RANGE = 1000;
 
-    /**
-     * Count of total numbers to generate.
-     */
-    private static final int CNT = 1000000;
+    /** Test duration. */
+    private static final long DURATION = 2 * 60 * 1000;
+
+    /** Flag indicating that the test is finished. */
+    private static volatile boolean finished = false;
 
     /**
      * Executes example.
@@ -99,36 +91,19 @@ public class StreamingPopularNumbersExample {
             try (IgniteCache<Integer, Long> stmCache = ignite.createCache(cfg)) {
                 // Check that that server nodes have been started.
                 if (ignite.cluster().forDataNodes(STREAM_NAME).nodes().isEmpty()) {
-                    System.out.println("Ignite does not have streaming cache configured: " + STREAM_NAME);
+                    System.err.println("Data nodes not found (start data nodes with ExampleNodeStartup class)");
 
                     return;
                 }
 
-                // Stream random numbers from another thread.
-                Thread th = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(STREAM_NAME)) {
-                            stmr.allowOverwrite(true); // Allow data updates.
-                            stmr.updater(new IncrementingUpdater());
-
-                            while (!Thread.currentThread().isInterrupted())
-                                stmr.addData(RAND.nextInt(RANGE), 1L);
-                        }
-                    }
-                });
-
-                th.start();
-
-                // Run this example for 2 minutes.
-                long duration = 2 * 60 * 1000;
+                ExecutorService exe = startStreaming(ignite);
 
                 long start = System.currentTimeMillis();
 
-                while (System.currentTimeMillis() - start < duration) {
+                while (System.currentTimeMillis() - start < DURATION) {
                     // Select top 10 words.
                     SqlFieldsQuery top10 = new SqlFieldsQuery(
-                        "select _key, _val from Long order by _val desc, _key limit ?").setArgs(10);
+                        "select _key, _val from Long order by _val desc limit 10");
 
                     List<List<?>> results = stmCache.queryFields(top10).getAll();
 
@@ -140,8 +115,9 @@ public class StreamingPopularNumbersExample {
                     Thread.sleep(5000);
                 }
 
-                th.interrupt();
-                th.join();
+                finished = true;
+
+                exe.shutdown();
             }
             catch (CacheException e) {
                 e.printStackTrace();
@@ -157,38 +133,34 @@ public class StreamingPopularNumbersExample {
      * Populates cache in real time with numbers and keeps count for every number.
      *
      * @param ignite Ignite.
-     * @throws org.apache.ignite.IgniteException If failed.
      */
-    private static void streamData(final Ignite ignite) throws IgniteException {
-        try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(STREAM_NAME)) {
-            stmr.allowOverwrite(true); // Allow data updates.
-            stmr.updater(new IncrementingUpdater());
+    private static ExecutorService startStreaming(final Ignite ignite) {
+        ExecutorService exe = Executors.newSingleThreadExecutor();
 
-            while (!Thread.currentThread().isInterrupted())
-                stmr.addData(RAND.nextInt(RANGE), 1L);
-        }
-        catch (IgniteInterruptedException ignore) {}
-    }
+        // Stream random numbers from another thread.
+        exe.submit(new Runnable() {
+            @Override public void run() {
+                try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(STREAM_NAME)) {
+                    // Allow data updates.
+                    stmr.allowOverwrite(true);
 
-    /**
-     * Increments value for key.
-     */
-    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
-        @Override
-        public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
-            for (Map.Entry<Integer, Long> entry : entries) {
-                // Increment values by 1.
-                cache.invoke(entry.getKey(), new EntryProcessor<Integer, Long, Object>() {
-                    @Override
-                    public Object process(MutableEntry<Integer, Long> e, Object... args) {
-                        Long val = e.getValue();
+                    // Transform data when processing.
+                    stmr.receiver(new StreamTransformer<>(new CacheEntryProcessor<Integer, Long, Object>() {
+                        @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
+                            Long val = e.getValue();
 
-                        e.setValue(val == null ? 1L : val + 1);
+                            e.setValue(val == null ? 1L : val + 1);
 
-                        return null;
-                    }
-                });
+                            return null;
+                        }
+                    }));
+
+                    while (!finished)
+                        stmr.addData(RAND.nextInt(RANGE), 1L);
+                }
             }
-        }
+        });
+
+        return exe;
     }
 }

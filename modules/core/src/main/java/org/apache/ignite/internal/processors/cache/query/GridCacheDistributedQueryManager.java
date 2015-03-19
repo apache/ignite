@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -77,6 +75,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
     };
 
+    /** Event listener. */
+    private GridLocalEventListener lsnr;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
@@ -89,14 +90,23 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
         });
 
-        cctx.events().addListener(new GridLocalEventListener() {
+        lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        };
+
+        cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        super.onKernalStop0(cancel);
+
+        cctx.events().removeListener(lsnr);
     }
 
     /** {@inheritDoc} */
