@@ -28,6 +28,9 @@ import java.util.*;
  * based on the previously cached value.
  */
 public class StreamTransformer<K, V> implements StreamReceiver<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Entry processor. */
     private EntryProcessor<K, V, Object> ep;
 
