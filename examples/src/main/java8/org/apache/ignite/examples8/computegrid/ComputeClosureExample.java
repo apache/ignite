@@ -47,17 +47,14 @@ public class ComputeClosureExample {
             System.out.println(">>> Compute closure example started.");
 
             // Execute closure on all cluster nodes.
-            Collection<Integer> res = ignite.compute().apply(
-                new IgniteClosure<String, Integer>() {
-                    @Override public Integer apply(String word) {
+            Collection<Integer> res = ignite.compute().<String, Integer>apply((word) -> {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
                         // Return number of letters in the word.
                         return word.length();
                     }
-                },
-
+                ,
                 // Job parameters. Ignite will create as many jobs as there are parameters.
                 Arrays.asList("Count characters using closure".split(" "))
             );
