@@ -99,6 +99,8 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
 
             cc.setNearConfiguration(nearCfg);
         }
+        else
+            cc.setNearConfiguration(null);
 
         if (mode == PARTITIONED)
             cc.setBackups(1);
