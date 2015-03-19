@@ -75,7 +75,7 @@ public abstract class GridWorker implements Runnable {
         this.gridName = gridName;
         this.name = name;
         this.lsnr = lsnr;
-        this.log = log.getLogger(GridWorker.class);
+        this.log = log;
     }
 
     /**
