@@ -25,5 +25,5 @@ public enum IgfsIpcEndpointType {
     SHMEM,
 
     /** TCP endpoint. */
-    TCP;
+    TCP
 }

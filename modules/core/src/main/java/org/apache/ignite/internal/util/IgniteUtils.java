@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -304,6 +305,9 @@ public abstract class IgniteUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap8<>();
+
+    /** */
+    private static volatile Boolean hasShmem;
 
     /**
      * Initializes enterprise check.
@@ -3053,7 +3057,6 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "modules").isDirectory() ||
                 !new File(cur, "config").isDirectory())
                 continue;
 
@@ -9036,5 +9039,27 @@ public abstract class IgniteUtils {
     public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
         if (!cond)
             throw new IgniteException("Parameter failed condition check: " + condDesc);
+    }
+
+    /**
+     * @return Whether shared memory libraries exist.
+     */
+    public static boolean hasSharedMemory() {
+        if (hasShmem == null) {
+            if (isWindows())
+                hasShmem = false;
+            else {
+                try {
+                    IpcSharedMemoryNativeLoader.load();
+
+                    hasShmem = true;
+                }
+                catch (IgniteCheckedException e) {
+                    hasShmem = false;
+                }
+            }
+        }
+
+        return hasShmem;
     }
 }

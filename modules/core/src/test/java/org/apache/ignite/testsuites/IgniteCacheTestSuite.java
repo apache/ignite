@@ -212,6 +212,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadUnloadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAffinityFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
+//        suite.addTest(new TestSuite(GridCacheLoadingConcurrentGridStartTest.class));  TODO-ignite-500
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
         suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
@@ -362,6 +363,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreSessionWriteBehindTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionWriteBehindTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);

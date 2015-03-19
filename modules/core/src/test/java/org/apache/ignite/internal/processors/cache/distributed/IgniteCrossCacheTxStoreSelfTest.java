@@ -55,12 +55,6 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4);
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
-
         return cfg;
     }
 

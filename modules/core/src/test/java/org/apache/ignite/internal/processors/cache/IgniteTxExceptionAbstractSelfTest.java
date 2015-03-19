@@ -74,7 +74,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setQueryIndexEnabled(true);
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
         ccfg.setWriteThrough(false);

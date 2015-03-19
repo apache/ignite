@@ -21,10 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -72,9 +73,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for cache distribution mode. */
     public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = CacheDistributionMode.PARTITIONED_ONLY;
-
-    /** Default query timeout. */
-    public static final long DFLT_QUERY_TIMEOUT = 0;
 
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
@@ -127,9 +125,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
-    /** Default value for 'queryIndexEnabled' flag. */
-    public static final boolean DFLT_QUERY_INDEX_ENABLED = false;
-
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
 
@@ -148,9 +143,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
-    /** Default maximum number of query iterators that can be stored. */
-    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
-
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
 
@@ -159,6 +151,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
+
+    /** Default timeout after which long query warning will be printed. */
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
+    /** Default size for onheap SQL row cache size. */
+    public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
     /** Cache name. */
     private String name;
@@ -204,9 +202,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
-
-    /** Default query timeout. */
-    private long dfltQryTimeout = DFLT_QUERY_TIMEOUT;
 
     /** Default cache start size. */
     private int startSize = DFLT_START_SIZE;
@@ -268,9 +263,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
-    /** */
-    private boolean qryIdxEnabled = DFLT_QUERY_INDEX_ENABLED;
-
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
@@ -286,17 +278,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
 
-    /** Maximum number of query iterators that can be stored. */
-    private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
-
     /** Memory mode. */
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
     private CacheAffinityKeyMapper affMapper;
-
-    /** */
-    private String indexingSpiName;
 
     /** */
     private long rebalanceDelay;
@@ -307,8 +293,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private CacheInterceptor<?, ?> interceptor;
 
-    /** Query configuration. */
-    private CacheQueryConfiguration qryCfg;
+    /** */
+    private Class<?>[] sqlFuncCls;
+
+    /** */
+    private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -318,6 +307,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
+
+    /** */
+    private boolean sqlEscapeAll;
+
+    /** */
+    private Class<?>[] indexedTypes;
+
+    /** */
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
@@ -338,7 +336,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         if (!(cfg instanceof CacheConfiguration))
             return;
 
-        CacheConfiguration cc = (CacheConfiguration)cfg;
+        CacheConfiguration<K,V> cc = (CacheConfiguration<K,V>)cfg;
 
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
@@ -354,7 +352,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheWriterFactory = cc.getCacheWriterFactory();
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
-        dfltQryTimeout = cc.getDefaultQueryTimeout();
         distro = cc.getDistributionMode();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
@@ -366,16 +363,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
-        indexingSpiName = cc.getIndexingSpiName();
+        indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
+        longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        maxQryIterCnt = cc.getMaximumQueryIteratorCount();
         memMode = cc.getMemoryMode();
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
@@ -387,9 +384,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
-        qryCfg = cc.getQueryConfiguration();
-        qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
+        sqlEscapeAll = cc.isSqlEscapeAll();
+        sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
@@ -959,25 +957,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets default query timeout. Default value is defined by {@link #DFLT_QUERY_TIMEOUT}. {@code 0} (zero)
-     * means that the query will never timeout and will wait for completion.
-     *
-     * @return Default query timeout, {@code 0} for never.
-     */
-    public long getDefaultQueryTimeout() {
-        return dfltQryTimeout;
-    }
-
-    /**
-     * Sets default query timeout, {@code 0} for never. For more information see {@link #getDefaultQueryTimeout()}.
-     *
-     * @param dfltQryTimeout Default query timeout.
-     */
-    public void setDefaultQueryTimeout(long dfltQryTimeout) {
-        this.dfltQryTimeout = dfltQryTimeout;
-    }
-
-    /**
      * Invalidation flag. If {@code true}, values will be invalidated (nullified) upon commit in near cache.
      *
      * @return Invalidation flag.
@@ -1130,28 +1109,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
-    }
-
-    /**
-     * Flag indicating whether Ignite should attempt to index value and/or key instances
-     * stored in cache. If this property is {@code false}, then all indexing annotations
-     * inside of any class will be ignored. By default query indexing is disabled and
-     * defined via {@link #DFLT_QUERY_INDEX_ENABLED} constant.
-     *
-     * @return {@code True} if query indexing is enabled.
-     * @see #getMemoryMode()
-     */
-    public boolean isQueryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
-     * Flag indicating whether query indexing is enabled or not.
-     *
-     * @param qryIdxEnabled {@code True} if query indexing is enabled.
-     */
-    public void setQueryIndexEnabled(boolean qryIdxEnabled) {
-        this.qryIdxEnabled = qryIdxEnabled;
     }
 
     /**
@@ -1408,34 +1365,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @return Name of SPI to use for indexing.
-     * @see IndexingSpi
-     */
-    public String getIndexingSpiName() {
-        return indexingSpiName;
-    }
-
-    /**
-     * Sets name of the SPI to use for indexing. If not specified, the default
-     * indexing SPI will be used.
-     * <p>
-     * This property becomes useful in rare cases when more than one indexing
-     * SPI is configured. In majority of the cases default value should be used.
-     *
-     * @param indexingSpiName Name.
-     * @see IndexingSpi
-     */
-    public void setIndexingSpiName(String indexingSpiName) {
-        this.indexingSpiName = indexingSpiName;
-    }
-
-    /**
      * Gets maximum amount of memory available to off-heap storage. Possible values are
      * <ul>
      * <li>{@code -1} - Means that off-heap storage is disabled.</li>
@@ -1477,28 +1406,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setOffHeapMaxMemory(long offHeapMaxMem) {
         this.offHeapMaxMem = offHeapMaxMem;
-    }
-
-    /**
-     * Gets maximum number of query iterators that can be stored. Iterators are stored to
-     * support query pagination when each page of data is sent to user's node only on demand.
-     * Increase this property if you are running and processing lots of queries in parallel.
-     * <p>
-     * Default value is {@link #DFLT_MAX_QUERY_ITERATOR_CNT}.
-     *
-     * @return Maximum number of query iterators that can be stored.
-     */
-    public int getMaximumQueryIteratorCount() {
-        return maxQryIterCnt;
-    }
-
-    /**
-     * Sets maximum number of query iterators that can be stored.
-     *
-     * @param maxQryIterCnt Maximum number of query iterators that can be stored.
-     */
-    public void setMaximumQueryIteratorCount(int maxQryIterCnt) {
-        this.maxQryIterCnt = maxQryIterCnt;
     }
 
     /**
@@ -1559,26 +1466,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.typeMeta = typeMeta;
     }
 
-
-    /**
-     * Gets query configuration. Query configuration defines which fields should be indexed for objects
-     * without annotations or portable objects.
-     *
-     * @return Cache query configuration.
-     */
-    public CacheQueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * Sets query configuration.
-     *
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
-    }
-
     /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
@@ -1604,7 +1491,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
-     * passed to {@link CacheInterceptor} and to {@link org.apache.ignite.cache.IgniteEntryProcessor}.
+     * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      * <p>
      * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *
@@ -1623,6 +1510,122 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setCopyOnRead(boolean cpOnGet) {
         this.cpOnRead = cpOnGet;
+    }
+
+    /**
+     * Sets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @param cls One or more classes with SQL functions.
+     */
+    public void setSqlFunctionClasses(Class<?>... cls) {
+        this.sqlFuncCls = cls;
+    }
+
+    /**
+     * Gets classes with methods annotated by {@link QuerySqlFunction}
+     * to be used as user-defined functions from SQL queries.
+     *
+     * @return Classes with SQL functions.
+     */
+    @Nullable public Class<?>[] getSqlFunctionClasses() {
+        return sqlFuncCls;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @return Timeout in milliseconds.
+     */
+    public long getLongQueryWarningTimeout() {
+        return longQryWarnTimeout;
+    }
+
+    /**
+     * Gets timeout in milliseconds after which long query warning will be printed.
+     *
+     * @param longQryWarnTimeout Timeout in milliseconds.
+     */
+    public void setLongQueryWarningTimeout(long longQryWarnTimeout) {
+        this.longQryWarnTimeout = longQryWarnTimeout;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @return Flag value.
+     */
+    public boolean isSqlEscapeAll() {
+        return sqlEscapeAll;
+    }
+
+    /**
+     * If {@code true} all the SQL table and field names will be escaped with double quotes like
+     * ({@code "tableName"."fieldsName"}). This enforces case sensitivity for field names and
+     * also allows having special characters in table and field names.
+     *
+     * @param sqlEscapeAll Flag value.
+     */
+    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+        this.sqlEscapeAll = sqlEscapeAll;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
+     *
+     * @return Key and value type pairs.
+     */
+    public Class<?>[] getIndexedTypes() {
+        return indexedTypes;
+    }
+
+    /**
+     * Array of key and value type pairs to be indexed.
+     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
+     * each odd (1,3,5...) class will be considered as value type for cache entry.
+     * <p>
+     * The same key class can occur multiple times for different value classes, but each value class must be unique
+     * because SQL table will be named as value class simple name.
+     * <p>
+     * To expose fields of these types onto SQL level and to index them you have to use annotations
+     * from package {@link org.apache.ignite.cache.query.annotations}.
+     *
+     * @param indexedTypes Key and value type pairs.
+     */
+    public void setIndexedTypes(Class<?>... indexedTypes) {
+        this.indexedTypes = indexedTypes;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @return size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public int getSqlOnheapRowCacheSize() {
+        return sqlOnheapRowCacheSize;
+    }
+
+    /**
+     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
+     * This setting only makes sense when offheap is enabled for this cache.
+     *
+     * @param size Cache size.
+     * @see #setOffHeapMaxMemory(long)
+     */
+    public void setSqlOnheapRowCacheSize(int size) {
+        this.sqlOnheapRowCacheSize = size;
     }
 
     /** {@inheritDoc} */

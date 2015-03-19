@@ -95,17 +95,17 @@ public class VisorComputeMonitoringHolder {
     /**
      * Schedule cleanup process for events monitoring.
      *
-     * @param g grid.
+     * @param ignite grid.
      */
-    private void scheduleCleanupJob(final IgniteEx g) {
-        ((IgniteKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
+    private void scheduleCleanupJob(final IgniteEx ignite) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
             @Override public void onTimeout() {
                 synchronized (listenVisor) {
-                    if (tryDisableEvents(g)) {
+                    if (tryDisableEvents(ignite)) {
                         for (String visorKey : listenVisor.keySet())
                             listenVisor.put(visorKey, false);
 
-                        scheduleCleanupJob(g);
+                        scheduleCleanupJob(ignite);
                     }
                     else
                         cleanupStopped = true;

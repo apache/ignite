@@ -82,9 +82,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Flag indicating whether Ignite should use swap storage by default. */
     protected boolean swapEnabled;
 
-    /** Flag indicating whether  query indexing is enabled. */
-    private boolean qryIdxEnabled;
-
     /** Flag indicating whether Ignite should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
@@ -99,9 +96,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize;
-
-    /** Name of SPI to use for indexing. */
-    private String indexingSpiName;
 
     /** Cache affinity class name. */
     private String affClsName;
@@ -153,17 +147,14 @@ public class GridCacheAttributes implements Externalizable {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
-        dfltQryTimeout = cfg.getDefaultQueryTimeout();
         evictMaxOverflowRatio = cfg.getEvictMaxOverflowRatio();
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
-        indexingSpiName = cfg.getIndexingSpiName();
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
         rebalanceBatchSize = cfg.getRebalanceBatchSize();
         rebalanceMode = cfg.getRebalanceMode();
-        qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
@@ -404,13 +395,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether  query indexing is enabled.
-     */
-    public boolean queryIndexEnabled() {
-        return qryIdxEnabled;
-    }
-
-    /**
      * @return Flag indicating whether read-through behaviour is enabled.
      */
     public boolean readThrough() {
@@ -466,13 +450,6 @@ public class GridCacheAttributes implements Externalizable {
         return writeBehindBatchSize;
     }
 
-    /**
-     * @return Name of SPI to use for indexing.
-     */
-    public String indexingSpiName() {
-        return indexingSpiName;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeEnum(out, atomicityMode);
@@ -482,13 +459,11 @@ public class GridCacheAttributes implements Externalizable {
         out.writeFloat(evictMaxOverflowRatio);
         out.writeBoolean(evictNearSync);
         out.writeBoolean(evictSync);
-        U.writeString(out, indexingSpiName);
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum(out, partDistro);
         out.writeInt(rebalanceBatchSize);
         U.writeEnum(out, rebalanceMode);
-        out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
@@ -523,13 +498,11 @@ public class GridCacheAttributes implements Externalizable {
         evictMaxOverflowRatio = in.readFloat();
         evictNearSync = in.readBoolean();
         evictSync  = in.readBoolean();
-        indexingSpiName = U.readString(in);
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
         rebalanceBatchSize = in.readInt();
         rebalanceMode = CacheRebalanceMode.fromOrdinal(in.readByte());
-        qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();

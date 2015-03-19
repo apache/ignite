@@ -32,10 +32,12 @@ import scala.collection.JavaConversions._
  */
 @RunWith(classOf[JUnitRunner])
 class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
+    private val CFG = "modules/scalar/src/test/resources/spring-cache.xml"
+
     behavior of "Scalar cache"
 
     it should "work properly via Java APIs" in {
-        scalar("examples/config/example-cache.xml") {
+        scalar(CFG) {
             registerListener()
 
             val c = cache$[Int, Int]("partitioned").get

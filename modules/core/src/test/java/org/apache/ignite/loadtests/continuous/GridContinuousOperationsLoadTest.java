@@ -95,7 +95,7 @@ public class GridContinuousOperationsLoadTest {
 
             for (int i = 0; i < parallelCnt; i++) {
                 if (useQry) {
-                    ContinuousQuery<Object, Object> qry = Query.continuous();
+                    ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
                     qry.setLocalListener(new CacheEntryUpdatedListener<Object,Object>() {
                         @Override public void onUpdated(Iterable<CacheEntryEvent<?,?>> evts) {

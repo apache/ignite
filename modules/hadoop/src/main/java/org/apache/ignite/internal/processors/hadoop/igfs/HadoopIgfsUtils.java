@@ -117,8 +117,11 @@ public class HadoopIgfsUtils {
             return new PathIsNotEmptyDirectoryException(path);
         else if (path != null && e.hasCause(IgfsPathAlreadyExistsException.class))
             return new PathExistsException(path);
-        else
-            return new IOException(e);
+        else {
+            String msg = e.getMessage();
+
+            return msg == null ? new IOException(e) : new IOException(msg, e);
+        }
     }
 
     /**

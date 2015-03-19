@@ -875,8 +875,33 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void clearLocallyAll(Set<K> keys) {
+        cache.clearLocallyAll(keys);
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
         cache.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear(K key) throws IgniteCheckedException {
+        cache.clear(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
+        cache.clearAll(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(K key) {
+        return cache.clearAsync(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
+        return cache.clearAsync(keys);
     }
 
     /** {@inheritDoc} */

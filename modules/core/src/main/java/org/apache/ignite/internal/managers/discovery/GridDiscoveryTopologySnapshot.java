@@ -45,12 +45,24 @@ public class GridDiscoveryTopologySnapshot {
         this.topNodes = topNodes;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets topology version if this event is raised on
+     * topology change and configured discovery SPI implementation
+     * supports topology versioning.
+     *
+     * @return Topology version or {@code 0} if configured discovery SPI implementation
+     *      does not support versioning.
+     */
     public long topologyVersion() {
         return topVer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets topology nodes from topology snapshot. If SPI implementation does not support
+     * versioning, the best effort snapshot will be captured.
+     *
+     * @return Topology snapshot.
+     */
     public Collection<ClusterNode> topologyNodes() {
         return topNodes;
     }

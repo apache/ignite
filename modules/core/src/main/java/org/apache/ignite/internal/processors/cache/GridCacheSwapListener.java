@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
+
 /**
  * Provides ability to listen to swap events in cache which is necessary for preloading.
  */
@@ -25,6 +27,7 @@ public interface GridCacheSwapListener {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onEntryUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e);
+    public void onEntryUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException;
 }

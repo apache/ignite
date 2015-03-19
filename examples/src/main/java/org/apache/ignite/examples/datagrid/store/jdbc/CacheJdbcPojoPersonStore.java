@@ -82,15 +82,4 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
             throw new IgniteException("Failed to find example database script: " + script.getPath(), e);
         }
     }
-
-    /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, @Nullable Object... args)
-        throws CacheLoaderException {
-        if (args == null || args.length == 0 || args[0] == null)
-            throw new CacheLoaderException("Expected entry count parameter is not provided.");
-
-        final int entryCnt = (Integer)args[0];
-
-        super.loadCache(clo, "java.lang.Long", "select * from PERSONS limit " + entryCnt);
-    }
 }

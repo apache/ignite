@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -399,7 +398,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void printLastErrors() {
-        ctx.exceptionRegistry().printErrors();
+        ctx.exceptionRegistry().printErrors(log);
     }
 
     /** {@inheritDoc} */
@@ -663,7 +662,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 this,
                 cfg,
                 gw,
-                new IgniteExceptionRegistry(log),
                 utilityCachePool,
                 marshCachePool,
                 execSvc,
@@ -1799,7 +1797,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            OptimizedMarshaller.clearCache();
+            U.clearClassCache();
             MarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
