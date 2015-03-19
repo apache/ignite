@@ -1197,12 +1197,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 if (field.getJavaType() == UUID.class) {
                     switch (field.getDatabaseType()) {
                         case Types.BINARY:
-                            U.uuidToBytes((UUID)fieldVal);
-                            break;
+                            fieldVal = U.uuidToBytes((UUID)fieldVal);
 
+                            break;
                         case Types.CHAR:
                         case Types.VARCHAR:
                             fieldVal = fieldVal.toString();
+
                             break;
                     }
                 }

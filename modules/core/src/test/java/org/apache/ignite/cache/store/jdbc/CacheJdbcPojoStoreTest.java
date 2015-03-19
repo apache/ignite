@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -33,6 +33,7 @@ import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
+import javax.cache.integration.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
@@ -175,8 +176,16 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             // No-op.
         }
 
+        try {
+            stmt.executeUpdate("delete from Timestamp_Entries");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS String_Entries (key varchar(100) not null, val varchar(100), PRIMARY KEY(key))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS UUID_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Timestamp_Entries (key timestamp not null, val integer, PRIMARY KEY(key))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person_Complex (id integer not null, org_id integer not null, city_id integer not null, name varchar(50), PRIMARY KEY(id))");
@@ -306,5 +315,77 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         assertTrue(orgKeys.isEmpty());
         assertTrue(prnKeys.isEmpty());
         assertTrue(prnComplexKeys.isEmpty());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteRetry() throws Exception {
+        // Special dialect that will skip updates, to test write retry.
+        BasicJdbcDialect dialect = new BasicJdbcDialect() {
+            /** {@inheritDoc} */
+            @Override public String updateQuery(String tblName, Collection<String> keyCols, Iterable<String> valCols) {
+                return super.updateQuery(tblName, keyCols, valCols) + " AND 1 = 0";
+            }
+        };
+
+        store.setDialect(dialect);
+
+        Map<String, Map<Object, CacheAbstractJdbcStore.EntryMapping>> cacheMappings =
+            GridTestUtils.getFieldValue(store, CacheAbstractJdbcStore.class, "cacheMappings");
+
+        CacheAbstractJdbcStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
+
+        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
+
+        cacheMappings.get(null).put(OrganizationKey.class,
+            new CacheAbstractJdbcStore.EntryMapping(null, dialect, typeMeta));
+
+        Connection conn = store.openConnection(false);
+
+        PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
+
+        orgStmt.setInt(1, 1);
+        orgStmt.setString(2, "name" + 1);
+        orgStmt.setString(3, "city" + 1);
+
+        orgStmt.executeUpdate();
+
+        U.closeQuiet(orgStmt);
+
+        conn.commit();
+
+        OrganizationKey k1 = new OrganizationKey(1);
+        Organization v1 = new Organization(1, "Name1", "City1");
+
+        ses.newSession(null);
+
+        try {
+            store.write(new CacheEntryImpl<>(k1, v1));
+        }
+        catch (CacheWriterException e) {
+            if (!e.getMessage().startsWith("Failed insert entry in database, violate a unique index or primary key") ||
+                e.getSuppressed().length != 2)
+                throw e;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimestamp() throws Exception {
+        Timestamp k = new Timestamp(System.currentTimeMillis());
+
+        ses.newSession(null);
+
+        Integer v = 5;
+
+        store.write(new CacheEntryImpl<>(k, v));
+
+        assertEquals(v, store.load(k));
+
+        store.delete(k);
+
+        assertNull(store.load(k));
     }
 }
