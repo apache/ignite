@@ -26,6 +26,7 @@ import sun.misc.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
@@ -43,6 +44,9 @@ class OptimizedClassDescriptor {
 
     /** Context. */
     private final MarshallerContext ctx;
+
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /** ID mapper. */
     private final OptimizedMarshallerIdMapper mapper;
@@ -107,16 +111,23 @@ class OptimizedClassDescriptor {
     /**
      * Creates descriptor for class.
      *
+     * @param typeId Type ID.
+     * @param clsMap Class descriptors by class map.
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    OptimizedClassDescriptor(Class<?> cls, int typeId, MarshallerContext ctx, OptimizedMarshallerIdMapper mapper)
+    OptimizedClassDescriptor(Class<?> cls,
+        int typeId,
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
+        this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
 
@@ -614,7 +625,10 @@ class OptimizedClassDescriptor {
                 break;
 
             case OBJ_ARR:
-                OptimizedClassDescriptor compDesc = classDescriptor(obj.getClass().getComponentType(), ctx, mapper);
+                OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
+                    obj.getClass().getComponentType(),
+                    ctx,
+                    mapper);
 
                 compDesc.writeTypeData(out);
 
@@ -673,7 +687,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor((Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
