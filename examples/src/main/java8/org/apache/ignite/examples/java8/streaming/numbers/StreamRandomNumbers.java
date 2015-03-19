@@ -49,8 +49,9 @@ public class StreamRandomNumbers {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start()) {
             // Create new cache or get existing one.
+            // The cache is configured with sliding window holding 1 second of the streaming data.
             try (IgniteCache<Integer, Long> stmCache = ignite.createCache(CacheConfig.configure())) {
                 if (!ExamplesUtils.hasServerNodes(ignite))
                     return;

@@ -24,7 +24,7 @@ import org.apache.ignite.examples.java8.*;
 import java.util.*;
 
 /**
- * Real time popular numbers counter.
+ * Periodically query popular numbers from the streaming cache.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -33,18 +33,13 @@ import java.util.*;
  * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public class QueryPopularNumbers {
-    /**
-     * Executes example.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
-     */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             // Start new cache or get existing one.
+            // The cache is configured with sliding window holding 1 second of the streaming data.
             try (IgniteCache<Integer, Long> stmCache = ignite.createCache(CacheConfig.configure())) {
                 if (!ExamplesUtils.hasServerNodes(ignite))
                     return;
