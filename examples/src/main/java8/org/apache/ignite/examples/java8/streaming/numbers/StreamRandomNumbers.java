@@ -24,7 +24,7 @@ import org.apache.ignite.stream.*;
 import java.util.*;
 
 /**
- * Real time popular numbers counter.
+ * Stream random numbers into the streaming cache.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -39,17 +39,11 @@ public class StreamRandomNumbers {
     /** Range within which to generate numbers. */
     private static final int RANGE = 1000;
 
-    /**
-     * Executes example.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
-     */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
-        try (Ignite ignite = Ignition.start()) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             // Create new cache or get existing one.
             // The cache is configured with sliding window holding 1 second of the streaming data.
             try (IgniteCache<Integer, Long> stmCache = ignite.createCache(CacheConfig.configure())) {
@@ -68,7 +62,6 @@ public class StreamRandomNumbers {
 
                         return null;
                     }));
-
 
                     // Stream random numbers into the streamer cache.
                     while (true)
