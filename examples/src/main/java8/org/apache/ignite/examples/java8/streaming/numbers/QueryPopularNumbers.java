@@ -44,6 +44,7 @@ public class QueryPopularNumbers {
                 if (!ExamplesUtils.hasServerNodes(ignite))
                     return;
 
+                // Query top 10 popular numbers every 5 seconds.
                 while (true) {
                     // Select top 10 words.
                     SqlFieldsQuery top10 = new SqlFieldsQuery(
