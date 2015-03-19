@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -122,8 +123,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     return new CreateUpdateRemoveExpireListener();
                 }
             },
-            new Factory<CacheEntryEventFilter<? super Integer, ? super Integer>>() {
-                @Override public CacheEntryEventFilter<? super Integer, ? super Integer> create() {
+            new Factory<IgniteCacheEntryEventFilter<? super Integer, ? super Integer>>() {
+                @Override public IgniteCacheEntryEventFilter<? super Integer, ? super Integer> create() {
                     return new ExceptionFilter();
                 }
             },
@@ -936,9 +937,9 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class TestFilterFactory implements Factory<CacheEntryEventFilter<Integer, Integer>> {
+    static class TestFilterFactory implements Factory<IgniteCacheEntryEventFilter<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public CacheEntryEventFilter<Integer, Integer> create() {
+        @Override public IgniteCacheEntryEventFilter<Integer, Integer> create() {
             return new TestFilter();
         }
     }
@@ -946,7 +947,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class TestFilter implements CacheEntryEventFilter<Integer, Integer> {
+    static class TestFilter implements IgniteCacheEntryEventFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             assert evt != null;
@@ -1023,7 +1024,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class ExceptionFilter implements CacheEntryEventFilter<Integer, Integer> {
+    static class ExceptionFilter implements IgniteCacheEntryEventFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             throw new RuntimeException("Test filter error.");

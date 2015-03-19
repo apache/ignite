@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 
@@ -78,7 +79,7 @@ public class CacheContinuousQueryExample {
 
             // This filter will be evaluated remotely on all nodes.
             // Entry that pass this filter will be sent to the caller.
-            qry.setRemoteFilter(new CacheEntryEventFilter<Integer, String>() {
+            qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, String>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
                     return e.getKey() > 10;
                 }
