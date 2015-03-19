@@ -76,11 +76,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testDuplicateId() throws Exception {
-        rslvr = new CacheAffinityNodeHashResolver() {
-            @Override public Object resolve(ClusterNode node) {
-                return 1;
-            }
-        };
+        rslvr = new BogusHashResolver();
 
         startGrid(0);
 
@@ -92,5 +88,15 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
             }
         }, IgniteCheckedException.class, "Failed to start manager: GridManagerAdapter [enabled=true, name=" +
             "org.apache.ignite.internal.managers.discovery.GridDiscoveryManager]");
+    }
+
+    /**
+     *
+     */
+    private static class BogusHashResolver implements CacheAffinityNodeHashResolver {
+        /** {@inheritDoc} */
+        @Override public Object resolve(ClusterNode node) {
+            return 1;
+        }
     }
 }

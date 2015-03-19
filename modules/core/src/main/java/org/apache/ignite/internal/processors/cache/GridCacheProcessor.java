@@ -1778,8 +1778,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteSpiNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
-            CacheConfiguration cfg = cache.configuration();
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            CacheConfiguration cfg = desc.cacheConfiguration();
 
             if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
                 CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
@@ -1795,12 +1795,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
                         String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cfg.getName() +
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
                             ", existingNodeId=" + topNode.id() + ']';
 
                         String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + cache.name() +
+                            "partitioned affinity as one of existing nodes [cacheName=" + cfg.getName() +
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
                             topNode.id() + ']';
 
