@@ -145,9 +145,8 @@ public class StreamingPopularNumbersExample {
                     stmr.allowOverwrite(true);
 
                     // Transform data when processing.
-                    stmr.receiver(new StreamTransformer<>(new EntryProcessor<Integer, Long, Object>() {
-                        @Override
-                        public Object process(MutableEntry<Integer, Long> e, Object... args) {
+                    stmr.receiver(new StreamTransformer<>(new CacheEntryProcessor<Integer, Long, Object>() {
+                        @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
                             Long val = e.getValue();
 
                             e.setValue(val == null ? 1L : val + 1);
