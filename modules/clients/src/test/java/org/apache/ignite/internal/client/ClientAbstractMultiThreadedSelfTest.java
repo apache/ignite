@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.client;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -43,7 +40,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -95,7 +91,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     }
 
     /** Client instance for each test. */
-    private GridClient client;
+    protected GridClient client;
 
     /**
      * @return Client protocol that should be used.
@@ -377,102 +373,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         for (Map.Entry<String, AtomicInteger> e : statisticsMap.entrySet())
             info(">>>>>>> " + e.getKey() + " run " + e.getValue().get() + " tasks");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void test6Affinity() throws Exception {
-        GridClientData cache = client.data(PARTITIONED_CACHE_NAME);
-        UUID nodeId = cache.affinity("6");
-
-        info("Affinity node: " + nodeId);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultithreadedCachePut() throws Exception {
-        final AtomicLong keyCnt = new AtomicLong();
-
-        final AtomicReference<Exception> err = new AtomicReference<>();
-
-        final ConcurrentMap<String, T2<UUID, String>> puts = new ConcurrentHashMap<>();
-
-        final Map<UUID, Ignite> gridMap = new HashMap<>();
-
-        for (int i = 0; i < NODES_CNT; i++) {
-            Ignite g = grid(i);
-
-            gridMap.put(g.cluster().localNode().id(), g);
-        }
-
-        final Ignite ignite = F.first(gridMap.values());
-
-        assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings("OverlyStrongTypeCast")
-            @Override public void run() {
-                try {
-                    GridClientData cache = client.data(PARTITIONED_CACHE_NAME);
-
-                    assertEquals(NODES_CNT, ((GridClientDataImpl)cache).projectionNodes().size());
-
-                    long rawKey;
-
-                    while ((rawKey = keyCnt.getAndIncrement()) < cachePutCount()) {
-                        String key = String.valueOf(rawKey);
-
-                        UUID nodeId = cache.affinity(key);
-
-                        String val = "val" + rawKey;
-
-                        if (cache.put(key, val)) {
-                            T2<UUID, String> old = puts.putIfAbsent(key, new T2<>(nodeId, val));
-
-                            assert old == null : "Map contained entry [key=" + rawKey + ", entry=" + old + ']';
-                        }
-                    }
-                }
-                catch (Exception e) {
-                    err.compareAndSet(null, e);
-                }
-            }
-        }, THREAD_CNT, "client-cache-put");
-
-        fut.get();
-
-        if (err.get() != null)
-            throw new Exception(err.get());
-
-        assertEquals(cachePutCount(), puts.size());
-
-        // Now check that all puts went to primary nodes.
-        for (long i = 0; i < cachePutCount(); i++) {
-            String key = String.valueOf(i);
-
-            ClusterNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
-
-            if (!puts.get(key).get2().equals(gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP))) {
-                // printAffinityState(gridMap.values());
-
-                failNotEquals("Node don't have value for key [nodeId=" + node.id() + ", key=" + key + "]",
-                    puts.get(key).get2(), gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
-            }
-
-
-            UUID curAffNode = client.data(PARTITIONED_CACHE_NAME).affinity(key);
-
-            // Check that no other nodes see this key.
-            for (UUID id : gridMap.keySet()) {
-                if (!id.equals(curAffNode) && !id.equals(node.id()))
-                    assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
-            }
-        }
-
-        for (Ignite g : gridMap.values())
-            g.jcache(PARTITIONED_CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
