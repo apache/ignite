@@ -614,9 +614,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private final CacheEntryListener<K, V> impl;
 
         /** */
-        private final Cache<K, V> cache;
-
-        /** */
         private final IgniteLogger log;
 
         /**
@@ -628,7 +625,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             assert cache != null;
 
             this.impl = impl;
-            this.cache = cache;
 
             log = cache.unwrap(Ignite.class).log().getLogger(CacheContinuousQueryManager.class);
         }

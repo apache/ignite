@@ -27,6 +27,7 @@ import org.apache.ignite.marshaller.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
@@ -68,6 +69,9 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private PutFieldImpl curPut;
 
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+
     /**
      * @param out Output.
      * @throws IOException In case of error.
@@ -77,11 +81,16 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     }
 
     /**
+     * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param requireSer Require {@link Serializable} flag.
      */
-    void context(MarshallerContext ctx, OptimizedMarshallerIdMapper mapper, boolean requireSer) {
+    void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        boolean requireSer) {
+        this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.requireSer = requireSer;
@@ -106,6 +115,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         reset();
 
         ctx = null;
+        clsMap = null;
     }
 
     /** {@inheritDoc} */
@@ -170,7 +180,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             }
             else {
                 OptimizedClassDescriptor desc = classDescriptor(
-                    obj instanceof Object[] ? Object[].class : obj.getClass(), ctx, mapper);
+                    clsMap,
+                    obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    ctx,
+                    mapper);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -194,7 +207,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (obj0 != obj) {
                     obj = obj0;
 
-                    desc = classDescriptor(obj instanceof Object[] ? Object[].class : obj.getClass(), ctx, mapper);
+                    desc = classDescriptor(clsMap,
+                        obj instanceof Object[] ? Object[].class : obj.getClass(),
+                        ctx,
+                        mapper);
                 }
 
                 if (handle >= 0) {
