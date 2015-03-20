@@ -476,10 +476,10 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
                 break;
             case RANDOM:
-                Map<List<?>, Integer> rowsWithCnt1 = extractUniqueueRowsWithCounts(rs1);
-                Map<List<?>, Integer> rowsWithCnt2 = extractUniqueueRowsWithCounts(rs2);
+                Map<List<?>, Integer> rowsWithCnt1 = extractUniqueRowsWithCounts(rs1);
+                Map<List<?>, Integer> rowsWithCnt2 = extractUniqueRowsWithCounts(rs2);
                 
-                assertEquals("Uniqueue rows count has to be equal.", rowsWithCnt1.size(), rowsWithCnt2.size());
+                assertEquals("Unique rows count has to be equal.", rowsWithCnt1.size(), rowsWithCnt2.size());
 
                 for (Map.Entry<List<?>, Integer> entry1 : rowsWithCnt1.entrySet()) {
                     List<?> row = entry1.getKey();
@@ -498,9 +498,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
     /**
      * @param rs Result set.
-     * @return Map of uniqueue rows at the result set to number of occuriances at the result set.
+     * @return Map of unique rows at the result set to number of occuriances at the result set.
      */
-    private Map<List<?>, Integer> extractUniqueueRowsWithCounts(Iterable<List<?>> rs) {
+    private Map<List<?>, Integer> extractUniqueRowsWithCounts(Iterable<List<?>> rs) {
         Map<List<?>, Integer> res = new HashMap<>();
 
         for (List<?> row : rs) {
