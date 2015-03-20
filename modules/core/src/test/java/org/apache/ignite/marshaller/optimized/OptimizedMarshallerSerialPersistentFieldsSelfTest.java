@@ -16,23 +16,26 @@
  */
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.marshaller.*;
 
 import java.io.*;
 
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.
  */
-public class OptimizedMarshallerSerialPersistentFieldsSelfTest extends GridCommonAbstractTest {
+public class OptimizedMarshallerSerialPersistentFieldsSelfTest  extends GridMarshallerAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected Marshaller marshaller() {
+        return new OptimizedMarshaller(false);
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testOptimizedMarshaller() throws Exception {
-        OptimizedMarshaller m = new OptimizedMarshaller();
+        unmarshal(marshal(new TestClass()));
 
-        m.unmarshal(m.marshal(new TestClass()), TestClass.class.getClassLoader());
-
-        TestClass2 val = m.unmarshal(m.marshal(new TestClass2()), TestClass2.class.getClassLoader());
+        TestClass2 val = unmarshal(marshal(new TestClass2()));
 
         assertNull(val.field3);
     }
