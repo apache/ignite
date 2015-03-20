@@ -101,7 +101,7 @@ public class ExamplesUtils {
      * @param res Query results.
      */
     public static void printQueryResults(List<?> res) {
-        if (res == null)
+        if (res == null || res.isEmpty())
             System.out.println("Query result set is empty.");
         else {
             System.out.println("Query results:");

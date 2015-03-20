@@ -50,29 +50,28 @@ public class StreamRandomNumbers {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
-            // Create new cache or get existing one.
+            if (!ExamplesUtils.hasServerNodes(ignite))
+                return;
+
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure())) {
-                if (!ExamplesUtils.hasServerNodes(ignite))
-                    return;
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure());
 
-                try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                    // Allow data updates.
-                    stmr.allowOverwrite(true);
+            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
+                // Allow data updates.
+                stmr.allowOverwrite(true);
 
-                    // Configure data transformation to count instances of the same word.
-                    stmr.receiver(new StreamTransformer<>((e, arg) -> {
-                        Long val = e.getValue();
+                // Configure data transformation to count instances of the same word.
+                stmr.receiver(new StreamTransformer<>((e, arg) -> {
+                    Long val = e.getValue();
 
-                        e.setValue(val == null ? 1L : val + 1);
+                    e.setValue(val == null ? 1L : val + 1);
 
-                        return null;
-                    }));
+                    return null;
+                }));
 
-                    // Stream random numbers into the streamer cache.
-                    while (true)
-                        stmr.addData(RAND.nextInt(RANGE), 1L);
-                }
+                // Stream random numbers into the streamer cache.
+                while (true)
+                    stmr.addData(RAND.nextInt(RANGE), 1L);
             }
         }
     }
