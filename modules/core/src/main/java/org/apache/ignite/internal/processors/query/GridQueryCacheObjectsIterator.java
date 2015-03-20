@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Deserializes portable objects if needed.
  */
-public class GridQueryPortableFieldsIterator implements Iterator<List<?>>, AutoCloseable {
+public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoCloseable {
     /** */
     private final Iterator<List<?>> iter;
 
@@ -40,7 +40,7 @@ public class GridQueryPortableFieldsIterator implements Iterator<List<?>>, AutoC
      * @param cctx Cache context.
      * @param keepPortable Keep portable.
      */
-    public GridQueryPortableFieldsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepPortable) {
+    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepPortable) {
         this.iter = iter;
         this.cctx = cctx;
         this.keepPortable = keepPortable;

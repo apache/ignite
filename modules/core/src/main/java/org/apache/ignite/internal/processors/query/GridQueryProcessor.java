@@ -581,7 +581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-                new GridQueryPortableFieldsIterator(res.iterator(), cctx, cctx.keepPortable()));
+                new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepPortable()));
 
             cursor.fieldsMeta(res.metaData());
 

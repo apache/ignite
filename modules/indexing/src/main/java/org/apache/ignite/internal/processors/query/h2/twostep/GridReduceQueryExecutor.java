@@ -310,7 +310,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 //                dropTable(r.conn, tbl.getName()); TODO
             }
 
-            return new QueryCursorImpl<>(new GridQueryPortableFieldsIterator(new Iter(res), cctx, cctx.keepPortable()));
+            return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
         }
         catch (IgniteCheckedException | InterruptedException | RuntimeException e) {
             U.closeQuiet(r.conn);
