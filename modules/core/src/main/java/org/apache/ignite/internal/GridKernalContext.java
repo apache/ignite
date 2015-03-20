@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -262,13 +261,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return IGFS utils processor.
      */
     public IgfsHelper igfsHelper();
-
-    /**
-     * Gets stream processor.
-     *
-     * @return Stream processor.
-     */
-    public GridStreamProcessor stream();
 
     /**
      * Gets event continuous processor.
