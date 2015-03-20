@@ -17,8 +17,7 @@
 
 package org.apache.ignite.spring;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -38,7 +37,13 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** */
+    private static final String DYNAMIC_CACHE_NAME = "dynamicCache";
+
+    /** */
     private GridSpringCacheTestService svc;
+
+    /** */
+    private GridSpringDynamicCacheTestService dynamicSvc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -79,13 +84,17 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
         BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/spring/spring-caching.xml");
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
+        dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
 
         svc.reset();
+        dynamicSvc.reset();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid().jcache(CACHE_NAME).removeAll();
+
+        grid().destroyCache(DYNAMIC_CACHE_NAME);
     }
 
     /**
@@ -232,6 +241,100 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
         assertEquals("value2", c.get(2));
 
         svc.evictAll();
+
+        assertEquals(0, c.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicCache() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            assertEquals("value" + i, dynamicSvc.cacheable(i));
+            assertEquals("value" + i, dynamicSvc.cacheable(i));
+        }
+
+        assertEquals(3, dynamicSvc.called());
+
+        IgniteCache<Integer, String> c = grid().jcache(DYNAMIC_CACHE_NAME);
+
+        // Check that correct config is used.
+        assertEquals(2, c.getConfiguration(CacheConfiguration.class).getBackups());
+
+        assertEquals(3, c.size());
+
+        for (int i = 0; i < 3; i++)
+            assertEquals("value" + i, c.get(i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicCachePut() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            assertEquals("value" + i, dynamicSvc.cachePut(i));
+            assertEquals("value" + i, dynamicSvc.cachePut(i));
+        }
+
+        assertEquals(6, dynamicSvc.called());
+
+        IgniteCache<Integer, String> c = grid().jcache(DYNAMIC_CACHE_NAME);
+
+        // Check that correct config is used.
+        assertEquals(2, c.getConfiguration(CacheConfiguration.class).getBackups());
+
+        assertEquals(3, c.size());
+
+        for (int i = 0; i < 3; i++)
+            assertEquals("value" + i, c.get(i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicCacheEvict() throws Exception {
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setName(DYNAMIC_CACHE_NAME);
+
+        IgniteCache<Integer, String> c = grid().createCache(cacheCfg);
+
+        for (int i = 0; i < 3; i++)
+            c.put(i, "value" + i);
+
+        assertEquals(3, c.size());
+
+        for (int i = 0; i < 2; i++) {
+            dynamicSvc.cacheEvict(i);
+            dynamicSvc.cacheEvict(i);
+        }
+
+        assertEquals(4, dynamicSvc.called());
+
+        assertEquals(1, c.size());
+
+        assertEquals("value2", c.get(2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicCacheEvictAll() throws Exception {
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setName(DYNAMIC_CACHE_NAME);
+
+        IgniteCache<Integer, String> c = grid().createCache(cacheCfg);
+
+        for (int i = 0; i < 3; i++)
+            c.put(i, "value" + i);
+
+        assertEquals(3, c.size());
+
+        dynamicSvc.cacheEvictAll();
+        dynamicSvc.cacheEvictAll();
+
+        assertEquals(2, dynamicSvc.called());
 
         assertEquals(0, c.size());
     }
