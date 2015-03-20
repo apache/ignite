@@ -75,7 +75,7 @@ import java.util.*;
  *      updates and allow data streamer choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(IgniteDataStreamer.Updater)} - defines how cache will be updated with added entries.
+ *      {@link #receiver(StreamReceiver)} - defines how cache will be updated with added entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -114,7 +114,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /**
      * Sets flag indicating that this data streamer should assume
      * that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache receiver set using {@link #updater(IgniteDataStreamer.Updater)} method.
+     * Should not be used when custom cache receiver set using {@link #receiver(StreamReceiver)} method.
      * Default is {@code false}. When this flag is set, updates will not be propagated to the cache store.
      *
      * @param allowOverwrite Flag value.

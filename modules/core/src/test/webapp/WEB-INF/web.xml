@@ -25,7 +25,7 @@
 
     <!-- Declare listener for web sessions caching. -->
     <listener>
-        <listener-class>org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup</listener-class>
+        <listener-class>org.apache.ignite.startup.servlet.ServletContextListenerStartup</listener-class>
     </listener>
 
     <!-- Declare filter for web sessions caching. -->

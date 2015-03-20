@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * with {@link ServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.ServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
