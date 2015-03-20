@@ -82,7 +82,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@code CommandLineStartup}</li>
- * <li>{@code IgniteServletStartup}</li>
+ * <li>{@code ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use

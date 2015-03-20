@@ -84,7 +84,7 @@ import java.util.*;
  * </li>
  * </ul>
  */
-public class IgniteServletContextListenerStartup implements ServletContextListener {
+public class ServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
     public static final String IGNITE_CFG_FILE_PATH_PARAM = "IgniteConfigurationFilePath";
 
@@ -144,7 +144,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
 
                 Ignite ignite;
 
-                synchronized (IgniteServletContextListenerStartup.class) {
+                synchronized (ServletContextListenerStartup.class) {
                     try {
                         ignite = G.ignite(cfg.getGridName());
                     }
@@ -176,6 +176,6 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteServletContextListenerStartup.class, this);
+        return S.toString(ServletContextListenerStartup.class, this);
     }
 }

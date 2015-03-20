@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.startup.servlet.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
@@ -43,15 +44,15 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Filter for web sessions caching.
  * <p>
  * This is a request filter, that you need to specify in your {@code web.xml} along
- * with {@link org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup} to enable web sessions caching:
+ * with {@link ServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
  *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
- *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.WebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;!-- You can also specify a custom URL pattern. --&gt;
@@ -64,12 +65,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * be used in this case:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.WebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
  *     &lt;servlet-name&gt;YourServletName&lt;/servlet-name&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
@@ -107,8 +108,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * servlet context parameters. You can specify filter init parameters as follows:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;IgniteWebSessionFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.apache.ignite.cache.websession.IgniteWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-name&gt;WebSessionFilter&lt;/filter-name&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.WebSessionFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;IgniteWebSessionsGridName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebGrid&lt;/param-value&gt;
@@ -138,7 +139,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * cache concurrent requests can get equal value, but {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL}
  * cache will always process such updates one after another.
  */
-public class IgniteWebSessionFilter implements Filter {
+public class WebSessionFilter implements Filter {
     /** Web sessions caching grid name parameter name. */
     public static final String WEB_SES_NAME_PARAM = "IgniteWebSessionsGridName";
 
@@ -152,13 +153,13 @@ public class IgniteWebSessionFilter implements Filter {
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
 
     /** Cache. */
-    private IgniteCache<String, IgniteWebSession> cache;
+    private IgniteCache<String, WebSession> cache;
 
     /** Transactions. */
     private IgniteTransactions txs;
 
     /** Listener. */
-    private IgniteWebSessionListener lsnr;
+    private WebSessionListener lsnr;
 
     /** Logger. */
     private IgniteLogger log;
@@ -239,7 +240,7 @@ public class IgniteWebSessionFilter implements Filter {
 
         txEnabled = cacheCfg.getAtomicityMode() == TRANSACTIONAL;
 
-        lsnr = new IgniteWebSessionListener(webSesIgnite, cache, retries);
+        lsnr = new WebSessionListener(webSesIgnite, cache, retries);
 
         String srvInfo = ctx.getServerInfo();
 
@@ -315,7 +316,7 @@ public class IgniteWebSessionFilter implements Filter {
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
         ServletException, CacheException {
-        IgniteWebSession cached;
+        WebSession cached;
 
         String sesId = httpReq.getRequestedSessionId();
 
@@ -327,7 +328,7 @@ public class IgniteWebSessionFilter implements Filter {
                     log.debug("Using cached session for ID: " + sesId);
 
                 if (cached.isNew())
-                    cached = new IgniteWebSession(cached, false);
+                    cached = new WebSession(cached, false);
             }
             else {
                 if (log.isDebugEnabled())
@@ -365,8 +366,8 @@ public class IgniteWebSessionFilter implements Filter {
 
         HttpSession ses = httpReq.getSession(false);
 
-        if (ses != null && ses instanceof IgniteWebSession) {
-            Collection<T2<String, Object>> updates = ((IgniteWebSession)ses).updates();
+        if (ses != null && ses instanceof WebSession) {
+            Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
             if (updates != null)
                 lsnr.updateAttributes(ses.getId(), updates, ses.getMaxInactiveInterval());
@@ -380,7 +381,7 @@ public class IgniteWebSessionFilter implements Filter {
      * @return Cached session.
      */
     @SuppressWarnings("unchecked")
-    private IgniteWebSession createSession(HttpServletRequest httpReq) {
+    private WebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
         String sesId = sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId();
@@ -388,12 +389,12 @@ public class IgniteWebSessionFilter implements Filter {
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
 
-        IgniteWebSession cached = new IgniteWebSession(ses, true);
+        WebSession cached = new WebSession(ses, true);
 
         try {
             while (true) {
                 try {
-                    IgniteCache<String, IgniteWebSession> cache0;
+                    IgniteCache<String, WebSession> cache0;
 
                     if (cached.getMaxInactiveInterval() > 0) {
                         long ttl = cached.getMaxInactiveInterval() * 1000;
@@ -405,13 +406,13 @@ public class IgniteWebSessionFilter implements Filter {
                     else
                         cache0 = cache;
 
-                    IgniteWebSession old = cache0.getAndPutIfAbsent(sesId, cached);
+                    WebSession old = cache0.getAndPutIfAbsent(sesId, cached);
 
                     if (old != null) {
                         cached = old;
 
                         if (cached.isNew())
-                            cached = new IgniteWebSession(cached, false);
+                            cached = new WebSession(cached, false);
                     }
 
                     break;
@@ -431,7 +432,7 @@ public class IgniteWebSessionFilter implements Filter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteWebSessionFilter.class, this);
+        return S.toString(WebSessionFilter.class, this);
     }
 
     /**
@@ -439,13 +440,13 @@ public class IgniteWebSessionFilter implements Filter {
      */
     private static class RequestWrapper extends HttpServletRequestWrapper {
         /** Session. */
-        private final IgniteWebSession ses;
+        private final WebSession ses;
 
         /**
          * @param req Request.
          * @param ses Session.
          */
-        private RequestWrapper(HttpServletRequest req, IgniteWebSession ses) {
+        private RequestWrapper(HttpServletRequest req, WebSession ses) {
             super(req);
 
             assert ses != null;
