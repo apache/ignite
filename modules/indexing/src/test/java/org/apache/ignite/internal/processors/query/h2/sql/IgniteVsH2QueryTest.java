@@ -451,6 +451,14 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /**
+     * Do a smart setting of given object at statement.
+     *
+     * @param st Statment.
+     * @param idx Index.
+     * @param arg Argument.
+     * @throws SQLException If exception.
+     */
     private void setObjectSmart(PreparedStatement st, int idx, Object arg) throws SQLException {
         if (arg == null)
             st.setNull(idx, Types.NULL);
@@ -516,11 +524,18 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPersonWIthNullLastName() throws Exception {
-        List<List<?>> rs = compareQueryRes0("select id from \"part\".Person where lastname = ?", null);
-        
-        // To ensure we found something (not 0).
-        assertEquals(1, rs.size());
+    public void testParamSubstitution() throws Exception {
+        compareQueryRes0("select ? from \"part\".Person", "Some arg");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNullParamSubstitution() throws Exception {
+        List<List<?>> rs1 = compareQueryRes0("select id from \"part\".Person where lastname is ?", null);
+
+        // Ensure we find something.
+        assertNotSame(0, rs1.size());
     }
 
     /**
