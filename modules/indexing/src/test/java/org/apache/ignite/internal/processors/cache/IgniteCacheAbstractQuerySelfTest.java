@@ -198,13 +198,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Integer, Object> cache = ((IgniteKernal)ignite).cache(null);
+        IgniteCache<Integer, Object> cache = ignite.jcache(null);
 
-        cache.putx(7, "value");
+        cache.put(7, "value");
 
         // Put value of different type but for the same key type.
         // Operation should succeed but with warning log message.
-        cache.putx(7, 1);
+        cache.put(7, 1);
     }
 
     /**
@@ -485,16 +485,16 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            GridCache<Integer, ObjectValue> c = ((IgniteKernal)g).cache(null);
+            IgniteCache<Integer, ObjectValue> c = g.jcache(null);
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
-                    assertNotNull(c.peek(i));
+                    assertNotNull(c.localPeek(i));
 
-                    c.evict(i); // Swap.
+                    c.localEvict(Collections.singleton(i)); // Swap.
 
-                    if (!partitioned || c.affinity().mapKeyToNode(i).isLocal()) {
-                        ObjectValue peekVal = c.peek(i);
+                    if (!partitioned || g.affinity(null).mapKeyToNode(i).isLocal()) {
+                        ObjectValue peekVal = c.localPeek(i);
 
                         assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
                     }
