@@ -82,7 +82,7 @@ public interface IgniteFuture<V> {
      *
      * @return {@code true} if this task was cancelled before it completed
      */
-    boolean isCancelled();
+    public boolean isCancelled();
 
     /**
      * Returns {@code true} if this task completed.
@@ -93,7 +93,7 @@ public interface IgniteFuture<V> {
      *
      * @return {@code true} if this task completed.
      */
-    boolean isDone();
+    public boolean isDone();
 
     /**
      * Gets start time for this future.
