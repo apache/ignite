@@ -57,7 +57,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setDistributionMode(NEAR_PARTITIONED);
         cache.setAtomicityMode(TRANSACTIONAL);
         cache.setIndexedTypes(
             String.class, Organization.class,

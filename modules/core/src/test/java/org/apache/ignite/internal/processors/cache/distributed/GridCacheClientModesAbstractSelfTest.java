@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -51,22 +49,28 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         gridCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        if (!clientOnly()) {
+            grid(nearOnlyGridName).createCache(new NearCacheConfiguration());
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (gridCnt.getAndIncrement() == 0) {
-            cfg.setDistributionMode(clientOnly() ? CLIENT_ONLY : NEAR_ONLY);
+            cfg.setClientMode(true);
 
             nearOnlyGridName = gridName;
         }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);

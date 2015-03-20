@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
@@ -34,7 +33,7 @@ public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfT
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         return cacheCfg;
     }

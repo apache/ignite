@@ -19,10 +19,10 @@ package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,7 +31,7 @@ import java.util.*;
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
  * <p>
- * Cache affinity can be configured for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
 @CacheCentralizedAffinityFunction
 public class CachePartitionFairAffinity implements CacheAffinityFunction {
@@ -42,13 +42,13 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
     private static final long serialVersionUID = 0L;
 
     /** Ascending comparator. */
-    private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator(false);
+    private static final Comparator<PartitionSet> ASC_CMP = new PartitionSetComparator();
 
     /** Descending comparator. */
-    private static final Comparator<PartitionSet> DESC_CMP = new PartitionSetComparator(true);
+    private static final Comparator<PartitionSet> DESC_CMP = Collections.reverseOrder(ASC_CMP);
 
     /** */
-    private int parts;
+    private final int parts;
 
     /**
      * Creates fair affinity with default partition count.
@@ -71,17 +71,10 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
         if (topSnapshot.size() == 1) {
             ClusterNode primary = topSnapshot.get(0);
 
-            List<List<ClusterNode>> assignments = new ArrayList<>(parts);
-
-            for (int i = 0; i < parts; i++)
-                assignments.add(Collections.singletonList(primary));
-
-            return assignments;
+            return Collections.nCopies(parts, Collections.singletonList(primary));
         }
 
-        IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> cp = createCopy(ctx, topSnapshot);
-
-        List<List<ClusterNode>> assignment = cp.get1();
+        List<List<ClusterNode>> assignment = createCopy(ctx);
 
         int tiers = Math.min(ctx.backups() + 1, topSnapshot.size());
 
@@ -385,61 +378,44 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
      * Creates copy of previous partition assignment.
      *
      * @param ctx Affinity function context.
-     * @param topSnapshot Topology snapshot.
      * @return Assignment copy and per node partition map.
      */
-    private IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
-        CacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
+    private List<List<ClusterNode>> createCopy(CacheAffinityFunctionContext ctx) {
         DiscoveryEvent discoEvt = ctx.discoveryEvent();
 
-        UUID leftNodeId = discoEvt.type() == EventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
+        UUID leftNodeId = (discoEvt == null || discoEvt.type() == EventType.EVT_NODE_JOINED)
+            ? null
+            : discoEvt.eventNode().id();
 
         List<List<ClusterNode>> cp = new ArrayList<>(parts);
 
-        Map<UUID, PartitionSet> parts = new HashMap<>();
-
-        for (int part = 0; part < this.parts; part++) {
+        for (int part = 0; part < parts; part++) {
             List<ClusterNode> partNodes = ctx.previousAssignment(part);
 
-            List<ClusterNode> partNodesCp = new ArrayList<>(partNodes.size());
+            List<ClusterNode> partNodesCp;
 
-            for (ClusterNode affNode : partNodes) {
-                if (!affNode.id().equals(leftNodeId)) {
-                    partNodesCp.add(affNode);
+            if (partNodes == null)
+                partNodesCp = new ArrayList<>();
+            else {
+                if (leftNodeId == null) {
+                    partNodesCp = new ArrayList<>(partNodes.size() + 1); // Node joined.
 
-                    PartitionSet partSet = parts.get(affNode.id());
+                    partNodesCp.addAll(partNodes);
+                }
+                else {
+                    partNodesCp = new ArrayList<>(partNodes.size());
 
-                    if (partSet == null) {
-                        partSet = new PartitionSet(affNode);
-
-                        parts.put(affNode.id(), partSet);
+                    for (ClusterNode affNode : partNodes) {
+                        if (!affNode.id().equals(leftNodeId))
+                            partNodesCp.add(affNode);
                     }
-
-                    partSet.add(part);
                 }
             }
 
             cp.add(partNodesCp);
         }
 
-        if (leftNodeId == null) {
-            // Node joined, find it and add empty set to mapping.
-            ClusterNode joinedNode = null;
-
-            for (ClusterNode node : topSnapshot) {
-                if (node.id().equals(discoEvt.eventNode().id())) {
-                    joinedNode = node;
-
-                    break;
-                }
-            }
-
-            assert joinedNode != null;
-
-            parts.put(joinedNode.id(), new PartitionSet(joinedNode));
-        }
-
-        return F.t(cp, parts);
+        return cp;
     }
 
     /**
@@ -449,21 +425,9 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
-        private boolean descending;
-
-        /**
-         * @param descending {@code True} if comparator should be descending.
-         */
-        private PartitionSetComparator(boolean descending) {
-            this.descending = descending;
-        }
-
         /** {@inheritDoc} */
         @Override public int compare(PartitionSet o1, PartitionSet o2) {
-            int res = o1.parts.size() < o2.parts.size() ? -1 : o1.parts.size() > o2.parts.size() ? 1 : 0;
-
-            return descending ? -res : res;
+            return Integer.compare(o1.parts.size(), o2.parts.size());
         }
     }
 
@@ -515,12 +479,18 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
             return assignmentList;
         }
 
+        /**
+         * @param uuid Uuid.
+         */
         public void remove(UUID uuid) {
             PartitionSet rmv = assignmentMap.remove(uuid);
 
             assignmentList.remove(rmv);
         }
 
+        /**
+         *
+         */
         public boolean isEmpty() {
             return assignmentList.isEmpty();
         }
@@ -719,6 +689,9 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
         return h ^ (h >>> 16);
     }
 
+    /**
+     *
+     */
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
     private static class PartitionSet {
         /** */

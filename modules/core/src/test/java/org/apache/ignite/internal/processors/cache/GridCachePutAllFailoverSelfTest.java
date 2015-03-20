@@ -620,7 +620,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setBackups(backups);
 
-            cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+            cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 

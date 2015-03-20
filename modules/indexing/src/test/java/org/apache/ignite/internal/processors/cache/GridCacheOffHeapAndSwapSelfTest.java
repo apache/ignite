@@ -36,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -128,13 +127,12 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(1);
         cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
         cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictNearSynchronized(true);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setIndexedTypes(
             Long.class, Long.class
         );
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cacheCfg.setEvictionPolicy(null);
 

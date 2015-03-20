@@ -233,9 +233,9 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     @Override public Collection<String> getCacheNames() {
         assert grid != null;
 
-        return F.viewReadOnly(((IgniteKernal)grid).caches(), new IgniteClosure<GridCache<?,?>, String>() {
-            @Override public String apply(GridCache<?, ?> c) {
-                return c.name();
+        return F.viewReadOnly(((IgniteKernal)grid).caches(), new IgniteClosure<IgniteCache<?,?>, String>() {
+            @Override public String apply(IgniteCache<?, ?> c) {
+                return c.getName();
             }
         });
     }

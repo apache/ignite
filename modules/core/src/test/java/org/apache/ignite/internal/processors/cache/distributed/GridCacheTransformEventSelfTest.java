@@ -117,7 +117,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(BACKUP_CNT);

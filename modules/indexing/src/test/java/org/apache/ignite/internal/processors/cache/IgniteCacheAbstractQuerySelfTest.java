@@ -111,25 +111,24 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         c.setMarshaller(new OptimizedMarshaller(false));
 
-        CacheConfiguration[] ccs = new CacheConfiguration[2];
+        if (!gridName.startsWith("client")) {
+            CacheConfiguration[] ccs = new CacheConfiguration[2];
 
-        for (int i = 0; i < ccs.length; i++) {
-            CacheConfiguration cc = defaultCacheConfiguration();
+            for (int i = 0; i < ccs.length; i++) {
+                CacheConfiguration cc = defaultCacheConfiguration();
 
-            if (i > 0)
-                cc.setName("c" + i);
+                if (i > 0)
+                    cc.setName("c" + i);
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
-            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setCacheStoreFactory(new StoreFactory());
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
             cc.setLoadPreviousValue(true);
             cc.setRebalanceMode(SYNC);
             cc.setSwapEnabled(true);
-            cc.setEvictNearSynchronized(false);
             cc.setSqlFunctionClasses(SqlFunctions.class);
             cc.setIndexedTypes(
                 BadHashKeyObject.class, Byte.class,
@@ -148,10 +147,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             if (cacheMode() == CacheMode.PARTITIONED)
                 cc.setBackups(gridCount());
 
-            ccs[i] = cc;
-        }
+                ccs[i] = cc;
+            }
 
-        c.setCacheConfiguration(ccs);
+            c.setCacheConfiguration(ccs);
+        }
+        else
+            c.setClientMode(true);
 
         return c;
     }
@@ -1545,6 +1547,15 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
          */
         public static int no() {
             throw new IllegalStateException();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return store;
         }
     }
 }

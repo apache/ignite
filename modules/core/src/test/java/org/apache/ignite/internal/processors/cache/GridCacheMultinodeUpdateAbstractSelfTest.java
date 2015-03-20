@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -44,11 +43,6 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -56,6 +50,16 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 3 * 60_000;
+    }
+
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setCacheStoreFactory(null);
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
+
+        return ccfg;
     }
 
     /**

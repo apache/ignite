@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -28,15 +29,16 @@ import org.jetbrains.annotations.*;
 import org.junit.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Load cache test.
  */
+@SuppressWarnings("unchecked")
 public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /** */
     private static ConcurrentMap<String, Object[]> map;
@@ -60,8 +62,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -178,8 +180,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return (Factory)singletonFactory(new TestStore());
     }
 
     /**

@@ -18,10 +18,10 @@
 package org.apache.ignite;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -114,7 +114,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /**
      * Sets flag indicating that this data streamer should assume
      * that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(IgniteDataStreamer.Updater)} method.
+     * Should not be used when custom cache receiver set using {@link #updater(IgniteDataStreamer.Updater)} method.
      * Default is {@code false}. When this flag is set, updates will not be propagated to the cache store.
      *
      * @param allowOverwrite Flag value.
@@ -157,14 +157,14 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void perNodeBufferSize(int bufSize);
 
     /**
-     * Gets maximum number of parallel update operations for a single node.
+     * Gets maximum number of parallel stream operations for a single node.
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
     public int perNodeParallelOperations();
 
     /**
-     * Sets maximum number of parallel update operations for a single node.
+     * Sets maximum number of parallel stream operations for a single node.
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
@@ -227,11 +227,11 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void deployClass(Class<?> depCls);
 
     /**
-     * Sets custom cache updater to this data streamer.
+     * Sets custom stream receiver to this data streamer.
      *
-     * @param updater Cache updater.
+     * @param updater Stream receiver.
      */
-    public void updater(Updater<K, V> updater);
+    public void receiver(StreamReceiver<K, V> updater);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
@@ -381,22 +381,4 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      */
     @Override public void close() throws CacheException, IgniteInterruptedException;
 
-    /**
-     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataStreamer#allowOverwrite(boolean)}
-     * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
-     * performance custom user-defined implementation may help.
-     * <p>
-     * Data streamer can be configured to use custom implementation of updater instead of default one using
-     * {@link IgniteDataStreamer#updater(IgniteDataStreamer.Updater)} method.
-     */
-    interface Updater<K, V> extends Serializable {
-        /**
-         * Updates cache with batch of entries.
-         *
-         * @param cache Cache.
-         * @param entries Collection of entries.
-         * @throws CacheException If failed.
-         */
-        public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws CacheException;
-    }
 }

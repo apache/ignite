@@ -1095,7 +1095,7 @@ public class HadoopExternalCommunication {
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", log);
+            super(gridName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
 
             this.srv = srv;
         }
@@ -1142,7 +1142,7 @@ public class HadoopExternalCommunication {
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
-            super(gridName, "shmem-worker", log);
+            super(gridName, "shmem-worker", HadoopExternalCommunication.this.log);
 
             this.endpoint = endpoint;
 

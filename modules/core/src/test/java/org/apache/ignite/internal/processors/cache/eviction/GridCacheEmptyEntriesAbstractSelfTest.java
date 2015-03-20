@@ -79,17 +79,14 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setSwapEnabled(false);
 
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(nearPlc);
         cc.setEvictSynchronizedKeyBufferSize(1);
 
-        cc.setEvictNearSynchronized(true);
         cc.setEvictSynchronized(true);
 
         if (testStore != null) {
-            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(testStore));
+            cc.setCacheStoreFactory(singletonFactory(testStore));
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
             cc.setLoadPreviousValue(true);

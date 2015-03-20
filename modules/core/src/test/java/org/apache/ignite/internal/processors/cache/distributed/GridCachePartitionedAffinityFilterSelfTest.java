@@ -79,7 +79,6 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

@@ -33,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -55,13 +54,15 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
-        cc.setNearEvictionPolicy(null);
         cc.setAtomicityMode(atomicityMode());
         cc.setAtomicWriteOrderMode(PRIMARY);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        c.setNearCacheConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 

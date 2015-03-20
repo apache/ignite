@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
@@ -116,7 +117,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (ver == null)
             ver = res.nearVersion();
 
-        assert ver != null;
+        assert ver != null : "Failed to find version [req=" + req + ", res=" + res + ']';
 
         int nearValIdx = 0;
 
@@ -204,7 +205,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             while (true) {
                 GridCacheEntryEx entry = null;
 
-                long topVer = ctx.affinity().affinityTopologyVersion();
+                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
                 try {
                     entry = entryEx(key, topVer);

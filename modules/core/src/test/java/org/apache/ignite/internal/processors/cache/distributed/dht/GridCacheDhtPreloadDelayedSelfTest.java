@@ -78,7 +78,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

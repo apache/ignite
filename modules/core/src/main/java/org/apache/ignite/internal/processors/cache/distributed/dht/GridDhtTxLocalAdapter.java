@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -143,7 +144,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @Nullable protected abstract IgniteInternalFuture<Boolean> addReader(long msgId,
         GridDhtCacheEntry cached,
         IgniteTxEntry entry,
-        long topVer);
+        AffinityTopologyVersion topVer);
 
     /**
      * @param commit Commit flag.
@@ -528,7 +529,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         try {
             Set<KeyCacheObject> skipped = null;
 
-            long topVer = topologyVersion();
+            AffinityTopologyVersion topVer = topologyVersion();
 
             GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 

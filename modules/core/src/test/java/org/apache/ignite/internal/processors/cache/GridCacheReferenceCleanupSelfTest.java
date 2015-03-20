@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -66,7 +65,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(mode);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(cacheCfg);
 

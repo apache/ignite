@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -88,6 +89,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
+    /** */
+    private final GridDisconnectListener disconnectLsnr = new GridDisconnectListener() {
+        @Override public void onNodeDisconnected(UUID nodeId) {
+            scheduleAtomicFutureRecheck();
+        }
+    };
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -120,7 +128,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(GridCacheContext ctx,
-                long topVer,
+                AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
                 CacheObject val,
@@ -221,11 +229,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
         }
 
-        ctx.io().addDisconnectListener(new GridDisconnectListener() {
-            @Override public void onNodeDisconnected(UUID nodeId) {
-                scheduleAtomicFutureRecheck();
-            }
-        });
+        ctx.io().addDisconnectListener(disconnectLsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        for (DeferredResponseBuffer buf : pendingResponses.values())
+            buf.finish();
+
+        ctx.io().removeDisconnectListener(disconnectLsnr);
     }
 
     /**
@@ -337,7 +349,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            entry,
             filter);
     }
 
@@ -354,7 +365,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            entry,
             filter);
     }
 
@@ -446,7 +456,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             true,
-            null,
             ctx.equalsValArray(oldVal));
     }
 
@@ -466,7 +475,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             filter).chain(RET2NULL);
     }
 
@@ -487,7 +495,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             null);
     }
 
@@ -671,7 +678,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             null);
 
         return fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, EntryProcessorResult<T>>() {
@@ -715,7 +721,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             null);
     }
 
@@ -745,7 +750,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null,
             null);
     }
 
@@ -759,7 +763,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param conflictRmvMap Conflict remove map.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
-     * @param cached Cached cache entry for key. May be passed if and only if map size is {@code 1}.
      * @param filter Cache entry filter for atomic updates.
      * @return Completion future.
      */
@@ -772,7 +775,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Map<KeyCacheObject, GridCacheVersion> conflictRmvMap,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable GridCacheEntryEx cached,
         @Nullable final CacheEntryPredicate[] filter
     ) {
         if (map != null && keyCheck)
@@ -897,7 +899,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals) {
-        long topVer = ctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
@@ -1067,9 +1069,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 topology().readLock();
 
                 try {
+                    if (topology().stopping()) {
+                        res.addFailedKeys(keys, new IgniteCheckedException("Failed to perform cache operation " +
+                            "(cache is stopped): " + name()));
+
+                        completionCb.apply(req, res);
+
+                        return;
+                    }
+
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
-                    if (topology().topologyVersion() == req.topologyVersion() ||
+                    if (topology().topologyVersion().equals(req.topologyVersion()) ||
                         ctx.config().getAtomicWriteOrderMode() == CLOCK) {
                         ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -1081,7 +1092,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         checkClearForceTransformBackups(req, locked);
 
-                        boolean hasNear = U.hasNearCache(node, name());
+                        boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
 
@@ -1645,7 +1656,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         List<KeyCacheObject> keys = req.keys();
 
-        long topVer = req.topologyVersion();
+        AffinityTopologyVersion topVer = req.topologyVersion();
 
         boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
@@ -1871,7 +1882,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         assert req.conflictVersions() == null : "Cannot be called when there are conflict entries in the batch.";
 
-        long topVer = req.topologyVersion();
+        AffinityTopologyVersion topVer = req.topologyVersion();
 
         boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
@@ -2086,7 +2097,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *      locks are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private List<GridDhtCacheEntry> lockEntries(List<KeyCacheObject> keys, long topVer)
+    private List<GridDhtCacheEntry> lockEntries(List<KeyCacheObject> keys, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
         if (keys.size() == 1) {
             KeyCacheObject key = keys.get(0);
@@ -2169,7 +2180,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param topVer Topology version.
      */
-    private void unlockEntries(Collection<GridDhtCacheEntry> locked, long topVer) {
+    private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete();
 
@@ -2344,12 +2355,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (updateReq.fastMap())
                 return null;
 
-            long topVer = updateReq.topologyVersion();
+            AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
             Collection<ClusterNode> nodes = ctx.kernalContext().discovery().cacheAffinityNodes(name(), topVer);
 
             // We are on primary node for some key.
-            assert !nodes.isEmpty();
+            assert !nodes.isEmpty() : "Failed to find affinity nodes [name=" + name() + ", topVer=" + topVer +
+                ctx.kernalContext().discovery().discoCache(topVer) + ']';
 
             if (nodes.size() == 1) {
                 if (log.isDebugEnabled())
@@ -2907,13 +2919,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 respVers);
 
             try {
-                ctx.gate().enter();
+                ctx.kernalContext().gateway().readLock();
 
                 try {
                     ctx.io().send(nodeId, msg, ctx.ioPolicy());
                 }
                 finally {
-                    ctx.gate().leave();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
             catch (IllegalStateException ignored) {

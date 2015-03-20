@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -119,7 +118,8 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (!nearEnabled())
+            cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 

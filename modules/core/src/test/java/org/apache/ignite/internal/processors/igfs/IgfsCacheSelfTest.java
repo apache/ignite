@@ -78,7 +78,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
@@ -110,7 +110,7 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
 
         assert ((IgniteKernal)g).caches().size() == 1;
 
-        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().name());
+        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().getName());
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {

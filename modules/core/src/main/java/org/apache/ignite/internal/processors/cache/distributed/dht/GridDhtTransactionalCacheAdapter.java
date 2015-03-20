@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -503,7 +504,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     private void processNearLockRequest(UUID nodeId, GridNearLockRequest req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
         assert nodeId != null;
         assert req != null;
 
@@ -1213,7 +1214,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     @SuppressWarnings({"RedundantTypeArguments", "TypeMayBeWeakened"})
     private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
         assert nodeId != null;
 
         removeLocks(nodeId, req.version(), req.keys(), true);
@@ -1229,7 +1230,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If failed.
      */
     private void map(UUID nodeId,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridCacheEntryEx cached,
         Collection<UUID> readers,
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
@@ -1355,7 +1356,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (cand == null)
                         cand = entry.candidate(dhtVer);
 
-                    long topVer = cand == null ? -1 : cand.topologyVersion();
+                    AffinityTopologyVersion topVer = cand == null
+                        ? AffinityTopologyVersion.NONE
+                        : cand.topologyVersion();
 
                     // Note that we obtain readers before lock is removed.
                     // Even in case if entry would be removed just after lock is removed,

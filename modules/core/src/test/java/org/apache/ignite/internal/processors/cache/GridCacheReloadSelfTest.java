@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -77,7 +76,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(new CacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
-        cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
             @Override public Integer load(Integer key) {
@@ -93,7 +92,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(singletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

@@ -62,7 +62,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
      * @throws Exception If failed.
      */
     public void testUsersClassLoader() throws Exception {
-        UsersClassLoader testClassLdr = new UsersClassLoader();
+        UsersClassLoader testClassLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
 
         Object val = testClassLdr.loadClass(TEST_VALUE).newInstance();
 
@@ -76,12 +76,10 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
 
             // Check that entry was loaded by user's classloader.
             if (idx == 0)
-                // Or testClassLdr either classloader from cache configuration.
-                assertTrue(grid(0).configuration().getClassLoader() == jcache.get(i).getClass().getClassLoader()
-                    || jcache.get(i).getClass().getClassLoader() == testClassLdr);
+                assertEquals(testClassLdr, jcache.get(i).getClass().getClassLoader());
             else
-                assertEquals(grid(idx).jcache(null).get(i).getClass().getClassLoader(),
-                    grid(idx).configuration().getClassLoader());
+                assertEquals(grid(idx).configuration().getClassLoader(),
+                    grid(idx).jcache(null).get(i).getClass().getClassLoader());
         }
     }
 
@@ -93,7 +91,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
          * @throws MalformedURLException If failed
          */
         public UsersClassLoader() throws MalformedURLException {
-            super(new URL[]{new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+            super(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
         }
     }
 }

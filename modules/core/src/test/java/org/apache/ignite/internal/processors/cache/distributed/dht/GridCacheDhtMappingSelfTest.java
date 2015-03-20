@@ -53,7 +53,6 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

@@ -382,6 +382,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param comp Manager to add.
      */
     public void add(GridComponent comp) {
+        add(comp, true);
+    }
+
+    /**
+     * @param comp Manager to add.
+     */
+    public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
 
         /*
@@ -470,7 +477,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
-        comps.add(comp);
+        if (addToList)
+            comps.add(comp);
     }
 
     /**

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -29,7 +29,6 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import java.io.*;
@@ -38,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static javax.cache.event.EventType.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
@@ -155,7 +153,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         boolean initialized = false;
 
-        boolean primary = cctx.affinity().primary(cctx.localNode(), key, -1);
+        boolean primary = cctx.affinity().primary(cctx.localNode(), key, AffinityTopologyVersion.NONE);
         boolean recordIgniteEvt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
@@ -209,8 +207,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (F.isEmpty(lsnrCol))
             return;
 
-        if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, -1)) {
-            boolean primary = cctx.affinity().primary(cctx.localNode(), key, -1);
+        if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, AffinityTopologyVersion.NONE)) {
+            boolean primary = cctx.affinity().primary(cctx.localNode(), key, AffinityTopologyVersion.NONE);
             boolean recordIgniteEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             boolean initialized = false;
@@ -388,12 +386,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 break;
 
             case REPLICATED:
-                if (nodes.size() == 1 && F.first(nodes).equals(cctx.localNode())) {
-                    CacheDistributionMode distributionMode = cctx.config().getDistributionMode();
-
-                    if (distributionMode == PARTITIONED_ONLY || distributionMode == NEAR_PARTITIONED)
-                        skipPrimaryCheck = true;
-                }
+                if (nodes.size() == 1 && F.first(nodes).equals(cctx.localNode()))
+                    skipPrimaryCheck = cctx.affinityNode();
 
                 break;
         }
@@ -401,7 +395,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;
 
-        GridContinuousHandler hnd = new CacheContinuousQueryHandler<>(
+        GridContinuousHandler hnd = new CacheContinuousQueryHandler(
             cctx.name(),
             TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
             locLsnr,
@@ -480,7 +474,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param internal Internal flag.
      * @return Whether listener was actually registered.
      */
-    boolean registerListener(UUID lsnrId,
+    GridContinuousHandler.RegisterStatus registerListener(UUID lsnrId,
         CacheContinuousQueryListener lsnr,
         boolean internal) {
         boolean added;
@@ -501,7 +495,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             }
         }
 
-        return added;
+        return added ? GridContinuousHandler.RegisterStatus.REGISTERED : GridContinuousHandler.RegisterStatus.NOT_REGISTERED;
     }
 
     /**
@@ -573,7 +567,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
                 locLsnrImpl,
-                cctx.kernalContext().cache().jcache(cctx.name()));
+                log);
 
             CacheEntryEventFilter rmtFilter = new JCacheQueryRemoteFilter(
                 cfg.getCacheEntryEventFilterFactory() != null ? (CacheEntryEventFilter)cfg.getCacheEntryEventFilterFactory().create() : null,
@@ -618,15 +612,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         /**
          * @param impl Listener.
-         * @param cache Cache.
          */
-        JCacheQueryLocalListener(CacheEntryListener<K, V> impl, Cache<K, V> cache) {
+        JCacheQueryLocalListener(CacheEntryListener<K, V> impl, IgniteLogger log) {
             assert impl != null;
-            assert cache != null;
+            assert log != null;
 
             this.impl = impl;
 
-            log = cache.unwrap(Ignite.class).log().getLogger(CacheContinuousQueryManager.class);
+            this.log = log;
         }
 
         /** {@inheritDoc} */

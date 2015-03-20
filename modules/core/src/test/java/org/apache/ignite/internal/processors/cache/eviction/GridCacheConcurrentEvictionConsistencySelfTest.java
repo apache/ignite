@@ -34,7 +34,6 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -77,7 +76,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
 

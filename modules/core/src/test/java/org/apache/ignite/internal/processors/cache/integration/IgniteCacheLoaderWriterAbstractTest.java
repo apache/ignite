@@ -48,20 +48,12 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheLoader> loaderFactory() {
-        return new Factory<CacheLoader>() {
-            @Override public CacheLoader create() {
-                return new TestLoader();
-            }
-        };
+        return singletonFactory(new TestLoader());
     }
 
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheWriter> writerFactory() {
-        return new Factory<CacheWriter>() {
-            @Override public CacheWriter create() {
-                return new TestWriter();
-            }
-        };
+        return singletonFactory(new TestWriter());
     }
 
     /** {@inheritDoc} */

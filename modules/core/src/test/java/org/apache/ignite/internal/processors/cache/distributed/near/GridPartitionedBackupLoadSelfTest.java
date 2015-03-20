@@ -81,7 +81,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cfg.setCacheStoreFactory(singletonFactory(store));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
         cfg.setLoadPreviousValue(true);

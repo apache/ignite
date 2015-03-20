@@ -26,6 +26,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -459,22 +460,25 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        for (Field field : EventType.class.getFields()) {
-            if (field.getType().equals(int.class)) {
-                try {
-                    assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
-                        field.getName();
+        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
 
-                    int type = field.getInt(null);
+        for (Class<?> cls : evtHolderClasses) {
+            for (Field field : cls.getFields()) {
+                if (Modifier.isStatic(field.getModifiers()) && field.getType().equals(int.class)) {
+                    if (field.getName().startsWith("EVT_")) {
+                        try {
+                            int type = field.getInt(null);
 
-                    String prev = GRID_EVT_NAMES.put(type, field.getName().substring(4));
+                            String prev = GRID_EVT_NAMES.put(type, field.getName().substring("EVT_".length()));
 
-                    // Check for duplicate event types.
-                    assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
-                        ", name2=" + field.getName() + ']';
-                }
-                catch (IllegalAccessException e) {
-                    throw new IgniteException(e);
+                            // Check for duplicate event types.
+                            assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
+                                ", name2=" + field.getName() + ']';
+                        }
+                        catch (IllegalAccessException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
                 }
             }
         }
@@ -6986,129 +6990,6 @@ public abstract class IgniteUtils {
      */
     public static GridCacheAttributes[] cacheAttributes(ClusterNode n) {
         return n.attribute(ATTR_CACHE);
-    }
-
-    /**
-     * Gets cache attributes from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Attributes.
-     */
-    @Nullable public static GridCacheAttributes cacheAttributes(ClusterNode n, @Nullable String cacheName) {
-        for (GridCacheAttributes a : cacheAttributes(n)) {
-            if (F.eq(a.cacheName(), cacheName))
-                return a;
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets view on all cache names started on the node.
-     *
-     * @param n Node to get cache names for.
-     * @return Cache names for the node.
-     */
-    public static Collection<String> cacheNames(ClusterNode n) {
-        return F.viewReadOnly(
-            F.asList(n.<GridCacheAttributes[]>attribute(ATTR_CACHE)),
-            new C1<GridCacheAttributes, String>() {
-                @Override public String apply(GridCacheAttributes attrs) {
-                    return attrs.cacheName();
-                }
-            });
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache name to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCache(ClusterNode n, @Nullable String cacheName) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if given node has at least one cache.
-     *
-     * @param n Node to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCaches(ClusterNode n) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        return !F.isEmpty(caches);
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheMode cacheMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.cacheMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.atomicityMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache distribution mode on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache distribution mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.partitionedTaxonomy();
-
-        return null;
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -37,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
@@ -55,22 +53,22 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** Number of transactions. */
     private static final int TX_CNT = 1000;
 
-    /** Distribution mode. */
-    private CacheDistributionMode mode;
+    /** Client flag. */
+    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        mode = NEAR_PARTITIONED;
-
         startGridsMultiThreaded(GRID_CNT - 2);
 
-        mode = NEAR_ONLY;
+        client = true;
 
-        startGrid(GRID_CNT - 2);
+        Ignite grid = startGrid(GRID_CNT - 2);
 
-        mode = CLIENT_ONLY;
+        grid.createCache(new NearCacheConfiguration());
 
-        startGrid(GRID_CNT - 1);
+        grid = startGrid(GRID_CNT - 1);
+
+        grid.jcache(null);
     }
 
     /** {@inheritDoc} */
@@ -89,21 +87,24 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        if (!client) {
+            CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(false);
-        cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setBackups(1);
-        cc.setDistributionMode(mode);
+            cc.setCacheMode(PARTITIONED);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
+            cc.setSwapEnabled(false);
+            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setBackups(1);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store()));
-        cc.setReadThrough(true);
-        cc.setWriteThrough(true);
-        cc.setLoadPreviousValue(true);
+            cc.setCacheStoreFactory(new TestStoreFactory());
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
 
-        c.setCacheConfiguration(cc);
+            c.setCacheConfiguration(cc);
+        }
+        else
+            c.setClientMode(true);
 
         return c;
     }
@@ -212,19 +213,25 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     }
 
     /**
-     * @return New store.
-     * @throws Exception In case of error.
+     * Test store factory.
      */
-    private CacheStore<Integer, String> store() throws Exception {
-        CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();
+    private static class TestStoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            try {
+                CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();
 
-        Field f = store.getClass().getDeclaredField("testMode");
+                Field f = store.getClass().getDeclaredField("testMode");
 
-        f.setAccessible(true);
+                f.setAccessible(true);
 
-        f.set(store, true);
+                f.set(store, true);
 
-        return store;
+                return store;
+            }
+            catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /**

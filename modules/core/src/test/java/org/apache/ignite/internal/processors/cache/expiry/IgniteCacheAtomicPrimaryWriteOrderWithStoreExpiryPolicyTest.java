@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.apache.ignite.cache.store.*;
 
+import javax.cache.configuration.*;
+
 /**
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest extends
     IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest{
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 }

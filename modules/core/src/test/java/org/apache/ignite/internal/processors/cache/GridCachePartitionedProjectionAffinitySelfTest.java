@@ -58,7 +58,6 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         cfg.setCacheConfiguration(cacheCfg);
 

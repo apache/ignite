@@ -59,11 +59,13 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setRebalanceMode(SYNC);
-        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setBackups(0);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        nearCfg.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 

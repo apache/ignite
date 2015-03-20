@@ -90,7 +90,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         return cacheCfg;
     }

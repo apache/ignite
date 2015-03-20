@@ -73,7 +73,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);

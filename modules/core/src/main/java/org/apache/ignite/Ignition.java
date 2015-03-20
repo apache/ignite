@@ -34,7 +34,7 @@ import java.util.*;
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@ignitelink org.apache.ignite.startup.servlet.IgniteServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -129,6 +129,24 @@ public class Ignition {
      */
     public static boolean isDaemon() {
         return IgnitionEx.isDaemon();
+    }
+
+    /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public static void setClientMode(boolean clientMode) {
+        IgnitionEx.setClientMode(clientMode);
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public static boolean isClientMode() {
+        return IgnitionEx.isClientMode();
     }
 
     /**

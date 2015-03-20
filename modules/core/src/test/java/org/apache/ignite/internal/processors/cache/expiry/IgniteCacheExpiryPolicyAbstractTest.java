@@ -34,6 +34,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -72,6 +73,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        factory = null;
+
         storeMap.clear();
     }
 
@@ -80,8 +83,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        if (nearCache && gridName.equals(getTestGridName(0)))
-            cfg.setDistributionMode(NEAR_PARTITIONED);
+        if (nearCache)
+            cfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setExpiryPolicyFactory(factory);
 
@@ -782,7 +785,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
+        assertNotNull(jcache(0).getConfiguration(CacheConfiguration.class).getNearConfiguration());
 
         cache0.put(key, 1);
 
@@ -1091,7 +1094,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private static class TestPolicy implements ExpiryPolicy {
+    private static class TestPolicy implements ExpiryPolicy, Serializable {
         /** */
         private Long create;
 

@@ -18,8 +18,12 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
+import org.apache.ignite.stream.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -28,14 +32,14 @@ import java.util.*;
  * Real time popular numbers counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CachePopularNumbersExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CachePopularNumbersExample.class.getSimpleName();
 
     /** Count of most popular numbers to retrieve from cluster. */
     private static final int POPULAR_NUMBERS_CNT = 10;
@@ -58,29 +62,36 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>();
 
-            ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setIndexedTypes(
+                Integer.class, Long.class
+            );
 
-            if (prj.nodes().isEmpty()) {
-                System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
+            try (IgniteCache<Integer, Long> cache = ignite.createCache(cfg)) {
+                ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
-                return;
+                if (prj.nodes().isEmpty()) {
+                    System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
+
+                    return;
+                }
+
+                TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
+
+                streamData(ignite);
+
+                // Force one more run to get final counts.
+                task.run();
+
+                popularNumbersQryTimer.cancel();
             }
-
-            TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
-
-            streamData(ignite);
-
-            // Force one more run to get final counts.
-            task.run();
-
-            popularNumbersQryTimer.cancel();
         }
     }
 
@@ -95,7 +106,7 @@ public class CachePopularNumbersExample {
             // Set larger per-node buffer size since our state is relatively small.
             stmr.perNodeBufferSize(2048);
 
-            stmr.updater(new IncrementingUpdater());
+            stmr.receiver(new IncrementingUpdater());
 
             for (int i = 0; i < CNT; i++)
                 stmr.addData(RAND.nextInt(RANGE), 1L);
@@ -117,9 +128,9 @@ public class CachePopularNumbersExample {
                 IgniteCache<Integer, Long> cache = ignite.jcache(CACHE_NAME);
 
                 try {
-                    List<List<?>> results = new ArrayList<>(cache.queryFields(
+                    List<List<?>> results = cache.queryFields(
                         new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt))
-                        .getAll());
+                        .getAll();
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
@@ -140,10 +151,10 @@ public class CachePopularNumbersExample {
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
+    private static class IncrementingUpdater implements StreamReceiver<Integer, Long> {
         /** Process entries to increase value by entry key. */
-        private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
-            @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
+        private static final EntryProcessor<Integer, Long, ?> INC = new EntryProcessor<Integer, Long, Object>() {
+            @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();
 
                 e.setValue(val == null ? 1L : val + 1);
@@ -153,7 +164,7 @@ public class CachePopularNumbersExample {
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
+        @Override public void receive(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

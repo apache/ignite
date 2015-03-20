@@ -32,7 +32,6 @@ import org.apache.ignite.transactions.*;
 import org.apache.log4j.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -66,7 +65,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 

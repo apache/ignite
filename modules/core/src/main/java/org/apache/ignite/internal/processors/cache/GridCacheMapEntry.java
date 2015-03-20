@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.extras.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -42,7 +43,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -368,7 +368,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
         return true;
     }
 
@@ -949,7 +949,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long ttl,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
@@ -1109,7 +1109,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         boolean retval,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
@@ -2779,7 +2779,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, IgniteCheckedException
     {
@@ -2850,7 +2850,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
 
-        long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
         switch (mode) {
             case TX:
@@ -2902,7 +2902,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         synchronized (this) {
             checkObsolete();
 
-            if (isNew() || !valid(-1))
+            if (isNew() || !valid(AffinityTopologyVersion.NONE))
                 unswap(true, true);
 
             if (deletedUnlocked())
@@ -2968,7 +2968,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (peek != null)
             return peek;
 
-        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         return peekGlobal(failFast, topVer, filter, null);
     }
@@ -2998,10 +2998,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridTuple<CacheObject> peekGlobal(boolean failFast,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc
-        )
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
@@ -3188,7 +3187,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long ttl,
         long expireTime,
         boolean preload,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridDrType drType)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
@@ -3756,11 +3755,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache.Entry<K, V> wrapLazyValue() {
-        return new LazyValueEntry(key);
+        return new LazyValueEntry<>(key);
     }
 
     /** {@inheritDoc} */
-    @Nullable public CacheObject peekVisibleValue() {
+    @Override @Nullable public CacheObject peekVisibleValue() {
         try {
             IgniteInternalTx tx = cctx.tm().userTx();
 

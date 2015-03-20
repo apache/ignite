@@ -104,7 +104,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void start() {
+    @Override public void onKernalStart() {
         if (ctx.config().isDaemon())
             return;
 

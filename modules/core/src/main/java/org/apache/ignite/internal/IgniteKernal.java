@@ -739,6 +739,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ackSecurity();
 
+            // Assign discovery manager to context before other processors start so they
+            // are able to register custom event listener.
+            GridManager discoMgr = new GridDiscoveryManager(ctx);
+
+            ctx.add(discoMgr, false);
+
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             startProcessor(new GridClockSyncProcessor(ctx));
@@ -774,7 +780,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(new GridDiscoveryManager(ctx));
+                startManager(discoMgr);
             }
             finally {
                 gw.writeUnlock();
@@ -1174,6 +1180,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_LANG_RUNTIME, getLanguage());
 
         add(ATTR_JVM_PID, U.jvmPid());
+
+        add(ATTR_CLIENT_MODE, cfg.isClientMode());
 
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
@@ -2240,10 +2248,113 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, null).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            try {
+                ctx.cache().dynamicStartCache(cacheCfg, null).get();
+            }
+            catch (IgniteCheckedException e) {
+                // Ignore error if cache exists.
+                if (!e.hasCause(IgniteCacheExistsException.class))
+                    throw e;
+            }
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(
+        CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg
+    ) {
+        A.notNull(cacheCfg, "cacheCfg");
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, nearCfg).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, nearCfg).get();
+
+            return ctx.cache().publicJCache(nearCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        guard();
+
+        try {
+            ctx.cache().dynamicStopCache(cacheName).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * @return Public caches.
      */
-    public Collection<GridCache<?, ?>> caches() {
+    public Collection<IgniteCacheProxy<?, ?>> caches() {
         guard();
 
         try {

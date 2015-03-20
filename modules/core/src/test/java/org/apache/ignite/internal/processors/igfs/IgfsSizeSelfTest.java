@@ -127,7 +127,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         dataCfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED) {
-            dataCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+            if (nearEnabled)
+                dataCfg.setNearConfiguration(new NearCacheConfiguration());
+
             dataCfg.setBackups(0);
         }
 

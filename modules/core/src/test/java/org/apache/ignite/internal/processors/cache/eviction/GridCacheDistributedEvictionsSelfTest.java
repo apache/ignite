@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -58,9 +57,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     private boolean evictSync;
 
     /** */
-    private boolean evictNearSync;
-
-    /** */
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** {@inheritDoc} */
@@ -79,7 +75,11 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         cc.setCacheMode(mode);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            cc.setNearConfiguration(nearCfg);
+        }
 
         cc.setSwapEnabled(false);
 
@@ -88,7 +88,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         // Set only DHT policy, leave default near policy.
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(10));
         cc.setEvictSynchronized(evictSync);
-        cc.setEvictNearSynchronized(evictNearSync);
         cc.setEvictSynchronizedKeyBufferSize(1);
 
         cc.setAffinity(new GridCacheModuloAffinityFunction(gridCnt, 1));
@@ -114,43 +113,13 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Throwable If failed. */
-    public void testNearSyncBackupUnsync() throws Throwable {
-        gridCnt = 3;
-        mode = PARTITIONED;
-        evictNearSync = true;
-        evictSync = false;
-        nearEnabled = true;
-
-        checkEvictions();
-    }
-
-    /** @throws Throwable If failed. */
     public void testNearSyncBackupSync() throws Throwable {
         gridCnt = 3;
         mode = PARTITIONED;
-        evictNearSync = true;
         evictSync = true;
         nearEnabled = true;
 
         checkEvictions();
-    }
-
-    /** @throws Throwable If failed. */
-    public void testNearUnsyncBackupSync() throws Throwable {
-        gridCnt = 1;
-        mode = PARTITIONED;
-        evictNearSync = false;
-        evictSync = true;
-        nearEnabled = true;
-
-        try {
-            startGrid(0);
-
-            assert false : "Grid was started with illegal configuration.";
-        }
-        catch (IgniteCheckedException e) {
-            info("Caught expected exception: " + e);
-        }
     }
 
     /**
@@ -159,7 +128,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     public void testLocalSync() throws Throwable {
         gridCnt = 1;
         mode = LOCAL;
-        evictNearSync = true;
         evictSync = true;
         nearEnabled = true;
 

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
+import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -465,7 +467,7 @@ public class GridCacheConcurrentMap {
      * @param ttl Time to live.
      * @return Cache entry for corresponding key-value pair.
      */
-    public GridCacheMapEntry putEntry(long topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
         assert key != null;
 
         checkWeakQueue();
@@ -484,7 +486,8 @@ public class GridCacheConcurrentMap {
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
      */
-    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(long topVer,
+    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
         long ttl,
@@ -510,7 +513,7 @@ public class GridCacheConcurrentMap {
      */
     public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
         for (Map.Entry<KeyCacheObject, CacheObject> e : m.entrySet())
-            putEntry(-1, e.getKey(), e.getValue(), ttl);
+            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue(), ttl);
     }
 
     /**
@@ -900,7 +903,7 @@ public class GridCacheConcurrentMap {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, long topVer, long ttl) {
+        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             lock();
 
             try {
@@ -920,7 +923,7 @@ public class GridCacheConcurrentMap {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked", "SynchronizationOnLocalVariableOrMethodParameter"})
-        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, long topVer, long ttl) {
+        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             try {
                 SegmentHeader hdr = this.hdr;
 
@@ -998,7 +1001,7 @@ public class GridCacheConcurrentMap {
         GridTriple<GridCacheMapEntry> putIfObsolete(KeyCacheObject key,
             int hash,
             @Nullable CacheObject val,
-            long topVer,
+            AffinityTopologyVersion topVer,
             long ttl,
             boolean create)
         {
@@ -1884,9 +1887,6 @@ public class GridCacheConcurrentMap {
          */
         boolean containsValue(V v) {
             A.notNull(v, "value");
-
-            if (v == null)
-                return false;
 
             for (Iterator<V> it = valueIterator(); it.hasNext(); ) {
                 V v0 = it.next();

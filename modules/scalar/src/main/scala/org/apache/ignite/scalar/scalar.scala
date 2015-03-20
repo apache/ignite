@@ -18,9 +18,10 @@
 package org.apache.ignite.scalar
 
 import org.apache.ignite._
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
 
@@ -272,6 +273,22 @@ object scalar extends ScalarConversions {
      */
     @inline def cache$[K, V](@Nullable cacheName: String): Option[IgniteCache[K, V]] =
         Option(Ignition.ignite.jcache(cacheName))
+
+    /**
+     * Creates cache cache with specified parameters in default grid.
+     *
+     * @param cacheName Name of the cache to get.
+     */
+    @inline def createCache$[K, V](@Nullable cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
+        indexedTypes: Seq[Class[_]] = Seq.empty): IgniteCache[K, V] = {
+        val cfg = new CacheConfiguration[K, V]()
+
+        cfg.setName(cacheName)
+        cfg.setCacheMode(cacheMode)
+        cfg.setIndexedTypes(indexedTypes:_*)
+
+        Ignition.ignite.createCache(cfg)
+    }
 
     /**
      * Gets named cache from specified grid.

@@ -25,7 +25,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -61,7 +60,7 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
 
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setStartSize(10);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
+import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -522,7 +524,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      * @param topVer Topology version.
      * @return {@code True} if local node is primary for this partition.
      */
-    public boolean primary(long topVer) {
+    public boolean primary(AffinityTopologyVersion topVer) {
         return cctx.affinity().primary(cctx.localNode(), id, topVer);
     }
 
@@ -586,7 +588,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         if (part == null)
             return 1;
 
-        return id == part.id() ? 0 : id > part.id() ? 1 : -1;
+        return Integer.compare(id, part.id());
     }
 
     /** {@inheritDoc} */

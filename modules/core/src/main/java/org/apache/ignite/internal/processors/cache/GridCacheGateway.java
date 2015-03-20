@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -29,6 +30,9 @@ import org.jetbrains.annotations.*;
 public class GridCacheGateway<K, V> {
     /** Context. */
     private final GridCacheContext<K, V> ctx;
+
+    /** Stopped flag for dynamic caches. */
+    private volatile boolean stopped;
 
     /**
      * @param ctx Cache context.
@@ -49,6 +53,9 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
+            if (stopped)
+                throw new IllegalStateException("Dynamic cache has been concurrently stopped: " + ctx.name());
+
             ctx.kernalContext().gateway().readLock();
         }
         catch (IllegalStateException e) {
@@ -69,6 +76,42 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
+     * Enter a cache call.
+     *
+     * @return {@code true} if enter successful, {@code false} if the cache or the node was stopped.
+     */
+    public boolean enterIfNotClosed() {
+        if (ctx.deploymentEnabled())
+            ctx.deploy().onEnter();
+
+        GridKernalGateway kernalGateway = ctx.kernalContext().gateway();
+
+        // Must unlock in case of unexpected errors to avoid
+        // deadlocks during kernal stop.
+        try {
+            kernalGateway.readLockAnyway();
+
+            if (kernalGateway.getState() != GridKernalState.STARTED || stopped) {
+                kernalGateway.readUnlock();
+
+                return false;
+            }
+        }
+        catch (RuntimeException | Error e) {
+            try {
+                kernalGateway.readUnlock();
+            }
+            catch (IllegalMonitorStateException ignore) {
+                // No-op.
+            }
+
+            throw e;
+        }
+
+        return true;
+    }
+
+    /**
      * Leave a cache call entered by {@link #enter()} method.
      */
     public void leave() {
@@ -77,7 +120,8 @@ public class GridCacheGateway<K, V> {
             ctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
-            CU.unwindEvicts(ctx);
+            if (!ctx.shared().closed(ctx))
+                CU.unwindEvicts(ctx);
         }
         finally {
             ctx.kernalContext().gateway().readUnlock();
@@ -113,6 +157,9 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
+            if (stopped)
+                throw new IllegalStateException("Dynamic cache has been concurrently stopped: " + ctx.name());
+
             ctx.kernalContext().gateway().readLock();
 
             // Set thread local projection per call.
@@ -157,5 +204,12 @@ public class GridCacheGateway<K, V> {
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /**
+     *
+     */
+    public void onStopped() {
+        stopped = true;
     }
 }

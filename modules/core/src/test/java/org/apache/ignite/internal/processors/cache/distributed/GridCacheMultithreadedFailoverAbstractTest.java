@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -123,13 +122,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     }
 
     /**
-     * @return Distribution mode.
-     */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
-    }
-
-    /**
      * @return Number of data nodes.
      */
     protected int dataNodes() {
@@ -205,7 +197,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         ccfg.setSwapEnabled(false);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setEvictionPolicy(null);
-        ccfg.setNearEvictionPolicy(null);
 
         if (cacheMode() == PARTITIONED)
             ccfg.setBackups(backups());
@@ -214,16 +205,10 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             assert atomicWriteOrderMode() != null;
 
             ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-
-            if (cacheMode() == PARTITIONED)
-                ccfg.setDistributionMode(PARTITIONED_ONLY);
         }
         else {
-            if (cacheMode() == PARTITIONED) {
-                assert distributionMode() != null;
-
-                ccfg.setDistributionMode(distributionMode());
-            }
+            if (cacheMode() == PARTITIONED)
+                ccfg.setNearConfiguration(new NearCacheConfiguration());
         }
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));

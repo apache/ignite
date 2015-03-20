@@ -28,7 +28,6 @@ import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -77,7 +76,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             cc.setCacheMode(PARTITIONED);
 
-            cc.setDistributionMode(PARTITIONED_ONLY);
+            cc.setNearConfiguration(null);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setStartSize(ENTRY_CNT / GRID_CNT);
             cc.setSwapEnabled(false);
@@ -138,7 +137,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
 
             ldr.perNodeBufferSize(8192);
-            ldr.updater(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
             final LongAdder cnt = new LongAdder();

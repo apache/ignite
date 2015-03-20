@@ -94,8 +94,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
-
-        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */
@@ -108,6 +106,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */

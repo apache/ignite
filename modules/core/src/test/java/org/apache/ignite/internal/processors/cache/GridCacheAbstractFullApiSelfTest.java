@@ -26,7 +26,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -102,6 +104,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** Dflt grid. */
     protected Ignite dfltIgnite;
 
+    /** */
+    private Map<String, CacheConfiguration[]> cacheCfgMap;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -143,10 +148,60 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+        if (cacheStartType() == CacheStartMode.STATIC)
+            super.beforeTestsStarted();
+        else {
+            cacheCfgMap = Collections.synchronizedMap(new HashMap<String, CacheConfiguration[]>());
+
+            if (cacheStartType() == CacheStartMode.NODES_THEN_CACHES) {
+                super.beforeTestsStarted();
+
+                for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
+                    Ignite ignite = IgnitionEx.grid(entry.getKey());
+
+                    for (CacheConfiguration cfg : entry.getValue())
+                        ignite.createCache(cfg);
+                }
+            }
+            else {
+                int cnt = gridCount();
+
+                assert cnt >= 1 : "At least one grid must be started";
+
+                for (int i = 0; i < cnt; i++) {
+                    Ignite ignite = startGrid(i);
+
+                    CacheConfiguration[] cacheCfgs = cacheCfgMap.get(ignite.name());
+
+                    for (CacheConfiguration cfg : cacheCfgs)
+                        ignite.createCache(cfg);
+                }
+
+                if (cnt > 1)
+                    checkTopology(cnt);
+
+                awaitPartitionMapExchange();
+            }
+
+            cacheCfgMap = null;
+        }
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        if (cacheCfgMap == null)
+            return super.startGrid(gridName, ctx);
+
+        IgniteConfiguration cfg = getConfiguration(gridName);
+
+        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+
+        cfg.setCacheConfiguration();
+
+        return IgnitionEx.start(optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +284,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int sum = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
+                if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
                     sum++;
 
             assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize());
@@ -2031,7 +2086,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndReplace("key", 2);
 
-        assert cacheAsync.future().get() == 1;
+        assert cacheAsync.<Integer>future().get() == 1;
 
         assert cache.get("key") == 2;
 
@@ -2264,7 +2319,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndRemove("key2");
 
-        assert cacheAsync.future().get() == 2;
+        assert cacheAsync.<Integer>future().get() == 2;
 
         assert cache.get("key2") == null;
 
@@ -2547,9 +2602,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testRemoveAfterClear() throws Exception {
         IgniteEx ignite = grid(0);
 
-        CacheDistributionMode distroMode = ignite.jcache(null).getConfiguration(CacheConfiguration.class).getDistributionMode();
+        boolean affNode = ((IgniteKernal)ignite).context().cache().internalCache(null).context().affinityNode();
 
-        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
+        if (!affNode) {
             if (gridCount() < 2)
                 return;
 
@@ -3433,7 +3488,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Collection<String> locKeys = new HashSet<>();
 
-        if (CU.isAffinityNode(cache.configuration())) {
+        if (cache.affinityNode()) {
             locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);
@@ -3571,6 +3626,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         assert cache.localSize() == 0;
+
+        // Clear readers, if any.
+        cache.remove(key);
     }
 
     /**
@@ -3765,7 +3823,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys) {
-                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion())) {
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
                         GridCacheEntryEx e =
                             ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -3795,7 +3853,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 int size = 0;
 
                 for (String key : keys)
-                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersion()))
+                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                         size++;
 
                 assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize());
@@ -3894,7 +3952,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        assertFalse(cache.iterator().hasNext());
+        Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
+
+        boolean hasNext = it.hasNext();
+
+        if (hasNext)
+            assertFalse("Cache has value: " + it.next(), hasNext);
 
         final int SIZE = 10_000;
 
@@ -4170,15 +4233,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert keysToRmv.size() > 1;
 
+        info("Will clear keys on node: " + g.cluster().localNode().id());
+
         g.<String, Integer>jcache(null).localClearAll(keysToRmv);
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;
 
-            boolean found = primaryIgnite(key).jcache(null).localPeek(key) != null;
+            Ignite ignite = primaryIgnite(key);
+
+            boolean found = ignite.jcache(null).localPeek(key) != null;
 
             if (keysToRmv.contains(key))
-                assertFalse("Found removed key " + key, found);
+                assertFalse("Found removed key [key=" + key + ", node=" + ignite.cluster().localNode().id() + ']',
+                    found);
             else
                 assertTrue("Not found key " + key, found);
         }
@@ -4286,5 +4354,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             else
                 assertFalse("Found removed key " + key, found);
         }
+    }
+
+    /**
+     *
+     */
+    protected CacheStartMode cacheStartType() {
+        String mode = System.getProperty("cache.start.mode");
+
+        if (CacheStartMode.NODES_THEN_CACHES.name().equalsIgnoreCase(mode))
+            return CacheStartMode.NODES_THEN_CACHES;
+
+        if (CacheStartMode.ONE_BY_ONE.name().equalsIgnoreCase(mode))
+            return CacheStartMode.ONE_BY_ONE;
+
+        return CacheStartMode.STATIC;
+    }
+
+    /**
+     *
+     */
+    public enum CacheStartMode {
+        /** Start caches together nodes (not dynamically) */
+        STATIC,
+
+        /** */
+        NODES_THEN_CACHES,
+
+        /** */
+        ONE_BY_ONE
     }
 }

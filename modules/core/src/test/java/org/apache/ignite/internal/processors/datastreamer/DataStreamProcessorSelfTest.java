@@ -33,18 +33,17 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.stream.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -98,22 +97,30 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setCacheMode(mode);
             cc.setAtomicityMode(TRANSACTIONAL);
-            cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+            if (nearEnabled) {
+                NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+                cc.setNearConfiguration(nearCfg);
+            }
+
             cc.setWriteSynchronizationMode(FULL_SYNC);
 
             cc.setEvictSynchronized(false);
-            cc.setEvictNearSynchronized(false);
 
             if (store != null) {
-                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+                cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
             }
 
             cfg.setCacheConfiguration(cc);
         }
-        else
+        else {
             cfg.setCacheConfiguration();
+
+            cfg.setClientMode(true);
+        }
 
         return cfg;
     }
@@ -178,7 +185,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;
@@ -220,7 +227,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
 
-            rmvLdr.updater(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+            rmvLdr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
             final CountDownLatch l2 = new CountDownLatch(threads);
 
@@ -419,7 +426,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
 
-            ldr.updater(DataStreamerCacheUpdaters.<Integer, Integer>individual());
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>individual());
             ldr.perNodeBufferSize(2);
 
             // Define count of puts.
@@ -885,8 +892,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
-                ldr.updater(new IgniteDataStreamer.Updater<String, TestObject>() {
-                    @Override public void update(IgniteCache<String, TestObject> cache,
+                ldr.receiver(new StreamReceiver<String, TestObject>() {
+                    @Override
+                    public void receive(IgniteCache<String, TestObject> cache,
                         Collection<Map.Entry<String, TestObject>> entries) {
                         for (Map.Entry<String, TestObject> e : entries) {
                             assertTrue(e.getKey() instanceof String);
@@ -951,7 +959,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends CacheStoreAdapter<Object, Object> {
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return storeMap.get(key);

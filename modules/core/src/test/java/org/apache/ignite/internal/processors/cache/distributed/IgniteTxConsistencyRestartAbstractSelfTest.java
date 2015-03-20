@@ -74,7 +74,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setDistributionMode(partitionDistributionMode());
+        ccfg.setNearConfiguration(nearConfiguration());
         ccfg.setRebalanceMode(SYNC);
 
         if (cacheMode() == CacheMode.PARTITIONED)
@@ -91,7 +91,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @return Partition distribution mode for PARTITIONED cache.
      */
-    protected abstract CacheDistributionMode partitionDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @throws Exception If failed.

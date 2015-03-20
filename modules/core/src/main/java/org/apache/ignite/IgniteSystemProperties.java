@@ -325,6 +325,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /**
+     * Property controlling default behavior of cache client flag.
+     */
+    public static final String IGNITE_CACHE_CLIENT = "IGNITE_CACHE_CLIENT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

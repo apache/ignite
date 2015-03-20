@@ -65,7 +65,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setBackups(colCfg.getBackups());
         ccfg.setMemoryMode(colCfg.getMemoryMode());
-        ccfg.setDistributionMode(colCfg.getDistributionMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
 

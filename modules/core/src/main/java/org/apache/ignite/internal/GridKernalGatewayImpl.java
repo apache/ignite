@@ -85,6 +85,14 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override public void readLockAnyway() {
+        if (stackTrace == null)
+            stackTrace = stackTrace();
+
+        rwLock.readLock();
+    }
+
+    /** {@inheritDoc} */
     @Override public void readUnlock() {
         rwLock.readUnlock();
     }

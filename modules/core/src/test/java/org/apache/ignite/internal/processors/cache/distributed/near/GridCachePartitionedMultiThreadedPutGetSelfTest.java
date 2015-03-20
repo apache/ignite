@@ -32,7 +32,6 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -68,12 +67,14 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(1000));
-        cc.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setEvictSynchronized(false);
-        cc.setEvictNearSynchronized(false);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        nearCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 

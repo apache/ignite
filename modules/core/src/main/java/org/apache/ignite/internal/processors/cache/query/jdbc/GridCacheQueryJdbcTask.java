@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -54,6 +56,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
         try {
@@ -81,9 +86,12 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 String cache = (String)args.get("cache");
 
-                for (ClusterNode n : subgrid)
-                    if (U.hasCache(n, cache))
+                GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+
+                for (ClusterNode n : subgrid) {
+                    if (discoMgr.cacheAffinityNode(n, cache))
                         return F.asMap(new JdbcDriverJob(args, first), n);
+                }
 
                 throw new IgniteException("Can't find node with cache: " + cache);
             }

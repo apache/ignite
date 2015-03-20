@@ -73,8 +73,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         if (hasCache)
             cfg.setCacheConfiguration(cache(null, null), cache(CACHE, null), cache(EMPTY_CACHE, null));
-        else
+        else {
+            cfg.setClientMode(true);
             cfg.setCacheConfiguration();
+        }
 
         cfg.setDiscoverySpi(discovery());
 

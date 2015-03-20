@@ -67,7 +67,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         cfg.setCacheConfiguration(cacheCfg);
 

@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -82,16 +81,18 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             cacheCfg.setCacheMode(cacheMode());
             cacheCfg.setAtomicityMode(atomicityMode());
-            cacheCfg.setDistributionMode(distributionMode());
+            cacheCfg.setNearConfiguration(nearConfiguration());
             cacheCfg.setRebalanceMode(ASYNC);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+            cacheCfg.setCacheStoreFactory(new StoreFactory());
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
             cacheCfg.setLoadPreviousValue(true);
 
             cfg.setCacheConfiguration(cacheCfg);
         }
+        else
+            cfg.setClientMode(true);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -114,8 +115,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -148,7 +149,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
                 try {
-                    ((IgniteKernal)grid(i)).cache(null).removeAll();
+                    GridCache<Object, Object> cache = ((IgniteKernal)grid(i)).cache(null);
+
+                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
+                        cache.remove(entry.getKey());
+                    }
 
                     break;
                 }
@@ -165,12 +170,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0,
-                ((IgniteKernal)grid(i)).cache(null).size());
+            assertEquals("Cache is not empty [entrySet=" + ((IgniteKernal)grid(i)).cache(null).entrySet() +
+                ", i=" + i + ']',
+                0, ((IgniteKernal)grid(i)).cache(null).size());
 
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = grid(i).context().continuous();
 
             assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
@@ -180,8 +186,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStopAck")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
-            CacheContinuousQueryManager mgr =
-                ((IgniteKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
+            CacheContinuousQueryManager mgr = grid(i).context().cache().internalCache().context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
         }
@@ -316,6 +321,32 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testFilterException() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                // No-op.
+            }
+        });
+
+        qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                throw new RuntimeException("Test error.");
+            }
+        });
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
@@ -345,8 +376,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         });
 
         qry.setRemoteFilter(new CacheEntryEventFilter<Integer,Integer>() {
-            @Override
-            public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -808,34 +838,29 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Collection<CacheEntryEvent<? extends Integer, ? extends Integer>> all = new ConcurrentLinkedDeque8<>();
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(30);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                int size = 0;
-
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
                     all.add(evt);
-
-                    size++;
-                }
-
-                assertEquals(1, size);
 
                 latch.countDown();
             }
         });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            cache.put(1, 1);
+            cache.put(0, 0);
 
             startGrid("anotherGrid");
 
-            cache.put(2, 2);
+            for (int i = 1; i < 30; i++) {
+                cache.put(i, i);
+            }
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS) : all;
 
-            assertEquals(2, all.size());
+            assertEquals(30, all.size());
         }
         finally {
             stopGrid("anotherGrid");
@@ -864,15 +889,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         try {
             try (Ignite ignite = startGrid(NO_CACHE_GRID_NAME)) {
                 log.info("Started node without cache: " + ignite);
-
-                try {
-                    ignite.jcache(null);
-
-                    fail();
-                }
-                catch (IllegalArgumentException ignore) {
-                    // Expected exception.
-                }
             }
 
             cache.put(1, 1);
@@ -976,6 +992,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 grid(i).events().stopLocalListen(lsnr, EVT_CACHE_QUERY_OBJECT_READ);
                 grid(i).events().stopLocalListen(execLsnr, EVT_CACHE_QUERY_EXECUTED);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class StoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return new TestStore();
         }
     }
 

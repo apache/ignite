@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -51,7 +50,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         cfg.setBackups(gridCount() - 1);
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
 
         return cfg;
     }

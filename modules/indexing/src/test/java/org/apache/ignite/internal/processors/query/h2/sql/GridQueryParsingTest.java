@@ -71,7 +71,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(false);

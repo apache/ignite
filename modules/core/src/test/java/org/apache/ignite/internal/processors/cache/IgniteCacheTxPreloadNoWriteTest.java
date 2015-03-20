@@ -57,7 +57,6 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(REPLICATED);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
         ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, 100));

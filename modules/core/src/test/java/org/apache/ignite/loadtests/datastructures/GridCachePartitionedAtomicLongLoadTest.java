@@ -74,7 +74,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         cc.setBackups(1);
         cc.setAffinity(new CacheRendezvousAffinityFunction(true));
         cc.setEvictSynchronized(true);
-        cc.setEvictNearSynchronized(true);
 
         c.setCacheConfiguration(cc);
 

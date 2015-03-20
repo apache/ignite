@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -89,8 +90,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
-        assert topVer > 0 : "Topology version is invalid: " + topVer;
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
+        assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
         UUID primaryNodeId = this.primaryNodeId;
 
@@ -120,7 +121,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return {@code True} if this entry was initialized by this call.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      */
-    public boolean initializeFromDht(long topVer) throws GridCacheEntryRemovedException {
+    public boolean initializeFromDht(AffinityTopologyVersion topVer) throws GridCacheEntryRemovedException {
         while (true) {
             GridDhtCacheEntry entry = cctx.near().dht().peekExx(key);
 
@@ -342,7 +343,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long ttl,
         long expireTime,
         boolean evt,
-        long topVer,
+        AffinityTopologyVersion topVer,
         UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
@@ -600,6 +601,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
+        primaryNodeId = null;
         dhtVer = null;
     }
 

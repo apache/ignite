@@ -63,6 +63,8 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
             cfg.setCacheConfiguration(ccfg);
         }
+        else
+            cfg.setClientMode(true);
 
         return cfg;
     }

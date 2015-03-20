@@ -75,6 +75,9 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
+        if (!super.writeTo(buf, writer))
+            return false;
+
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
@@ -99,6 +102,9 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {

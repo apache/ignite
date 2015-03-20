@@ -37,8 +37,8 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -50,7 +50,7 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     @Override protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
         CacheConfiguration cc = super.cache(name, primitives);
 
-        cc.setDistributionMode(distributionMode());
+        cc.setNearConfiguration(nearConfiguration());
 
         return cc;
     }

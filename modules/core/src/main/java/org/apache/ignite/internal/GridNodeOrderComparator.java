@@ -29,6 +29,16 @@ public class GridNodeOrderComparator implements Comparator<ClusterNode>, Seriali
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public static final Comparator<ClusterNode> INSTANCE = new GridNodeOrderComparator();
+
+    /**
+     * Private constructor. Don't create this class, use {@link #INSTANCE}.
+     */
+    private GridNodeOrderComparator() {
+
+    }
+
     /** {@inheritDoc} */
     @Override public int compare(ClusterNode n1, ClusterNode n2) {
         return n1.order() < n2.order() ? -1 : n1.order() > n2.order() ? 1 : n1.id().compareTo(n2.id());
