@@ -885,7 +885,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void testNearAccess() throws Exception {
+    // TODO: IGNITE-518.
+    public void _testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
