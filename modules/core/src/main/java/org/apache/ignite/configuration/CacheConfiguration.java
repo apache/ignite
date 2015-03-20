@@ -72,7 +72,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final int DFLT_BACKUPS = 0;
 
     /** Default caching mode. */
-    public static final CacheMode DFLT_CACHE_MODE = CacheMode.REPLICATED;
+    public static final CacheMode DFLT_CACHE_MODE = CacheMode.PARTITIONED;
 
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
