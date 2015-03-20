@@ -61,8 +61,6 @@ public class IgniteSetExample {
 
             NearCacheConfiguration<Integer, String> nearCacheCfg = new NearCacheConfiguration<>();
 
-            nearCacheCfg.setNearEnabled(true);
-
             try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCacheCfg)) {
                 // Make set name.
                 String setName = UUID.randomUUID().toString();

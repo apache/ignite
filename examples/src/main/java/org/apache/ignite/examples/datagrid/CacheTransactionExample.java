@@ -60,8 +60,6 @@ public class CacheTransactionExample {
 
             NearCacheConfiguration<Integer, Account> nearCacheCfg = new NearCacheConfiguration<>();
 
-            nearCacheCfg.setNearEnabled(true);
-
             try (IgniteCache<Integer, Account> cache = ignite.createCache(cfg, nearCacheCfg)) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
