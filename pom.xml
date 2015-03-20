@@ -750,7 +750,6 @@
                                     <use>true</use>
                                     <author>false</author>
                                     <version>false</version>
-                                    <source>1.7</source>
                                     <additionalparam>${javadoc.opts}</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
@@ -945,7 +944,6 @@
                                     <use>true</use>
                                     <author>false</author>
                                     <version>false</version>
-                                    <source>1.7</source>
                                     <additionalparam>${javadoc.opts}</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
@@ -1364,6 +1362,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>java8</id>
             <activation>
