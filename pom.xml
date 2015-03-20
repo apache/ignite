@@ -752,8 +752,7 @@
                                     <author>false</author>
                                     <version>false</version>
                                     <source>1.7</source>
-                                    <!--jdk8 support-->
-                                    <!--<additionalparam>-Xdoclint:none</additionalparam>-->
+                                    <additionalparam>${javadoc.opts}</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
@@ -948,8 +947,7 @@
                                     <author>false</author>
                                     <version>false</version>
                                     <source>1.7</source>
-                                    <!--jdk8 support-->
-                                    <!--<additionalparam>-Xdoclint:none</additionalparam>-->
+                                    <additionalparam>${javadoc.opts}</additionalparam>
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
@@ -1366,6 +1364,15 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>java8</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+            <properties>
+                <javadoc.opts>-Xdoclint:none</javadoc.opts>
+            </properties>
         </profile>
     </profiles>
 </project>
