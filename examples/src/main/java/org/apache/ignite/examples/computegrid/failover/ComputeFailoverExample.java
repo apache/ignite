@@ -20,7 +20,6 @@ package org.apache.ignite.examples.computegrid.failover;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 

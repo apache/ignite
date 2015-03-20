@@ -32,10 +32,10 @@ import java.util.*;
  * Real time popular numbers counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-compute.xml} configuration.
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CachePopularNumbersExample {
     /** Cache name. */
@@ -62,7 +62,7 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 

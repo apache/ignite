@@ -23,7 +23,7 @@ package org.apache.ignite.examples;
 public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected String defaultConfig() {
-        return "examples/config/example-compute.xml";
+        return "examples/config/example-ignite.xml";
     }
 
     /** {@inheritDoc} */
