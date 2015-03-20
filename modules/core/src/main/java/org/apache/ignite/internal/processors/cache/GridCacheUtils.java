@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -1795,7 +1794,7 @@ public class GridCacheUtils {
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
-    @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
+    @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
             return new CacheWriterException(U.convertExceptionNoWrap(e));
 
@@ -1806,6 +1805,9 @@ public class GridCacheUtils {
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
+
+        if (e.getCause() instanceof NullPointerException)
+            return (NullPointerException)e.getCause();
 
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
