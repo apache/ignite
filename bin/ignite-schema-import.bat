@@ -90,7 +90,7 @@ set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*
 ::
 if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp %*
 
 :error_finish
 
