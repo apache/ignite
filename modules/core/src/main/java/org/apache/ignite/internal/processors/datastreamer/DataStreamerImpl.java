@@ -41,6 +41,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
@@ -305,7 +306,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
         if (node == null)
-            throw new IgniteException("Failed to get node for cache: " + cacheName);
+            throw new CacheException("Failed to get node for cache: " + cacheName);
 
         updater = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
@@ -744,7 +745,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public void flush() throws IgniteException {
+    @Override public void flush() throws CacheException {
         enterBusy();
 
         try {
@@ -785,9 +786,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /**
      * @param cancel {@code True} to close with cancellation.
-     * @throws IgniteException If failed.
+     * @throws CacheException If failed.
      */
-    @Override public void close(boolean cancel) throws IgniteException {
+    @Override public void close(boolean cancel) throws CacheException {
         try {
             closeEx(cancel);
         }
@@ -844,7 +845,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteException {
+    @Override public void close() throws CacheException {
         close(false);
     }
 
