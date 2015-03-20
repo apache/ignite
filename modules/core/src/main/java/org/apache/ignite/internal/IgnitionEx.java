@@ -49,7 +49,6 @@ import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -1614,17 +1613,6 @@ public class IgnitionEx {
                     clone[i] = new FileSystemConfiguration(igfsCfgs[i]);
 
                 myCfg.setFileSystemConfiguration(clone);
-            }
-
-            StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();
-
-            if (streamerCfgs != null) {
-                StreamerConfiguration[] clone = streamerCfgs.clone();
-
-                for (int i = 0; i < streamerCfgs.length; i++)
-                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
-
-                myCfg.setStreamerConfiguration(clone);
             }
 
             initializeDefaultSpi(myCfg);
