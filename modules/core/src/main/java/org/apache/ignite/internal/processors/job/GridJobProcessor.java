@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
-import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -102,19 +101,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Needed for statistics. */
-    private final LongAdder canceledJobsCnt = new LongAdder();
+    private final LongAdder8 canceledJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder finishedJobsCnt = new LongAdder();
+    private final LongAdder8 finishedJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder startedJobsCnt = new LongAdder();
+    private final LongAdder8 startedJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder rejectedJobsCnt = new LongAdder();
+    private final LongAdder8 rejectedJobsCnt = new LongAdder8();
 
     /** Total job execution time (unaccounted for in metrics). */
-    private final LongAdder finishedJobsTime = new LongAdder();
+    private final LongAdder8 finishedJobsTime = new LongAdder8();
 
     /** Maximum job execution time for finished jobs. */
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();

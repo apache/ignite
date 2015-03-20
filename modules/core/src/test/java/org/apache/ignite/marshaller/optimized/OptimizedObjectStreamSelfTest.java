@@ -60,7 +60,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testByte() throws Exception {
         byte val = 10;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Byte(val), marshalUnmarshal(val));
     }
 
     /**
@@ -69,7 +69,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testShort() throws Exception {
         short val = 100;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Short(val), marshalUnmarshal(val));
     }
 
     /**
@@ -78,7 +78,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testInteger() throws Exception {
         int val = 100;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Integer(val), marshalUnmarshal(val));
     }
 
     /**
@@ -87,7 +87,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testLong() throws Exception {
         long val = 1000L;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Long(val), marshalUnmarshal(val));
     }
 
     /**
@@ -114,11 +114,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testBoolean() throws Exception {
         boolean val = true;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Boolean(val), marshalUnmarshal(val));
 
         val = false;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Boolean(val), marshalUnmarshal(val));
     }
 
     /**
@@ -127,7 +127,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testChar() throws Exception {
         char val = 10;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Character(val), marshalUnmarshal(val));
     }
 
     /**

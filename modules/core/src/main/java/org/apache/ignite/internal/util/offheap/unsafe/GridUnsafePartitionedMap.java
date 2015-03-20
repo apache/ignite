@@ -60,7 +60,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     private final int parts;
 
     /** */
-    private final LongAdder totalCnt = new LongAdder();
+    private final LongAdder8 totalCnt = new LongAdder8();
 
     /**
      * @param parts Partitions.

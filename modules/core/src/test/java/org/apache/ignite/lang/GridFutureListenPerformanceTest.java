@@ -37,7 +37,7 @@ public class GridFutureListenPerformanceTest {
      * @throws InterruptedException If failed.
      */
     public static void main(String[] args) throws InterruptedException {
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
 
         final ConcurrentLinkedDeque8<GridFutureAdapter<Object>> futs = new ConcurrentLinkedDeque8<>();
 
