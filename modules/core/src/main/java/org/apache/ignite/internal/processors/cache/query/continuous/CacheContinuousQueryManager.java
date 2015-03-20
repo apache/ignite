@@ -570,9 +570,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 locLsnrImpl,
                 log);
 
-            IgniteCacheEntryEventFilter rmtFilter = new JCacheQueryRemoteFilter(
-                cfg.getCacheEntryEventFilterFactory() != null ? (IgniteCacheEntryEventFilter)cfg.getCacheEntryEventFilterFactory().create() : null,
-                types);
+            CacheEntryEventFilter fltr = null;
+
+            if (cfg.getCacheEntryEventFilterFactory() != null) {
+                fltr = (CacheEntryEventFilter) cfg.getCacheEntryEventFilterFactory().create();
+
+                if (!(fltr instanceof Serializable))
+                    throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: " + fltr);
+            }
+
+            IgniteCacheEntryEventFilter rmtFilter = new JCacheQueryRemoteFilter(fltr, types);
 
             routineId = executeQuery0(
                 locLsnr,
@@ -690,7 +697,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private IgniteCacheEntryEventFilter impl;
+        private CacheEntryEventFilter impl;
 
         /** */
         private byte types;
@@ -710,7 +717,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          * @param impl Filter.
          * @param types Types.
          */
-        JCacheQueryRemoteFilter(IgniteCacheEntryEventFilter impl, byte types) {
+        JCacheQueryRemoteFilter(CacheEntryEventFilter impl, byte types) {
             assert types != 0;
 
             this.impl = impl;
