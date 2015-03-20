@@ -17,7 +17,7 @@
 #
 
 #
-# Ignite Schema Import Utility.
+# Starts Ignite Schema Import Wizard with predefined settings for demo.
 #
 
 #
@@ -45,34 +45,13 @@ checkJava
 #
 setIgniteHome
 
-#
-# Set CLASS PATH.
-#
-. "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*"
-
-# Mac OS specific support to display correct name in the dock.
-osname=`uname`
-
-if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=Ignite Schema Import Utility"
-fi
-
-#
-# JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
-#
-# ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
-#
-if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms256m -Xmx1g"
-fi
-
-case $osname in
-    Darwin*)
-        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
-        ;;
-   *)
-        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
-        ;;
-esac
+# Starts Ignite Schema Import Wizard with settings for demo.
+"${IGNITE_HOME}/bin/ignite-schema-import.sh" \
+ jdbc.db.preset=0 \
+ jdbc.driver.jar="${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" \
+ jdbc.driver.class=org.h2.Driver \
+ jdbc.url="jdbc:h2:tcp://localhost/${IGNITE_HOME}/examples/schema-import/demo" \
+ jdbc.user=sa \
+ out.folder="${IGNITE_HOME}/examples/src/main/java" \
+ pojo.package=org.apache.ignite.examples.schema \
+ pojo.constructor=true

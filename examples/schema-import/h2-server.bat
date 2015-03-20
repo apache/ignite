@@ -16,7 +16,7 @@
 ::
 
 ::
-:: Starts H2 database for Ignite Schema Import demo.
+:: Starts H2 database server and console for Ignite Schema Import demo.
 ::
 
 @echo off
@@ -66,34 +66,15 @@ set IGNITE_HOME=%IGNITE_HOME:~0,-1%
 goto checkIgniteHome2
 
 :checkIgniteHome3
-if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
+if exist "%IGNITE_HOME%\config" goto run
     echo %0, ERROR: Ignite installation folder is not found or IGNITE_HOME environment variable is not valid.
     echo Please create IGNITE_HOME environment variable pointing to location of
     echo Ignite installation folder.
     goto error_finish
 
-:checkIgniteHome4
-
-::
-:: Set SCRIPTS_HOME - base path to scripts.
-::
-set SCRIPTS_HOME=%IGNITE_HOME%\bin
-
-:: Remove trailing spaces
-for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
-
 :run
 
-::
-:: Set IGNITE_LIBS
-::
-call "%SCRIPTS_HOME%\include\setenv.bat"
-
-::
-:: Starts Visor console.
-::
-"%JAVA_HOME%\bin\java.exe" -cp "%IGNITE_LIBS%" org.h2.tools.RunScript -url jdbc:h2:tcp://localhost/demo -script demo.sql
+:: Starts H2 server and console.
+"%JAVA_HOME%\bin\java.exe" -cp "%IGNITE_HOME%\libs\ignite-indexing\h2-1.3.175.jar" org.h2.tools.Console %*
 
 :error_finish
-
-exit

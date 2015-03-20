@@ -17,7 +17,7 @@
 #
 
 #
-# Ignite Schema Import Utility.
+# Starts H2 database server and console for Ignite Schema Import demo.
 #
 
 #
@@ -45,34 +45,19 @@ checkJava
 #
 setIgniteHome
 
-#
-# Set CLASS PATH.
-#
-. "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*"
-
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=Ignite Schema Import Utility"
+    DOCK_OPTS="-Xdock:name=H2 database"
 fi
 
-#
-# JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
-#
-# ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
-#
-if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms256m -Xmx1g"
-fi
-
+# Starts H2 server and console.
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
+        "$JAVA" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
         ;;
    *)
-        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
+        "$JAVA" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
         ;;
 esac

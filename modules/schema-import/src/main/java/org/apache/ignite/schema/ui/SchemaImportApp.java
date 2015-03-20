@@ -478,13 +478,13 @@ public class SchemaImportApp extends Application {
                         XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
                             askOverwrite);
 
-                    PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
+                    CodeGenerator.pojos(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                 }
 
                 if (singleXml)
                     XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
-                SnippetGenerator.generate(all, pkg, includeKeys, new File(outFolder, "Ignite.snippet"), askOverwrite);
+                CodeGenerator.snippets(all, pkg, includeKeys, outFolder, askOverwrite);
 
                 perceptualDelay(started);
 
