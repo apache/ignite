@@ -694,29 +694,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
-        return rdcQryExec.query(space, qry);
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
+        return rdcQryExec.query(cctx, qry);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry,
-        Object[] params) {
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry) {
+        String type = qry.getType();
+        String space = cctx.name();
+
         TableDescriptor tblDesc = tableDescriptor(type, space);
 
         if (tblDesc == null)
             throw new CacheException("Failed to find SQL table for type: " + type);
 
-        String qry;
+        String sql;
 
         try {
-            qry = generateQuery(sqlQry, tblDesc);
+            sql = generateQuery(qry.getSql(), tblDesc);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
 
-        final QueryCursor<List<?>> res = queryTwoStep(space, qry, params);
+        SqlFieldsQuery fqry = new SqlFieldsQuery(sql);
+
+        fqry.setArgs(qry.getArgs());
+        fqry.setPageSize(qry.getPageSize());
+
+        final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
 
         final Iterator<List<?>> iter0 = res.iterator();
 
@@ -744,7 +751,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params) {
+    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+        String space = cctx.name();
+        String sqlQry = qry.getSql();
+
         Connection c = connectionForSpace(space);
 
         PreparedStatement stmt;
@@ -760,7 +770,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Collection<GridQueryFieldMetadata> meta;
 
         try {
-            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, params);
+            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs());
 
             meta = meta(stmt.getMetaData());
         }
@@ -774,7 +784,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)queryTwoStep(space, twoStepQry);
+        twoStepQry.pageSize(qry.getPageSize());
+
+        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)queryTwoStep(cctx, twoStepQry);
 
         cursor.fieldsMeta(meta);
 

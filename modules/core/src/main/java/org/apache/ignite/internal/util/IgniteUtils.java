@@ -1067,6 +1067,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+        try {
+            return Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            return dflt;
+        }
+    }
+
+    /**
      * Creates new instance of a class only if it has an empty constructor (can be non-public).
      *
      * @param cls Class name.
