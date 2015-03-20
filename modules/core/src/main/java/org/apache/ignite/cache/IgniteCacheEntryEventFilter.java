@@ -24,4 +24,5 @@ import java.io.*;
  * This filter adds {@link Serializable} interface to {@link javax.cache.event.CacheEntryEventFilter} object.
  */
 public interface IgniteCacheEntryEventFilter<K, V> extends CacheEntryEventFilter<K, V>, Serializable {
+    // No-op.
 }
