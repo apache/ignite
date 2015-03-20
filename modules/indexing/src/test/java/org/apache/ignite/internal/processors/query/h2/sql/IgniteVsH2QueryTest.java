@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.sql.*;
@@ -167,6 +168,10 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
             Person person = new Person(id, organizations.get(i % organizations.size()), 
                 "name" + id, "lastName" + id, id * 100.0);
+            
+            // Add a Person without lastname.
+            if (id == organizations.size() + 1)
+                person.lastName = null;
 
             persons.add(person);
 
@@ -211,10 +216,10 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Organization org) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"part\".ORGANIZATION (_key, _val, id, name) values(?, ?, ?, ?)")) {
-            st.setObject(1, org.id);
-            st.setObject(2, org);
-            st.setObject(3, org.id);
-            st.setObject(4, org.name);
+            setObjectSmart(st, 1, org.id);
+            setObjectSmart(st, 2, org);
+            setObjectSmart(st, 3, org.id);
+            setObjectSmart(st, 4, org.name);
 
             st.executeUpdate();
         }
@@ -229,13 +234,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Person p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement("insert into \"part\".PERSON " +
             "(_key, _val, id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?, ?, ?)")) {
-            st.setObject(1, p.key());
-            st.setObject(2, p);
-            st.setObject(3, p.id);
-            st.setObject(4, p.firstName);
-            st.setObject(5, p.lastName);
-            st.setObject(6, p.orgId);
-            st.setObject(7, p.salary);
+            setObjectSmart(st, 1, p.key());
+            setObjectSmart(st, 2, p);
+            setObjectSmart(st, 3, p.id);
+            setObjectSmart(st, 4, p.firstName);
+            setObjectSmart(st, 5, p.lastName);
+            setObjectSmart(st, 6, p.orgId);
+            setObjectSmart(st, 7, p.salary);
 
             st.executeUpdate();
         }
@@ -250,11 +255,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Product p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"repl\".PRODUCT (_key, _val, id, name, price) values(?, ?, ?, ?, ?)")) {
-            st.setObject(1, p.id);
-            st.setObject(2, p);
-            st.setObject(3, p.id);
-            st.setObject(4, p.name);
-            st.setObject(5, p.price);
+            setObjectSmart(st, 1, p.id);
+            setObjectSmart(st, 2, p);
+            setObjectSmart(st, 3, p.id);
+            setObjectSmart(st, 4, p.name);
+            setObjectSmart(st, 5, p.price);
 
             st.executeUpdate();
         }
@@ -269,11 +274,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Purchase p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"part\".PURCHASE (_key, _val, id, personId, productId) values(?, ?, ?, ?, ?)")) {
-            st.setObject(1, p.key());
-            st.setObject(2, p);
-            st.setObject(3, p.id);
-            st.setObject(4, p.personId);
-            st.setObject(5, p.productId);
+            setObjectSmart(st, 1, p.key());
+            setObjectSmart(st, 2, p);
+            setObjectSmart(st, 3, p.id);
+            setObjectSmart(st, 4, p.personId);
+            setObjectSmart(st, 5, p.productId);
 
             st.executeUpdate();
         }
@@ -347,10 +352,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @param sql SQL query.
      * @param args SQL arguments.
      * then results will compare as ordered queries.
+     * @return Result set after SQL query execution. 
      * @throws SQLException If exception.
      */
-    private void compareQueryRes0(String sql, Object... args) throws SQLException {
-        compareQueryRes0(pCache, sql, args, Order.RANDOM);
+    private List<List<?>> compareQueryRes0(String sql, @Nullable Object... args) throws SQLException {
+        return compareQueryRes0(pCache, sql, args, Order.RANDOM);
     }
 
     /**
@@ -361,10 +367,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @param sql SQL query.
      * @param args SQL arguments.
      * then results will compare as ordered queries.
+     * @return Result set after SQL query execution. 
      * @throws SQLException If exception.
      */
-    private void compareQueryRes0(IgniteCache cache, String sql, Object... args) throws SQLException {
-        compareQueryRes0(cache, sql, args, Order.RANDOM);
+    private List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object... args) throws SQLException {
+        return compareQueryRes0(cache, sql, args, Order.RANDOM);
     }
 
     /**
@@ -374,10 +381,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @param sql SQL query.
      * @param args SQL arguments.
      * then results will compare as ordered queries.
+     * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    private void compareOrderedQueryRes0(String sql, Object... args) throws SQLException {
-        compareQueryRes0(pCache, sql, args, Order.ORDERED);
+    private List<List<?>> compareOrderedQueryRes0(String sql, @Nullable Object... args) throws SQLException {
+        return compareQueryRes0(pCache, sql, args, Order.ORDERED);
     }
 
     /**
@@ -388,10 +396,14 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @param args SQL arguments.
      * @param order Expected ordering of SQL results. If {@link Order#ORDERED} 
      * then results will compare as ordered queries.
+     * @return Result set after SQL query execution.
      * @throws SQLException If exception.
-     */
+     */    
     @SuppressWarnings("unchecked")
-    private void compareQueryRes0(IgniteCache cache, String sql, Object[] args, Order order) throws SQLException {
+    private List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object[] args, Order order) throws SQLException {
+        if (args == null)
+            args = new Object[] {null};
+        
         log.info("Sql=\"" + sql + "\", args=" + Arrays.toString(args));
 
         List<List<?>> h2Res = executeH2Query(sql, args);
@@ -399,6 +411,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
 
         assertRsEquals(h2Res, cacheRes, order);
+        
+        return cacheRes;
     }
 
     /**
@@ -415,7 +429,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         try(PreparedStatement st = conn.prepareStatement(sql)) {
             for (int idx = 0; idx < args.length; idx++)
-                st.setObject(idx + 1, args[idx]);
+                setObjectSmart(st, idx + 1, args[idx]);
 
             rs = st.executeQuery();
 
@@ -435,6 +449,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         }
 
         return res;
+    }
+
+    private void setObjectSmart(PreparedStatement st, int idx, Object arg) throws SQLException {
+        if (arg == null)
+            st.setNull(idx, Types.NULL);
+        else
+            st.setObject(idx, arg);
     }
 
     /**
@@ -490,6 +511,16 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testSimpleReplSelect() throws Exception {
         compareQueryRes0("select id, name, price from \"repl\".Product");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPersonWIthNullLastName() throws Exception {
+        List<List<?>> rs = compareQueryRes0("select id from \"part\".Person where lastname = ?", null);
+        
+        // To ensure we found something (not 0).
+        assertEquals(1, rs.size());
     }
 
     /**
