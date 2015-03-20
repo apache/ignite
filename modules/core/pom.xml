@@ -214,7 +214,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.apache.ignite:org.jdk8.backport:org.pcollections:com.romix.scala</argument>
+                                <argument>org.apache.ignite:org.jdk8.backport</argument>
                             </arguments>
                         </configuration>
                     </execution>
