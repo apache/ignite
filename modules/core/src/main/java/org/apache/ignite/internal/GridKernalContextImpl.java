@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.spring.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -217,10 +216,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridAffinityProcessor affProc;
-
-    /** */
-    @GridToStringInclude
-    private GridStreamProcessor streamProc;
 
     /** */
     @GridToStringExclude
@@ -465,8 +460,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridStreamProcessor)
-            streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
@@ -595,11 +588,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public IgniteScheduleProcessorAdapter schedule() {
         return scheduleProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStreamProcessor stream() {
-        return streamProc;
     }
 
     /** {@inheritDoc} */

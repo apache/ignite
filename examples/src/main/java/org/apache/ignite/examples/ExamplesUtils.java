@@ -17,9 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.streamer.*;
 
 import java.net.*;
 
@@ -79,21 +77,5 @@ public class ExamplesUtils {
         }
 
         return true;
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param name Streamer name.
-     * @return {@code True} if ignite has streamer with given name.
-     */
-    public static boolean hasStreamer(Ignite ignite, String name) {
-        if (ignite.configuration().getStreamerConfiguration() != null) {
-            for (StreamerConfiguration cfg : ignite.configuration().getStreamerConfiguration()) {
-                if (name.equals(cfg.getName()))
-                    return true;
-            }
-        }
-
-        return false;
     }
 }
