@@ -31,6 +31,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.util.*;
+import javafx.util.converter.*;
 
 /**
  * Utility class to create controls.
@@ -541,10 +542,6 @@ public class Controls {
         /** */
         private final TextColumnValidator<S> validator;
         /** */
-        private boolean cancelling;
-        /** */
-        private boolean hardCancel;
-        /** */
         private String curTxt = "";
 
         /** Row value. */
@@ -566,6 +563,8 @@ public class Controls {
          * @param validator Input text validator.
          */
         private TextFieldTableCellEx(TextColumnValidator<S> validator) {
+            super(new DefaultStringConverter());
+
             this.validator = validator;
         }
 
@@ -580,14 +579,12 @@ public class Controls {
 
             rowVal = getTableView().getSelectionModel().getSelectedItem();
 
-            curTxt = "";
-
-            hardCancel = false;
-
             Node g = getGraphic();
 
             if (g != null) {
                 final TextField tf = (TextField)g;
+
+                curTxt = tf.getText();
 
                 tf.textProperty().addListener(new ChangeListener<String>() {
                     @Override public void changed(ObservableValue<? extends String> val, String oldVal, String newVal) {
@@ -597,13 +594,8 @@ public class Controls {
 
                 tf.setOnKeyPressed(new EventHandler<KeyEvent>() {
                     @Override public void handle(KeyEvent evt) {
-                        if (KeyCode.ENTER == evt.getCode())
+                        if (KeyCode.ENTER == evt.getCode() || KeyCode.ESCAPE == evt.getCode())
                             cancelEdit();
-                        else if (KeyCode.ESCAPE == evt.getCode()) {
-                            hardCancel = true;
-
-                            cancelEdit();
-                        }
                     }
                 });
 
@@ -640,22 +632,12 @@ public class Controls {
 
         /** {@inheritDoc} */
         @Override public void cancelEdit() {
-            if (cancelling)
-                super.cancelEdit();
-            else
-                try {
-                    cancelling = true;
+            boolean editing = isEditing();
 
-                    if (hardCancel || curTxt.trim().isEmpty())
-                        super.cancelEdit();
-                    else if (validator.valid(rowVal, curTxt))
-                        commitEdit(curTxt);
-                    else
-                        super.cancelEdit();
-                }
-                finally {
-                    cancelling = false;
-                }
+            super.cancelEdit();
+
+            if (editing && validator.valid(rowVal, curTxt))
+                updateItem(curTxt, false);
         }
     }
 }

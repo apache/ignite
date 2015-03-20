@@ -70,9 +70,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridMessageListenSelfTest.class);
 
-        // Streamer.
-        suite.addTest(IgniteStreamerSelfTestSuite.suite());
-
         return suite;
     }
 }
