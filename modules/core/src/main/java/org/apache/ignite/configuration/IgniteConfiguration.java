@@ -40,7 +40,6 @@ import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -50,7 +49,6 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.swapspace.*;
 
@@ -1496,7 +1494,7 @@ public class IgniteConfiguration {
         return addrRslvr;
     }
 
-    /*
+    /**
      * Sets address resolver for addresses mapping determination.
      *
      * @param addrRslvr Address resolver.
