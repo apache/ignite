@@ -35,7 +35,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(org.apache.ignite.testsuites.IgniteExamplesJ8SelfTestSuite.class));
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
