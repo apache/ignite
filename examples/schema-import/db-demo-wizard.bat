@@ -16,7 +16,7 @@
 ::
 
 ::
-:: Starts Ignite Schema Import demo.
+:: Starts Ignite Schema Import Wizard with predefined settings for demo.
 ::
 
 @echo off
@@ -74,6 +74,7 @@ if exist "%IGNITE_HOME%\config" goto run
 
 :run
 
+:: Starts Ignite Schema Import Wizard with settings for demo.
 "%IGNITE_HOME%\bin\ignite-schema-import.bat" ^
  jdbc.db.preset=0 ^
  jdbc.driver.jar="%IGNITE_HOME%\libs\ignite-indexing\h2-1.3.175.jar" ^
@@ -81,9 +82,7 @@ if exist "%IGNITE_HOME%\config" goto run
  jdbc.url="jdbc:h2:tcp://localhost/%IGNITE_HOME%\examples\schema-import\demo" ^
  jdbc.user=sa ^
  outFolder="%IGNITE_HOME%\examples\src\main\java" ^
- pojo.package="org.apache.ignite.schema-import.demo" ^
+ pojo.package=org.apache.ignite.schema.import.demo ^
  pojo.constructor=true
 
 :error_finish
-
-exit
