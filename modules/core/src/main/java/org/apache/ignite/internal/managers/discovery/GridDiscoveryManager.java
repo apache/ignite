@@ -627,6 +627,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setMaximumThreadCount(metrics.getPeakThreadCount());
                 nm.setTotalStartedThreadCount(metrics.getTotalStartedThreadCount());
                 nm.setCurrentDaemonThreadCount(metrics.getDaemonThreadCount());
+                nm.setTotalNodes(1);
 
                 // Data metrics.
                 nm.setLastDataVersion(ctx.cache().lastDataVersion());
