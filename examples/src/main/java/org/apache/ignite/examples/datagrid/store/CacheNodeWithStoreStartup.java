@@ -90,28 +90,38 @@ public class CacheNodeWithStoreStartup {
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheStore<Long, Person> store;
+        cacheCfg.setCacheStoreFactory(new Factory<CacheStore<? super Long, ? super Person>>() {
+            @Override public CacheStore<? super Long, ? super Person> create() {
+                CacheStore<Long, Person> store;
 
-        switch (STORE) {
-            case DUMMY:
-                store = new CacheDummyPersonStore();
-                break;
+                switch (STORE) {
+                    case DUMMY:
+                        store = new CacheDummyPersonStore();
+                        break;
 
-            case SIMPLE_JDBC:
-                store = new CacheJdbcPersonStore();
-                break;
+                    case SIMPLE_JDBC:
+                        store = new CacheJdbcPersonStore();
+                        break;
 
-            case HIBERNATE:
-                store = new CacheHibernatePersonStore();
-                break;
+                    case HIBERNATE:
+                        store = new CacheHibernatePersonStore();
+                        break;
 
-            default:
-                store = new CacheJdbcPojoPersonStore();
-                cacheCfg.setTypeMetadata(typeMetadata());
-                break;
-        }
+                    default:
+                        if (!STORE.equals(AUTO))
+                            throw new IllegalStateException("Unexpected store configured: " + STORE);
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
+                        store = new CacheJdbcPojoPersonStore();
+                        break;
+                }
+
+                return store;
+            }
+        });
+
+        if (STORE.equals(AUTO))
+            cacheCfg.setTypeMetadata(typeMetadata());
+
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
 
