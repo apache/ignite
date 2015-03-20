@@ -752,7 +752,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             doFlush();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw GridCacheUtils.convertToCacheException(e);
         }
         finally {
             leaveBusy();
@@ -777,7 +777,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             lastFlushTime = U.currentTimeMillis();
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw U.convertException(e);
+            throw GridCacheUtils.convertToCacheException(e);
         }
         finally {
             leaveBusy();
@@ -793,7 +793,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             closeEx(cancel);
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw GridCacheUtils.convertToCacheException(e);
         }
     }
 
