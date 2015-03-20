@@ -63,7 +63,7 @@ public class GridIoManagerBenchmark {
     public static final int TEST_TOPIC = 1;
 
     /** */
-    private static final LongAdder msgCntr = new LongAdder();
+    private static final LongAdder8 msgCntr = new LongAdder8();
 
     /** */
     private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();

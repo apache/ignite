@@ -491,7 +491,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
             Arrays.asList("executing", 3, "test", 5, "task"));
 
         assertTrue(res.isFinished());
-        assertEquals(25, res.getResult());
+        assertEquals(new Integer(25), res.getResult());
     }
 
     /**

@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
-import org.jdk8.backport.LongAdder;
+import org.jdk8.backport.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,7 +54,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         X.println("Set: " + set);
 
-        final LongAdder execCnt = new LongAdder();
+        final LongAdder8 execCnt = new LongAdder8();
 
         final AtomicBoolean finish = new AtomicBoolean();
 

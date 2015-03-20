@@ -154,7 +154,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridClientCompute compute = client.compute();
 
         for (int i = 0; i < 1000; i++)
-            assertEquals("executing".length(), compute.execute(TestTask.class.getName(), "executing"));
+            assertEquals(new Integer("executing".length()), compute.execute(TestTask.class.getName(), "executing"));
 
         GridClientFactory.stop(client.id(), true);
 

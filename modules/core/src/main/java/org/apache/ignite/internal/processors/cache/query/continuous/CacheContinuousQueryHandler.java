@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -53,7 +54,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private CacheEntryEventFilter<K, V> rmtFilter;
+    private IgniteCacheEntryEventFilter<K, V> rmtFilter;
 
     /** Deployable object for filter. */
     private DeployableObject rmtFilterDep;
@@ -105,7 +106,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         String cacheName,
         Object topic,
         CacheEntryUpdatedListener<K, V> locLsnr,
-        CacheEntryEventFilter<K, V> rmtFilter,
+        IgniteCacheEntryEventFilter<K, V> rmtFilter,
         boolean internal,
         boolean notifyExisting,
         boolean oldValRequired,
@@ -424,7 +425,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             rmtFilterDep = (DeployableObject)in.readObject();
         else
-            rmtFilter = (CacheEntryEventFilter<K, V>)in.readObject();
+            rmtFilter = (IgniteCacheEntryEventFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();

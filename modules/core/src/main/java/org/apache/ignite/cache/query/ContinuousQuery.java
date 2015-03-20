@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 
 import javax.cache.event.*;
 
@@ -129,7 +130,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     private CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private CacheEntryEventFilter<K, V> rmtFilter;
+    private IgniteCacheEntryEventFilter<K, V> rmtFilter;
 
     /** Buffer size. */
     private int bufSize = DFLT_BUF_SIZE;
@@ -205,7 +206,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * @param rmtFilter Key-value filter.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventFilter<K, V> rmtFilter) {
+    public ContinuousQuery<K, V> setRemoteFilter(IgniteCacheEntryEventFilter<K, V> rmtFilter) {
         this.rmtFilter = rmtFilter;
 
         return this;
@@ -216,7 +217,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Remote filter.
      */
-    public CacheEntryEventFilter<K, V> getRemoteFilter() {
+    public IgniteCacheEntryEventFilter<K, V> getRemoteFilter() {
         return rmtFilter;
     }
 
