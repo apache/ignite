@@ -1044,6 +1044,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
 
+            if (e != null && e.deleted()) {
+                assertEquals(0, e.ttl());
+
+                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+
+                continue;
+            }
+
             if (e == null)
                 assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
             else {
