@@ -827,7 +827,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          *
          */
         private ExchangeWorker() {
-            super(cctx.gridName(), "partition-exchanger", log);
+            super(cctx.gridName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log);
         }
 
         /**

@@ -112,7 +112,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getGridName(), "grid-timeout-worker", log);
+            super(ctx.config().getGridName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
         }
 
         /** {@inheritDoc} */

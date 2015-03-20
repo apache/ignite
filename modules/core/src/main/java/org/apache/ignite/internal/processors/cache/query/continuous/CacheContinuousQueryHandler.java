@@ -202,6 +202,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     try {
                         notify = rmtFilter.evaluate(evt);
                     }
+                    catch (Exception e) {
+                        U.error(cctx.logger(CacheContinuousQueryHandler.class), "CacheEntryEventFilter failed: " + e);
+                    }
                     finally {
                         cctx.forceFlags(f);
                     }
