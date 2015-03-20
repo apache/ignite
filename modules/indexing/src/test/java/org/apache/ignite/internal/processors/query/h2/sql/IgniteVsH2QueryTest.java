@@ -476,14 +476,42 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
                 break;
             case RANDOM:
-                for (List<?> row1 : rs1)
-                    assertTrue("Actual result set has to contain row.\n" + "Result set=" + rs2 + "\n" + "Row=" + row1, 
-                        rs2.contains(row1));
+                Map<List<?>, Integer> rowsWithCnt1 = extractUniqueueRowsWithCounts(rs1);
+                Map<List<?>, Integer> rowsWithCnt2 = extractUniqueueRowsWithCounts(rs2);
+                
+                assertEquals("Uniqueue rows count has to be equal.", rowsWithCnt1.size(), rowsWithCnt2.size());
+
+                for (Map.Entry<List<?>, Integer> entry1 : rowsWithCnt1.entrySet()) {
+                    List<?> row = entry1.getKey();
+                    Integer cnt1 = entry1.getValue();
+
+                    Integer cnt2 = rowsWithCnt2.get(row);
+
+                    assertEquals("Row has different occurance number.\nRow=" + row, cnt1, cnt2);
+                }
                 
                 break;
             default: 
                 throw new IllegalStateException();
         }
+    }
+
+    /**
+     * @param rs Result set.
+     * @return Map of uniqueue rows at the result set to number of occuriances at the result set.
+     */
+    private Map<List<?>, Integer> extractUniqueueRowsWithCounts(Iterable<List<?>> rs) {
+        Map<List<?>, Integer> res = new HashMap<>();
+
+        for (List<?> row : rs) {
+            Integer cnt = res.get(row);
+            
+            if (cnt == null)
+                cnt = 0;
+            
+            res.put(row, cnt + 1);
+        }
+        return res;
     }
 
     /**
