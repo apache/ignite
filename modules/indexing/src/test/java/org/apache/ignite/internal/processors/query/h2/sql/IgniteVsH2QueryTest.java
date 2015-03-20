@@ -165,13 +165,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         for (int i = 0; i < 5; i++) {
             int id = idGen++;
 
-            Organization org = organizations.get(i % organizations.size());
-            
-            Person person = new Person(id, org, "name" + id, "lastName" + id, id * 100.0);
+            Person person = new Person(id, organizations.get(i % organizations.size()), 
+                "name" + id, "lastName" + id, id * 100.0);
 
             persons.add(person);
 
-            pCache.put(new CacheAffinityKey<>(id, org.id), person);
+            pCache.put(person.key(), person);
             
             insertInDb(person);
         }
@@ -195,11 +194,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         for (int i = 0; i < products.size() * 2; i++) {
             int id = idGen++;
 
-            Person person = persons.get(i % persons.size());
-            
-            Purchase purchase = new Purchase(id, products.get(i % products.size()), person);
+            Purchase purchase = new Purchase(id, products.get(i % products.size()), persons.get(i % persons.size()));
 
-            pCache.put(new CacheAffinityKey<>(id, person.id), purchase);
+            pCache.put(purchase.key(), purchase);
             
             insertInDb(purchase);
         }
@@ -213,9 +210,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void insertInDb(Organization org) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"part\".ORGANIZATION (id, name) values(?, ?)")) {
-            st.setInt(1, org.id);
-            st.setString(2, org.name);
+            "insert into \"part\".ORGANIZATION (_key, _val, id, name) values(?, ?, ?, ?)")) {
+            st.setObject(1, org.id);
+            st.setObject(2, org);
+            st.setObject(3, org.id);
+            st.setObject(4, org.name);
 
             st.executeUpdate();
         }
@@ -228,13 +227,15 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Person p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"part\".PERSON (id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?)")) {
-            st.setInt(1, p.id);
-            st.setString(2, p.firstName);
-            st.setString(3, p.lastName);
-            st.setInt(4, p.orgId);
-            st.setDouble(5, p.salary);
+        try(PreparedStatement st = conn.prepareStatement("insert into \"part\".PERSON " +
+            "(_key, _val, id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?, ?, ?)")) {
+            st.setObject(1, p.key());
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.firstName);
+            st.setObject(5, p.lastName);
+            st.setObject(6, p.orgId);
+            st.setObject(7, p.salary);
 
             st.executeUpdate();
         }
@@ -248,10 +249,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void insertInDb(Product p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"repl\".PRODUCT (id, name, price) values(?, ?, ?)")) {
-            st.setInt(1, p.id);
-            st.setString(2, p.name);
-            st.setInt(3, p.price);
+            "insert into \"repl\".PRODUCT (_key, _val, id, name, price) values(?, ?, ?, ?, ?)")) {
+            st.setObject(1, p.id);
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.name);
+            st.setObject(5, p.price);
 
             st.executeUpdate();
         }
@@ -265,10 +268,12 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     private void insertInDb(Purchase p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"part\".PURCHASE (id, personId, productId) values(?, ?, ?)")) {
-            st.setInt(1, p.id);
-            st.setInt(2, p.personId);
-            st.setInt(3, p.productId);
+            "insert into \"part\".PURCHASE (_key, _val, id, personId, productId) values(?, ?, ?, ?, ?)")) {
+            st.setObject(1, p.key());
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.personId);
+            st.setObject(5, p.productId);
 
             st.executeUpdate();
         }
@@ -286,23 +291,31 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         st.execute("CREATE SCHEMA \"repl\"");
 
         st.execute("create table \"part\".ORGANIZATION" +
-            "  (id int unique," +
+            "  (_key int not null," +
+            "  _val other not null," +
+            "  id int unique," +
             "  name varchar(255))");
         
         st.execute("create table \"part\".PERSON" +
-            "  (id int unique, " +
+            "  (_key other not null ," +
+            "   _val other not null ," +
+            "  id int unique, " +
             "  firstName varchar(255), " +
             "  lastName varchar(255)," +
             "  orgId int not null," +
             "  salary double )");
 
         st.execute("create table \"repl\".PRODUCT" +
-            "  (id int unique, " +
+            "  (_key int not null ," +
+            "   _val other not null ," +
+            "  id int unique, " +
             "  name varchar(255), " +
             "  price int)");
 
         st.execute("create table \"part\".PURCHASE" +
-            "  (id int unique, " +
+            "  (_key other not null ," +
+            "   _val other not null ," +
+            "  id int unique, " +
             "  personId int, " +
             "  productId int)");
 
@@ -317,6 +330,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws SQLException In case of error.
      */
     private Connection openH2Connection(boolean autocommit) throws SQLException {
+        System.setProperty("h2.serializeJavaObject", "false");
+        
         String dbName = "test";
         
         Connection conn = DriverManager.getConnection("jdbc:h2:mem:" + dbName + ";DB_CLOSE_DELAY=-1");
@@ -377,7 +392,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void compareQueryRes0(IgniteCache cache, String sql, Object[] args, Order order) throws SQLException {
-        log.info("Sql=" + sql + ", args=" + Arrays.toString(args));
+        log.info("Sql=\"" + sql + "\", args=" + Arrays.toString(args));
 
         List<List<?>> h2Res = executeH2Query(sql, args);
 
@@ -461,13 +476,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkAllDataEquals() throws Exception {
-        compareQueryRes0("select id, name from \"part\".Organization");
+        compareQueryRes0("select _key, _val, id, name from \"part\".Organization");
 
-        compareQueryRes0("select id, firstName, lastName, orgId, salary from \"part\".Person");
+        compareQueryRes0("select _key, _val, id, firstName, lastName, orgId, salary from \"part\".Person");
 
-        compareQueryRes0("select id, personId, productId from \"part\".Purchase");
+        compareQueryRes0("select _key, _val, id, personId, productId from \"part\".Purchase");
 
-        compareQueryRes0(rCache, "select id, name, price from \"repl\".Product");
+        compareQueryRes0(rCache, "select _key, _val, id, name, price from \"repl\".Product");
     }
 
     /**
@@ -482,20 +497,6 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      */
     public void testEmptyResult() throws Exception {
         compareQueryRes0("select id from \"part\".Person where 0 = 1");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSelectWithStar() throws Exception {
-        compareQueryRes0("select * from \"part\".Person");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSelectWithStar2() throws Exception {
-        compareQueryRes0("select Person.* from \"part\".Person");
     }
 
     /**
@@ -618,6 +619,24 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             orgId = org.id;
         }
 
+        /**
+         * @return Custom affinity key to guarantee that person is always collocated with organization.
+         */
+        public CacheAffinityKey<Integer> key() {
+            return new CacheAffinityKey<>(id, orgId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || o instanceof Person && id == ((Person)o).id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return "Person [firstName=" + firstName +
@@ -649,6 +668,17 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         Organization(int id, String name) {
             this.id = id;
             this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || o instanceof Organization && id == ((Organization)o).id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
         }
 
         /** {@inheritDoc} */
@@ -687,6 +717,17 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || o instanceof Product && id == ((Product)o).id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Product [id=" + id + ", name=" + name + ", price=" + price + ']';
         }
@@ -719,6 +760,24 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
             this.id = id;
             productId = product.id;
             personId = person.id;
+        }
+
+        /**
+         * @return Custom affinity key to guarantee that purchase is always collocated with person.
+         */
+        public CacheAffinityKey<Integer> key() {
+            return new CacheAffinityKey<>(id, personId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || o instanceof Purchase && id == ((Purchase)o).id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
         }
 
         /** {@inheritDoc} */
