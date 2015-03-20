@@ -1207,7 +1207,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private SegmentCheckWorker() {
-            super(ctx.gridName(), "disco-net-seg-chk-worker", log);
+            super(ctx.gridName(), "disco-net-seg-chk-worker", GridDiscoveryManager.this.log);
 
             assert hasRslvrs;
             assert segChkFreq > 0;
@@ -1284,7 +1284,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private DiscoveryWorker() {
-            super(ctx.gridName(), "disco-event-worker", log);
+            super(ctx.gridName(), "disco-event-worker", GridDiscoveryManager.this.log);
         }
 
         /**
@@ -1571,7 +1571,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private MetricsUpdater() {
-            super(ctx.gridName(), "metrics-updater", log);
+            super(ctx.gridName(), "metrics-updater", GridDiscoveryManager.this.log);
         }
 
         /** {@inheritDoc} */

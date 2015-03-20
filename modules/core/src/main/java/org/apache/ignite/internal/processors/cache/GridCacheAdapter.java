@@ -4213,7 +4213,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     *
+     * @return JCache Iterator.
      */
     private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy() {
         return F.iterator(iterator(),
