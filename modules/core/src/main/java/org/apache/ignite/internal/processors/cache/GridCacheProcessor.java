@@ -1322,10 +1322,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.addCacheContext(cacheCtx);
 
+            caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
+
             startCache(cacheCtx.cache());
             onKernalStart(cacheCtx.cache());
-
-            caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
         }
     }
 

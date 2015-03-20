@@ -29,7 +29,6 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import java.io.*;
@@ -568,7 +567,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
                 locLsnrImpl,
-                cctx.kernalContext().cache().jcache(cctx.name()));
+                log);
 
             CacheEntryEventFilter rmtFilter = new JCacheQueryRemoteFilter(
                 cfg.getCacheEntryEventFilterFactory() != null ? (CacheEntryEventFilter)cfg.getCacheEntryEventFilterFactory().create() : null,
@@ -609,23 +608,18 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         private final CacheEntryListener<K, V> impl;
 
         /** */
-        private final Cache<K, V> cache;
-
-        /** */
         private final IgniteLogger log;
 
         /**
          * @param impl Listener.
-         * @param cache Cache.
          */
-        JCacheQueryLocalListener(CacheEntryListener<K, V> impl, Cache<K, V> cache) {
+        JCacheQueryLocalListener(CacheEntryListener<K, V> impl, IgniteLogger log) {
             assert impl != null;
-            assert cache != null;
+            assert log != null;
 
             this.impl = impl;
-            this.cache = cache;
 
-            log = cache.unwrap(Ignite.class).log().getLogger(CacheContinuousQueryManager.class);
+            this.log = log;
         }
 
         /** {@inheritDoc} */

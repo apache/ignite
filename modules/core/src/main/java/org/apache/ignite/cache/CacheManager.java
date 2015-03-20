@@ -23,6 +23,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -64,6 +67,9 @@ public class CacheManager implements javax.cache.CacheManager {
     /** */
     private final GridKernalGateway kernalGateway;
 
+    /** */
+    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true); // TODO IGNITE-45.
+
     /**
      * @param uri Uri.
      * @param cachingProvider Caching provider.
@@ -79,6 +85,12 @@ public class CacheManager implements javax.cache.CacheManager {
         try {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
+
+                TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+                discoSpi.setIpFinder(IP_FINDER);
+
+                cfg.setDiscoverySpi(discoSpi);
 
                 cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
 
@@ -248,8 +260,12 @@ public class CacheManager implements javax.cache.CacheManager {
         try {
             IgniteCache<?, ?> cache = getCache0(cacheName);
 
-            if (cache != null)
+            if (cache != null) {
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+
                 cache.close();
+            }
         }
         finally {
             kernalGateway.readUnlock();
