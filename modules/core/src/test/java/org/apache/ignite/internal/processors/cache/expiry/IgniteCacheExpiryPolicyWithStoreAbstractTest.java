@@ -51,7 +51,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setExpiryPolicyFactory(new ExpiryPolicyFactory());
+        ccfg.setExpiryPolicyFactory(new TestExpiryPolicyFactory());
 
         return ccfg;
     }
@@ -219,8 +219,8 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      *
      */
-    static class ExpiryPolicyFactory implements Factory<ExpiryPolicy> {
-    /** {@inheritDoc} */
+    private static class TestExpiryPolicyFactory implements Factory<ExpiryPolicy> {
+        /** {@inheritDoc} */
         @Override public ExpiryPolicy create() {
             return new ExpiryPolicy() {
                 @Override public Duration getExpiryForCreation() {
