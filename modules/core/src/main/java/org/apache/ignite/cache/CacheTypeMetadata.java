@@ -20,12 +20,16 @@ package org.apache.ignite.cache;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Type metadata.
  */
-public class CacheTypeMetadata {
+public class CacheTypeMetadata implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Schema name in database. */
     private String dbSchema;
 
