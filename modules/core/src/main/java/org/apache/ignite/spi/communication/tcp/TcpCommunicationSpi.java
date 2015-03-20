@@ -35,7 +35,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.jdk8.backport.*;
-import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

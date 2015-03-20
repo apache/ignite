@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
-import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
