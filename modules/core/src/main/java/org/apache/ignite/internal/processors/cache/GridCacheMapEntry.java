@@ -3944,9 +3944,21 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @return {@code True} if entry is visitable.
      */
     public boolean visitable(CacheEntryPredicate[] filter) {
+        boolean rmv = false;
+
         try {
-            if (obsoleteOrDeleted() || (filter != CU.empty0() &&
-                !cctx.isAll(this, filter)))
+            synchronized (this) {
+                if (obsoleteOrDeleted())
+                    return false;
+
+                if (checkExpired()) {
+                    rmv = markObsolete0(cctx.versions().next(this.ver), true);
+
+                    return false;
+                }
+            }
+
+            if (filter != CU.empty0() && !cctx.isAll(this, filter))
                 return false;
         }
         catch (IgniteCheckedException e) {
@@ -3963,6 +3975,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 throw err;
 
             return false;
+        }
+        finally {
+            if (rmv) {
+                onMarkedObsolete();
+
+                cctx.cache().map().removeEntry(this);
+            }
         }
 
         IgniteInternalTx tx = cctx.tm().localTxx();
