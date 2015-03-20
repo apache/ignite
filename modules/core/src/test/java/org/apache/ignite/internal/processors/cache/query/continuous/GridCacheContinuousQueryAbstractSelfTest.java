@@ -25,7 +25,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -149,7 +148,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
                 try {
-                    GridCache<Object, Object> cache = ((IgniteKernal)grid(i)).cache(null);
+                    IgniteCache<Object, Object> cache = grid(i).jcache(null);
 
                     for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
                         cache.remove(entry.getKey());
@@ -157,7 +156,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                     break;
                 }
-                catch (CachePartialUpdateCheckedException e) {
+                catch (IgniteException e) {
                     if (j == 4)
                         throw new Exception("Failed to clear cache for grid: " + i, e);
 

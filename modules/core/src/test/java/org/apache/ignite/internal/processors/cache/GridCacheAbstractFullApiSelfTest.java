@@ -49,7 +49,6 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -2960,87 +2959,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.remove("key");
 
         assertNull(cache.localPeek("key", CachePeekMode.ONHEAP));
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testPeekMode() throws Exception {
-        String key = "testPeekMode";
-
-        Ignite ignite = primaryIgnite(key);
-
-        GridCache<String, Integer> cache = ((IgniteKernal)ignite).cache(null);
-
-        cache.put(key, 1);
-
-        assert cache.peek(key, F.asList(TX)) == null;
-        assert cache.peek(key, F.asList(SWAP)) == null;
-        assert cache.peek(key, F.asList(DB)) == 1;
-        assert cache.peek(key, F.asList(TX, GLOBAL)) == 1;
-
-        if (cacheMode() == LOCAL) {
-            assert cache.peek(key, F.asList(TX, NEAR_ONLY)) == 1;
-            assert cache.peek(key, F.asList(TX, PARTITIONED_ONLY)) == 1;
-        }
-
-        assert cache.peek(key, F.asList(SMART)) == 1;
-
-        assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
-
-        if (cacheMode() == LOCAL) {
-            assert cache.peek("wrongKey", F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
-            assert cache.peek("wrongKey", F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
-        }
-
-        if (txEnabled()) {
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache.replace(key, 2);
-
-                assert cache.peek(key, F.asList(GLOBAL)) == 1;
-
-                if (cacheMode() == LOCAL) {
-                    assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
-                    assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
-                }
-
-                assert cache.peek(key, F.asList(TX)) == 2;
-                assert cache.peek(key, F.asList(SMART)) == 2;
-                assert cache.peek(key, F.asList(SWAP)) == null;
-                assert cache.peek(key, F.asList(DB)) == 1;
-
-                tx.commit();
-            }
-        }
-        else
-            cache.replace(key, 2);
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertEquals((Integer)2, cache.peek(key, F.asList(NEAR_ONLY)));
-            assertEquals((Integer)2, cache.peek(key, F.asList(PARTITIONED_ONLY)));
-        }
-
-        assertNull(cache.peek(key, F.asList(TX)));
-        assertNull(cache.peek(key, F.asList(SWAP)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-
-        assertTrue(cache.evict(key));
-
-        assertNull(cache.peek(key, F.asList(SMART)));
-        assertNull(cache.peek(key, F.asList(TX, GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertNull(cache.peek(key, F.asList(TX, NEAR_ONLY)));
-            assertNull(cache.peek(key, F.asList(TX, PARTITIONED_ONLY)));
-        }
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(SMART, SWAP, DB)));
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
     }
 
     /**
