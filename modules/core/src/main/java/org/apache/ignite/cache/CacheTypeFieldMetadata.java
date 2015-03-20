@@ -19,7 +19,7 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
  * Type field metadata.

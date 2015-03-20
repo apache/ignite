@@ -20,7 +20,7 @@ package org.apache.ignite.cache;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**

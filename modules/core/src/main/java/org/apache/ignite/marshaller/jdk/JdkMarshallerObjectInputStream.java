@@ -17,7 +17,7 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
