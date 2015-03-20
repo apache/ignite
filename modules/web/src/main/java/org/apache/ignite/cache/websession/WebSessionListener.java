@@ -34,12 +34,12 @@ import static java.util.concurrent.TimeUnit.*;
 /**
  * Session listener for web sessions caching.
  */
-class IgniteWebSessionListener {
+class WebSessionListener {
     /** */
     private static final long RETRY_DELAY = 1;
 
     /** Cache. */
-    private final IgniteCache<String, IgniteWebSession> cache;
+    private final IgniteCache<String, WebSession> cache;
 
     /** Maximum retries. */
     private final int retries;
@@ -52,7 +52,7 @@ class IgniteWebSessionListener {
      * @param cache Cache.
      * @param retries Maximum retries.
      */
-    IgniteWebSessionListener(Ignite ignite, IgniteCache<String, IgniteWebSession> cache, int retries) {
+    WebSessionListener(Ignite ignite, IgniteCache<String, WebSession> cache, int retries) {
         assert ignite != null;
         assert cache != null;
 
@@ -93,7 +93,7 @@ class IgniteWebSessionListener {
         try {
             for (int i = 0; i < retries; i++) {
                 try {
-                    IgniteCache<String, IgniteWebSession> cache0;
+                    IgniteCache<String, WebSession> cache0;
 
                     if (maxInactiveInterval > 0) {
                         long ttl = maxInactiveInterval * 1000;
@@ -129,13 +129,13 @@ class IgniteWebSessionListener {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteWebSessionListener.class, this);
+        return S.toString(WebSessionListener.class, this);
     }
 
     /**
      * Multiple attributes update transformer.
      */
-    private static class AttributesProcessor implements EntryProcessor<String, IgniteWebSession, Void>, Externalizable {
+    private static class AttributesProcessor implements EntryProcessor<String, WebSession, Void>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -159,11 +159,11 @@ class IgniteWebSessionListener {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<String, IgniteWebSession> entry, Object... args) {
+        @Override public Void process(MutableEntry<String, WebSession> entry, Object... args) {
             if (!entry.exists())
                 return null;
 
-            IgniteWebSession ses = new IgniteWebSession(entry.getValue());
+            WebSession ses = new WebSession(entry.getValue());
 
             for (T2<String, Object> update : updates) {
                 String name = update.get1();

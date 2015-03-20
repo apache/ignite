@@ -5,4 +5,4 @@ This folder contains web.xml file that demonstrates how to configure any servlet
 to start a Apache Ignite node inside a Web application.
 
 For more information on available configuration properties, etc. refer to our documentation:
-http://doc.gridgain.org/latest/Web+Sessions+Caching
+http://apacheignite.readme.io/docs/web-session-clustering

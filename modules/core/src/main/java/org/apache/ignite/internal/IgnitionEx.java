@@ -81,8 +81,8 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
- * <li>{@code GridCommandLineStartup}</li>
- * <li>{@code GridServletStartup}</li>
+ * <li>{@code CommandLineStartup}</li>
+ * <li>{@code ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use

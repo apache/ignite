@@ -38,7 +38,7 @@ import java.util.*;
  * <pre name="code" class="xml">
  * &lt;servlet&gt;
  *     &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
- *     &lt;servlet-class&gt;org.apache.ignite.startup.servlet.IgniteServletStartup&lt;/servlet-class&gt;
+ *     &lt;servlet-class&gt;org.apache.ignite.startup.servlet.ServletStartup&lt;/servlet-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *         &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
@@ -69,7 +69,7 @@ import java.util.*;
  *         <pre name="code" class="xml">
  *         &lt;servlet&gt;
  *             &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
- *             &lt;servlet-class&gt;org.apache.ignite.startup.servlet.IgniteServletStartup&lt;/servlet-class&gt;
+ *             &lt;servlet-class&gt;org.apache.ignite.startup.servlet.ServletStartup&lt;/servlet-class&gt;
  *             &lt;init-param&gt;
  *                 &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *                 &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
@@ -97,7 +97,7 @@ import java.util.*;
  * ServletHttpContext ctx = (ServletHttpContext)service.getContext("/");
  *
  * ServletHolder servlet = ctx.addServlet("Ignite", "/IgniteStartup",
- *      "org.apache.ignite.startup.servlet.IgniteServletStartup");
+ *      "org.apache.ignite.startup.servlet.ServletStartup");
  *
  * servlet.setInitParameter("cfgFilePath", "config/default-config.xml");
  *
@@ -108,7 +108,7 @@ import java.util.*;
  * service.start();
  * </pre>
  */
-public class IgniteServletStartup extends HttpServlet {
+public class ServletStartup extends HttpServlet {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -182,6 +182,6 @@ public class IgniteServletStartup extends HttpServlet {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteServletStartup.class, this);
+        return S.toString(ServletStartup.class, this);
     }
 }
