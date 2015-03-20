@@ -52,6 +52,6 @@ setIgniteHome
  jdbc.driver.class=org.h2.Driver \
  jdbc.url="jdbc:h2:tcp://localhost/${IGNITE_HOME}/examples/schema-import/demo" \
  jdbc.user=sa \
- outFolder="${IGNITE_HOME}/examples/src/main/java" \
- pojo.package=org.apache.ignite.schema.import.demo \
+ out.folder="${IGNITE_HOME}/examples/src/main/java" \
+ pojo.package=org.apache.ignite.examples.schema \
  pojo.constructor=true
