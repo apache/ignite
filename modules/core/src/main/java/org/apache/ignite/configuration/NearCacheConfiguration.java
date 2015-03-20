@@ -35,9 +35,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
-    /** Near enabled flag. */
-    private boolean nearEnabled;
-
     /** Near cache eviction policy. */
     private CacheEvictionPolicy<K, V> nearEvictPlc;
 
@@ -58,7 +55,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         super(ccfg);
 
         name = ccfg.getName();
-        nearEnabled = ccfg.isNearEnabled();
         nearEvictPlc = ccfg.getNearEvictionPolicy();
         nearStartSize = ccfg.getNearStartSize();
     }
@@ -79,24 +75,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setName(String name) {
         this.name = name;
-    }
-
-    /**
-     * Gets near enabled flag.
-     *
-     * @return Near enabled flag.
-     */
-    public boolean isNearEnabled() {
-        return nearEnabled;
-    }
-
-    /**
-     * Sets near enabled flag.
-     *
-     * @param nearEnabled Near enabled flag.
-     */
-    public void setNearEnabled(boolean nearEnabled) {
-        this.nearEnabled = nearEnabled;
     }
 
     /**

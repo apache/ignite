@@ -646,7 +646,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                         onDone(err);
 
-                        throw err;
+                        return;
                     }
                 }
                 else if (conflictPutVals != null) {
