@@ -33,9 +33,6 @@ import java.util.*;
  * Cache affinity manager.
  */
 public class GridCacheAffinityManager extends GridCacheManagerAdapter {
-    /** Factor for maximum number of attempts to calculate all partition affinity keys. */
-    private static final int MAX_PARTITION_KEY_ATTEMPT_RATIO = 10;
-
     /** */
     private static final AffinityTopologyVersion TOP_FIRST = new AffinityTopologyVersion(1);
 
@@ -165,7 +162,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @return Partition.
      */
-    public <T> int partition(Object key) {
+    public int partition(Object key) {
         return aff.partition(key);
     }
 
