@@ -1020,7 +1020,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * {@link GetField} implementation.
      */
     private static class GetFieldImpl extends GetField {
-        /** Field info map. */
+        /** Field info. */
         private final OptimizedClassDescriptor.ClassFields fieldInfo;
 
         /** Values. */
