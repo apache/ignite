@@ -34,13 +34,6 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
     protected IgniteCache<Object, Object> cache;
 
     /**
-     * Each benchmark must determine which cache will be used.
-     *
-     * @return GridCache Cache to use.
-     */
-    protected abstract IgniteCache<Object, Object> cache();
-
-    /**
      * Each benchmark must determine key range (from {@code 0} to this number) for fill.
      *
      * @return GridCache Cache to use.
@@ -51,7 +44,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        cache = cache();
+        cache = ignite().jcache(args.cacheName());
 
         CacheConfiguration cc = cache.getConfiguration(CacheConfiguration.class);
 
@@ -123,6 +116,8 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
 
             U.closeQuiet(stmt);
         }
+
+        ignite().destroyCache(cache.getName());
 
         super.tearDown();
     }

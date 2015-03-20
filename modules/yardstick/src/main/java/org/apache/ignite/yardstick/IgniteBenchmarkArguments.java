@@ -94,6 +94,10 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
     private boolean writeBehind;
 
+    /** */
+    @Parameter(names = {"-cn", "--cacheName"}, description = "Cache name")
+    private String cacheName;
+
     /**
      * @return Transaction concurrency.
      */
@@ -221,10 +225,17 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
-        return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-dm=" + distroMode +
+        return "-cn=" + cacheName + "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-dm=" + distroMode +
             (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
     }
 

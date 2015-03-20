@@ -50,17 +50,6 @@ public class IgniteNode implements BenchmarkServer {
         // No-op.
     }
 
-    /** */
-    public IgniteNode(boolean clientMode) {
-        this.clientMode = clientMode;
-    }
-
-    /** */
-    public IgniteNode(boolean clientMode, Ignite ignite) {
-        this.clientMode = clientMode;
-        this.ignite = ignite;
-    }
-
     /** {@inheritDoc} */
     @Override public void start(BenchmarkConfiguration cfg) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
@@ -71,48 +60,8 @@ public class IgniteNode implements BenchmarkServer {
 
         assert c != null;
 
-        for (CacheConfiguration cc : c.getCacheConfiguration()) {
-            // IgniteNode can not run in CLIENT_ONLY mode,
-            // except the case when it's used inside IgniteAbstractBenchmark.
-            CacheDistributionMode distroMode = args.distributionMode() == CLIENT_ONLY && !clientMode ?
-                PARTITIONED_ONLY : args.distributionMode();
-
-            if (distroMode == CLIENT_ONLY)
-                c.setClientMode(true);
-
-            cc.setWriteSynchronizationMode(args.syncMode());
-
-            if (args.orderMode() != null)
-                cc.setAtomicWriteOrderMode(args.orderMode());
-
-            cc.setBackups(args.backups());
-
-            if (args.restTcpPort() != 0) {
-                ConnectorConfiguration ccc = new ConnectorConfiguration();
-
-                ccc.setPort(args.restTcpPort());
-
-                if (args.restTcpHost() != null)
-                    ccc.setHost(args.restTcpHost());
-
-                c.setConnectorConfiguration(ccc);
-            }
-
-            if (args.isOffHeap()) {
-                cc.setOffHeapMaxMemory(0);
-
-                if (args.isOffheapValues())
-                    cc.setMemoryMode(OFFHEAP_VALUES);
-                else
-                    cc.setEvictionPolicy(new CacheLruEvictionPolicy(50000));
-            }
-
-            cc.setReadThrough(args.isStoreEnabled());
-
-            cc.setWriteThrough(args.isStoreEnabled());
-
-            cc.setWriteBehindEnabled(args.isWriteBehind());
-        }
+        // Server node doesn't contains cache configuration. Driver will create dynamic cache.
+        c.setCacheConfiguration();
 
         TransactionConfiguration tc = c.getTransactionConfiguration();
 
@@ -134,7 +83,7 @@ public class IgniteNode implements BenchmarkServer {
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    private static IgniteConfiguration loadConfiguration(String springCfgPath) throws Exception {
+    protected static IgniteConfiguration loadConfiguration(String springCfgPath) throws Exception {
         URL url;
 
         try {

@@ -32,13 +32,14 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        cache = cache();
+        cache = ignite().jcache(args.cacheName());
     }
 
-    /**
-     * Each benchmark must determine which cache will be used.
-     *
-     * @return GridCache Cache to use.
-     */
-    protected abstract IgniteCache<Integer, Object> cache();
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        if (cache != null)
+            ignite().destroyCache(cache.getName());
+
+        super.tearDown();
+    }
 }

@@ -35,13 +35,8 @@ public class IgniteJdbcStoreGetBenchmark extends IgniteJdbcStoreAbstractBenchmar
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int id = nextRandom(args.range());
 
-        cache().get(new SampleKey(id));
+        cache.get(new SampleKey(id));
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Object, Object> cache() {
-        return ignite().jcache("atomic");
     }
 }

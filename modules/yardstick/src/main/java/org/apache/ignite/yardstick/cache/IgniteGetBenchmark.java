@@ -17,8 +17,6 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-
 import java.util.*;
 
 /**
@@ -32,10 +30,5 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark {
         cache.get(key);
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("atomic");
     }
 }
