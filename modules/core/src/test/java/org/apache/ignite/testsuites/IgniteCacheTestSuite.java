@@ -407,6 +407,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         // TODO: IGNITE-477.
         // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
+        suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
+
         return suite;
     }
 }

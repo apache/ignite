@@ -74,6 +74,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
+        cacheCfg.setCacheMode(CacheMode.REPLICATED);
+
         cacheCfg.setName(STATIC_CACHE_NAME);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -298,6 +300,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         final IgniteKernal kernal = (IgniteKernal)grid(0);
 
         CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         ccfg.setName(DYNAMIC_CACHE_NAME);
@@ -317,7 +320,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 1; g++) {
                 assertEquals("1", grid(g).jcache(DYNAMIC_CACHE_NAME).get("1"));
 
-                assertEquals(nodeCount() + 1, grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(0).size());
+                Collection<ClusterNode> nodes = grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(0);
+
+                assertEquals(nodeCount() + 1, nodes.size());
             }
 
             // Undeploy cache.
@@ -570,6 +575,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(DYNAMIC_CACHE_NAME);
+        cfg.setCacheMode(CacheMode.REPLICATED);
 
         final CountDownLatch[] starts = new CountDownLatch[nodeCount()];
         final CountDownLatch[] stops = new CountDownLatch[nodeCount()];
