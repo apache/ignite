@@ -753,6 +753,12 @@ public class SchemaImportApp extends Application {
      * @return {@code true} if class name is valid.
      */
     private boolean checkClassName(PojoDescriptor pojo, String newVal, boolean key) {
+        if (newVal.trim().isEmpty()) {
+            MessageBox.warningDialog(owner, (key ? "Key" : "Value") + " class name must be non empty!");
+
+            return false;
+        }
+
         if (key) {
             if (newVal.equals(pojo.valueClassName())) {
                 MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
@@ -800,7 +806,7 @@ public class SchemaImportApp extends Application {
         TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class Name", "valueClassName", "Value class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
-                    boolean valid = checkClassName(rowVal, newVal, true);
+                    boolean valid = checkClassName(rowVal, newVal, false);
 
                     if (valid)
                         rowVal.valueClassName(newVal);
@@ -831,6 +837,12 @@ public class SchemaImportApp extends Application {
         TableColumn<PojoField, String> javaNameCol = textColumn("Java Name", "javaName", "Field name in POJO class",
             new TextColumnValidator<PojoField>() {
                 @Override public boolean valid(PojoField rowVal, String newVal) {
+                    if (newVal.trim().isEmpty()) {
+                        MessageBox.warningDialog(owner, "Java name must be non empty!");
+
+                        return false;
+                    }
+
                     for (PojoField field : curPojo.fields())
                         if (rowVal != field && newVal.equals(field.javaName())) {
                             MessageBox.warningDialog(owner, "Java name must be unique!");
