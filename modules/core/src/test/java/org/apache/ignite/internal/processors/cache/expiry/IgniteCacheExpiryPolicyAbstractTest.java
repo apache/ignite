@@ -49,16 +49,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbstractTest {
     /** */
+    private static final long TTL_FOR_EXPIRE = 500L;
+
+    /** */
     private Factory<? extends ExpiryPolicy> factory;
 
     /** */
     private boolean nearCache;
 
     /** */
-    private Integer lastKey = 0;
+    private boolean disableEagerTtl;
 
     /** */
-    private static final long TTL_FOR_EXPIRE = 500L;
+    private Integer lastKey = 0;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -70,6 +73,22 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         stopAllGrids();
 
         storeMap.clear();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+
+        if (nearCache && gridName.equals(getTestGridName(0)))
+            cfg.setDistributionMode(NEAR_PARTITIONED);
+
+        cfg.setExpiryPolicyFactory(factory);
+
+        if (disableEagerTtl)
+            cfg.setEagerTtl(false);
+
+        return cfg;
     }
 
     /**
@@ -143,6 +162,33 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             zeroOnAccess(key);
         }
+
+        IgniteCache<Integer, Object> cache = jcache(0);
+
+        Integer key = primaryKey(cache);
+
+        IgniteCache<Integer, Object> cache0 = cache.withExpiryPolicy(new TestPolicy(60_000L, 60_000L, 60_000L));
+
+        cache0.put(key, 1);
+
+        cache.get(key); // Access using get.
+
+        assertFalse(cache.iterator().hasNext());
+
+        cache0.put(key, 1);
+
+        assertNotNull(cache.iterator().next()); // Access using iterator.
+
+        assertFalse(cache.iterator().hasNext());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccessEagerTtlDisabled() throws Exception {
+        disableEagerTtl = true;
+
+        testZeroOnAccess();
     }
 
     /**
@@ -157,6 +203,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
 
         waitExpired(F.asList(key));
+
+        assertFalse(cache.iterator().hasNext());
     }
 
     /**
@@ -1028,18 +1076,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         assertTrue(found);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        if (nearCache && gridName.equals(getTestGridName(0)))
-            cfg.setDistributionMode(NEAR_PARTITIONED);
-
-        cfg.setExpiryPolicyFactory(factory);
-
-        return cfg;
     }
 
     /**
