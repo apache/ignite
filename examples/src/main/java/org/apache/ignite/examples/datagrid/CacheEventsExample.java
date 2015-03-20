@@ -30,13 +30,13 @@ import static org.apache.ignite.events.EventType.*;
 
 /**
  * This examples demonstrates events API. Note that ignite events are disabled by default and
- * must be specifically enabled, just like in {@code examples/config/example-compute.xml} file.
+ * must be specifically enabled, just like in {@code examples/config/example-ignite.xml} file.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-compute.xml} configuration.
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheEventsExample {
     /** Cache name. */
@@ -49,7 +49,7 @@ public class CacheEventsExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException, InterruptedException {
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
@@ -83,7 +83,7 @@ public class CacheEventsExample {
                 };
 
                 // Subscribe to specified cache events on all nodes that have cache running.
-                // Cache events are explicitly enabled in examples/config/example-compute.xml file.
+                // Cache events are explicitly enabled in examples/config/example-ignite.xml file.
                 ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
                     EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 

@@ -543,8 +543,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                sysCaches.add(igfsCfg.getMetaCacheName());
-                sysCaches.add(igfsCfg.getDataCacheName());
+                sysCaches.add(maskNull(igfsCfg.getMetaCacheName()));
+                sysCaches.add(maskNull(igfsCfg.getDataCacheName()));
             }
         }
 
@@ -563,6 +563,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
 
         for (int i = 0; i < cfgs.length; i++) {
+            checkSerializable(cfgs[i]);
+
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
             CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
@@ -598,7 +600,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.getNearConfiguration() != null,
                 cfg.getCacheMode() == LOCAL);
 
-            if (sysCaches.contains(cfg.getName()))
+            if (sysCaches.contains(maskNull(cfg.getName())))
                 stopSeq.addLast(cfg.getName());
             else
                 stopSeq.addFirst(cfg.getName());
@@ -972,7 +974,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         jta.createTmLookup(cfg);
 
         // Skip suggestions for system caches.
-        if (!sysCaches.contains(cfg.getName()))
+        if (!sysCaches.contains(maskNull(cfg.getName())))
             suggestOptimizations(cfg, cfgStore != null);
 
         Collection<Object> toPrepare = new ArrayList<>();
@@ -2163,8 +2165,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
 
-        if (sysCaches.contains(name))
-            throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
+        if (sysCaches.contains(maskNull(name)))
+            throw new IllegalStateException("Failed to get cache because it is a system cache: " + name);
 
         try {
             String masked = maskNull(name);
@@ -2277,7 +2279,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if specified cache is system, {@code false} otherwise.
      */
     public boolean systemCache(@Nullable String name) {
-        return sysCaches.contains(name);
+        return sysCaches.contains(maskNull(name));
     }
 
     /** {@inheritDoc} */
@@ -2416,11 +2418,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param val Object to check.
      */
-    private void checkSerializable(Object val) throws IgniteCheckedException {
+    private void checkSerializable(CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)
             return;
 
-        marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());
+        try {
+            marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to validate cache configuration " +
+                "(make sure all objects in cache configuration are serializable): " + val.getName(), e);
+        }
     }
 
     /**

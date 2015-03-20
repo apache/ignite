@@ -70,9 +70,9 @@ fi
 
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp
+        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
         ;;
    *)
-        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp
+        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
         ;;
 esac

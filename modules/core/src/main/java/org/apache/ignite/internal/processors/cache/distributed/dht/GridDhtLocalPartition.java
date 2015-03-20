@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
-import org.jdk8.backport.LongAdder;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -86,7 +85,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Public size counter. */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
     private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;

@@ -43,7 +43,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder txCnt = new LongAdder();
+    private static LongAdder8 txCnt = new LongAdder8();
 
     /** Finish flag. */
     private static volatile boolean finish;

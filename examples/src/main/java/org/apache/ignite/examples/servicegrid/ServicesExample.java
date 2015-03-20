@@ -31,7 +31,7 @@ import java.util.*;
  * be that cluster-singleton, or per-node-singleton, etc...
  * <p>
  * To start remote nodes, you must run {@link ExampleNodeStartup} in another JVM
- * which will start node with {@code examples/config/example-compute.xml} configuration.
+ * which will start node with {@code examples/config/example-ignite.xml} configuration.
  * <p>
  * NOTE:<br/>
  * Starting {@code ignite.sh} directly will not work, as distributed services
@@ -45,7 +45,7 @@ public class ServicesExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             ClusterGroup rmts = ignite.cluster().forRemotes();
 
             if (rmts.nodes().isEmpty()) {

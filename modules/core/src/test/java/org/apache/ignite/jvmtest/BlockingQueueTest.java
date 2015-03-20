@@ -106,7 +106,7 @@ public class BlockingQueueTest {
 
         X.println(">>> Starting test for: " + testName);
 
-        final LongAdder adder = new LongAdder();
+        final LongAdder8 adder = new LongAdder8();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -74,7 +74,6 @@
                     <property name="backups" value="1"/>
                     <property name="nearConfiguration">
                         <bean class="org.apache.ignite.configuration.NearCacheConfiguration">
-                            <property name="nearEnabled" value="true"/>
                         </bean>
                     </property>
                 </bean>

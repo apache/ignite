@@ -108,6 +108,55 @@ public class SchemaImportApp extends Application {
     };
 
     /** */
+    private static final String PREF_WINDOW_X = "window.x";
+    /** */
+    private static final String PREF_WINDOW_Y = "window.y";
+    /** */
+    private static final String PREF_WINDOW_WIDTH = "window.width";
+    /** */
+    private static final String PREF_WINDOW_HEIGHT = "window.height";
+
+    /** */
+    private static final String PREF_JDBC_DB_PRESET = "jdbc.db.preset";
+    /** */
+    private static final String PREF_JDBC_DRIVER_JAR = "jdbc.driver.jar";
+    /** */
+    private static final String PREF_JDBC_DRIVER_CLASS = "jdbc.driver.class";
+    /** */
+    private static final String PREF_JDBC_URL = "jdbc.url";
+    /** */
+    private static final String PREF_JDBC_USER = "jdbc.user";
+
+    /** */
+    private static final String PREF_OUT_FOLDER = "out.folder";
+
+    /** */
+    private static final String PREF_POJO_PACKAGE = "pojo.package";
+    /** */
+    private static final String PREF_POJO_INCLUDE = "pojo.include";
+    /** */
+    private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
+
+    /** */
+    private static final String PREF_XML_SINGLE = "xml.single";
+
+    /** */
+    private static final String PREF_NAMING_PATTERN = "naming.pattern";
+    /** */
+    private static final String PREF_NAMING_REPLACE = "naming.replace";
+
+    /** */
+    private static final String[] PREFS = {
+        PREF_WINDOW_X, PREF_WINDOW_Y, PREF_WINDOW_WIDTH, PREF_WINDOW_HEIGHT,
+        PREF_JDBC_DB_PRESET, PREF_JDBC_DRIVER_JAR, PREF_JDBC_DRIVER_CLASS, PREF_JDBC_URL, PREF_JDBC_USER,
+        PREF_OUT_FOLDER,
+        PREF_POJO_PACKAGE, PREF_POJO_INCLUDE, PREF_POJO_CONSTRUCTOR,
+        PREF_XML_SINGLE,
+        PREF_NAMING_PATTERN, PREF_NAMING_REPLACE
+    };
+
+
+    /** */
     private Stage owner;
 
     /** */
@@ -429,13 +478,13 @@ public class SchemaImportApp extends Application {
                         XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
                             askOverwrite);
 
-                    PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
+                    CodeGenerator.pojos(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                 }
 
                 if (singleXml)
                     XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
-                SnippetGenerator.generate(all, pkg, includeKeys, new File(outFolder, "Ignite.snippet"), askOverwrite);
+                CodeGenerator.snippets(all, pkg, includeKeys, outFolder, askOverwrite);
 
                 perceptualDelay(started);
 
@@ -753,6 +802,12 @@ public class SchemaImportApp extends Application {
      * @return {@code true} if class name is valid.
      */
     private boolean checkClassName(PojoDescriptor pojo, String newVal, boolean key) {
+        if (newVal.trim().isEmpty()) {
+            MessageBox.warningDialog(owner, (key ? "Key" : "Value") + " class name must be non empty!");
+
+            return false;
+        }
+
         if (key) {
             if (newVal.equals(pojo.valueClassName())) {
                 MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
@@ -800,7 +855,7 @@ public class SchemaImportApp extends Application {
         TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class Name", "valueClassName", "Value class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
-                    boolean valid = checkClassName(rowVal, newVal, true);
+                    boolean valid = checkClassName(rowVal, newVal, false);
 
                     if (valid)
                         rowVal.valueClassName(newVal);
@@ -831,6 +886,12 @@ public class SchemaImportApp extends Application {
         TableColumn<PojoField, String> javaNameCol = textColumn("Java Name", "javaName", "Field name in POJO class",
             new TextColumnValidator<PojoField>() {
                 @Override public boolean valid(PojoField rowVal, String newVal) {
+                    if (newVal.trim().isEmpty()) {
+                        MessageBox.warningDialog(owner, "Java name must be non empty!");
+
+                        return false;
+                    }
+
                     for (PojoField field : curPojo.fields())
                         if (rowVal != field && newVal.equals(field.javaName())) {
                             MessageBox.warningDialog(owner, "Java name must be unique!");
@@ -1247,6 +1308,19 @@ public class SchemaImportApp extends Application {
         prefs.put(key, String.valueOf(val));
     }
 
+    /**
+     * Override parameter in preferences.
+     *
+     * @param key Parameter name in preferences.
+     * @param val Value specified in application parameters.
+     */
+    private void overrideParam(String key, String val) {
+        String param = key + "=";
+
+        if (val.startsWith(param))
+            prefs.setProperty(key, val.substring(param.length()));
+    }
+
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
@@ -1258,6 +1332,11 @@ public class SchemaImportApp extends Application {
             catch (IOException ignore) {
                 // No-op.
             }
+
+        // Override params.
+        for (String arg : getParameters().getRaw())
+            for (String pref : PREFS)
+                overrideParam(pref,  arg);
 
         // Restore presets.
         for (Preset preset : presets) {
@@ -1297,11 +1376,11 @@ public class SchemaImportApp extends Application {
         prev();
 
         // Restore window pos and size.
-        if (prefs.getProperty("window.x") != null) {
-            int x = getIntProp("window.x", 100);
-            int y = getIntProp("window.y", 100);
-            int w = getIntProp("window.width", 650);
-            int h = getIntProp("window.height", 650);
+        if (prefs.getProperty(PREF_WINDOW_X) != null) {
+            int x = getIntProp(PREF_WINDOW_X, 100);
+            int y = getIntProp(PREF_WINDOW_Y, 100);
+            int w = getIntProp(PREF_WINDOW_WIDTH, 650);
+            int h = getIntProp(PREF_WINDOW_HEIGHT, 650);
 
             // Ensure that window fit any available screen.
             if (!Screen.getScreensForRectangle(x, y, w, h).isEmpty()) {
@@ -1321,23 +1400,23 @@ public class SchemaImportApp extends Application {
         String userHome = System.getProperty("user.home").replace('\\', '/');
 
         // Restore connection pane settings.
-        rdbmsCb.getSelectionModel().select(getIntProp("jdbc.db.preset", 0));
-        jdbcDrvJarTf.setText(getStringProp("jdbc.driver.jar", "h2.jar"));
-        jdbcDrvClsTf.setText(getStringProp("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(getStringProp("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
-        userTf.setText(getStringProp("jdbc.user", "sa"));
+        rdbmsCb.getSelectionModel().select(getIntProp(PREF_JDBC_DB_PRESET, 0));
+        jdbcDrvJarTf.setText(getStringProp(PREF_JDBC_DRIVER_JAR, "h2.jar"));
+        jdbcDrvClsTf.setText(getStringProp(PREF_JDBC_DRIVER_CLASS, "org.h2.Driver"));
+        jdbcUrlTf.setText(getStringProp(PREF_JDBC_URL, "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
+        userTf.setText(getStringProp(PREF_JDBC_USER, "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(getStringProp("out.folder", userHome + "/ignite-schema-import/out"));
+        outFolderTf.setText(getStringProp(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
 
-        pkgTf.setText(getStringProp("pojo.package", "org.apache.ignite"));
-        pojoIncludeKeysCh.setSelected(getBoolProp("pojo.include", true));
-        pojoConstructorCh.setSelected(getBoolProp("pojo.constructor", false));
+        pkgTf.setText(getStringProp(PREF_POJO_PACKAGE, "org.apache.ignite"));
+        pojoIncludeKeysCh.setSelected(getBoolProp(PREF_POJO_INCLUDE, true));
+        pojoConstructorCh.setSelected(getBoolProp(PREF_POJO_CONSTRUCTOR, false));
 
-        xmlSingleFileCh.setSelected(getBoolProp("xml.single", true));
+        xmlSingleFileCh.setSelected(getBoolProp(PREF_XML_SINGLE, true));
 
-        regexTf.setText(getStringProp("naming.pattern", "(\\w+)"));
-        replaceTf.setText(getStringProp("naming.replace", "$1_SomeText"));
+        regexTf.setText(getStringProp(PREF_NAMING_PATTERN, "(\\w+)"));
+        replaceTf.setText(getStringProp(PREF_NAMING_REPLACE, "$1_SomeText"));
 
         primaryStage.show();
     }
@@ -1380,29 +1459,29 @@ public class SchemaImportApp extends Application {
     /** {@inheritDoc} */
     @Override public void stop() throws Exception {
         // Save window pos and size.
-        setIntProp("window.x", (int)owner.getX());
-        setIntProp("window.y", (int)owner.getY());
-        setIntProp("window.width", (int)owner.getWidth());
-        setIntProp("window.height", (int)owner.getHeight());
+        setIntProp(PREF_WINDOW_X, (int)owner.getX());
+        setIntProp(PREF_WINDOW_Y, (int)owner.getY());
+        setIntProp(PREF_WINDOW_WIDTH, (int)owner.getWidth());
+        setIntProp(PREF_WINDOW_HEIGHT, (int)owner.getHeight());
 
         // Save connection pane settings.
-        setIntProp("jdbc.db.preset", rdbmsCb.getSelectionModel().getSelectedIndex());
-        setStringProp("jdbc.driver.jar", jdbcDrvJarTf.getText());
-        setStringProp("jdbc.driver.class", jdbcDrvClsTf.getText());
-        setStringProp("jdbc.url", jdbcUrlTf.getText());
-        setStringProp("jdbc.user", userTf.getText());
+        setIntProp(PREF_JDBC_DB_PRESET, rdbmsCb.getSelectionModel().getSelectedIndex());
+        setStringProp(PREF_JDBC_DRIVER_JAR, jdbcDrvJarTf.getText());
+        setStringProp(PREF_JDBC_DRIVER_CLASS, jdbcDrvClsTf.getText());
+        setStringProp(PREF_JDBC_URL, jdbcUrlTf.getText());
+        setStringProp(PREF_JDBC_USER, userTf.getText());
 
         // Save generation pane settings.
-        setStringProp("out.folder", outFolderTf.getText());
+        setStringProp(PREF_OUT_FOLDER, outFolderTf.getText());
 
-        setStringProp("pojo.package", pkgTf.getText());
-        setBoolProp("pojo.include", pojoIncludeKeysCh.isSelected());
-        setBoolProp("pojo.constructor", pojoConstructorCh.isSelected());
+        setStringProp(PREF_POJO_PACKAGE, pkgTf.getText());
+        setBoolProp(PREF_POJO_INCLUDE, pojoIncludeKeysCh.isSelected());
+        setBoolProp(PREF_POJO_CONSTRUCTOR, pojoConstructorCh.isSelected());
 
-        setBoolProp("xml.single", xmlSingleFileCh.isSelected());
+        setBoolProp(PREF_XML_SINGLE, xmlSingleFileCh.isSelected());
 
-        setStringProp("naming.pattern", regexTf.getText());
-        setStringProp("naming.replace", replaceTf.getText());
+        setStringProp(PREF_NAMING_PATTERN, regexTf.getText());
+        setStringProp(PREF_NAMING_REPLACE, replaceTf.getText());
 
         savePreferences();
     }

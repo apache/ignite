@@ -162,7 +162,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.2</version>
                 <executions>
                     <execution>
                         <goals>
@@ -214,7 +213,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.apache.ignite:org.jdk8.backport:org.pcollections:com.romix.scala</argument>
+                                <argument>org.apache.ignite:org.jdk8.backport</argument>
                             </arguments>
                         </configuration>
                     </execution>

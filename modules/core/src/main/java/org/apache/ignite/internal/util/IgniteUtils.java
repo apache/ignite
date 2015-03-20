@@ -31,7 +31,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
@@ -6991,28 +6990,6 @@ public abstract class IgniteUtils {
      */
     public static GridCacheAttributes[] cacheAttributes(ClusterNode n) {
         return n.attribute(ATTR_CACHE);
-    }
-
-    /**
-     * Checks if given node has specified streamer started.
-     *
-     * @param n Node to check.
-     * @param streamerName Streamer name to check.
-     * @return {@code True} if given node has specified streamer started.
-     */
-    public static boolean hasStreamer(ClusterNode n, @Nullable String streamerName) {
-        assert n != null;
-
-        GridStreamerAttributes[] attrs = n.attribute(ATTR_STREAMER);
-
-        if (attrs != null) {
-            for (GridStreamerAttributes attr : attrs) {
-                if (F.eq(streamerName, attr.name()))
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     /**

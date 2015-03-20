@@ -21,12 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.h2.tools.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.integration.*;
 import java.io.*;
 import java.sql.*;
 

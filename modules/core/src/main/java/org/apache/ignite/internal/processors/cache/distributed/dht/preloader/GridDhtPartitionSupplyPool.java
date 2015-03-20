@@ -310,7 +310,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                             GridCacheEntryInfo info = e.info();
 
-                            if (info != null && !(info.key() instanceof GridPartitionLockKey) && !info.isNew()) {
+                            if (info != null && !info.isNew()) {
                                 if (preloadPred == null || preloadPred.apply(info))
                                     s.addEntry(part, info, cctx);
                                 else if (log.isDebugEnabled())

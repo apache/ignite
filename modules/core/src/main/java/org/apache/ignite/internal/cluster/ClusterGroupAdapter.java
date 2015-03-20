@@ -544,11 +544,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forStreamer(@Nullable String streamerName, @Nullable String... streamerNames) {
-        return forPredicate(new StreamersFilter(streamerName, streamerNames));
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
@@ -719,41 +714,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 return true;
 
             return false;
-        }
-    }
-
-    /**
-     */
-    private static class StreamersFilter implements IgnitePredicate<ClusterNode> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Streamer name. */
-        private final String streamerName;
-
-        /** Streamer names. */
-        private final String[] streamerNames;
-
-        /**
-         * @param streamerName Streamer name.
-         * @param streamerNames Streamer names.
-         */
-        private StreamersFilter(@Nullable String streamerName, @Nullable String[] streamerNames) {
-            this.streamerName = streamerName;
-            this.streamerNames = streamerNames;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode n) {
-            if (!U.hasStreamer(n, streamerName))
-                 return false;
-
-            if (!F.isEmpty(streamerNames))
-                for (String sn : streamerNames)
-                    if (!U.hasStreamer(n, sn))
-                        return false;
-
-            return true;
         }
     }
 

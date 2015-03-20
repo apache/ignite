@@ -48,7 +48,6 @@ import org.apache.ignite.spi.indexing.noop.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -82,8 +81,8 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
- * <li>{@code GridCommandLineStartup}</li>
- * <li>{@code GridServletStartup}</li>
+ * <li>{@code CommandLineStartup}</li>
+ * <li>{@code ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -1650,17 +1649,6 @@ public class IgnitionEx {
                     clone[i] = new FileSystemConfiguration(igfsCfgs[i]);
 
                 myCfg.setFileSystemConfiguration(clone);
-            }
-
-            StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();
-
-            if (streamerCfgs != null) {
-                StreamerConfiguration[] clone = streamerCfgs.clone();
-
-                for (int i = 0; i < streamerCfgs.length; i++)
-                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
-
-                myCfg.setStreamerConfiguration(clone);
             }
 
             initializeDefaultSpi(myCfg);

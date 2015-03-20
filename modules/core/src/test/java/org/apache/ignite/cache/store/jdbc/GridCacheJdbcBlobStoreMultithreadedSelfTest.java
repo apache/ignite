@@ -245,8 +245,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             CacheStore store = cctx.store().configuredStore();
 
-            long opened = ((LongAdder)U.field(store, "opened")).sum();
-            long closed = ((LongAdder)U.field(store, "closed")).sum();
+            long opened = ((LongAdder8)U.field(store, "opened")).sum();
+            long closed = ((LongAdder8)U.field(store, "closed")).sum();
 
             assert opened > 0;
             assert closed > 0;

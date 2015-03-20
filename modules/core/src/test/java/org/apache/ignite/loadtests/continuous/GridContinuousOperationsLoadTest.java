@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -113,7 +114,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setRemoteFilter(new CacheEntryEventFilter<Object,Object>() {
+                    qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Object,Object>() {
                         @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
                             if (filterSleepMs > 0) {
                                 try {

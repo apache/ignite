@@ -18,9 +18,7 @@
 package org.apache.ignite.examples.datagrid.starschema;
 
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.annotations.*;
 
 /**
  * Represents a purchase record. In our {@code snowflake} schema purchase

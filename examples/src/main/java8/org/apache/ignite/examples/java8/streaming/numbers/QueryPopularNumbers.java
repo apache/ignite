@@ -43,25 +43,25 @@ public class QueryPopularNumbers {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure());
+            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure())) {
+                if (!ExamplesUtils.hasServerNodes(ignite))
+                    return;
 
-            // Query top 10 popular numbers every 5 seconds.
-            while (true) {
-                // Select top 10 words.
-                SqlFieldsQuery top10 = new SqlFieldsQuery(
-                    "select _key, _val from Long order by _val desc limit 10");
+                // Query top 10 popular numbers every 5 seconds.
+                while (true) {
+                    // Select top 10 words.
+                    SqlFieldsQuery top10 = new SqlFieldsQuery(
+                        "select _key, _val from Long order by _val desc limit 10");
 
-                // Execute query.
-                List<List<?>> results = stmCache.queryFields(top10).getAll();
+                    // Execute query.
+                    List<List<?>> results = stmCache.queryFields(top10).getAll();
 
-                ExamplesUtils.printQueryResults(results);
+                    ExamplesUtils.printQueryResults(results);
 
-                Thread.sleep(5000);
+                    Thread.sleep(5000);
+                }
             }
         }
     }

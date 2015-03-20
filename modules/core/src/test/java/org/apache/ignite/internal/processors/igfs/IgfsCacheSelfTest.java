@@ -22,10 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -108,9 +111,17 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
     public void testCache() throws Exception {
         final Ignite g = grid();
 
-        assert ((IgniteKernal)g).caches().size() == 1;
+        Collection<IgniteCacheProxy<?, ?>> caches = ((IgniteKernal)g).caches();
 
-        assert CACHE_NAME.equals(((IgniteKernal)g).caches().iterator().next().getName());
+        info("Caches: " + F.viewReadOnly(caches, new C1<IgniteCacheProxy<?, ?>, Object>() {
+            @Override public Object apply(IgniteCacheProxy<?, ?> c) {
+                return c.getName();
+            }
+        }));
+
+        assertEquals(1, caches.size());
+
+        assert CACHE_NAME.equals(caches.iterator().next().getName());
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {

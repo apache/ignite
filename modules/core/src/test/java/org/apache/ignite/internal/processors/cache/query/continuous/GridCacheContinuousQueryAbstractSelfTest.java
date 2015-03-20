@@ -321,6 +321,32 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testFilterException() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                // No-op.
+            }
+        });
+
+        qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                throw new RuntimeException("Test error.");
+            }
+        });
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
@@ -349,9 +375,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventFilter<Integer,Integer>() {
-            @Override
-            public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
+        qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer,Integer>() {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
         });
@@ -946,7 +971,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 }
             });
 
-            qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
+            qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, Integer>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                     return evt.getValue() >= 50;
                 }

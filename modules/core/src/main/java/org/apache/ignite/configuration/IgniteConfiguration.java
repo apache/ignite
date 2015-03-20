@@ -40,7 +40,6 @@ import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -50,10 +49,8 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.streamer.*;
 
 import javax.cache.event.*;
 import javax.cache.expiry.*;
@@ -368,9 +365,6 @@ public class IgniteConfiguration {
     /** IGFS configuration. */
     private FileSystemConfiguration[] igfsCfg;
 
-    /** Streamer configuration. */
-    private StreamerConfiguration[] streamerCfg;
-
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
 
@@ -467,7 +461,6 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        streamerCfg = cfg.getStreamerConfiguration();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -1501,7 +1494,7 @@ public class IgniteConfiguration {
         return addrRslvr;
     }
 
-    /*
+    /**
      * Sets address resolver for addresses mapping determination.
      *
      * @param addrRslvr Address resolver.
@@ -1798,24 +1791,6 @@ public class IgniteConfiguration {
      */
     public void setFileSystemConfiguration(FileSystemConfiguration... igfsCfg) {
         this.igfsCfg = igfsCfg;
-    }
-
-    /**
-     * Gets streamers configurations.
-     *
-     * @return Streamers configurations.
-     */
-    public StreamerConfiguration[] getStreamerConfiguration() {
-        return streamerCfg;
-    }
-
-    /**
-     * Sets streamer configuration.
-     *
-     * @param streamerCfg Streamer configuration.
-     */
-    public void setStreamerConfiguration(StreamerConfiguration... streamerCfg) {
-        this.streamerCfg = streamerCfg;
     }
 
     /**
