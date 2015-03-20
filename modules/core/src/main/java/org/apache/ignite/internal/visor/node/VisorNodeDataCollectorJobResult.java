@@ -61,9 +61,6 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** Exception while collecting node IGFSs. */
     private Throwable igfssEx;
 
-    /** Exception while collecting node streamers. */
-    private Throwable streamersEx;
-
     /** Errors count. */
     private long errCnt;
 
@@ -177,20 +174,6 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     public void igfssEx(Throwable igfssEx) {
         this.igfssEx = igfssEx;
-    }
-
-    /**
-     * @return Exception caught during collecting streamers metrics.
-     */
-    public Throwable streamersEx() {
-        return streamersEx;
-    }
-
-    /**
-     * @param streamersEx Exception caught during collecting streamers metrics.
-     */
-    public void streamersEx(Throwable streamersEx) {
-        this.streamersEx = streamersEx;
     }
 
     /**

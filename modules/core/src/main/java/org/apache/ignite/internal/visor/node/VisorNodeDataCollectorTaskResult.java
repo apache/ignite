@@ -67,26 +67,22 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /** Exceptions caught during collecting IGFS from nodes. */
     private final Map<UUID, Throwable> igfssEx = new HashMap<>();
 
-    /** Exceptions caught during collecting streamers from nodes. */
-    private final Map<UUID, Throwable> streamersEx = new HashMap<>();
-
     /**
      * @return {@code true} If no data was collected.
      */
     public boolean isEmpty() {
         return
             gridNames.isEmpty() &&
-                topVersions.isEmpty() &&
-                unhandledEx.isEmpty() &&
-                taskMonitoringEnabled.isEmpty() &&
-                evts.isEmpty() &&
-                evtsEx.isEmpty() &&
-                caches.isEmpty() &&
-                cachesEx.isEmpty() &&
-                igfss.isEmpty() &&
-                igfsEndpoints.isEmpty() &&
-                igfssEx.isEmpty() &&
-                streamersEx.isEmpty();
+            topVersions.isEmpty() &&
+            unhandledEx.isEmpty() &&
+            taskMonitoringEnabled.isEmpty() &&
+            evts.isEmpty() &&
+            evtsEx.isEmpty() &&
+            caches.isEmpty() &&
+            cachesEx.isEmpty() &&
+            igfss.isEmpty() &&
+            igfsEndpoints.isEmpty() &&
+            igfssEx.isEmpty();
     }
 
     /**
@@ -164,13 +160,6 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      */
     public Map<UUID, Throwable> igfssEx() {
         return igfssEx;
-    }
-
-    /**
-     * @return Exceptions caught during collecting streamers from nodes.
-     */
-    public Map<UUID, Throwable> streamersEx() {
-        return streamersEx;
     }
 
     /**

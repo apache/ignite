@@ -207,7 +207,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         igfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
+            log(ignite.log(), "Collected igfs", getClass(), start0);
 
         res.errorCount(ignite.context().exceptionRegistry().errorCount());
 
