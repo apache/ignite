@@ -206,10 +206,10 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     private final ConcurrentLinkedDeque8<HashEntry<K, V>> entryQ;
 
     /** Atomic variable containing map size. */
-    private final LongAdder size = new LongAdder();
+    private final LongAdder8 size = new LongAdder8();
 
     /** */
-    private final LongAdder modCnt = new LongAdder();
+    private final LongAdder8 modCnt = new LongAdder8();
 
     /** */
     private final int maxCap;

@@ -54,7 +54,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         X.println("Set: " + set);
 
-        final LongAdder execCnt = new LongAdder();
+        final LongAdder8 execCnt = new LongAdder8();
 
         final AtomicBoolean finish = new AtomicBoolean();
 

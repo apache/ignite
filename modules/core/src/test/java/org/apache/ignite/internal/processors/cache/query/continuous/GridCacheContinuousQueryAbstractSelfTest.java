@@ -349,7 +349,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventFilter<Integer,Integer>() {
+        qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer,Integer>() {
             @Override
             public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
@@ -946,7 +946,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 }
             });
 
-            qry.setRemoteFilter(new CacheEntryEventFilter<Integer, Integer>() {
+            qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, Integer>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                     return evt.getValue() >= 50;
                 }

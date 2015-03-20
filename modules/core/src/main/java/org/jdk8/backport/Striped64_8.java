@@ -43,7 +43,7 @@ import java.util.*;
  * extends Number so that concrete subclasses must publicly do so.
  */
 @SuppressWarnings("ALL")
-abstract class Striped64 extends Number {
+abstract class Striped64_8 extends Number {
     /*
      * This class maintains a lazily-initialized table of atomically
      * updated variables, plus an extra "base" field. The table size
@@ -191,7 +191,7 @@ abstract class Striped64 extends Number {
     /**
      * Package-private default constructor
      */
-    Striped64() {
+    Striped64_8() {
     }
 
     /**
@@ -330,7 +330,7 @@ abstract class Striped64 extends Number {
     static {
         try {
             UNSAFE = getUnsafe();
-            Class<?> sk = Striped64.class;
+            Class<?> sk = Striped64_8.class;
             baseOffset = UNSAFE.objectFieldOffset
                 (sk.getDeclaredField("base"));
             busyOffset = UNSAFE.objectFieldOffset

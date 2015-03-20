@@ -40,7 +40,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
             final int loops = 5000;
             int threads = 17;
 
-            final LongAdder sum = new LongAdder();
+            final LongAdder8 sum = new LongAdder8();
 
             multithreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -80,7 +80,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
         for (int i = 0; i < 5; i++) {
             final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 
-            final LongAdder sum = new LongAdder();
+            final LongAdder8 sum = new LongAdder8();
 
             final AtomicBoolean finish = new AtomicBoolean();
 

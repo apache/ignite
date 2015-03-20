@@ -37,7 +37,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         int size = 256 * 1024;
 
         final GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -75,7 +75,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     public void testDequeueThroughput() throws Exception {
 
         final ConcurrentLinkedDeque8<Integer> buf = new ConcurrentLinkedDeque8<>();
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -119,7 +119,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -160,7 +160,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {

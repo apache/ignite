@@ -86,7 +86,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Public size counter. */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
     private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;

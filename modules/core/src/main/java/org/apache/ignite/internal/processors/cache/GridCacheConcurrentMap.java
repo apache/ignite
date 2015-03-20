@@ -84,10 +84,10 @@ public class GridCacheConcurrentMap {
     protected final GridCacheContext ctx;
 
     /** */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** */
-    private final LongAdder mapSize = new LongAdder();
+    private final LongAdder8 mapSize = new LongAdder8();
 
     /** Filters cache internal entry. */
     private static final CacheEntryPredicate NON_INTERNAL =
@@ -787,7 +787,7 @@ public class GridCacheConcurrentMap {
         private volatile SegmentHeader hdr;
 
         /** The number of public elements in this segment's region. */
-        private final LongAdder pubSize = new LongAdder();
+        private final LongAdder8 pubSize = new LongAdder8();
 
         /**
          * The load factor for the hash table. Even though this value
@@ -1320,7 +1320,7 @@ public class GridCacheConcurrentMap {
         private final int id;
 
         /** Reads. */
-        private final LongAdder reads = new LongAdder();
+        private final LongAdder8 reads = new LongAdder8();
 
         /** */
         private volatile SegmentHeader prev;

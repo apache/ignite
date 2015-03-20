@@ -111,7 +111,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         final AtomicBoolean end = new AtomicBoolean();
 
-        final LongAdder puts = new LongAdder();
+        final LongAdder8 puts = new LongAdder8();
 
         IgniteInternalFuture<?> fut0 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -129,7 +129,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
             }
         }, 10);
 
-        final LongAdder qrys = new LongAdder();
+        final LongAdder8 qrys = new LongAdder8();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

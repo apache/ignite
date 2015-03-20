@@ -115,7 +115,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final String topic = "test-topic";
 
@@ -207,7 +207,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
 
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final Integer topic = 1;
 
@@ -307,7 +307,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final String topic = "test-topic";
 

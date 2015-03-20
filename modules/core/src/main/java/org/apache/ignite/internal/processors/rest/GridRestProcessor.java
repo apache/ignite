@@ -71,7 +71,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Workers count. */
-    private final LongAdder workersCnt = new LongAdder();
+    private final LongAdder8 workersCnt = new LongAdder8();
 
     /** SecurityContext map. */
     private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();
