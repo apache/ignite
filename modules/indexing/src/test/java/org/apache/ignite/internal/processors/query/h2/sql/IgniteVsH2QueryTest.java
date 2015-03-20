@@ -216,10 +216,10 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Organization org) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"part\".ORGANIZATION (_key, _val, id, name) values(?, ?, ?, ?)")) {
-            setObjectSmart(st, 1, org.id);
-            setObjectSmart(st, 2, org);
-            setObjectSmart(st, 3, org.id);
-            setObjectSmart(st, 4, org.name);
+            st.setObject(1, org.id);
+            st.setObject(2, org);
+            st.setObject(3, org.id);
+            st.setObject(4, org.name);
 
             st.executeUpdate();
         }
@@ -234,13 +234,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Person p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement("insert into \"part\".PERSON " +
             "(_key, _val, id, firstName, lastName, orgId, salary) values(?, ?, ?, ?, ?, ?, ?)")) {
-            setObjectSmart(st, 1, p.key());
-            setObjectSmart(st, 2, p);
-            setObjectSmart(st, 3, p.id);
-            setObjectSmart(st, 4, p.firstName);
-            setObjectSmart(st, 5, p.lastName);
-            setObjectSmart(st, 6, p.orgId);
-            setObjectSmart(st, 7, p.salary);
+            st.setObject(1, p.key());
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.firstName);
+            st.setObject(5, p.lastName);
+            st.setObject(6, p.orgId);
+            st.setObject(7, p.salary);
 
             st.executeUpdate();
         }
@@ -255,11 +255,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Product p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"repl\".PRODUCT (_key, _val, id, name, price) values(?, ?, ?, ?, ?)")) {
-            setObjectSmart(st, 1, p.id);
-            setObjectSmart(st, 2, p);
-            setObjectSmart(st, 3, p.id);
-            setObjectSmart(st, 4, p.name);
-            setObjectSmart(st, 5, p.price);
+            st.setObject(1, p.id);
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.name);
+            st.setObject(5, p.price);
 
             st.executeUpdate();
         }
@@ -274,11 +274,11 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     private void insertInDb(Purchase p) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
             "insert into \"part\".PURCHASE (_key, _val, id, personId, productId) values(?, ?, ?, ?, ?)")) {
-            setObjectSmart(st, 1, p.key());
-            setObjectSmart(st, 2, p);
-            setObjectSmart(st, 3, p.id);
-            setObjectSmart(st, 4, p.personId);
-            setObjectSmart(st, 5, p.productId);
+            st.setObject(1, p.key());
+            st.setObject(2, p);
+            st.setObject(3, p.id);
+            st.setObject(4, p.personId);
+            st.setObject(5, p.productId);
 
             st.executeUpdate();
         }
@@ -429,7 +429,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         try(PreparedStatement st = conn.prepareStatement(sql)) {
             for (int idx = 0; idx < args.length; idx++)
-                setObjectSmart(st, idx + 1, args[idx]);
+                st.setObject(idx + 1, args[idx]);
 
             rs = st.executeQuery();
 
@@ -449,21 +449,6 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         }
 
         return res;
-    }
-
-    /**
-     * Do a smart setting of given object at statement.
-     *
-     * @param st Statment.
-     * @param idx Index.
-     * @param arg Argument.
-     * @throws SQLException If exception.
-     */
-    private void setObjectSmart(PreparedStatement st, int idx, Object arg) throws SQLException {
-        if (arg == null)
-            st.setNull(idx, Types.NULL);
-        else
-            st.setObject(idx, arg);
     }
 
     /**
