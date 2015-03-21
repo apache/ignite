@@ -542,7 +542,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 onDone(err);
 
-                throw err;
+                return;
             }
 
             if (val == null && op != GridCacheOperation.DELETE) {
@@ -550,7 +550,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 onDone(err);
 
-                throw err;
+                return;
             }
 
             KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
@@ -627,7 +627,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                     onDone(err);
 
-                    throw err;
+                    return;
                 }
 
                 Object val;
