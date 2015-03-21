@@ -17,9 +17,11 @@
 
 package org.apache.ignite.examples.java7;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.*;
 
 import java.net.*;
+import java.util.List;
 
 /**
  *
@@ -77,5 +79,57 @@ public class ExamplesUtils {
         }
 
         return true;
+    }
+
+
+    /**
+     * Checks if cluster has server nodes.
+     *
+     * @param ignite Ignite instance.
+     * @return {@code True} if cluster has server nodes, {@code false} otherwise.
+     */
+    public static boolean hasServerNodes(Ignite ignite) {
+        if (ignite.cluster().forServers().nodes().isEmpty()) {
+            System.err.println("Server nodes not found (start data nodes with ExampleNodeStartup class)");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Convenience method for printing query results.
+     *
+     * @param res Query results.
+     */
+    public static void printQueryResults(List<?> res) {
+        if (res == null || res.isEmpty())
+            System.out.println("Query result set is empty.");
+        else {
+            for (Object row : res) {
+                if (row instanceof List) {
+                    System.out.print("(");
+
+                    List<?> l = (List)row;
+
+                    for (int i = 0; i < l.size(); i++) {
+                        Object o = l.get(i);
+
+                        if (o instanceof Double || o instanceof Float)
+                            System.out.printf("%.2f", o);
+                        else
+                            System.out.print(l.get(i));
+
+                        if (i + 1 != l.size())
+                            System.out.print(',');
+                    }
+
+                    System.out.println(')');
+                }
+                else
+                    System.out.println("  " + row);
+            }
+        }
     }
 }

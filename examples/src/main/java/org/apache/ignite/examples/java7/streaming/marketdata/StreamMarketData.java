@@ -18,7 +18,8 @@
 package org.apache.ignite.examples.java7.streaming.marketdata;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.streaming.numbers.ExamplesUtils;
+import org.apache.ignite.examples.java7.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.stream.*;
 
@@ -58,7 +59,7 @@ public class StreamMarketData {
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
             IgniteCache<String, MarketTick> mktCache = ignite.getOrCreateCache(CacheConfig.marketTicksCache());
-            IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
+            final IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
 
             try (IgniteDataStreamer<String, MarketTick> mktStmr = ignite.dataStreamer(mktCache.getName())) {
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
