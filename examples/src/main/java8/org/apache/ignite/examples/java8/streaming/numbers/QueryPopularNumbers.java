@@ -32,11 +32,7 @@ import java.util.*;
  *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
  * </ul>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-compute.xml} configuration.
+ * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class QueryPopularNumbers {
     public static void main(String[] args) throws Exception {

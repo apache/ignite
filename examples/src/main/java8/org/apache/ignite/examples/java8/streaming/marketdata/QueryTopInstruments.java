@@ -15,32 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.numbers;
+package org.apache.ignite.examples.java8.streaming.marketdata;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.examples.java8.*;
-import org.apache.ignite.stream.*;
 
 import java.util.*;
 
 /**
- * Stream random numbers into the streaming cache.
+ * Periodically query popular numbers from the streaming cache.
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
- *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start streaming using {@link StreamMarketData}.</li>
+ *     <li>Start querying top performing instruments using {@link QueryTopInstruments}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class StreamRandomNumbers {
-    /** Random number generator. */
-    private static final Random RAND = new Random();
-
-    /** Range within which to generate numbers. */
-    private static final int RANGE = 1000;
-
+public class QueryTopInstruments {
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -49,25 +43,27 @@ public class StreamRandomNumbers {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure());
+            IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
 
-            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
+            // Select top 3 instruments.
+            SqlFieldsQuery top3qry = new SqlFieldsQuery(
+                "select symbol, (latest - open) from Instrument order by (latest - open) desc limit 3");
 
-                // Configure data transformation to count instances of the same word.
-                stmr.receiver(new StreamTransformer<>((e, arg) -> {
-                    Long val = e.getValue();
+            // Query top 3 best performing instruments every 5 seconds.
+            while (true) {
+                // Execute queries.
+                List<List<?>> top3 = instCache.query(top3qry).getAll();
 
-                    e.setValue(val == null ? 1L : val + 1);
+                // Print average count.
+                List<?> row = top3.get(0);
 
-                    return null;
-                }));
+                if (row.get(0) != null)
+                    System.out.println("Top Performing Instruments:");
 
-                // Stream random numbers into the streamer cache.
-                while (true)
-                    stmr.addData(RAND.nextInt(RANGE), 1L);
+                // Print top 10 words.
+                ExamplesUtils.printQueryResults(top3);
+
+                Thread.sleep(5000);
             }
         }
     }
