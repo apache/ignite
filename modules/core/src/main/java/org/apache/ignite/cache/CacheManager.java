@@ -59,7 +59,7 @@ public class CacheManager implements javax.cache.CacheManager {
     private final ClassLoader clsLdr;
 
     /** */
-    private final Properties props;
+    private Properties props = new Properties();
 
     /** */
     private final IgniteKernal ignite;
