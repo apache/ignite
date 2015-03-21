@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -112,15 +113,19 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        exec.shutdown();
+        U.shutdownNow(ClientAbstractSelfTest.class, exec, log);
+
         exec = null;
 
-        GridClientFactory.stop(client.id(), true);
+        if (client != null)
+            GridClientFactory.stop(client.id(), true);
 
         client = null;
 
-        for (HashMapStore cacheStore : cacheStores.values())
-            cacheStore.map.clear();
+        synchronized (cacheStores) {
+            for (HashMapStore cacheStore : cacheStores.values())
+                cacheStore.map.clear();
+        }
 
         grid().jcache(null).clear();
         grid().jcache(CACHE_NAME).clear();
@@ -237,7 +242,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private  static CacheConfiguration cacheConfiguration(@Nullable final String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(cacheName == null || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
@@ -245,12 +250,19 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setName(cacheName);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        HashMapStore cacheStore = cacheStores.get(cacheName);
+        cfg.setCacheStoreFactory(new Factory<CacheStore>() {
+            @Override public CacheStore create() {
+                synchronized (cacheStores) {
+                    HashMapStore cacheStore = cacheStores.get(cacheName);
 
-        if (cacheStore == null)
-            cacheStores.put(cacheName, cacheStore = new HashMapStore());
+                    if (cacheStore == null)
+                        cacheStores.put(cacheName, cacheStore = new HashMapStore());
 
-        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(cacheStore));
+                    return cacheStore;
+                }
+            }
+        });
+
         cfg.setWriteThrough(true);
         cfg.setReadThrough(true);
         cfg.setLoadPreviousValue(true);

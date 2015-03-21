@@ -599,7 +599,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor<Object, Object> {
+    private static class Interceptor implements CacheInterceptor<Object, Object> {
         /** */
         CacheInterceptor<TestKey, TestValue> delegate = new CacheInterceptorAdapter<>();
 
