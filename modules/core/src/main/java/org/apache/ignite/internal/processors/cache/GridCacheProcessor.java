@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -1539,10 +1540,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
+        U.debug(log, "Requested to start cache [localNodeId=" + ctx.localNodeId() + ", name=" + cacheName + ", desc=" + desc + ']');
+
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
 
         if (ccfg != null) {
-            if (desc != null) {
+            if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
                     return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already started): " + cacheName));
@@ -1615,7 +1618,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> sendReqs = new ArrayList<>(reqs.size());
 
         for (DynamicCacheChangeRequest req : reqs) {
-            DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId());
+            DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId(), req);
 
             try {
                 if (req.isStop()) {
@@ -1643,6 +1646,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (old != null) {
                     if (req.isStart() && !req.clientStartOnly()) {
+                        U.debug(log, "!!! Future collision (will fail) [old=" + old + ", req=" + req + ']');
+
                         fut.onDone(new IgniteCacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already being started or stopped): " + req.cacheName()));
                     }
@@ -2464,16 +2469,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
         /** Start ID. */
+        @GridToStringInclude
         private IgniteUuid deploymentId;
 
         /** Cache name. */
         private String cacheName;
 
+        /** Change request. */
+        @GridToStringInclude
+        private DynamicCacheChangeRequest req;
+
         /**
          */
-        private DynamicCacheStartFuture(String cacheName, IgniteUuid deploymentId) {
+        private DynamicCacheStartFuture(String cacheName, IgniteUuid deploymentId, DynamicCacheChangeRequest req) {
             this.deploymentId = deploymentId;
             this.cacheName = cacheName;
+            this.req = req;
         }
 
         /**
@@ -2483,15 +2494,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return deploymentId;
         }
 
+        /**
+         * @return Request.
+         */
+        public DynamicCacheChangeRequest request() {
+            return req;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            pendingFuts.remove(maskNull(cacheName), this);
+
             if (super.onDone(res, err)) {
-                pendingFuts.remove(maskNull(cacheName), this);
+                U.debug(log, "Completed future: " + this);
 
                 return true;
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DynamicCacheStartFuture.class, this);
         }
     }
 
