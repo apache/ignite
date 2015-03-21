@@ -196,7 +196,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
     /**
-     * Queries cache. Accepts any subclass of {@link Query}.
+     * Queries cache. Accepts any subclass of {@link Query} interface.
      *
      * @param qry Query.
      * @return Cursor.

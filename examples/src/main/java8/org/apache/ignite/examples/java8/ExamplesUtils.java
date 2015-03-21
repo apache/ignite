@@ -104,11 +104,9 @@ public class ExamplesUtils {
         if (res == null || res.isEmpty())
             System.out.println("Query result set is empty.");
         else {
-            System.out.println("Query results:");
-
             for (Object row : res) {
                 if (row instanceof List) {
-                    System.out.print("  (");
+                    System.out.print("(");
 
                     List<?> l = (List)row;
 

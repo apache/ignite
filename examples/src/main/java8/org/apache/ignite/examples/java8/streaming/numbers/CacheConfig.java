@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.java8.streaming.numbers;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.configuration.*;
@@ -40,7 +39,6 @@ public class CacheConfig {
     public static CacheConfiguration<Integer, Long> configure() {
         CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>();
 
-        cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setName(STREAM_NAME);
         cfg.setIndexedTypes(Integer.class, Long.class);
 
