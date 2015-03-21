@@ -59,10 +59,10 @@ public class StreamMarketData {
             IgniteCache<String, MarketTick> mktCache = ignite.getOrCreateCache(CacheConfig.marketTicksCache());
             IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
 
-            try (IgniteDataStreamer<String, MarketTick> stmr = ignite.dataStreamer(mktCache.getName())) {
+            try (IgniteDataStreamer<String, MarketTick> mktStmr = ignite.dataStreamer(mktCache.getName())) {
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
                 // Instead we update the instruments in the 'instCache'.
-                stmr.receiver(new StreamVisitor<>((cache, e) -> {
+                mktStmr.receiver(new StreamVisitor<>((cache, e) -> {
                     String symbol = e.getKey();
                     MarketTick tick = e.getValue();
 
@@ -87,7 +87,7 @@ public class StreamMarketData {
 
                         MarketTick tick = new MarketTick(INSTRUMENTS[j], price);
 
-                        stmr.addData(tick.symbol(), tick);
+                        mktStmr.addData(tick.symbol(), tick);
                     }
                 }
             }
