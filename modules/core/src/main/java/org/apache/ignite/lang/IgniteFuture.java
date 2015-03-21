@@ -23,8 +23,7 @@ import java.util.concurrent.*;
 
 /**
  * Future with simplified exception handling, functional programming support
- * and ability to listen for future completion via functional
- * callback.
+ * and ability to listen for future completion via functional callback.
  *
  * @param <V> Type of the result for the future.
  */
