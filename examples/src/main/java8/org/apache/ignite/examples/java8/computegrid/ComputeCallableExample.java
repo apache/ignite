@@ -22,7 +22,6 @@ import org.apache.ignite.examples.java7.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
-import java.util.stream.*;
 
 /**
  * Demonstrates using of {@link IgniteCallable} job execution on the cluster.
@@ -49,16 +48,20 @@ public class ComputeCallableExample {
             System.out.println();
             System.out.println(">>> Compute callable example started.");
 
-            Stream<IgniteCallable<Integer>> calls = Stream.of("Count characters using callable".split(" ")).map(word ->
-                (IgniteCallable<Integer>)() -> {
+            Collection<IgniteCallable<Integer>> calls = new ArrayList<>();
+
+            // Iterate through all words in the sentence and create callable jobs.
+            for (String word : "Count characters using callable".split(" ")) {
+                calls.add(() -> {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
                     return word.length();
                 });
+            }
 
             // Execute collection of callables on the ignite.
-            Collection<Integer> res = ignite.compute().call(calls.collect(Collectors.toList()));
+            Collection<Integer> res = ignite.compute().call(calls);
 
             int sum = res.stream().mapToInt(i -> i).sum();
 

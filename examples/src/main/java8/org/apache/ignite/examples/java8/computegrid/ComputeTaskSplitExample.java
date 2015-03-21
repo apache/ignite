@@ -23,7 +23,6 @@ import org.apache.ignite.examples.java7.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.stream.*;
 
 /**
  * Demonstrates a simple use of Ignite with {@link ComputeTaskSplitAdapter}.
@@ -73,8 +72,10 @@ public class ComputeTaskSplitExample {
          * @return The list of child jobs.
          */
         @Override protected Collection<? extends ComputeJob> split(int clusterSize, String arg) {
-            return Stream.of(arg.split(" ")).map(word ->
-                new ComputeJobAdapter() {
+            Collection<ComputeJob> jobs = new LinkedList<>();
+
+            for (final String word : arg.split(" ")) {
+                jobs.add(new ComputeJobAdapter() {
                     @Nullable @Override public Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
@@ -82,7 +83,10 @@ public class ComputeTaskSplitExample {
                         // Return number of letters in the word.
                         return word.length();
                     }
-            }).collect(Collectors.toList());
+                });
+            }
+
+            return jobs;
         }
 
         /** {@inheritDoc} */

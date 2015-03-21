@@ -78,7 +78,8 @@ public final class CreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            double crdRisk = ignite.compute().call(jobs(ignite.cluster().nodes().size(), portfolio, horizon, iter, percentile),
+            double crdRisk = ignite.compute().call(
+                jobs(ignite.cluster().nodes().size(), portfolio, horizon, iter, percentile),
                 new IgniteReducer<Double, Double>() {
                     /** Collected values sum. */
                     private double sum;
@@ -139,13 +140,8 @@ public final class CreditRiskExample {
         for (int i = 0; i < clusterSize; i++) {
             final int nodeIter = i == clusterSize - 1 ? lastNodeIter : iterPerNode;
 
-            clos.add(new IgniteCallable<Double>() {
-                /** {@inheritDoc} */
-                @Override public Double call() {
-                    return new CreditRiskManager().calculateCreditRiskMonteCarlo(
-                        portfolio, horizon, nodeIter, percentile);
-                }
-            });
+            clos.add(() -> new CreditRiskManager().calculateCreditRiskMonteCarlo(
+                portfolio, horizon, nodeIter, percentile));
         }
 
         return clos;

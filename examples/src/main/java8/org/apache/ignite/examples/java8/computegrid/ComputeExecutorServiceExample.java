@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.java7.*;
 
 import java.util.concurrent.*;
-import java.util.stream.*;
 
 /**
  * Simple example to demonstrate usage of distributed executor service provided by Ignite.
@@ -48,12 +47,14 @@ public final class ComputeExecutorServiceExample {
             // Get ignite-enabled executor service.
             ExecutorService exec = ignite.executorService();
 
-            Stream.of("Print words using runnable".split(" ")).forEach(word -> {
+            // Iterate through all words in the sentence and create callable jobs.
+            for (String word : "Print words using runnable".split(" ")) {
+                // Execute runnable on some node.
                 exec.submit(() -> {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
-            });
+            }
 
             exec.shutdown();
 
