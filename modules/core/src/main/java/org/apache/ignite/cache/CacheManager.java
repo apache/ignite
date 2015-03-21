@@ -257,19 +257,22 @@ public class CacheManager implements javax.cache.CacheManager {
     @Override public void destroyCache(String cacheName) {
         kernalGateway.readLock();
 
+        IgniteCache<?, ?> cache;
+
         try {
-            IgniteCache<?, ?> cache = getCache0(cacheName);
+            cache = getCache0(cacheName);
 
             if (cache != null) {
                 unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
-
-                cache.close();
             }
         }
         finally {
             kernalGateway.readUnlock();
         }
+
+        if (cache != null)
+            cache.close();
     }
 
     /**
