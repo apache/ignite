@@ -24,7 +24,6 @@ import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
@@ -35,6 +34,8 @@ import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -59,16 +60,13 @@ public class CacheManager implements javax.cache.CacheManager {
     private final ClassLoader clsLdr;
 
     /** */
-    private final Properties props;
+    private Properties props = new Properties();
 
     /** */
     private final IgniteKernal ignite;
 
     /** */
     private final GridKernalGateway kernalGateway;
-
-    /** */
-    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true); // TODO IGNITE-45.
 
     /**
      * @param uri Uri.
@@ -80,17 +78,19 @@ public class CacheManager implements javax.cache.CacheManager {
         this.uri = uri;
         this.cachingProvider = cachingProvider;
         this.clsLdr = clsLdr;
-        this.props = props;
+        this.props = props == null ? new Properties() : props;
 
         try {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, true)) {
+                    TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-                discoSpi.setIpFinder(IP_FINDER);
+                    discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
-                cfg.setDiscoverySpi(discoSpi);
+                    cfg.setDiscoverySpi(discoSpi);
+                }
 
                 cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
 
