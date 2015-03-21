@@ -242,7 +242,7 @@ public class CacheQueryExample {
      * Populate cache with test data.
      */
     private static void initialize() {
-        IgniteCache cache<Object, Object> = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.
         Organization org1 = new Organization("GridGain");
