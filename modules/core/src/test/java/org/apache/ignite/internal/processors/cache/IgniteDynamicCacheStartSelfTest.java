@@ -637,6 +637,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         for (CountDownLatch stop : stops)
             stop.await();
+
+        for (int i = 0; i < nodeCount(); i++)
+            ignite(i).events().stopLocalListen(lsnrs[i]);
     }
 
     /**
