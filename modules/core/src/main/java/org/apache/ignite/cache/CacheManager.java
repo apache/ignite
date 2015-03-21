@@ -80,7 +80,7 @@ public class CacheManager implements javax.cache.CacheManager {
         this.uri = uri;
         this.cachingProvider = cachingProvider;
         this.clsLdr = clsLdr;
-        this.props = props;
+        this.props = props == null ? new Properties() : props;
 
         try {
             if (uri.equals(cachingProvider.getDefaultURI())) {
