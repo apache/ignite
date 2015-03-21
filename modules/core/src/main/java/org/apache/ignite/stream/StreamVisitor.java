@@ -27,27 +27,35 @@ import java.util.*;
  * does not update the cache. If the tuple needs to be stored in the cache,
  * then {@code cache.put(...)} should be called explicitely.
  */
-public class StreamVisitor<K, V> implements StreamReceiver<K, V> {
+public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Tuple visitor. */
-    private IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> vis;
-
-    /**
-     * Visitor to visit every stream key-value tuple. Note, that the visitor
-     * does not update the cache. If the tuple needs to be stored in the cache,
-     * then {@code cache.put(...)} should be called explicitely.
-     *
-     * @param vis Stream key-value tuple visitor.
-     */
-    public StreamVisitor(IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> vis) {
-        this.vis = vis;
-    }
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
         for (Map.Entry<K, V> entry : entries)
-            vis.apply(cache, entry);
+            visit(cache, entry);
+    }
+
+    /**
+     * Visits one cache entry.
+     *
+     * @param cache Cache.
+     * @param entry Visited entry.
+     */
+    protected abstract void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry);
+
+    /**
+     * Creates a new visitor based on instance of {@link IgniteBiInClosure}.
+     *
+     * @param c Closure.
+     * @return Stream visitor.
+     */
+    public static <K, V> StreamVisitor<K, V> from(final IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> c) {
+        return new StreamVisitor<K, V>() {
+            @Override protected void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry) {
+                c.apply(cache, entry);
+            }
+        };
     }
 }

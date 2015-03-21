@@ -18,9 +18,7 @@
 package org.apache.ignite.examples.java7.streaming.marketdata;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.streaming.numbers.ExamplesUtils;
 import org.apache.ignite.examples.java7.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
@@ -64,9 +62,9 @@ public class StreamMarketData {
             try (IgniteDataStreamer<String, MarketTick> mktStmr = ignite.dataStreamer(mktCache.getName())) {
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
                 // Instead we update the instruments in the 'instCache'.
-                mktStmr.receiver(new StreamVisitor<>(new IgniteBiInClosure<IgniteCache<String, MarketTick>, Map.Entry<String, MarketTick>>() {
+                mktStmr.receiver(new StreamVisitor<String, MarketTick>() {
                     @Override
-                    public void apply(IgniteCache<String, MarketTick> mktCache, Map.Entry<String, MarketTick> e) {
+                    public void visit(IgniteCache<String, MarketTick> mktCache, Map.Entry<String, MarketTick> e) {
                         String symbol = e.getKey();
                         MarketTick tick = e.getValue();
 
@@ -81,7 +79,7 @@ public class StreamMarketData {
 
                         instCache.put(symbol, inst);
                     }
-                }));
+                });
 
                 // Stream market data into market data stream cache.
                 while (true) {
