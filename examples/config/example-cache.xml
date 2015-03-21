@@ -64,11 +64,11 @@
                         <list>
                             <!-- Key and value type for SQL table Organization. -->
                             <value>java.util.UUID</value>
-                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Organization</value>
+                            <value>org.apache.ignite.examples.java7.datagrid.CacheQueryExample.Organization</value>
 
                             <!-- Key and value type for SQL table Person. -->
                             <value>org.apache.ignite.cache.affinity.CacheAffinityKey</value>
-                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Person</value>
+                            <value>org.apache.ignite.examples.java7.datagrid.CacheQueryExample.Person</value>
 
                             <!-- Key and value type for SQL table Long. -->
                             <value>java.lang.Integer</value>
@@ -76,7 +76,7 @@
 
                             <!-- Key and value type for SQL table FactPurchase. -->
                             <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.FactPurchase</value>
+                            <value>org.apache.ignite.examples.java7.datagrid.starschema.FactPurchase</value>
                         </list>
                     </property>
                 </bean>
@@ -107,11 +107,11 @@
                         <list>
                             <!-- Key and value type for SQL table DimStore. -->
                             <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.DimStore</value>
+                            <value>org.apache.ignite.examples.java7.datagrid.starschema.DimStore</value>
 
                             <!-- Key and value type for SQL table DimProduct. -->
                             <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.DimProduct</value>
+                            <value>org.apache.ignite.examples.java7.datagrid.starschema.DimProduct</value>
                         </list>
                     </property>
                 </bean>

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.java7.misc.deployment.*;
 import org.apache.ignite.examples.misc.deployment.*;
 import org.apache.ignite.testframework.junits.common.*;
 
