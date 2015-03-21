@@ -281,7 +281,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public boolean isCacheAdded(int cacheId) {
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
-                if (req.isStart() && !req.clientStartOnly()) {
+                if (req.start() && !req.clientStartOnly()) {
                     if (CU.cacheId(req.cacheName()) == cacheId)
                         return true;
                 }
@@ -584,7 +584,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (cacheId == CU.cacheId(req.cacheName())) {
-                    stopping = req.isStop();
+                    stopping = req.stop();
 
                     break;
                 }
@@ -600,7 +600,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void startCaches() throws IgniteCheckedException {
         cctx.cache().prepareCachesStart(F.view(reqs, new IgnitePredicate<DynamicCacheChangeRequest>() {
             @Override public boolean apply(DynamicCacheChangeRequest req) {
-                return req.isStart();
+                return req.start();
             }
         }), exchId.topologyVersion());
     }
@@ -610,7 +610,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void blockGateways() {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (req.isStop())
+            if (req.stop())
                 cctx.cache().blockGateway(req);
         }
     }

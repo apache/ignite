@@ -51,13 +51,19 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Start only client cache, do not start data nodes. */
     private boolean clientStartOnly;
 
+    /** Stop flag. */
+    private boolean stop;
+
     /**
      * Constructor creates cache stop request.
      *
      * @param cacheName Cache stop name.
      */
-    public DynamicCacheChangeRequest(String cacheName) {
+    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
         this.cacheName = cacheName;
+        this.initiatingNodeId = initiatingNodeId;
+
+        stop = true;
     }
 
     /**
@@ -88,15 +94,15 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return {@code True} if this is a start request.
      */
-    public boolean isStart() {
+    public boolean start() {
         return startCfg != null;
     }
 
     /**
      * @return {@code True} if this is a stop request.
      */
-    public boolean isStop() {
-        return initiatingNodeId == null && startCfg == null;
+    public boolean stop() {
+        return stop;
     }
 
     /**
