@@ -1113,9 +1113,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (F.isEmpty(meta.getValueType()))
             throw new IgniteCheckedException("Value type is not set: " + meta);
 
-        d.name(meta.getValueType());
+        Class<?> valCls = U.classForName(meta.getValueType(), null);
 
-        d.valueClass(U.classForName(meta.getValueType(), Object.class));
+        d.name(valCls != null ? typeName(valCls) : meta.getValueType());
+
+        d.valueClass(valCls != null ? valCls : Object.class);
         d.keyClass(meta.getKeyType() == null ? Object.class : U.classForName(meta.getKeyType(), Object.class));
 
         return d;
