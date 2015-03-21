@@ -22,6 +22,9 @@ import javax.cache.CacheException;
  * Exception thrown when all data nodes left the grid.
  */
 public class CacheServerNotFoundException extends CacheException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param message Error message.
      */
