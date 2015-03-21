@@ -64,7 +64,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         Ignite grid = startGrid(GRID_CNT - 2);
 
-        grid.createCache(new NearCacheConfiguration());
+        grid.createCache((String)null, new NearCacheConfiguration());
 
         grid = startGrid(GRID_CNT - 1);
 

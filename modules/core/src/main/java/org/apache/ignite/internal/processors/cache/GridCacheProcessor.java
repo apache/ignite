@@ -1531,38 +1531,47 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicStartCache(
         @Nullable CacheConfiguration ccfg,
-        @Nullable NearCacheConfiguration nearCfg
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        boolean failIfExists
     ) {
         assert ccfg != null || nearCfg != null;
-
-        String cacheName = ccfg == null ? nearCfg.getName() : ccfg.getName();
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
 
         if (ccfg != null) {
-            if (desc != null)
-                return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start cache " +
-                    "(a cache with the same name is already started): " + cacheName));
+            if (desc != null) {
+                if (failIfExists)
+                    return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start cache " +
+                            "(a cache with the same name is already started): " + cacheName));
+                else {
+                    // Check if we were asked to start a near cache.
+                    if (nearCfg != null)
+                        req.clientStartOnly(true);
+                    else
+                        return new GridFinishedFuture<>();
 
-            req.deploymentId(IgniteUuid.randomUuid());
-
-            try {
-                CacheConfiguration cfg = new CacheConfiguration(ccfg);
-
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
-
-                initialize(cfg, cacheObjCtx);
-
-                req.startCacheConfiguration(cfg);
+                    req.deploymentId(desc.deploymentId());
+                    req.startCacheConfiguration(ccfg);
+                }
             }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture(e);
-            }
+            else {
+                req.deploymentId(IgniteUuid.randomUuid());
 
-            if (nearCfg != null)
-                nearCfg.setName(ccfg.getName());
+                try {
+                    CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
+                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+
+                    initialize(cfg, cacheObjCtx);
+
+                    req.startCacheConfiguration(cfg);
+                } catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture(e);
+                }
+            }
         }
         else {
             req.clientStartOnly(true);
@@ -1572,11 +1581,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (ccfg == null)
                 return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start near cache " +
-                    "(a cache with the given name is not started): " + nearCfg.getName()));
+                    "(a cache with the given name is not started): " + cacheName));
 
             if (ccfg.getNodeFilter().apply(ctx.discovery().localNode()))
                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near cache " +
-                    "(local node is an affinity node for cache): " + nearCfg.getName()));
+                    "(local node is an affinity node for cache): " + cacheName));
 
             req.deploymentId(desc.deploymentId());
             req.startCacheConfiguration(ccfg);
