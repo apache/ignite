@@ -274,8 +274,8 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
 
             cacheCfg.setName(name);
 
-            // TODO: IGNITE-541 - Provide near cfg.
-            cache = new SpringCache(ignite.getOrCreateCache(cacheCfg));
+            cache = new SpringCache(nearCacheCfg != null ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg) :
+                ignite.getOrCreateCache(cacheCfg));
 
             SpringCache old = caches.putIfAbsent(name, cache);
 
