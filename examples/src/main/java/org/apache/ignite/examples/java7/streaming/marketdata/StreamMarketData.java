@@ -19,6 +19,7 @@ package org.apache.ignite.examples.java7.streaming.marketdata;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
@@ -62,19 +63,23 @@ public class StreamMarketData {
             try (IgniteDataStreamer<String, MarketTick> stmr = ignite.dataStreamer(mktCache.getName())) {
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
                 // Instead we update the instruments in the 'instCache'.
-                stmr.receiver(new StreamVisitor<>((cache, e) -> {
-                    String symbol = e.getKey();
-                    MarketTick tick = e.getValue();
+                stmr.receiver(new StreamVisitor<>(new IgniteBiInClosure<IgniteCache<String, MarketTick>, Map.Entry<String, MarketTick>>() {
+                    @Override
+                    public void apply(IgniteCache<String, MarketTick> mktCache, Map.Entry<String, MarketTick> e) {
+                        String symbol = e.getKey();
+                        MarketTick tick = e.getValue();
 
-                    Instrument inst = instCache.get(symbol);
+                        Instrument inst = instCache.get(symbol);
 
-                    if (inst == null)
-                        inst = new Instrument(symbol);
+                        if (inst == null)
+                            inst = new Instrument(symbol);
 
-                    // Update cached instrument based on the latest market tick.
-                    inst.update(tick);
+                        // Don't populate market cache, as we don't use it for querying.
+                        // Update cached instrument based on the latest market tick.
+                        inst.update(tick);
 
-                    instCache.put(symbol, inst);
+                        instCache.put(symbol, inst);
+                    }
                 }));
 
                 // Stream market data into market data stream cache.
