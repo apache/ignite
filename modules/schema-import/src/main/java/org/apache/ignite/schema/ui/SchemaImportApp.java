@@ -484,7 +484,7 @@ public class SchemaImportApp extends Application {
                 if (singleXml)
                     XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
-                CodeGenerator.snippets(all, pkg, includeKeys, outFolder, askOverwrite);
+                CodeGenerator.snippet(all, pkg, includeKeys, outFolder, askOverwrite);
 
                 perceptualDelay(started);
 

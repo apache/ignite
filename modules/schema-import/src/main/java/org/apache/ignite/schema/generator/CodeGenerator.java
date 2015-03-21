@@ -27,7 +27,7 @@ import java.util.*;
 import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 
 /**
- * Code generator of POJOs for key and value classes and configuration snippets.
+ * Code generator of POJOs for key and value classes and configuration snippet.
  */
 public class CodeGenerator {
     /** */
@@ -459,14 +459,14 @@ public class CodeGenerator {
             if (javaTypeName.startsWith("java.lang."))
                 javaTypeName = javaTypeName.substring(10);
 
-            src.add(owner + ".add(new CacheTypeFieldMetadata(\"" + field.dbName() + "\", " +
+            add2(src, owner + ".add(new CacheTypeFieldMetadata(\"" + field.dbName() + "\", " +
                 "Types." + field.dbTypeName() + ", \"" +
                 field.javaName() + "\", " + javaTypeName + ".class));");
         }
     }
 
     /**
-     * Generate java snippets for cache configuration with JDBC store and types metadata.
+     * Generate java snippet for cache configuration with JDBC store and types metadata.
      *
      * @param pojos POJO descriptors.
      * @param pkg Types package.
@@ -475,17 +475,17 @@ public class CodeGenerator {
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If generation failed.
      */
-    public static void snippets(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
+    public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
         String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
-        File cacheStoreSnippet = new File(pkgFolder, "CacheStoreSnippet.java");
+        File configurationSnippet = new File(pkgFolder, "ConfigurationSnippet.java");
 
-        if (cacheStoreSnippet.exists()) {
-            MessageBox.Result choice = askOverwrite.confirm(cacheStoreSnippet.getName());
+        if (configurationSnippet.exists()) {
+            MessageBox.Result choice = askOverwrite.confirm(configurationSnippet.getName());
 
             if (CANCEL == choice)
-                throw new IllegalStateException("Java snippets generation was canceled!");
+                throw new IllegalStateException("Java snippet generation was canceled!");
 
             if (NO == choice || NO_TO_ALL == choice)
                 return;
@@ -493,48 +493,23 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "org.apache.ignite.cache.store.jdbc.*;org.apache.ignite.configuration.*;;" +
-            "javax.cache.configuration.*;javax.sql.*", "CacheStoreSnippet", "CacheStoreSnippet");
+        header(src, pkg, "org.apache.ignite.cache.*;org.apache.ignite.cache.store.*;" +
+            "org.apache.ignite.cache.store.jdbc.*;;javax.sql.*;java.sql.Types;java.util.*;",
+            "ConfigurationSnippet", "ConfigurationSnippet");
 
         add1(src, "/** Configure cache store. */");
-        add1(src, "public static void configure(CacheConfiguration ccfg) {");
+        add1(src, "public static CacheStore store() {");
         add2(src, "DataSource dataSource = null; // TODO create data source.");
         add0(src, "");
-        add2(src, "// Create store. ");
         add2(src, "CacheJdbcPojoStore store = new CacheJdbcPojoStore();");
         add2(src, "store.setDataSource(dataSource);");
         add0(src, "");
-        add2(src, "// Create store factory. ");
-        add2(src, "ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));");
-        add0(src, "");
-        add2(src, "// Configure cache to use store. ");
-        add2(src, "ccfg.setReadThrough(true);");
-        add2(src, "ccfg.setWriteThrough(true);");
+        add2(src, "return store;");
         add1(src, "}");
-
-        add0(src, "}");
-
-        write(src, cacheStoreSnippet);
-
-        File cacheTypeMetadataSnippet = new File(pkgFolder, "CacheTypeMetadataSnippet.java");
-
-        if (cacheTypeMetadataSnippet.exists()) {
-            MessageBox.Result choice = askOverwrite.confirm(cacheTypeMetadataSnippet.getName());
-
-            if (CANCEL == choice)
-                throw new IllegalStateException("Java snippets generation was canceled!");
-
-            if (NO == choice || NO_TO_ALL == choice)
-                return;
-        }
-
-        src.clear();
-
-        header(src, pkg, "org.apache.ignite.cache.*;;org.apache.ignite.configuration.*;java.sql.Types;java.util.*",
-            "CacheTypeMetadataSnippet", "CacheTypeMetadataSnippet");
+        add0(src, "");
 
         add1(src, "/** Configure cache types metadata. */");
-        add1(src, "public static void configure(CacheConfiguration ccfg) {");
+        add1(src, "public static Collection<CacheTypeMetadata> typeMetadata() {");
 
         add2(src, "// Configure cache types. ");
         add2(src, "Collection<CacheTypeMetadata> meta = new ArrayList<>();");
@@ -571,11 +546,11 @@ public class CodeGenerator {
             first = false;
         }
         add0(src, "");
-        add2(src, "ccfg.setTypeMetadata(meta);");
+        add2(src, "return meta;");
         add1(src, "}");
 
         add0(src, "}");
 
-        write(src, cacheTypeMetadataSnippet);
+        write(src, configurationSnippet);
     }
 }
