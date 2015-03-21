@@ -165,7 +165,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
-        return ctx.kernalContext().query().queryTwoStep(space, sqlQry, params);
+        return ctx.kernalContext().query().queryTwoStep(ctx, new SqlFieldsQuery(sqlQry).setArgs(params));
     }
 
     /** {@inheritDoc} */
