@@ -20,24 +20,23 @@ package org.apache.ignite.examples.java8.streaming.marketdata;
 import org.apache.ignite.configuration.*;
 
 /**
- * Configuration for the streaming cache to store the stream of random numbers.
- * This cache is configured with sliding window of 1 second, which means that
- * data older than 1 second will be automatically removed from the cache.
+ * Configuration for the streaming caches for market data and financial instruments.
  */
 public class CacheConfig {
-    /** Cache name. */
-    public static final String STREAM_NAME = "marketTicks";
-
     /**
-     * Configure streaming cache.
+     * Configure streaming cache for market ticks.
      */
     public static CacheConfiguration<String, MarketTick> marketTicksCache() {
         return new CacheConfiguration<>("marketTicks");
     }
 
+    /**
+     * Configure cache for financial instruments.
+     */
     public static CacheConfiguration<String, Instrument> instrumentCache() {
         CacheConfiguration<String, Instrument> instCache = new CacheConfiguration<>("instCache");
 
+        // Index some fields for querying portfolio positions.
         instCache.setIndexedTypes(String.class, Instrument.class);
 
         return instCache;
