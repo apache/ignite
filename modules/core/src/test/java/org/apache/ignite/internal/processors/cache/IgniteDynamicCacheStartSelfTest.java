@@ -29,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -257,7 +258,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName(DYNAMIC_CACHE_NAME);
 
-        kernal.createCache(ccfg, null);
+        kernal.createCache(ccfg);
 
         for (int g = 0; g < nodeCount(); g++) {
             IgniteKernal kernal0 = (IgniteKernal) grid(g);
@@ -319,7 +320,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName(DYNAMIC_CACHE_NAME);
 
-        kernal.createCache(ccfg, null);
+        kernal.createCache(ccfg);
 
         info(">>>>>>> Deployed dynamic cache");
 
@@ -382,7 +383,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             ccfg.setNodeFilter(NODE_FILTER);
 
-            kernal.createCache(ccfg, null);
+            kernal.createCache(ccfg);
 
             startGrid(nodeCount() + 1);
 
@@ -435,7 +436,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailWhenConfiguredCacheExists() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 final IgniteKernal kernal = (IgniteKernal) grid(0);
@@ -448,9 +449,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 ccfg.setNodeFilter(NODE_FILTER);
 
-                return kernal.createCache(ccfg, null);
+                return kernal.createCache(ccfg);
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteCacheExistsException.class, null);
     }
 
     /**
@@ -471,7 +472,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             ccfg.setNodeFilter(NODE_FILTER);
 
-            kernal.createCache(ccfg, null);
+            kernal.createCache(ccfg);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override
@@ -516,7 +517,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             final IgniteKernal started = (IgniteKernal) grid(nodeCount());
 
-            started.createCache(ccfg, null);
+            started.createCache(ccfg);
 
             GridCacheAdapter<Object, Object> cache = started.internalCache(DYNAMIC_CACHE_NAME);
 
@@ -679,6 +680,66 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopGrid(nodeCount());
+        }
+    }
+
+    /** {@inheritDoc} */
+    public void testGetOrCreate() throws Exception {
+        try {
+            final CacheConfiguration cfg = new CacheConfiguration();
+
+            cfg.setName(DYNAMIC_CACHE_NAME);
+            cfg.setNodeFilter(NODE_FILTER);
+
+            grid(0).getOrCreateCache(cfg);
+            grid(0).getOrCreateCache(cfg);
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return grid(0).getOrCreateCache(cfg, new NearCacheConfiguration());
+                }
+            }, CacheException.class, null);
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return grid(0).getOrCreateCache(DYNAMIC_CACHE_NAME, new NearCacheConfiguration());
+                }
+            }, CacheException.class, null);
+
+            testAttribute = false;
+
+            startGrid(nodeCount());
+            startGrid(nodeCount() + 1);
+
+            try {
+                IgniteEx nearGrid = grid(nodeCount());
+
+                nearGrid.getOrCreateCache(cfg, new NearCacheConfiguration());
+                nearGrid.getOrCreateCache(DYNAMIC_CACHE_NAME, new NearCacheConfiguration());
+
+                GridCacheContext<Object, Object> nCtx = ((IgniteKernal)nearGrid)
+                        .internalCache(DYNAMIC_CACHE_NAME).context();
+
+                assertTrue(nCtx.isNear());
+                assertFalse(nCtx.affinityNode());
+
+                IgniteEx clientGrid = grid(nodeCount() + 1);
+
+                clientGrid.getOrCreateCache(cfg);
+                clientGrid.getOrCreateCache(cfg);
+
+                GridCacheContext<Object, Object> cCtx = ((IgniteKernal)clientGrid)
+                        .internalCache(DYNAMIC_CACHE_NAME).context();
+
+                assertFalse(cCtx.isNear());
+                assertFalse(cCtx.affinityNode());
+            } finally {
+                stopGrid(nodeCount() + 1);
+                stopGrid(nodeCount());
+            }
+        }
+        finally {
+            grid(0).destroyCache(DYNAMIC_CACHE_NAME);
         }
     }
 }
