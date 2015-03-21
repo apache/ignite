@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
-
-import org.apache.ignite.examples.java7.datagrid.store.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- *
+ * <!-- Package description. -->
+ * Basic examples for computational ignite functionality.
  */
-public class CacheStoreLoadDataExampleMultiNodeSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, CacheNodeWithStoreStartup.configure());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheStoreLoaderExample() throws Exception {
-        CacheStoreLoadDataExample.main(EMPTY_ARGS);
-    }
-}
+package org.apache.ignite.examples.java8.computegrid;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.montecarlo.*;
 import org.apache.ignite.examples.java7.computegrid.montecarlo.*;
 import org.apache.ignite.testframework.junits.common.*;
 

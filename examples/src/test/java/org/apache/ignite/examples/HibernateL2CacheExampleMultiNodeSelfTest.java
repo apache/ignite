@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.hibernate.*;
 import org.apache.ignite.examples.java7.datagrid.hibernate.*;
 
 /**
