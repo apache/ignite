@@ -50,7 +50,7 @@ public class StreamRandomNumbers {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure());
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
 
             try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
                 // Allow data updates.

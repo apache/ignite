@@ -60,9 +60,6 @@ public class StreamMarketData {
             IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
 
             try (IgniteDataStreamer<String, MarketTick> stmr = ignite.dataStreamer(mktCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
-
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
                 // Instead we update the instruments in the 'instCache'.
                 stmr.receiver(new StreamVisitor<>((cache, e) -> {

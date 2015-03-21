@@ -20,7 +20,6 @@ package org.apache.ignite.examples.java8.computegrid;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.java7.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -76,7 +75,7 @@ public class ComputeTaskSplitExample {
 
             for (final String word : arg.split(" ")) {
                 jobs.add(new ComputeJobAdapter() {
-                    @Nullable @Override public Object execute() {
+                    @Override public Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
@@ -90,7 +89,7 @@ public class ComputeTaskSplitExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return results.stream().mapToInt(ComputeJobResult::getData).sum();
         }
     }
