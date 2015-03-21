@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.marketdata;
+package org.apache.ignite.examples.java7.streaming.marketdata;
 
 import org.apache.ignite.cache.query.annotations.*;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.marketdata;
+package org.apache.ignite.examples.java7.streaming.numbers;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
@@ -28,13 +28,13 @@ import java.util.*;
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link StreamMarketData}.</li>
- *     <li>Start querying top performing instruments using {@link QueryTopInstruments}.</li>
+ *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
+ *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class QueryTopInstruments {
+public class QueryPopularNumbers {
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -43,28 +43,29 @@ public class QueryTopInstruments {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
+            // The cache is configured with sliding window holding 1 second of the streaming data.
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
 
-            // Select top 3 instruments.
-            SqlFieldsQuery top3qry = new SqlFieldsQuery(
-                "select symbol, (latest - open) from Instrument order by (latest - open) desc limit 3");
+            // Select top 10 words.
+            SqlFieldsQuery top10Qry = new SqlFieldsQuery("select _key, _val from Long order by _val desc limit 10");
 
-            // Select total profit.
-            SqlFieldsQuery profitQry = new SqlFieldsQuery("select sum(latest - open) from Instrument");
+            // Select average, min, and max counts among all the words.
+            SqlFieldsQuery statsQry = new SqlFieldsQuery("select avg(_val), min(_val), max(_val) from Long");
 
-            // Query top 3 best performing instruments every 5 seconds.
+            // Query top 10 popular numbers every 5 seconds.
             while (true) {
                 // Execute queries.
-                List<List<?>> top3 = instCache.query(top3qry).getAll();
-                List<List<?>> profit = instCache.query(profitQry).getAll();
+                List<List<?>> top10 = stmCache.query(top10Qry).getAll();
+                List<List<?>> stats = stmCache.query(statsQry).getAll();
 
-                List<?> row = profit.get(0);
+                // Print average count.
+                List<?> row = stats.get(0);
 
                 if (row.get(0) != null)
-                    System.out.printf("Total profit: %.2f%n", row.get(0));
+                    System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
 
                 // Print top 10 words.
-                ExamplesUtils.printQueryResults(top3);
+                ExamplesUtils.printQueryResults(top10);
 
                 Thread.sleep(5000);
             }
