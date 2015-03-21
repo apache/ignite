@@ -82,6 +82,28 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started1: " + ignite.name());
+
+            try {
+                Ignition.start();
+
+                fail();
+            }
+            catch (IgniteException expected) {
+                // No-op.
+            }
+        }
+
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started2: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStartGridWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
         String gridName = "grid_with_url_config";
