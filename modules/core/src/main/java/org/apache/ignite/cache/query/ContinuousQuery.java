@@ -34,7 +34,7 @@ import javax.cache.event.*;
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
- * method of only on the local node using {@link IgniteCache#localQuery(Query)} method.
+ * method of only on the local node if local flag for query is {@code true} (see {@link #setLocal(boolean)} method).
  * Note that in case query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins topology,
  * so no updates will be missed.
