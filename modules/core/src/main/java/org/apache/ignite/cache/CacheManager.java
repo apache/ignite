@@ -24,7 +24,6 @@ import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
@@ -35,6 +34,8 @@ import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -67,9 +68,6 @@ public class CacheManager implements javax.cache.CacheManager {
     /** */
     private final GridKernalGateway kernalGateway;
 
-    /** */
-    private final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true); // TODO IGNITE-45.
-
     /**
      * @param uri Uri.
      * @param cachingProvider Caching provider.
@@ -86,11 +84,13 @@ public class CacheManager implements javax.cache.CacheManager {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, true)) {
+                    TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-                discoSpi.setIpFinder(IP_FINDER);
+                    discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
-                cfg.setDiscoverySpi(discoSpi);
+                    cfg.setDiscoverySpi(discoSpi);
+                }
 
                 cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
 
