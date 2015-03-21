@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.java8.streaming.numbers;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
