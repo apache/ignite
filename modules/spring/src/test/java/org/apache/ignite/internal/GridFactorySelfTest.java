@@ -82,7 +82,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartDefault() throws Exception {
+    public void testIgnitionStartDefault() throws Exception {
         try (Ignite ignite = Ignition.start()) {
             log.info("Started1: " + ignite.name());
 
@@ -98,6 +98,24 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try (Ignite ignite = Ignition.start()) {
             log.info("Started2: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartFabricDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/fabric/default-config.xml")) {
+            log.info("Started: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/default-config.xml")) {
+            log.info("Started: " + ignite.name());
         }
     }
 
