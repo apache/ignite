@@ -220,7 +220,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.setBufferSize(-1);
+                    q.setPageSize(-1);
 
                     return null;
                 }
@@ -231,7 +231,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.setBufferSize(0);
+                    q.setPageSize(0);
 
                     return null;
                 }
@@ -448,7 +448,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.localQuery(qry)) {
+        try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry.setLocal(true))) {
             int locKey = -1;
             int rmtKey = -1;
 
@@ -519,7 +519,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setBufferSize(5);
+        qry.setPageSize(5);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
             ClusterNode node = F.first(grid(0).cluster().forRemotes().nodes());
@@ -604,7 +604,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setBufferSize(10);
+        qry.setPageSize(10);
         qry.setTimeInterval(3000);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {

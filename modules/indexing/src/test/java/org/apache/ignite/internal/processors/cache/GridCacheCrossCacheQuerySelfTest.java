@@ -233,9 +233,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testApiQueries() throws Exception {
         IgniteCache<Object,Object> c = ignite.jcache("partitioned");
 
-        c.queryFields(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
+        c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
-        List<List<?>> res = c.queryFields(new SqlFieldsQuery("select cast(? as varchar), id " +
+        List<List<?>> res = c.query(new SqlFieldsQuery("select cast(? as varchar), id " +
             "from FactPurchase order by id limit ? offset ?").setArgs("aaa", 1, 1)).getAll();
 
         assertEquals(1, res.size());
@@ -268,7 +268,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                         start = t;
                     }
 
-                    c.queryFields(new SqlFieldsQuery("select * from FactPurchase")).getAll();
+                    c.query(new SqlFieldsQuery("select * from FactPurchase")).getAll();
                 }
 
                 return null;

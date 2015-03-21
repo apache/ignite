@@ -137,7 +137,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
                 while (!end.get()) {
                     int salary = rnd.nextInt(maxSalary);
 
-                    c.queryFields(new SqlFieldsQuery("select name from Person where salary = ?").setArgs(salary))
+                    c.query(new SqlFieldsQuery("select name from Person where salary = ?").setArgs(salary))
                         .getAll();
 
                     qrys.increment();

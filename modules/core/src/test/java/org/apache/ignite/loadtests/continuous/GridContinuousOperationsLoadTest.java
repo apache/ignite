@@ -129,7 +129,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setBufferSize(bufSize);
+                    qry.setPageSize(bufSize);
                     qry.setTimeInterval(timeInterval);
 
                     cache.query(qry);
