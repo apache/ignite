@@ -37,7 +37,7 @@ public abstract class Query<R> implements Serializable {
     public static final int DFLT_PAGE_SIZE = 1024;
 
     /** Page size. */
-    private int pageSize;
+    private int pageSize = DFLT_PAGE_SIZE;
 
     /** Local flag. */
     private boolean loc;
