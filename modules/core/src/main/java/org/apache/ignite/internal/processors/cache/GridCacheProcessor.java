@@ -2086,8 +2086,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        assert caches.isEmpty() || max > 0;
-
         return max;
     }
 
