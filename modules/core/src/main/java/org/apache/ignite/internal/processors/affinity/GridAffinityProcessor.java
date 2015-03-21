@@ -131,18 +131,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Maps keys to nodes on default cache.
-     *
-     * @param keys Keys to map.
-     * @return Map of nodes to keys.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys)
-        throws IgniteCheckedException {
-        return keysToNodes(null, keys);
-    }
-
-    /**
      * Maps single key to a node.
      *
      * @param cacheName Cache name.
