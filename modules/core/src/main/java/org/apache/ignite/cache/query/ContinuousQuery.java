@@ -35,7 +35,7 @@ import javax.cache.event.*;
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
- * method of only on the local node if local flag for query is {@code true} (see {@link #setLocal(boolean)} method).
+ * method, or only on the local node, if {@link Query#setLocal(boolean)} parameter is set to {@code true}.
  * Note that in case query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins topology,
  * so no updates will be missed.
@@ -62,34 +62,21 @@ import javax.cache.event.*;
  * ContinuousQuery&lt;UUID, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
  * // Initial iteration query will return all persons with salary above 1000.
- * qry.setInitialQuery(Query.scan(new IgniteBiPredicate&lt;UUID, Person&gt;() {
- *     &#64;Override public boolean apply(UUID id, Person p) {
- *         return p.getSalary() &gt; 1000;
- *     }
- * }));
+ * qry.setInitialQuery(new ScanQuery((UUID nodeId, Person p) -> p.getSalary() &gt; 1000));
  *
  *
  * // Callback that is called locally when update notifications are received.
  * // It simply prints out information about all created persons.
- * qry.setLocalListener(new CacheEntryUpdatedListener&lt;UUID, Person&gt;() {
- *     &#64;Override public void onUpdated(Iterable&lt;CacheEntryEvent&lt;? extends UUID, ? extends Person&gt;&gt; evts) {
- *         for (CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e : evts) {
- *             Person p = e.getValue();
+ * qry.setLocalListener((evts) -> {
+ *     for (CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e : evts) {
+ *         Person p = e.getValue();
  *
- *             X.println("&gt;&gt;&gt;");
- *             X.println("&gt;&gt;&gt; " + p.getFirstName() + " " + p.getLastName() +
- *                 "'s salary is " + p.getSalary());
- *             X.println("&gt;&gt;&gt;");
- *         }
+ *         System.out.println(p.getFirstName() + " " + p.getLastName() + "'s salary is " + p.getSalary());
  *     }
  * });
  *
  * // Continuous listener will be notified for persons with salary above 1000.
- * qry.setRemoteFilter(new CacheEntryEventFilter&lt;UUID, Person&gt;() {
- *     &#64;Override public boolean evaluate(CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e) {
- *         return e.getValue().getSalary() &gt; 1000;
- *     }
- * });
+ * qry.setRemoteFilter(evt -> e.getValue().getSalary() &gt; 1000);
  *
  * // Execute query and get cursor that iterates through initial data.
  * QueryCursor&lt;Cache.Entry&lt;UUID, Person&gt;&gt; cur = cache.query(qry);
