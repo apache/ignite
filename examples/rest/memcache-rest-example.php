@@ -24,10 +24,10 @@
  * To execute this script you need to have PHP Memcached extension installed.
  * See http://pecl.php.net/package/memcached for details.
  *
- * You can use default cache configuration from examples/config folder to
+ * You can use configuration from examples/config folder to
  * start up an instance of Ignite with cache enabled as follows:
  * ----
- * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache-default.xml
+ * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
  * ----
  */
 
