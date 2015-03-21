@@ -81,8 +81,8 @@ if exist "%IGNITE_HOME%\config" goto run
  jdbc.driver.class=org.h2.Driver ^
  jdbc.url="jdbc:h2:tcp://localhost/%IGNITE_HOME%\examples\schema-import\demo" ^
  jdbc.user=sa ^
- out.folder="%IGNITE_HOME%\examples\src\main\java" ^
- pojo.package=org.apache.ignite.examples.schema ^
+ out.folder="%IGNITE_HOME%\examples\schema-import\src\main\java" ^
+ pojo.package=org.apache.ignite ^
  pojo.constructor=true
 
 :error_finish
