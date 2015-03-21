@@ -30,16 +30,12 @@ import static java.util.concurrent.TimeUnit.*;
  * data older than 1 second will be automatically removed from the cache.
  */
 public class CacheConfig {
-    /** Cache name. */
-    public static final String STREAM_NAME = "randomNumbers";
-
     /**
      * Configure streaming cache.
      */
-    public static CacheConfiguration<Integer, Long> configure() {
-        CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>();
+    public static CacheConfiguration<Integer, Long> randomNumbersCache() {
+        CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
 
-        cfg.setName(STREAM_NAME);
         cfg.setIndexedTypes(Integer.class, Long.class);
 
         // Sliding window of 1 seconds.
