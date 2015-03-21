@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.java7.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -85,7 +84,7 @@ public class ComputeTaskMapExample {
                 ClusterNode node = it.next();
 
                 map.put(new ComputeJobAdapter() {
-                    @Nullable @Override public Object execute() {
+                    @Override public Object execute() {
                         System.out.println();
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
@@ -99,7 +98,7 @@ public class ComputeTaskMapExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return results.stream().mapToInt(ComputeJobResult::getData).sum();
         }
     }
