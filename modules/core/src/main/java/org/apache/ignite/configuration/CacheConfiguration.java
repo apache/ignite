@@ -331,6 +331,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /* No-op. */
     }
 
+    /** Cache name. */
+    public CacheConfiguration(String name) {
+        this.name = name;
+    }
+
     /**
      * Copy constructor.
      *

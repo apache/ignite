@@ -15,14 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.numbers;
+package org.apache.ignite.examples.java8.streaming.marketdata;
 
 import org.apache.ignite.configuration.*;
-
-import javax.cache.configuration.*;
-import javax.cache.expiry.*;
-
-import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Configuration for the streaming cache to store the stream of random numbers.
@@ -30,17 +25,21 @@ import static java.util.concurrent.TimeUnit.*;
  * data older than 1 second will be automatically removed from the cache.
  */
 public class CacheConfig {
+    /** Cache name. */
+    public static final String STREAM_NAME = "marketTicks";
+
     /**
      * Configure streaming cache.
      */
-    public static CacheConfiguration<Integer, Long> randomNumbersCache() {
-        CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
+    public static CacheConfiguration<String, MarketTick> marketTicksCache() {
+        return new CacheConfiguration<>("marketTicks");
+    }
 
-        cfg.setIndexedTypes(Integer.class, Long.class);
+    public static CacheConfiguration<String, Instrument> instrumentCache() {
+        CacheConfiguration<String, Instrument> instCache = new CacheConfiguration<>("instCache");
 
-        // Sliding window of 1 seconds.
-        cfg.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(SECONDS, 1))));
+        instCache.setIndexedTypes(String.class, Instrument.class);
 
-        return cfg;
+        return instCache;
     }
 }

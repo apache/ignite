@@ -111,7 +111,12 @@ public class ExamplesUtils {
                     List<?> l = (List)row;
 
                     for (int i = 0; i < l.size(); i++) {
-                        System.out.print(l.get(i));
+                        Object o = l.get(i);
+
+                        if (o instanceof Double || o instanceof Float)
+                            System.out.printf("%.2f", o);
+                        else
+                            System.out.print(l.get(i));
 
                         if (i + 1 != l.size())
                             System.out.print(',');

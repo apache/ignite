@@ -32,11 +32,7 @@ import java.util.*;
  *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
  * </ul>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-compute.xml} configuration.
+ * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class StreamRandomNumbers {
     /** Random number generator. */
@@ -54,7 +50,7 @@ public class StreamRandomNumbers {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure());
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
 
             try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
                 // Allow data updates.

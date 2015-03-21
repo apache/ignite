@@ -17,24 +17,31 @@
 
 package org.apache.ignite.examples.java8.streaming.marketdata;
 
+import org.apache.ignite.cache.query.annotations.*;
+
+import java.io.*;
+
 /**
- *
+ * Financial instrument.
  */
-public class Instrument {
+public class Instrument implements Serializable {
     /** Instrument symbol. */
+    @QuerySqlField(index = true)
     private final String symbol;
 
     /** Open price. */
-    private volatile double open;
+    @QuerySqlField(index = true)
+    private double open;
 
     /** High price. */
-    private volatile double high;
+    private double high;
 
     /** Low price. */
-    private volatile double low = Long.MAX_VALUE;
+    private double low = Long.MAX_VALUE;
 
     /** Close price. */
-    private volatile double close;
+    @QuerySqlField(index = true)
+    private double latest;
 
     /**
      * @param symbol Symbol.
@@ -44,45 +51,17 @@ public class Instrument {
     }
 
     /**
-     * @return Copy of this instance.
-     */
-    public synchronized Instrument copy() {
-        Instrument res = new Instrument(symbol);
-
-        res.open = open;
-        res.high = high;
-        res.low = low;
-        res.close = close;
-
-        return res;
-    }
-
-    /**
      * Updates this bar with last price.
      *
-     * @param price Price.
+     * @param latest Price.
      */
-    public synchronized void update(double price) {
+    public void update(double latest) {
         if (open == 0)
-            open = price;
+            open = latest;
 
-        high = Math.max(high, price);
-        low = Math.min(low, price);
-        close = price;
-    }
-
-    /**
-     * Updates this bar with next bar.
-     *
-     * @param instrument Next bar.
-     */
-    public synchronized void update(Instrument instrument) {
-        if (open == 0)
-            open = instrument.open;
-
-        high = Math.max(high, instrument.high);
-        low = Math.min(low, instrument.low);
-        close = instrument.close;
+        high = Math.max(high, latest);
+        low = Math.min(low, latest);
+        this.latest = latest;
     }
 
     /**
@@ -116,13 +95,12 @@ public class Instrument {
     /**
      * @return Close price.
      */
-    public double close() {
-        return close;
+    public double latest() {
+        return latest;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return "Bar [symbol=" + symbol + ", open=" + open + ", high=" + high + ", low=" + low +
-            ", close=" + close + ']';
+        return "Instrument [symbol=" + symbol + ", latest=" + latest + ", change=" + (latest - open) + ']';
     }
 }

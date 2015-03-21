@@ -229,9 +229,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /**
      * Sets custom stream receiver to this data streamer.
      *
-     * @param updater Stream receiver.
+     * @param rcvr Stream receiver.
      */
-    public void receiver(StreamReceiver<K, V> updater);
+    public void receiver(StreamReceiver<K, V> rcvr);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
