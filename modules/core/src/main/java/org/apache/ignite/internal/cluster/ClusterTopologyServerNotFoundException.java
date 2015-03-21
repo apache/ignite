@@ -14,32 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.cluster;
 
-package org.apache.ignite.examples;
-
-import org.apache.ignite.examples.java7.computegrid.failover.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.cluster.*;
 
 /**
- * Checkpoint examples self test.
+ * Internal exception that is used to indicate that all server nodes have left the grid.
  */
-public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
+public class ClusterTopologyServerNotFoundException extends ClusterTopologyCheckedException {
     /**
-     * Starts remote nodes before each test.
-     *
-     * Note: using beforeTestsStarted() to start nodes only once won't work.
-     *
-     * @throws Exception If remote nodes start failed.
+     * @param message Error message.
      */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
+    public ClusterTopologyServerNotFoundException(String message) {
+        super(message);
     }
 
     /**
-     * @throws Exception If failed.
+     * @param message Error message.
+     * @param cause Exception cause.
      */
-    public void testCheckpointExample() throws Exception {
-        ComputeFailoverExample.main(EMPTY_ARGS);
+    public ClusterTopologyServerNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

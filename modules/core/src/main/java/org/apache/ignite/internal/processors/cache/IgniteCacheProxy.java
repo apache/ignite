@@ -465,10 +465,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return {@code true} If this is a replicated cache and we are on a data node.
      */
     private boolean isReplicatedDataNode() {
-        if (!ctx.isReplicated())
-            return false;
-
-        return ctx.affinityNode();
+        return ctx.isReplicated() && ctx.affinityNode();
     }
 
     /**
@@ -1260,14 +1257,20 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (!gate.enterIfNotClosed())
             return;
 
+        IgniteInternalFuture<?> fut;
+
         try {
-            ctx.kernalContext().cache().dynamicStopCache(ctx.name()).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
+            fut = ctx.kernalContext().cache().dynamicStopCache(ctx.name());
         }
         finally {
             gate.leave();
+        }
+
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
     }
 

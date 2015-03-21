@@ -2372,14 +2372,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public void destroyCache(String cacheName) {
         guard();
 
+        IgniteInternalFuture<?> stopFut;
+
         try {
-            ctx.cache().dynamicStopCache(cacheName).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
+            stopFut = ctx.cache().dynamicStopCache(cacheName);
         }
         finally {
             unguard();
+        }
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
         }
     }
 

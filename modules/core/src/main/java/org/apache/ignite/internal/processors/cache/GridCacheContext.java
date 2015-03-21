@@ -189,6 +189,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private CacheObjectContext cacheObjCtx;
 
+    /** */
+    private CountDownLatch startLatch = new CountDownLatch(1);
+
     /** Start topology version. */
     private AffinityTopologyVersion startTopVer;
 
@@ -334,6 +337,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean affinityNode() {
         return affNode;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    public void awaitStarted() throws IgniteCheckedException {
+        U.await(startLatch);
+
+        GridCachePreloader<K, V> prldr = preloader();
+
+        if (prldr != null)
+            prldr.startFuture().get();
+    }
+
+    /**
+     * @return Started flag.
+     */
+    public boolean started() {
+        if (startLatch.getCount() != 0)
+            return false;
+
+        GridCachePreloader<K, V> prldr = preloader();
+
+        return prldr == null || prldr.startFuture().isDone();
+    }
+
+    /**
+     * 
+     */
+    public void onStarted() {
+        startLatch.countDown();
     }
 
     /**

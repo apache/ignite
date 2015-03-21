@@ -652,8 +652,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private List<ClusterNode> nodes(KeyCacheObject key) throws IgniteCheckedException {
         GridAffinityProcessor aff = ctx.affinity();
 
-        return !allowOverwrite() ? aff.mapKeyToPrimaryAndBackups(cacheName, key) :
-            Collections.singletonList(aff.mapKeyToNode(cacheName, key));
+        List<ClusterNode> res = null;
+
+        if (!allowOverwrite())
+            res = aff.mapKeyToPrimaryAndBackups(cacheName, key);
+        else {
+            ClusterNode node = aff.mapKeyToNode(cacheName, key);
+
+            if (node != null)
+                res = Collections.singletonList(node);
+        }
+
+        if (F.isEmpty(res))
+            throw new ClusterTopologyServerNotFoundException("Failed to find server node for cache (all affinity " +
+                "nodes have left the grid or cache was stopped): " + cacheName);
+
+        return res;
     }
 
     /**
@@ -1362,43 +1376,50 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
-            GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
+            proxy.gate().enter();
 
-            if (internalCache.isNear())
-                internalCache = internalCache.context().near().dht();
+            try {
+                GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
 
-            GridCacheContext cctx = internalCache.context();
+                if (internalCache.isNear())
+                    internalCache = internalCache.context().near().dht();
 
-            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+                GridCacheContext cctx = internalCache.context();
 
-            GridCacheVersion ver = cctx.versions().next(topVer);
+                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-            for (Map.Entry<KeyCacheObject, CacheObject> e : entries) {
-                try {
-                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                GridCacheVersion ver = cctx.versions().next(topVer);
 
-                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+                for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    try {
+                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                    entry.unswap(true, false);
+                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        CU.TTL_ETERNAL,
-                        CU.EXPIRE_TIME_ETERNAL,
-                        false,
-                        topVer,
-                        GridDrType.DR_LOAD);
+                        entry.unswap(true, false);
 
-                    cctx.evicts().touch(entry, topVer);
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            CU.TTL_ETERNAL,
+                            CU.EXPIRE_TIME_ETERNAL,
+                            false,
+                            topVer,
+                            GridDrType.DR_LOAD);
+
+                        cctx.evicts().touch(entry, topVer);
+                    }
+                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
+                    catch (IgniteCheckedException ex) {
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    }
                 }
-                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException ex) {
-                    IgniteLogger log = cache.unwrap(Ignite.class).log();
-
-                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
-                }
+            }
+            finally {
+                proxy.gate().leave();
             }
         }
     }

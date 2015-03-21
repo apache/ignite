@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -1802,6 +1803,8 @@ public class GridCacheUtils {
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
             return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
+        else if (e instanceof ClusterTopologyServerNotFoundException)
+            return new CacheServerNotFoundException(e.getMessage(), e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();

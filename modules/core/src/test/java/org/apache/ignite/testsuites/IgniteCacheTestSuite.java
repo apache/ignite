@@ -408,6 +408,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
+        suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
 
         return suite;
     }

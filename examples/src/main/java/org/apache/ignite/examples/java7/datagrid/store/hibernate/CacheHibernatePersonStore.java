@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.java7.datagrid.store.hibernate;
 
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.examples.java7.datagrid.store.model.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;

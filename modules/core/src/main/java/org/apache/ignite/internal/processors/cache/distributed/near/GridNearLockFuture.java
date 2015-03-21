@@ -726,7 +726,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             assert topVer.topologyVersion() > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all " +
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all " +
                     "partition nodes left the grid)."));
 
                 return;

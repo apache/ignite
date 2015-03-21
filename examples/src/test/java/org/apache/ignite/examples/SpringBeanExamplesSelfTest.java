@@ -18,7 +18,6 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.java7.misc.springbean.*;
-import org.apache.ignite.examples.misc.springbean.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**

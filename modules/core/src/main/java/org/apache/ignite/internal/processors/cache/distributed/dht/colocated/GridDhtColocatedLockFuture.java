@@ -594,7 +594,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             assert topVer.topologyVersion() > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                    "(all partition nodes left the grid): " + cctx.name()));
 
                 return;
             }

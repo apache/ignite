@@ -484,7 +484,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+                "left the grid)."));
 
             return;
         }

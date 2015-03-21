@@ -58,23 +58,24 @@ public class DynamicCacheChangeRequest implements Serializable {
      * Constructor creates cache stop request.
      *
      * @param cacheName Cache stop name.
+     * @param initiatingNodeId Initiating node ID.
+     * @param stop Stop flag.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId, boolean stop) {
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
 
-        stop = true;
+        this.stop = stop;
     }
 
     /**
-     * Constructor creates near cache start request.
+     * Constructor means for start requests.
      *
+     * @param cacheName Cache name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(
-        UUID initiatingNodeId
-    ) {
-        this.initiatingNodeId = initiatingNodeId;
+    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+        this(cacheName, initiatingNodeId, false);
     }
 
     /**
@@ -109,7 +110,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return Cache name.
      */
     public String cacheName() {
-        return cacheName != null ? cacheName : startCfg.getName();
+        return cacheName;
     }
 
     /**

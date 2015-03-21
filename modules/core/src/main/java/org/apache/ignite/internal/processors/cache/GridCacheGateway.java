@@ -210,6 +210,17 @@ public class GridCacheGateway<K, V> {
      *
      */
     public void onStopped() {
+        // Must prevent re-entries to the read lock.
         stopped = true;
+
+        ctx.kernalContext().gateway().writeLock();
+
+        try {
+            // No-op.
+            stopped = true;
+        }
+        finally {
+            ctx.kernalContext().gateway().writeUnlock();
+        }
     }
 }

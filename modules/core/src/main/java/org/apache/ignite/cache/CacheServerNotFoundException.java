@@ -14,32 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.cache;
 
-package org.apache.ignite.examples;
-
-import org.apache.ignite.examples.java7.computegrid.failover.*;
-import org.apache.ignite.testframework.junits.common.*;
+import javax.cache.CacheException;
 
 /**
- * Checkpoint examples self test.
+ * Exception thrown when all data nodes left the grid.
  */
-public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
+public class CacheServerNotFoundException extends CacheException {
     /**
-     * Starts remote nodes before each test.
-     *
-     * Note: using beforeTestsStarted() to start nodes only once won't work.
-     *
-     * @throws Exception If remote nodes start failed.
+     * @param message Error message.
      */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
+    public CacheServerNotFoundException(String message) {
+        super(message);
     }
 
     /**
-     * @throws Exception If failed.
+     * @param message Error message.
+     * @param cause Error cause.
      */
-    public void testCheckpointExample() throws Exception {
-        ComputeFailoverExample.main(EMPTY_ARGS);
+    public CacheServerNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * @param cause Error cause.
+     */
+    public CacheServerNotFoundException(Throwable cause) {
+        super(cause);
     }
 }

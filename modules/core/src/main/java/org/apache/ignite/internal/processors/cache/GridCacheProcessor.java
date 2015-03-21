@@ -825,6 +825,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.cache().start();
 
+        cacheCtx.onStarted();
+
         if (log.isInfoEnabled())
             log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
     }
@@ -1458,7 +1460,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (!desc.cancelled()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -1547,7 +1549,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
 
         if (ccfg != null) {
             if (desc != null && !desc.cancelled()) {
@@ -1628,7 +1630,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is stopped.
      */
     public IgniteInternalFuture<?> dynamicStopCache(String cacheName) {
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId(), true);
 
         return F.first(initiateCacheChanges(F.asList(t)));
     }
@@ -2193,21 +2195,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param name Cache name.
+     * @param cacheName Cache name.
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> IgniteCache<K, V> publicJCache(@Nullable String name) {
+    public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName) {
         if (log.isDebugEnabled())
-            log.debug("Getting public cache for name: " + name);
+            log.debug("Getting public cache for name: " + cacheName);
 
-        if (sysCaches.contains(maskNull(name)))
-            throw new IllegalStateException("Failed to get cache because it is a system cache: " + name);
+        if (sysCaches.contains(maskNull(cacheName)))
+            throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
         try {
-            String masked = maskNull(name);
+            String masked = maskNull(cacheName);
 
             IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
 
@@ -2215,11 +2217,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
                 if (desc == null || desc.cancelled())
-                    throw new IllegalArgumentException("Cache is not started: " + name);
+                    throw new IllegalArgumentException("Cache is not started: " + cacheName);
 
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
 
-                req.cacheName(name);
+                req.cacheName(cacheName);
 
                 req.deploymentId(desc.deploymentId());
 
@@ -2236,7 +2238,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
 
                 if (cache == null)
-                    throw new IllegalArgumentException("Cache is not started: " + name);
+                    throw new IllegalArgumentException("Cache is not started: " + cacheName);
             }
 
             return cache;
