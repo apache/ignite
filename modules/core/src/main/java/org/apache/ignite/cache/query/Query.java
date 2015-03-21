@@ -28,11 +28,8 @@ import java.io.*;
  * text queries accordingly.
  *
  * @see IgniteCache#query(Query)
- * @see IgniteCache#localQuery(Query)
- * @see IgniteCache#queryFields(SqlFieldsQuery)
- * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
-public abstract class Query<T extends Query> implements Serializable {
+public abstract class Query<R> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,6 +38,9 @@ public abstract class Query<T extends Query> implements Serializable {
 
     /** Page size. */
     private int pageSize;
+
+    /** Local flag. */
+    private boolean loc;
 
     /**
      * Empty constructor.
@@ -62,13 +62,33 @@ public abstract class Query<T extends Query> implements Serializable {
      * Sets optional page size, if {@code 0}, then default is used.
      *
      * @param pageSize Optional page size.
-     * @return {@code this} For chaining.
+     * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unchecked")
-    public T setPageSize(int pageSize) {
+    public Query<R> setPageSize(int pageSize) {
         this.pageSize = pageSize;
 
-        return (T)this;
+        return this;
+    }
+
+    /**
+     * Returns {@code true} if this query should be executed on local node only.
+     *
+     * @return Local flag.
+     */
+    public boolean isLocal() {
+        return loc;
+    }
+
+    /**
+     * Sets whether this query should be executed on local node only.
+     *
+     * @param loc Local flag.
+     * @return {@code this} for chaining.
+     */
+    public Query<R> setLocal(boolean loc) {
+        this.loc = loc;
+
+        return this;
     }
 
     /** {@inheritDoc} */

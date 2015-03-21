@@ -19,6 +19,7 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 
 /**
@@ -103,7 +104,7 @@ import javax.cache.event.*;
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
  */
-public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
+public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -123,7 +124,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /** Initial query. */
-    private Query initQry;
+    private Query<Cache.Entry<K, V>> initQry;
 
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;
@@ -150,7 +151,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * @param initQry Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialQuery(Query initQry) {
+    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         this.initQry = initQry;
 
         return this;
@@ -161,7 +162,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Initial query.
      */
-    public Query getInitialQuery() {
+    public Query<Cache.Entry<K, V>> getInitialQuery() {
         return initQry;
     }
 
@@ -299,6 +300,16 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
         this.autoUnsubscribe = autoUnsubscribe;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setPageSize(int pageSize) {
+        return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
+        return (ContinuousQuery<K, V>)super.setLocal(loc);
     }
 
     /**

@@ -117,7 +117,7 @@ public class CachePopularNumbersExample {
                 IgniteCache<Integer, Long> cache = ignite.jcache(CACHE_NAME);
 
                 try {
-                    List<List<?>> results = new ArrayList<>(cache.queryFields(
+                    List<List<?>> results = new ArrayList<>(cache.query(
                         new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt))
                         .getAll());
 
