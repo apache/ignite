@@ -84,13 +84,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         cfg.setName(cacheName);
         cfg.setCacheMode(PARTITIONED);
 
-        if (nearEnabled) {
-            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-
-            nearCfg.setName(cacheName);
-
-            cfg.setNearConfiguration(nearCfg);
-        }
+        if (nearEnabled)
+            cfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setNodeFilter(nodeFilter);
 
@@ -104,11 +99,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 5; i++)
             startGrid(i);
 
-        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-
-        nearCfg.setName(CACHE_NAME);
-
-        grid(1).createCache(nearCfg);
+        grid(1).createCache(CACHE_NAME, new NearCacheConfiguration());
 
         grid(2).jcache(null);
         grid(3).jcache(null);

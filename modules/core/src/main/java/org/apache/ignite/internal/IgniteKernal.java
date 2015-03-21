@@ -451,7 +451,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -2255,7 +2256,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, null).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2274,14 +2275,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            try {
-                ctx.cache().dynamicStartCache(cacheCfg, null).get();
-            }
-            catch (IgniteCheckedException e) {
-                // Ignore error if cache exists.
-                if (!e.hasCause(IgniteCacheExistsException.class))
-                    throw e;
-            }
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2304,7 +2298,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2314,19 +2308,57 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
-
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
         A.notNull(nearCfg, "nearCfg");
 
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(null, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
 
-            return ctx.cache().publicJCache(nearCfg.getName());
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    @Override
+    public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+
+            return ctx.cache().publicJCache(cacheName);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
