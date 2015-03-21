@@ -121,7 +121,7 @@ object ScalarCachePopularNumbersExample extends App {
      */
     def query(cnt: Int) {
         val results = cache$[JavaInt, JavaLong](NAME).get
-            .queryFields(new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit " + cnt))
+            .query(new SqlFieldsQuery("select _key, _val from Long order by _val desc, _key limit " + cnt))
             .getAll
 
         results.foreach(res => println(res.get(0) + "=" + res.get(1)))

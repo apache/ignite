@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.io.*;
@@ -330,5 +331,10 @@ public class CacheTypeMetadata implements Serializable {
      */
     public void setGroups(Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps) {
         this.grps = grps;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheTypeMetadata.class, this);
     }
 }

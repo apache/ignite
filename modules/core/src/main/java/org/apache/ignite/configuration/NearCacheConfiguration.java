@@ -17,7 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 
@@ -31,9 +30,6 @@ import static org.apache.ignite.configuration.CacheConfiguration.*;
 public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Cache name. */
-    private String name;
 
     /** Near cache eviction policy. */
     private CacheEvictionPolicy<K, V> nearEvictPlc;
@@ -54,27 +50,8 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
         super(ccfg);
 
-        name = ccfg.getName();
         nearEvictPlc = ccfg.getNearEvictionPolicy();
         nearStartSize = ccfg.getNearStartSize();
-    }
-
-    /**
-     * Gets cache name. The cache can be accessed via {@link Ignite#jcache(String)} method.
-     *
-     * @return Cache name.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets cache name.
-     *
-     * @param name Cache name.
-     */
-    public void setName(String name) {
-        this.name = name;
     }
 
     /**

@@ -219,6 +219,15 @@ public interface Ignite extends AutoCloseable {
         NearCacheConfiguration<K, V> nearCfg);
 
     /**
+     * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     *
+     * @param cacheCfg Cache configuration.
+     * @param nearCfg Near cache configuration for client.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
      * Starts a near cache on local node if cache was previously started with one of the
      * {@link #createCache(CacheConfiguration)} or {@link #createCache(CacheConfiguration, NearCacheConfiguration)}
      * methods.
@@ -226,7 +235,16 @@ public interface Ignite extends AutoCloseable {
      * @param nearCfg Near cache configuration.
      * @return Cache instance.
      */
-    public <K, V> IgniteCache<K, V> createCache(NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> createCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near configuration.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
 
     /**
      * Stops dynamically started cache.

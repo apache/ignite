@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 
 /**
@@ -34,7 +35,7 @@ import javax.cache.event.*;
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
- * method of only on the local node using {@link IgniteCache#localQuery(Query)} method.
+ * method of only on the local node if local flag for query is {@code true} (see {@link #setLocal(boolean)} method).
  * Note that in case query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins topology,
  * so no updates will be missed.
@@ -104,15 +105,15 @@ import javax.cache.event.*;
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
  */
-public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
+public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Default buffer size. Size of {@code 1} means that all entries
+     * Default page size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
      */
-    public static final int DFLT_BUF_SIZE = 1;
+    public static final int DFLT_PAGE_SIZE = 1;
 
     /** Maximum default time interval after which buffer will be flushed (if buffering is enabled). */
     public static final long DFLT_TIME_INTERVAL = 0;
@@ -124,7 +125,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /** Initial query. */
-    private Query initQry;
+    private Query<Cache.Entry<K, V>> initQry;
 
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;
@@ -132,14 +133,18 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     /** Remote filter. */
     private IgniteCacheEntryEventFilter<K, V> rmtFilter;
 
-    /** Buffer size. */
-    private int bufSize = DFLT_BUF_SIZE;
-
     /** Time interval. */
     private long timeInterval = DFLT_TIME_INTERVAL;
 
     /** Automatic unsubscription flag. */
     private boolean autoUnsubscribe = DFLT_AUTO_UNSUBSCRIBE;
+
+    /**
+     * Creates new continuous query.
+     */
+    public ContinuousQuery() {
+        setPageSize(DFLT_PAGE_SIZE);
+    }
 
     /**
      * Sets initial query.
@@ -151,7 +156,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * @param initQry Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialQuery(Query initQry) {
+    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         this.initQry = initQry;
 
         return this;
@@ -162,7 +167,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Initial query.
      */
-    public Query getInitialQuery() {
+    public Query<Cache.Entry<K, V>> getInitialQuery() {
         return initQry;
     }
 
@@ -222,41 +227,10 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     }
 
     /**
-     * Sets buffer size.
-     * <p>
-     * When a cache update happens, entry is first put into a buffer. Entries from buffer will be
-     * sent to the master node only if the buffer is full or time provided via {@link #setTimeInterval(long)} method is
-     * exceeded.
-     * <p>
-     * Default buffer size is {@code 1} which means that entries will be sent immediately (buffering is
-     * disabled).
-     *
-     * @param bufSize Buffer size.
-     * @return {@code this} for chaining.
-     */
-    public ContinuousQuery<K, V> setBufferSize(int bufSize) {
-        if (bufSize <= 0)
-            throw new IllegalArgumentException("Buffer size must be above zero.");
-
-        this.bufSize = bufSize;
-
-        return this;
-    }
-
-    /**
-     * Gets buffer size.
-     *
-     * @return Buffer size.
-     */
-    public int getBufferSize() {
-        return bufSize;
-    }
-
-    /**
      * Sets time interval.
      * <p>
      * When a cache update happens, entry is first put into a buffer. Entries from buffer will
-     * be sent to the master node only if the buffer is full (its size can be provided via {@link #setBufferSize(int)}
+     * be sent to the master node only if the buffer is full (its size can be provided via {@link #setPageSize(int)}
      * method) or time provided via this method is exceeded.
      * <p>
      * Default time interval is {@code 0} which means that
@@ -300,6 +274,16 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
         this.autoUnsubscribe = autoUnsubscribe;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setPageSize(int pageSize) {
+        return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
+        return (ContinuousQuery<K, V>)super.setLocal(loc);
     }
 
     /**
