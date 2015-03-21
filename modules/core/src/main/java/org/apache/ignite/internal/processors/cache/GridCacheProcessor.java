@@ -1540,8 +1540,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
-        U.debug(log, "Requested to start cache [localNodeId=" + ctx.localNodeId() + ", name=" + cacheName + ", desc=" + desc + ']');
-
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(ctx.localNodeId());
 
         if (ccfg != null) {
@@ -1646,8 +1644,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (old != null) {
                     if (req.isStart() && !req.clientStartOnly()) {
-                        U.debug(log, "!!! Future collision (will fail) [old=" + old + ", req=" + req + ']');
-
                         fut.onDone(new IgniteCacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already being started or stopped): " + req.cacheName()));
                     }
@@ -2503,15 +2499,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
             pendingFuts.remove(maskNull(cacheName), this);
 
-            if (super.onDone(res, err)) {
-                U.debug(log, "Completed future: " + this);
-
-                return true;
-            }
-
-            return false;
+            return super.onDone(res, err);
         }
 
         /** {@inheritDoc} */
