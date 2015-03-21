@@ -26,7 +26,7 @@ import java.util.stream.*;
 /**
  * Demonstrates a simple use of {@link IgniteRunnable}.
  * <p>
- * Remote nodes should always be started with special configuration file which
+ * Remote nodes should always be 0started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
