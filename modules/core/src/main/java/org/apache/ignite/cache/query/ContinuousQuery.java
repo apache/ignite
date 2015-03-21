@@ -59,16 +59,16 @@ import javax.cache.event.*;
  * You can create and execute continuous query like so:
  * <pre name="code" class="java">
  * // Create new continuous query.
- * ContinuousQuery&lt;UUID, Person&gt; qry = new ContinuousQuery&lt;&gt;();
+ * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
  * // Initial iteration query will return all persons with salary above 1000.
- * qry.setInitialQuery(new ScanQuery((UUID nodeId, Person p) -> p.getSalary() &gt; 1000));
+ * qry.setInitialQuery(new ScanQuery&lt;&gt;((id, p) -> p.getSalary() &gt; 1000));
  *
  *
  * // Callback that is called locally when update notifications are received.
  * // It simply prints out information about all created persons.
  * qry.setLocalListener((evts) -> {
- *     for (CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e : evts) {
+ *     for (CacheEntryEvent&lt;? extends Long, ? extends Person&gt; e : evts) {
  *         Person p = e.getValue();
  *
  *         System.out.println(p.getFirstName() + " " + p.getLastName() + "'s salary is " + p.getSalary());
@@ -76,10 +76,10 @@ import javax.cache.event.*;
  * });
  *
  * // Continuous listener will be notified for persons with salary above 1000.
- * qry.setRemoteFilter(evt -> e.getValue().getSalary() &gt; 1000);
+ * qry.setRemoteFilter(evt -> evt.getValue().getSalary() &gt; 1000);
  *
  * // Execute query and get cursor that iterates through initial data.
- * QueryCursor&lt;Cache.Entry&lt;UUID, Person&gt;&gt; cur = cache.query(qry);
+ * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);
  * </pre>
  * This will execute query on all nodes that have cache you are working with and
  * listener will start to receive notifications for cache updates.
