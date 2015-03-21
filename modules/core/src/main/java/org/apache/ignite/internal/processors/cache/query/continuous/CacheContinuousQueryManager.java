@@ -284,7 +284,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         return executeQuery0(
             locLsnr,
             rmtFilter,
-            ContinuousQuery.DFLT_BUF_SIZE,
+            ContinuousQuery.DFLT_PAGE_SIZE,
             ContinuousQuery.DFLT_TIME_INTERVAL,
             ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
             true,
@@ -401,7 +401,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;
 
-        GridContinuousHandler hnd = new CacheContinuousQueryHandler<>(
+        GridContinuousHandler hnd = new CacheContinuousQueryHandler(
             cctx.name(),
             TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
             locLsnr,
@@ -582,7 +582,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             routineId = executeQuery0(
                 locLsnr,
                 rmtFilter,
-                ContinuousQuery.DFLT_BUF_SIZE,
+                ContinuousQuery.DFLT_PAGE_SIZE,
                 ContinuousQuery.DFLT_TIME_INTERVAL,
                 ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
                 false,

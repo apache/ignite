@@ -65,6 +65,9 @@ public abstract class Query<R> implements Serializable {
      * @return {@code this} for chaining.
      */
     public Query<R> setPageSize(int pageSize) {
+        if (pageSize <= 0)
+            throw new IllegalArgumentException("Page size must be above zero.");
+
         this.pageSize = pageSize;
 
         return this;
