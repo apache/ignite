@@ -48,7 +48,7 @@ goto error_finish
 :: Check IGNITE_HOME.
 :checkIgniteHome1
 if not "%IGNITE_HOME%" == "" goto checkIgniteHome2
-    pushd "%~dp0"/../..
+    pushd "%~dp0"/../../..
     set IGNITE_HOME=%CD%
     popd
 

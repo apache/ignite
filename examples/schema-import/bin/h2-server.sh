@@ -24,7 +24,7 @@
 # Import common functions.
 #
 if [ "${IGNITE_HOME}" = "" ];
-    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")/../.."; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
@@ -55,9 +55,9 @@ fi
 # Starts H2 server and console.
 case $osname in
     Darwin*)
-        "$JAVA" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
+        "${JAVA}" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
         ;;
    *)
-        "$JAVA" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
+        "${JAVA}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
         ;;
 esac
