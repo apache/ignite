@@ -69,7 +69,7 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
         // Create a new cache for every service deployment.
         // Note that we use service name as cache name, which allows
         // for each service deployment to use its own isolated cache.
-        cache = ignite.getOrCreateCache(new CacheConfiguration<>(ctx.name()));
+        cache = ignite.getOrCreateCache(new CacheConfiguration<K, V>(ctx.name()));
 
         System.out.println("Service was initialized: " + ctx.name());
     }
