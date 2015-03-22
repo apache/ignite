@@ -31,7 +31,6 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.management.*;
 import javax.management.*;
-import javax.sound.midi.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
