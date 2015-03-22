@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.streaming.numbers;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
@@ -59,16 +58,16 @@ public class StreamRandomNumbers {
                 stmr.allowOverwrite(true);
 
                 // Configure data transformation to count instances of the same word.
-                stmr.receiver(new StreamTransformer<>(new CacheEntryProcessor<Integer, Long, Object>() {
-                    @Override
-                    public Object process(MutableEntry<Integer, Long> e, Object... arg) {
+                stmr.receiver(new StreamTransformer<Integer, Long>() {
+                    @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
+                        throws EntryProcessorException {
                         Long val = e.getValue();
 
                         e.setValue(val == null ? 1L : val + 1);
 
                         return null;
                     }
-                }));
+                });
 
                 // Stream random numbers into the streamer cache.
                 while (true)
