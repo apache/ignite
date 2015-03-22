@@ -1752,6 +1752,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
+                ctx.cache().blockGateways();
+
                 assert gw.getState() == STARTED || gw.getState() == STARTING;
 
                 // No more kernal calls from this point on.

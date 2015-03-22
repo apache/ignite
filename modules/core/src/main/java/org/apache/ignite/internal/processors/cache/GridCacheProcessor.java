@@ -760,6 +760,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             log.debug("Stopped cache processor.");
     }
 
+    /**
+     * Blocks all available gateways
+     */
+    public void blockGateways() {
+        for (IgniteCacheProxy<?, ?> proxy : jCacheProxies.values())
+            proxy.gate().onStopped();
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStop(boolean cancel) {
