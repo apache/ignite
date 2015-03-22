@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Compute failover example.
+ * Demonstrates how to exchange messages between nodes.
  */
-package org.apache.ignite.examples.java8.computegrid.failover;
+package org.apache.ignite.examples.java8.messaging;

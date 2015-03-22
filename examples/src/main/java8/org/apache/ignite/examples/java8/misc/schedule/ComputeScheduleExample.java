@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.computegrid;
+package org.apache.ignite.examples.java8.misc.schedule;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import org.apache.ignite.scheduler.*;
 
 /**
- * Simple example to demonstrate usage of distributed executor service provided by Ignite.
+ * Demonstrates a cron-based {@link Runnable} execution scheduling.
+ * Test runnable object broadcasts a phrase to all cluster nodes every minute
+ * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -32,38 +32,33 @@ import java.util.concurrent.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public final class ComputeExecutorServiceExample {
+public class ComputeScheduleExample {
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> Compute executor service example started.");
+            System.out.println("Compute schedule example started.");
 
-            // Get ignite-enabled executor service.
-            ExecutorService exec = ignite.executorService();
-
-            // Iterate through all words in the sentence and create callable jobs.
-            for (String word : "Print words using runnable".split(" ")) {
-                // Execute runnable on some node.
-                exec.submit((IgniteRunnable)() -> {
+            // Schedule output message every minute.
+            SchedulerFuture<?> fut = ignite.scheduler().scheduleLocal(() ->
+                ignite.compute().broadcast(() -> {
                     System.out.println();
-                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
-                });
-            }
+                    System.out.println("Howdy! :) ");
+                }),
+                "{5, 3} * * * * *" // Cron expression.
+            );
 
-            exec.shutdown();
-
-            // Wait for all jobs to complete (0 means no limit).
-            exec.awaitTermination(0, TimeUnit.MILLISECONDS);
+            while (!fut.isDone())
+                System.out.println(">>> Invocation #: " + fut.get());
 
             System.out.println();
-            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
+            System.out.println(">>> Schedule future is done and has been unscheduled.");
+            System.out.println(">>> Check all nodes for hello message output.");
         }
     }
 }

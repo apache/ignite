@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Monte-Carlo simulation example.
+ * Basic examples for ignite functionality.
  */
-package org.apache.ignite.examples.java8.computegrid.montecarlo;
+package org.apache.ignite.examples.java8;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.computegrid;
+package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public final class ComputeExecutorServiceExample {
+public final class IgniteExecutorServiceExample {
     /**
      * Executes example.
      *

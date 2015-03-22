@@ -17,10 +17,11 @@
 
 package org.apache.ignite.examples.servicegrid;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.services.*;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Simple service which loops infinitely and prints out a counter.
@@ -29,8 +30,15 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = SimpleMapServiceImpl.class.getSimpleName();
+
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** Underlying cache map. */
-    private Map<K, V> map;
+    private IgniteCache<K, V> map;
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
@@ -54,14 +62,21 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
+        ignite.destroyCache(CACHE_NAME);
+
         System.out.println("Service was cancelled: " + ctx.name());
     }
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
-        System.out.println("Service was initialized: " + ctx.name());
+        CacheConfiguration<K, V> cfg = new CacheConfiguration<>();
 
-        map = new ConcurrentHashMap<>();
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setName(CACHE_NAME);
+
+        map = ignite.getOrCreateCache(cfg);
+
+        System.out.println("Service was initialized: " + ctx.name());
     }
 
     /** {@inheritDoc} */

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.messaging;
+package org.apache.ignite.examples.java8.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -61,18 +59,16 @@ public class MessagingPingPongExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            ignite.message(nodeB).remoteListen(null, new IgniteBiPredicate<UUID, String>() {
-                @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
+            ignite.message(nodeB).remoteListen(null, (nodeId, rcvMsg) -> {
+                System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
-                    if ("PING".equals(rcvMsg)) {
-                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PONG");
+                if ("PING".equals(rcvMsg)) {
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PONG");
 
-                        return true; // Continue listening.
-                    }
-
-                    return false; // Unsubscribe.
+                    return true; // Continue listening.
                 }
+
+                return false; // Unsubscribe.
             });
 
             int MAX_PLAYS = 10;
@@ -80,26 +76,24 @@ public class MessagingPingPongExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            ignite.message().localListen(null, new IgniteBiPredicate<UUID, String>() {
-                @Override public boolean apply(UUID nodeId, String rcvMsg) {
-                    System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
+            ignite.message().localListen(null, (nodeId, rcvMsg) -> {
+                System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
-                    if (cnt.getCount() == 1) {
-                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "STOP");
-
-                        cnt.countDown();
-
-                        return false; // Stop listening.
-                    }
-                    else if ("PONG".equals(rcvMsg))
-                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PING");
-                    else
-                        throw new IgniteException("Received unexpected message: " + rcvMsg);
+                if (cnt.getCount() == 1) {
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "STOP");
 
                     cnt.countDown();
 
-                    return true; // Continue listening.
+                    return false; // Stop listening.
                 }
+                else if ("PONG".equals(rcvMsg))
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PING");
+                else
+                    throw new IgniteException("Received unexpected message: " + rcvMsg);
+
+                cnt.countDown();
+
+                return true; // Continue listening.
             });
 
             // Serve!

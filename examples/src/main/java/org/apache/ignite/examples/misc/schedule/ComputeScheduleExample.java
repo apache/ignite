@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.computegrid;
+package org.apache.ignite.examples.misc.schedule;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
