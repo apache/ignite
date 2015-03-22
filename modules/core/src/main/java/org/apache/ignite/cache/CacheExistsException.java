@@ -22,10 +22,10 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 
 /**
- * Exception thrown when cache already exists.
+ * Exception thrown when cache must be created by it already exists.
  */
 public class CacheExistsException extends CacheException {
-    /** */
+    /** Serialization ID. */
     private static final long serialVersionUID = 0L;
 
     /**
