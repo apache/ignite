@@ -5,7 +5,8 @@
  */
 
 /*
- * This file is from JSR-166: http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The initial version of this file was copied from JSR-166:
+ * http://gee.cs.oswego.edu/dl/concurrency-interest/
  */
 
 package org.jdk8.backport;
