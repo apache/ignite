@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.computegrid;
+package org.apache.ignite.examples.java8.cluster;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
@@ -30,7 +30,7 @@ import org.apache.ignite.examples.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public class ComputeClusterGroupsExample {
+public class ClusterGroupExample {
     /**
      * Executes example.
      *

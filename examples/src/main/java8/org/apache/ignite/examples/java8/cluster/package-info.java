@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
-
-import org.apache.ignite.examples.computegrid.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- *
+ * <!-- Package description. -->
+ * Cluster group example.
  */
-public class ComputeClusterGroupsExampleSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        // Start up a node.
-        startGrid("ignite-cluster-groups-example", DFLT_CFG);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testComputeClusterGroupsExample() throws Exception {
-        ComputeClusterGroupsExample.main(EMPTY_ARGS);
-    }
-}
+package org.apache.ignite.examples.java8.cluster;

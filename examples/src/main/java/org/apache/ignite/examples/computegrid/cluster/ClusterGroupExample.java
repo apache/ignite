@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.computegrid;
+package org.apache.ignite.examples.computegrid.cluster;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
@@ -31,7 +31,7 @@ import org.apache.ignite.lang.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public class ComputeClusterGroupsExample {
+public class ClusterGroupExample {
     /**
      * Executes example.
      *
