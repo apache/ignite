@@ -106,15 +106,6 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Current transaction.
      */
     @Nullable private Transaction transaction() {
-        CacheStoreSession ses = session();
-
         return ses != null ? ses.transaction() : null;
-    }
-
-    /**
-     * @return Store session.
-     */
-    private CacheStoreSession session() {
-        return ses;
     }
 }
