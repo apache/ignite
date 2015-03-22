@@ -56,12 +56,12 @@
         <property name="org.apache.ignite.hibernate.default_access_type">READ_ONLY</property>
 
         <!-- Specify the entity classes for mapping. -->
-        <mapping class="org.apache.ignite.examples.java7.datagrid.hibernate.User"/>
-        <mapping class="org.apache.ignite.examples.java7.datagrid.hibernate.Post"/>
+        <mapping class="org.apache.ignite.examples.datagrid.hibernate.User"/>
+        <mapping class="org.apache.ignite.examples.datagrid.hibernate.Post"/>
 
         <!-- Per-class L2 cache settings. -->
-        <class-cache class="org.apache.ignite.examples.java7.datagrid.hibernate.User" usage="read-only"/>
-        <class-cache class="org.apache.ignite.examples.java7.datagrid.hibernate.Post" usage="read-only"/>
-        <collection-cache collection="org.apache.ignite.examples.java7.datagrid.hibernate.User.posts" usage="read-only"/>
+        <class-cache class="org.apache.ignite.examples.datagrid.hibernate.User" usage="read-only"/>
+        <class-cache class="org.apache.ignite.examples.datagrid.hibernate.Post" usage="read-only"/>
+        <collection-cache collection="org.apache.ignite.examples.datagrid.hibernate.User.posts" usage="read-only"/>
     </session-factory>
 </hibernate-configuration>
