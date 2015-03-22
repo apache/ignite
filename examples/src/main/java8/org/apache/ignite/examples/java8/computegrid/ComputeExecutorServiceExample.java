@@ -18,7 +18,8 @@
 package org.apache.ignite.examples.java8.computegrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java7.*;
+import org.apache.ignite.examples.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -50,7 +51,7 @@ public final class ComputeExecutorServiceExample {
             // Iterate through all words in the sentence and create callable jobs.
             for (String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                exec.submit(() -> {
+                exec.submit((IgniteRunnable)() -> {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });

@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.java8.streaming.numbers;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
@@ -57,7 +57,7 @@ public class StreamRandomNumbers {
                 stmr.allowOverwrite(true);
 
                 // Configure data transformation to count instances of the same word.
-                stmr.receiver(new StreamTransformer<>((e, arg) -> {
+                stmr.receiver(StreamTransformer.from((e, arg) -> {
                     Long val = e.getValue();
 
                     e.setValue(val == null ? 1L : val + 1);

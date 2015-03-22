@@ -19,7 +19,7 @@ package org.apache.ignite.examples.java8.streaming.numbers;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 
 import java.util.*;
 

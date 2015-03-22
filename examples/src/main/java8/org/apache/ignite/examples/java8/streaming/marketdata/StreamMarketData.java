@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.java8.streaming.marketdata;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
@@ -37,9 +37,6 @@ import java.util.*;
 public class StreamMarketData {
     /** Random number generator. */
     private static final Random RAND = new Random();
-
-    /** Count of total numbers to generate. */
-    private static final int CNT = 10000000;
 
     /** The list of instruments. */
     private static final String[] INSTRUMENTS = {"IBM", "GOOG", "MSFT", "GE", "EBAY", "YHOO", "ORCL", "CSCO", "AMZN", "RHT"};
@@ -68,8 +65,7 @@ public class StreamMarketData {
 
                     Instrument inst = instCache.get(symbol);
 
-                    if (inst == null)
-                        inst = new Instrument(symbol);
+                    if (inst == null) inst = new Instrument(symbol);
 
                     // Don't populate market cache, as we don't use it for querying.
                     // Update cached instrument based on the latest market tick.

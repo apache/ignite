@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.java8.computegrid.montecarlo;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java7.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;

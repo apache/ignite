@@ -42,8 +42,9 @@ public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V> {
      *
      * @param cache Cache.
      * @param entry Visited entry.
+     * @throws IgniteException In case of error.
      */
-    protected abstract void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry);
+    protected abstract void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry) throws IgniteException;
 
     /**
      * Creates a new visitor based on instance of {@link IgniteBiInClosure}.
