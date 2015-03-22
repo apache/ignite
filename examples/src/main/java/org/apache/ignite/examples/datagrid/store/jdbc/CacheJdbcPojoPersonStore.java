@@ -20,7 +20,6 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.examples.datagrid.store.model.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.tools.*;
 
 import javax.cache.*;
@@ -52,6 +51,16 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
         }
     }
 
+    /** */
+    private static final String DB_SCRIPT =
+        "create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));\n" +
+        "insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');\n" +
+        "insert into PERSON(id, first_name, last_name) values(2, 'Galileo', 'Galilei');\n" +
+        "insert into PERSON(id, first_name, last_name) values(3, 'Henry', 'More');\n" +
+        "insert into PERSON(id, first_name, last_name) values(4, 'Polish', 'Brethren');\n" +
+        "insert into PERSON(id, first_name, last_name) values(5, 'Robert', 'Boyle');\n" +
+        "insert into PERSON(id, first_name, last_name) values(6, 'Isaac', 'Newton');";
+
     /**
      * Prepares database for example execution. This method will create a table called "PERSONS"
      * so it can be used by store implementation.
@@ -59,24 +68,15 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
      * @throws IgniteException If failed.
      */
     private void prepareDb() throws IgniteException {
-        File script = U.resolveIgnitePath("examples/config/store/example-database.script");
-
-        if (script == null)
-            throw new IgniteException("Failed to find example database script: " +
-                "examples/config/store/example-database.script");
-
         try {
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
             Server.createTcpServer("-tcpDaemon").start();
 
             // Load sample data into database.
-            RunScript.execute(dataSrc.getConnection(), new FileReader(script));
+            RunScript.execute(dataSrc.getConnection(), new StringReader(DB_SCRIPT));
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to initialize database", e);
-        }
-        catch (FileNotFoundException e) {
-            throw new IgniteException("Failed to find example database script: " + script.getPath(), e);
         }
     }
 }
