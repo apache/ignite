@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.cache;
 
 import org.jetbrains.annotations.*;
 
@@ -24,21 +24,21 @@ import javax.cache.*;
 /**
  * Exception thrown when cache already exists.
  */
-public class IgniteCacheExistsException extends CacheException {
+public class CacheExistsException extends CacheException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public IgniteCacheExistsException(String msg) {
+    public CacheExistsException(String msg) {
         super(msg);
     }
 
     /**
      * @param cause Error cause.
      */
-    public IgniteCacheExistsException(Throwable cause) {
+    public CacheExistsException(Throwable cause) {
         super(cause);
     }
 
@@ -46,7 +46,7 @@ public class IgniteCacheExistsException extends CacheException {
      * @param msg Error message.
      * @param cause Error cause.
      */
-    public IgniteCacheExistsException(String msg, @Nullable Throwable cause) {
+    public CacheExistsException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
