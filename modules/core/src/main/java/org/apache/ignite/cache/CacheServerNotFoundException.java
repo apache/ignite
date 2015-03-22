@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.cache;
 
-import javax.cache.CacheException;
+import javax.cache.*;
 
 /**
  * Exception thrown when all data nodes left the grid.
  */
 public class CacheServerNotFoundException extends CacheException {
-    /** */
+    /** Serialization ID. */
     private static final long serialVersionUID = 0L;
 
     /**
