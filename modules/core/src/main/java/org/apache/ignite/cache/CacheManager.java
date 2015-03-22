@@ -31,6 +31,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.management.*;
 import javax.management.*;
+import javax.sound.midi.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -257,11 +258,7 @@ public class CacheManager implements javax.cache.CacheManager {
     @Override public void destroyCache(String cacheName) {
         kernalGateway.readLock();
 
-        IgniteCache<?, ?> cache;
-
-        try {
-            cache = getCache0(cacheName);
-
+        try (IgniteCache<?, ?> cache = getCache0(cacheName)) {
             if (cache != null) {
                 unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
@@ -270,9 +267,6 @@ public class CacheManager implements javax.cache.CacheManager {
         finally {
             kernalGateway.readUnlock();
         }
-
-        if (cache != null)
-            cache.close();
     }
 
     /**
