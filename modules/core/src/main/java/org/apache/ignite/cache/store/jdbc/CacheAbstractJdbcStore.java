@@ -513,10 +513,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     throw new CacheException("Missing database name in mapping description [cache name=" + cacheName
                         + ", type=" + clsName + " ]");
 
-                if (field.getJavaName() != null)
-                    throw new CacheException("Missing field name in mapping description [cache name=" + cacheName
-                        + ", type=" + clsName + " ]");
-
                 field.setJavaType(cls);
             }
             else
