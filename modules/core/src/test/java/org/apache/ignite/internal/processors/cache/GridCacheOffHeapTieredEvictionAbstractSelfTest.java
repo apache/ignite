@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -57,7 +56,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60 * 1000;
+        return 120 * 1000;
     }
 
     /** {@inheritDoc} */
@@ -67,6 +66,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
+        ccfg.setNearConfiguration(null);
         ccfg.setOffHeapMaxMemory(0);
 
         return ccfg;
@@ -109,6 +109,8 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         return atomicityMode() == ATOMIC ? 100_000 : 50_000;
     }
 
+
+
     /**
      * @throws Exception If failed.
      */
@@ -125,6 +127,9 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
                     final TestValue val = vals.get(key % VAL_SIZE);
 
                     cache.put(key, val);
+
+                    if (i % 1_000 == 0 && i > 0)
+                        info("Done " + i + " out of " + iterations());
                 }
 
                 return null;
