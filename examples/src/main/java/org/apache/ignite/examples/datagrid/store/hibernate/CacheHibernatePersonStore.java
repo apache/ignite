@@ -204,11 +204,9 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void txEnd(boolean commit) {
-        CacheStoreSession storeSes = session();
+        Transaction tx = ses.transaction();
 
-        Transaction tx = storeSes.transaction();
-
-        Map<String, Session> props = storeSes.properties();
+        Map<String, Session> props = ses.properties();
 
         Session ses = props.remove(ATTR_SES);
 
@@ -245,47 +243,38 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Session.
      */
     private Session session(@Nullable Transaction tx) {
-        Session ses;
+        Session hbSes;
 
         if (tx != null) {
-            Map<String, Session> props = session().properties();
+            Map<String, Session> props = ses.properties();
 
-            ses = props.get(ATTR_SES);
+            hbSes = props.get(ATTR_SES);
 
-            if (ses == null) {
-                ses = sesFactory.openSession();
+            if (hbSes == null) {
+                hbSes = sesFactory.openSession();
 
-                ses.beginTransaction();
+                hbSes.beginTransaction();
 
                 // Store session in session properties, so it can be accessed
                 // for other operations on the same transaction.
-                props.put(ATTR_SES, ses);
+                props.put(ATTR_SES, hbSes);
 
-                System.out.println("Hibernate session open [ses=" + ses + ", tx=" + tx.xid() + "]");
+                System.out.println("Hibernate session open [ses=" + hbSes + ", tx=" + tx.xid() + "]");
             }
         }
         else {
-            ses = sesFactory.openSession();
+            hbSes = sesFactory.openSession();
 
-            ses.beginTransaction();
+            hbSes.beginTransaction();
         }
 
-        return ses;
+        return hbSes;
     }
 
     /**
      * @return Current transaction.
      */
     @Nullable private Transaction transaction() {
-        CacheStoreSession ses = session();
-
         return ses != null ? ses.transaction() : null;
-    }
-
-    /**
-     * @return Store session.
-     */
-    private CacheStoreSession session() {
-        return ses;
     }
 }
