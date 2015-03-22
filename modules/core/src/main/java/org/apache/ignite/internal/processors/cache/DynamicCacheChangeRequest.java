@@ -54,6 +54,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Fail if exists flag. */
+    private boolean failIfExists;
+
     /**
      * Constructor creates cache stop request.
      *
@@ -167,6 +170,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void clientStartOnly(boolean clientStartOnly) {
         this.clientStartOnly = clientStartOnly;
+    }
+
+    /**
+     * @return Fail if exists flag.
+     */
+    public boolean failIfExists() {
+        return failIfExists;
+    }
+
+    /**
+     * @param failIfExists Fail if exists flag.
+     */
+    public void failIfExists(boolean failIfExists) {
+        this.failIfExists = failIfExists;
     }
 
     /** {@inheritDoc} */

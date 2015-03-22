@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Test for dynamic cache start.
@@ -743,6 +744,175 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
         finally {
             grid(0).destroyCache(DYNAMIC_CACHE_NAME);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOrCreateMultiNode() throws Exception {
+        try {
+            final AtomicInteger cnt = new AtomicInteger();
+            final AtomicReference<Throwable> err = new AtomicReference<>();
+
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int idx = cnt.getAndIncrement();
+
+                    try {
+                        CacheConfiguration cfg = new CacheConfiguration(DYNAMIC_CACHE_NAME);
+
+                        ignite(idx).getOrCreateCache(cfg);
+                    }
+                    catch (Exception e) {
+                        err.compareAndSet(null, e);
+                    }
+
+                    return null;
+                }
+            }, nodeCount(), "starter");
+
+            assertNull(err.get());
+
+            for (int i = 0; i < nodeCount(); i++) {
+                GridCacheContext<Object, Object> ctx = ((IgniteKernal) ignite(i)).internalCache(DYNAMIC_CACHE_NAME)
+                    .context();
+
+                assertTrue(ctx.affinityNode());
+                assertFalse(ctx.isNear());
+            }
+
+            lightCheckDynamicCache();
+        }
+        finally {
+            ignite(0).destroyCache(DYNAMIC_CACHE_NAME);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOrCreateNearOnlyMultiNode() throws Exception {
+        checkGetOrCreateNear(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOrCreateNearMultiNode() throws Exception {
+        checkGetOrCreateNear(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkGetOrCreateNear(final boolean nearOnly) throws Exception {
+        try {
+            final AtomicInteger cnt = new AtomicInteger(nodeCount());
+            final AtomicReference<Throwable> err = new AtomicReference<>();
+
+            final int clientCnt = 2;
+
+            try {
+                testAttribute = false;
+
+                for (int i = 0; i < clientCnt; i++)
+                    startGrid(nodeCount() + i);
+
+                cnt.set(nodeCount());
+
+                final CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DYNAMIC_CACHE_NAME);
+                cacheCfg.setNodeFilter(NODE_FILTER);
+
+                if (nearOnly)
+                    ignite(0).createCache(cacheCfg);
+
+                GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int idx = cnt.getAndIncrement();
+
+                        try {
+                            if (nearOnly)
+                                ignite(idx).getOrCreateCache(DYNAMIC_CACHE_NAME, new NearCacheConfiguration<>());
+                            else
+                                ignite(idx).getOrCreateCache(cacheCfg, new NearCacheConfiguration<>());
+                        }
+                        catch (Exception ex) {
+                            err.compareAndSet(null, ex);
+                        }
+
+                        return null;
+                    }
+                }, clientCnt, "starter");
+
+                assertNull(err.get());
+
+                for (int i = 0; i < nodeCount(); i++) {
+                    GridCacheContext<Object, Object> ctx = ((IgniteKernal) ignite(i)).internalCache(DYNAMIC_CACHE_NAME)
+                        .context();
+
+                    assertTrue(ctx.affinityNode());
+                    assertFalse(ctx.isNear());
+                }
+
+                for (int i = 0; i < clientCnt; i++) {
+                    GridCacheContext<Object, Object> ctx = ((IgniteKernal) ignite(nodeCount() + i))
+                        .internalCache(DYNAMIC_CACHE_NAME).context();
+
+                    assertFalse(ctx.affinityNode());
+                    assertTrue("Cache is not near for index: " + (nodeCount() + i), ctx.isNear());
+                }
+
+                lightCheckDynamicCache();
+            }
+            finally {
+                for (int i = 0; i < clientCnt; i++)
+                    stopGrid(nodeCount() + i);
+            }
+        }
+        finally {
+            ignite(0).destroyCache(DYNAMIC_CACHE_NAME);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void lightCheckDynamicCache() throws Exception {
+        int nodes = F.size(G.allGrids());
+
+        for (int i = 0; i < nodes; i++) {
+            IgniteCache<Object, Object> jcache = ignite(i).jcache(DYNAMIC_CACHE_NAME);
+
+            for (int k = 0; k < 20; k++) {
+                int key = i + k * nodes;
+
+                jcache.put(key, key);
+            }
+        }
+
+        for (int i = 0; i < nodes; i++) {
+            IgniteCache<Object, Object> jcache = ignite(i).jcache(DYNAMIC_CACHE_NAME);
+
+            for (int k = 0; k < 20 * nodes; k++)
+                assertEquals(k, jcache.get(k));
+        }
+
+        for (int i = 0; i < nodes; i++) {
+            IgniteCache<Object, Object> jcache = ignite(i).jcache(DYNAMIC_CACHE_NAME);
+
+            for (int k = 0; k < 20; k++) {
+                int key = i + k * nodes;
+
+                assertEquals(key, jcache.getAndRemove(key));
+            }
+        }
+
+        for (int i = 0; i < nodes; i++) {
+            IgniteCache<Object, Object> jcache = ignite(i).jcache(DYNAMIC_CACHE_NAME);
+
+            for (int k = 0; k < 20 * nodes; k++)
+                assertNull(jcache.get(k));
         }
     }
 }

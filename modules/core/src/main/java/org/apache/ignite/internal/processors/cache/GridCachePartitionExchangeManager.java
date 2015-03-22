@@ -151,6 +151,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         for (DynamicCacheChangeRequest req : batch.requests()) {
                             if (cctx.cache().dynamicCacheRegistered(req))
                                 valid.add(req);
+                            else
+                                cctx.cache().completeStartFuture(req);
                         }
 
                         if (!F.isEmpty(valid)) {
@@ -671,9 +673,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean addFuture(GridDhtPartitionsExchangeFuture fut) {
         if (fut.onAdded()) {
             exchWorker.addFuture(fut);
-
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                cacheCtx.preloader().onExchangeFutureAdded();
 
             return true;
         }

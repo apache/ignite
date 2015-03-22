@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -7370,8 +7369,6 @@ public abstract class IgniteUtils {
 
         try {
             for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
-                Method[] mtds = c.getDeclaredMethods();
-
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {

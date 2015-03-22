@@ -434,6 +434,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 startCaches();
 
+                for (GridCacheContext cacheCtx : cctx.cacheContexts())
+                    cacheCtx.preloader().onExchangeFutureAdded();
+
                 assert discoEvt != null;
 
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());

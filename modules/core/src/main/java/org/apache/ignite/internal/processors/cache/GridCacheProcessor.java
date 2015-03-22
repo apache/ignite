@@ -1248,11 +1248,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public boolean dynamicCacheRegistered(DynamicCacheChangeRequest req) {
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
-        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
-            if (req.start())
-                return !desc.cancelled();
-            else
-                return desc.cancelled();
+        if (desc != null) {
+            if (desc.deploymentId().equals(req.deploymentId())) {
+                if (req.start())
+                    return !desc.cancelled();
+                else
+                    return desc.cancelled();
+            }
+
+            // If client requested cache start
+            if (req.initiatingNodeId() != null)
+                return true;
         }
 
         return false;
@@ -1418,16 +1424,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         registeredCaches.remove(masked, desc);
                 }
 
-                DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(masked);
-
-                assert req.deploymentId() != null;
-                assert fut == null || fut.deploymentId != null;
-
-                if (fut != null && fut.deploymentId().equals(req.deploymentId()) &&
-                    F.eq(req.initiatingNodeId(), ctx.localNodeId()))
-                    fut.onDone();
+                completeStartFuture(req);
             }
         }
+    }
+
+    /**
+     * @param req Request to complete future for.
+     */
+    public void completeStartFuture(DynamicCacheChangeRequest req) {
+        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
+
+        assert req.deploymentId() != null;
+        assert fut == null || fut.deploymentId != null;
+
+        if (fut != null && fut.deploymentId().equals(req.deploymentId()) &&
+            F.eq(req.initiatingNodeId(), ctx.localNodeId()))
+            fut.onDone();
     }
 
     /**
@@ -1558,6 +1571,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
+        req.failIfExists(failIfExists);
 
         if (ccfg != null) {
             if (desc != null && !desc.cancelled()) {
@@ -1727,7 +1742,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 // Check if cache with the same name was concurrently started form different node.
                 if (desc != null) {
-                    if (!req.clientStartOnly()) {
+                    if (!req.clientStartOnly() && req.failIfExists()) {
                         // If local node initiated start, fail the start future.
                         if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
                             startFut.onDone(new IgniteCacheExistsException("Failed to start cache " +
@@ -1736,6 +1751,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         return;
                     }
+
+                    req.clientStartOnly(true);
                 }
                 else {
                     if (req.clientStartOnly()) {
@@ -1748,7 +1765,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                if (!req.clientStartOnly()) {
+                if (!req.clientStartOnly() && desc == null) {
                     DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ccfg, req.deploymentId());
 
                     DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
