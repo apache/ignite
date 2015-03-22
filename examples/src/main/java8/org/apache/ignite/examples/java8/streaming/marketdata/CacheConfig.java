@@ -26,7 +26,7 @@ public class CacheConfig {
     /**
      * Configure streaming cache for market ticks.
      */
-    public static CacheConfiguration<String, MarketTick> marketTicksCache() {
+    public static CacheConfiguration<String, Double> marketTicksCache() {
         return new CacheConfiguration<>("marketTicks");
     }
 

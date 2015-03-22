@@ -51,17 +51,17 @@ public class Instrument implements Serializable {
     }
 
     /**
-     * Updates this instrument based on the latest market tick.
+     * Updates this instrument based on the latest price.
      *
-     * @param tick Market tick.
+     * @param price Latest price.
      */
-    public void update(MarketTick tick) {
+    public void update(double price) {
         if (open == 0)
-            open = tick.price();
+            open = price;
 
-        high = Math.max(high, tick.price());
-        low = Math.min(low, tick.price());
-        this.latest = tick.price();
+        high = Math.max(high, price);
+        low = Math.min(low, price);
+        this.latest = price;
     }
 
     /**

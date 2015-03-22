@@ -38,9 +38,6 @@ public class StreamMarketData {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
-    /** Count of total numbers to generate. */
-    private static final int CNT = 10000000;
-
     /** The list of instruments. */
     private static final String[] INSTRUMENTS = {"IBM", "GOOG", "MSFT", "GE", "EBAY", "YHOO", "ORCL", "CSCO", "AMZN", "RHT"};
 
@@ -56,17 +53,16 @@ public class StreamMarketData {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<String, MarketTick> mktCache = ignite.getOrCreateCache(CacheConfig.marketTicksCache());
+            IgniteCache<String, Double> mktCache = ignite.getOrCreateCache(CacheConfig.marketTicksCache());
             final IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(CacheConfig.instrumentCache());
 
-            try (IgniteDataStreamer<String, MarketTick> mktStmr = ignite.dataStreamer(mktCache.getName())) {
+            try (IgniteDataStreamer<String, Double> mktStmr = ignite.dataStreamer(mktCache.getName())) {
                 // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
                 // Instead we update the instruments in the 'instCache'.
-                mktStmr.receiver(new StreamVisitor<String, MarketTick>() {
-                    @Override
-                    public void apply(IgniteCache<String, MarketTick> cache, Map.Entry<String, MarketTick> e) {
+                mktStmr.receiver(new StreamVisitor<String, Double>() {
+                    @Override public void apply(IgniteCache<String, Double> cache, Map.Entry<String, Double> e) {
                         String symbol = e.getKey();
-                        MarketTick tick = e.getValue();
+                        Double tick = e.getValue();
 
                         Instrument inst = instCache.get(symbol);
 
@@ -88,9 +84,7 @@ public class StreamMarketData {
                         // numbers closer to 0 have higher probability.
                         double price = round2(INITIAL_PRICES[j] + RAND.nextGaussian());
 
-                        MarketTick tick = new MarketTick(INSTRUMENTS[j], price);
-
-                        mktStmr.addData(tick.symbol(), tick);
+                        mktStmr.addData(INSTRUMENTS[j], price);
                     }
                 }
             }
