@@ -19,6 +19,9 @@
  */
 
 /**
+ * To execute this script you need to have PHP Memcached extension installed.
+ * See http://pecl.php.net/package/memcached for details.
+ *
  * To execute this script you will have to enable optional `ignite-rest-http` module -
  * copy `libs/optional/ignite-rest-http` folder into `libs` (one level up).
  *
