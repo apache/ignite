@@ -27,24 +27,15 @@ import java.util.*;
  * does not update the cache. If the tuple needs to be stored in the cache,
  * then {@code cache.put(...)} should be called explicitely.
  */
-public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V> {
+public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V>, IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
         for (Map.Entry<K, V> entry : entries)
-            visit(cache, entry);
+            apply(cache, entry);
     }
-
-    /**
-     * Visits one cache entry.
-     *
-     * @param cache Cache.
-     * @param entry Visited entry.
-     * @throws IgniteException In case of error.
-     */
-    protected abstract void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry) throws IgniteException;
 
     /**
      * Creates a new visitor based on instance of {@link IgniteBiInClosure}.
@@ -54,7 +45,7 @@ public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V> {
      */
     public static <K, V> StreamVisitor<K, V> from(final IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> c) {
         return new StreamVisitor<K, V>() {
-            @Override protected void visit(IgniteCache<K, V> cache, Map.Entry<K, V> entry) {
+            @Override public void apply(IgniteCache<K, V> cache, Map.Entry<K, V> entry) {
                 c.apply(cache, entry);
             }
         };

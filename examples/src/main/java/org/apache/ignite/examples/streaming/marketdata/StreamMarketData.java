@@ -64,7 +64,7 @@ public class StreamMarketData {
                 // Instead we update the instruments in the 'instCache'.
                 mktStmr.receiver(new StreamVisitor<String, MarketTick>() {
                     @Override
-                    public void visit(IgniteCache<String, MarketTick> mktCache, Map.Entry<String, MarketTick> e) {
+                    public void apply(IgniteCache<String, MarketTick> cache, Map.Entry<String, MarketTick> e) {
                         String symbol = e.getKey();
                         MarketTick tick = e.getValue();
 
