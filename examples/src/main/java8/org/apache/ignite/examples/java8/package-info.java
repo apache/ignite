@@ -17,6 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Basic examples for ignite functionality.
+ * Basic examples for ignite functionality utilizing Java8 lambdas.
+ * Use "java8" examples with JDK8 in addition to the "java" examples.
  */
 package org.apache.ignite.examples.java8;
