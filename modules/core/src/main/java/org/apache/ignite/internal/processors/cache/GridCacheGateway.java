@@ -176,10 +176,14 @@ public class GridCacheGateway<K, V> {
     /**
      *
      */
-    public void onStopped() {
-        // Must prevent re-entries to the read lock.
+    public void block() {
         stopped = true;
+    }
 
+    /**
+     *
+     */
+    public void onStopped() {
         boolean interrupted = false;
 
         while (true) {

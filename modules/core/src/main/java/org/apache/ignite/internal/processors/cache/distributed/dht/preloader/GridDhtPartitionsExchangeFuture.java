@@ -292,6 +292,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if local client has been added.
+     */
+    public boolean isLocalClientAdded(int cacheId) {
+        if (!F.isEmpty(reqs)) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start() && F.eq(req.initiatingNodeId(), cctx.localNodeId())) {
+                    if (CU.cacheId(req.cacheName()) == cacheId)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Rechecks topology.
      */
     private void initTopology(GridCacheContext cacheCtx) throws IgniteCheckedException {
@@ -434,8 +451,69 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 startCaches();
 
-                for (GridCacheContext cacheCtx : cctx.cacheContexts())
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    if (isCacheAdded(cacheCtx.cacheId())) {
+                        if (cacheCtx.discovery().cacheAffinityNodes(cacheCtx.name(), topologyVersion()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + cacheCtx.namex());
+                    }
+
                     cacheCtx.preloader().onExchangeFutureAdded();
+                }
+
+                List<String> cachesWithoutNodes = null;
+
+                for (String name : cctx.cache().cacheNames()) {
+                    if (exchId.isLeft()) {
+                        if (cctx.discovery().cacheAffinityNodes(name, topologyVersion()).isEmpty()) {
+                            if (cachesWithoutNodes == null)
+                                cachesWithoutNodes = new ArrayList<>();
+
+                            cachesWithoutNodes.add(name);
+
+                            // Fire event even if there is no client cache started.
+                            if (cctx.gridEvents().isRecordable(EventType.EVT_CACHE_NODES_LEFT)) {
+                                Event evt = new CacheEvent(
+                                    name,
+                                    cctx.localNode(),
+                                    cctx.localNode(),
+                                    "All server nodes have left the cluster.",
+                                    EventType.EVT_CACHE_NODES_LEFT,
+                                    0,
+                                    false,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    null,
+                                    null
+                                );
+
+                                cctx.gridEvents().record(evt);
+                            }
+                        }
+                    }
+                }
+
+                if (cachesWithoutNodes != null) {
+                    StringBuilder sb = new StringBuilder("All server nodes for the following caches have left the cluster: ");
+
+                    for (int i = 0; i < cachesWithoutNodes.size(); i++) {
+                        String cache = cachesWithoutNodes.get(i);
+
+                        sb.append('\'').append(cache).append('\'');
+
+                        if (i != cachesWithoutNodes.size() - 1)
+                            sb.append(", ");
+                    }
+
+                    U.quietAndWarn(log, sb.toString());
+
+                    U.quietAndWarn(log, "Must have server nodes for caches to operate.");
+                }
 
                 assert discoEvt != null;
 

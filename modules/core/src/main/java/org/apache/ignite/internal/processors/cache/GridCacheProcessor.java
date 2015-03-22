@@ -1360,6 +1360,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.stop();
 
         // Break the proxy before exchange future is done.
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(req.cacheName()));
+
+        if (proxy != null)
+            proxy.gate().block();
+    }
+
+    /**
+     * @param req Request.
+     */
+    private void stopGateway(DynamicCacheChangeRequest req) {
+        assert req.stop();
+
+        // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
 
         if (proxy != null)
@@ -1416,6 +1429,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 String masked = maskNull(req.cacheName());
 
                 if (req.stop()) {
+                    stopGateway(req);
+
                     prepareCacheStop(req);
 
                     DynamicCacheDescriptor desc = registeredCaches.get(masked);
