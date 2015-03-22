@@ -45,7 +45,7 @@ checkJava
 #
 setIgniteHome
 
-# Starts Ignite Schema Import Wizard with settings for demo.
+# Starts Ignite Schema Import Wizard with settings for this demo.
 "${IGNITE_HOME}/bin/ignite-schema-import.sh" \
  jdbc.db.preset=0 \
  jdbc.driver.jar="${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" \
