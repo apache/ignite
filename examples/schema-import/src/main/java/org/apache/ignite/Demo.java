@@ -37,6 +37,9 @@ public class Demo {
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
 
+        // Enable database batching.
+        ccfg.setWriteBehindEnabled(true);
+
         // Configure cache types metadata.
         ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
 
