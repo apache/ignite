@@ -532,8 +532,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Used for test purposes.
-     *
      * @param cacheName Name of the cache.
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.

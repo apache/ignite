@@ -19,13 +19,14 @@
  */
 
 /**
- * This example shows how to use PHP Memcache client for manipulating Ignite cache.
- *
  * To execute this script you need to have PHP Memcached extension installed.
  * See http://pecl.php.net/package/memcached for details.
  *
- * You can use configuration from examples/config folder to
- * start up an instance of Ignite with cache enabled as follows:
+ * To execute this script you will have to enable optional `ignite-rest-http` module -
+ * copy `libs/optional/ignite-rest-http` folder into `libs` (one level up).
+ *
+ * After that start up an instance of Ignite with cache enabled.
+ * You can use configuration from examples/config folder as follows:
  * ----
  * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
  * ----
