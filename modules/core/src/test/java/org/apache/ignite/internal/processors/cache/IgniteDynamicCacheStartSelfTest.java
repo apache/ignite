@@ -452,7 +452,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                 return kernal.createCache(ccfg);
             }
-        }, IgniteCacheExistsException.class, null);
+        }, CacheExistsException.class, null);
     }
 
     /**

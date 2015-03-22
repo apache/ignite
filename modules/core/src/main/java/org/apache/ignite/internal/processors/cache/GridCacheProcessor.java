@@ -1577,7 +1577,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ccfg != null) {
             if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
-                    return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start cache " +
+                    return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already started): " + cacheName));
                 else {
                     CacheConfiguration descCfg = desc.cacheConfiguration();
@@ -1627,7 +1627,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ccfg = desc.cacheConfiguration();
 
             if (ccfg == null)
-                return new GridFinishedFuture<>(new IgniteCacheExistsException("Failed to start near cache " +
+                return new GridFinishedFuture<>(new CacheExistsException("Failed to start near cache " +
                     "(a cache with the given name is not started): " + cacheName));
 
             if (ccfg.getNodeFilter().apply(ctx.discovery().localNode())) {
@@ -1696,7 +1696,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (old != null) {
                     if (req.start() && !req.clientStartOnly()) {
-                        fut.onDone(new IgniteCacheExistsException("Failed to start cache " +
+                        fut.onDone(new CacheExistsException("Failed to start cache " +
                             "(a cache with the same name is already being started or stopped): " + req.cacheName()));
                     }
                     else {
@@ -1745,7 +1745,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (!req.clientStartOnly() && req.failIfExists()) {
                         // If local node initiated start, fail the start future.
                         if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
-                            startFut.onDone(new IgniteCacheExistsException("Failed to start cache " +
+                            startFut.onDone(new CacheExistsException("Failed to start cache " +
                                 "(a cache with the same name is already started): " + ccfg.getName()));
                         }
 
