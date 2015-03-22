@@ -39,16 +39,6 @@ import java.util.*;
  * limitations (not applied if data is queried from one node only):
  * <ul>
  *     <li>
- *         {@code Group by} and {@code sort by} statements are applied separately
- *         on each node, so result set will likely be incorrectly grouped or sorted
- *         after results from multiple remote nodes are grouped together.
- *     </li>
- *     <li>
- *         Aggregation functions like {@code sum}, {@code max}, {@code avg}, etc.
- *         are also applied on each node. Therefore you will get several results
- *         containing aggregated values, one for each node.
- *     </li>
- *     <li>
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode. Refer to {@link CacheAffinityKey} javadoc for more details.
  *     </li>
@@ -61,10 +51,7 @@ import java.util.*;
  *     </li>
  * </ul>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * Remote nodes should be started using {@link ExampleNodeStartup} which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheQueryExample {
