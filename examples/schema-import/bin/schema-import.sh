@@ -53,5 +53,5 @@ setIgniteHome
  jdbc.url="jdbc:h2:tcp://localhost/${IGNITE_HOME}/examples/schema-import/demo" \
  jdbc.user=sa \
  out.folder="${IGNITE_HOME}/examples/schema-import/src/main/java" \
- pojo.package=org.apache.ignite \
+ pojo.package=org.apache.ignite.schema \
  pojo.constructor=true
