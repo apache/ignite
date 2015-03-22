@@ -20,6 +20,8 @@
 -- You can start H2 database server with "h2-server.sh" or "h2-server.bat" scripts.
 --
 
+drop table PERSON;
+
 create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));
 
 insert into PERSON(id, first_name, last_name) values(1, 'first-name-1', 'last-name-1');
