@@ -19,6 +19,7 @@ package org.apache.ignite.examples.java8.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -50,7 +51,7 @@ public final class IgniteExecutorServiceExample {
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                exec.submit(() -> {
+                exec.submit((IgniteRunnable)() -> {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
