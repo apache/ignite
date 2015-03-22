@@ -16,7 +16,7 @@
 ::
 
 ::
-:: Starts Ignite Schema Import Wizard with predefined settings for demo.
+:: Starts Ignite Schema Import Wizard with predefined settings for the demo.
 ::
 
 @echo off
