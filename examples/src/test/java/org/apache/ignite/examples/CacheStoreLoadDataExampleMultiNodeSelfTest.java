@@ -27,7 +27,7 @@ public class CacheStoreLoadDataExampleMultiNodeSelfTest extends GridAbstractExam
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, CacheNodeWithStoreStartup.configure());
+            startGrid("node-" + i, "examples/config/example-ignite.xml");
     }
 
     /**

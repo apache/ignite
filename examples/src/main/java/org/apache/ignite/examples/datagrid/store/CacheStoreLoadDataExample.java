@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
@@ -25,9 +26,11 @@ import org.apache.ignite.lang.*;
  * Loads data on all cache nodes from persistent store at cache startup by calling
  * {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
  * <p>
- * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
- * Also you can change type of underlying store modifying configuration in the
- * {@link CacheNodeWithStoreStartup#configure()} method.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheStoreLoadDataExample {
     /** Heap size required to run this example. */
@@ -45,23 +48,22 @@ public class CacheStoreLoadDataExample {
     public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite ignite = Ignition.start(CacheNodeWithStoreStartup.configure())) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 
-            final IgniteCache<String, Integer> cache = ignite.jcache(null);
+            CacheConfiguration<Long, Person> cacheCfg = CacheStoreExampleCacheConfigurator.cacheConfiguration();
 
-            // Clean up caches on all nodes before run.
-            cache.clear();
+            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
+                long start = System.currentTimeMillis();
 
-            long start = System.currentTimeMillis();
+                // Start loading cache from persistent store on all caching nodes.
+                cache.loadCache(null, ENTRY_COUNT);
 
-            // Start loading cache from persistent store on all caching nodes.
-            cache.loadCache(null, ENTRY_COUNT);
+                long end = System.currentTimeMillis();
 
-            long end = System.currentTimeMillis();
-
-            System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+                System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+            }
         }
     }
 }

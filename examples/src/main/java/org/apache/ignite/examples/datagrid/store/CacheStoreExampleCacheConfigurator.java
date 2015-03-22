@@ -24,11 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
 import org.apache.ignite.examples.datagrid.store.hibernate.*;
 import org.apache.ignite.examples.datagrid.store.jdbc.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import javax.cache.configuration.*;
 import java.sql.*;
@@ -39,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 /**
  * Starts up an empty node with example cache and store configuration.
  */
-public class CacheNodeWithStoreStartup {
+public class CacheStoreExampleCacheConfigurator {
     /** Use org.apache.ignite.examples.datagrid.store.dummy.CacheDummyPersonStore to run example. */
     public static final String DUMMY = "DUMMY";
 
@@ -56,35 +52,12 @@ public class CacheNodeWithStoreStartup {
     public static final String STORE = DUMMY;
 
     /**
-     * Start up an empty node with specified cache configuration.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
-     */
-    public static void main(String[] args) throws IgniteException {
-        Ignition.start(configure());
-    }
-
-    /**
      * Configure ignite.
      *
      * @return Ignite configuration.
      * @throws IgniteException If failed.
      */
-    public static IgniteConfiguration configure() throws IgniteException {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setLocalHost("127.0.0.1");
-
-        // Discovery SPI.
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
-
-        discoSpi.setIpFinder(ipFinder);
-
+    public static CacheConfiguration<Long, Person> cacheConfiguration() throws IgniteException {
         CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>();
 
         // Set atomicity as transaction, since we are showing transactions in example.
@@ -107,12 +80,12 @@ public class CacheNodeWithStoreStartup {
                         store = new CacheHibernatePersonStore();
                         break;
 
-                    default:
-                        if (!STORE.equals(AUTO))
-                            throw new IllegalStateException("Unexpected store configured: " + STORE);
-
+                    case AUTO:
                         store = new CacheJdbcPojoPersonStore();
                         break;
+
+                    default:
+                        throw new IllegalStateException("Unexpected store configured: " + STORE);
                 }
 
                 return store;
@@ -125,10 +98,7 @@ public class CacheNodeWithStoreStartup {
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
 
-        cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 
     /**

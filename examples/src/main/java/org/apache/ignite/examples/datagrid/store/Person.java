@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.model;
+package org.apache.ignite.examples.datagrid.store;
 
 import java.io.*;
 

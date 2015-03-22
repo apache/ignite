@@ -19,7 +19,7 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.examples.datagrid.store.*;
 import org.h2.tools.*;
 
 import javax.cache.*;

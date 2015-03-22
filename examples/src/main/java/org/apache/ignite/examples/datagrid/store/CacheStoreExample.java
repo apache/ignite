@@ -19,19 +19,21 @@ package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
-import static org.apache.ignite.examples.datagrid.store.CacheNodeWithStoreStartup.*;
+import static org.apache.ignite.examples.datagrid.store.CacheStoreExampleCacheConfigurator.*;
 
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
- * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
- * Also you can change type of underlying store modifying configuration in the
- * {@link CacheNodeWithStoreStartup#configure()} method.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheStoreExample {
     /** Global person ID to use across entire example. */
@@ -44,64 +46,49 @@ public class CacheStoreExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
-
         // To start ignite with desired configuration uncomment the appropriate line.
-        try (Ignite ignite = Ignition.start(cfg)) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
             System.out.println(">>> Store: " + STORE);
 
-            IgniteCache<Long, Person> cache = ignite.jcache(null);
+            CacheConfiguration<Long, Person> cacheCfg = CacheStoreExampleCacheConfigurator.cacheConfiguration();
 
-            // Clean up caches on all nodes before run.
-            cache.clear();
+            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
+                try (Transaction tx = ignite.transactions().txStart()) {
+                    Person val = cache.get(id);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                Person val = cache.get(id);
+                    System.out.println("Read value: " + val);
 
-                System.out.println("Read value: " + val);
+                    val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
 
-                val = cache.getAndPut(id, person(id, "Isaac", "Newton"));
+                    System.out.println("Overwrote old value: " + val);
 
-                System.out.println("Overwrote old value: " + val);
+                    val = cache.get(id);
 
-                val = cache.get(id);
+                    System.out.println("Read value: " + val);
 
-                System.out.println("Read value: " + val);
+                    tx.commit();
+                }
 
-                tx.commit();
-            }
+                System.out.println("Read value after commit: " + cache.get(id));
 
-            System.out.println("Read value after commit: " + cache.get(id));
+                // If example run with CacheJdbcPojoStore.
+                // Example of CacheJdbcPojoStore special features.
+                if (STORE.equals(AUTO)) {
+                    System.out.println(">>> Example of CacheJdbcPojoStore special feature: load from DB with custom SQL.");
 
-            // If example run with CacheJdbcPojoStore.
-            // Example of CacheJdbcPojoStore special features.
-            if (STORE.equals(AUTO)) {
-                System.out.println(">>> Example of CacheJdbcPojoStore special feature: load from DB with custom SQL.");
+                    cache.clear();
 
-                cache.clear();
+                    System.out.println("Cache size: " + cache.size());
 
-                System.out.println("Cache size: " + cache.size());
+                    // Load values from DB into store with custom SQL.
+                    cache.loadCache(null, "java.lang.Long", "select * from PERSON where id = 2");
 
-                // Load values from DB into store with custom SQL.
-                cache.loadCache(null, "java.lang.Long", "select * from PERSON where id = 2");
-
-                System.out.println("Cache size: " + cache.size());
-                System.out.println("Person: " + cache.get(2L));
+                    System.out.println("Cache size: " + cache.size());
+                    System.out.println("Person: " + cache.get(2L));
+                }
             }
         }
-    }
-
-    /**
-     * Creates person.
-     *
-     * @param id ID.
-     * @param firstName First name.
-     * @param lastName Last name.
-     * @return Newly created person.
-     */
-    private static Person person(long id, String firstName, String lastName) {
-        return new Person(id, firstName, lastName);
     }
 }
