@@ -18,63 +18,58 @@
 package org.apache.ignite.examples.servicegrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.services.*;
 
 /**
- * Simple service which loops infinitely and prints out a counter.
+ * Simple service which utilizes Ignite cache as a mechanism to provide
+ * distributed {@link SimpleMapService} functionality.
  */
 public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, V> {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
-
-    /** Cache name. */
-    private static final String CACHE_NAME = SimpleMapServiceImpl.class.getSimpleName();
 
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** Underlying cache map. */
-    private IgniteCache<K, V> map;
+    private IgniteCache<K, V> cache;
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
-        map.put(key, val);
+        cache.put(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
-        return map.get(key);
+        return cache.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        map.clear();
+        cache.clear();
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return map.size();
+        return cache.size();
     }
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
-        ignite.destroyCache(CACHE_NAME);
+        ignite.destroyCache(ctx.name());
 
         System.out.println("Service was cancelled: " + ctx.name());
     }
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
-        CacheConfiguration<K, V> cfg = new CacheConfiguration<>();
-
-        cfg.setCacheMode(CacheMode.PARTITIONED);
-        cfg.setName(CACHE_NAME);
-
-        map = ignite.getOrCreateCache(cfg);
+        // Create a new cache for every service deployment.
+        // Note that we use service name as cache name, which allows
+        // for each service deployment to use its own isolated cache.
+        cache = ignite.getOrCreateCache(new CacheConfiguration<>(ctx.name()));
 
         System.out.println("Service was initialized: " + ctx.name());
     }
