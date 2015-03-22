@@ -18,6 +18,7 @@
 -- This script is used to pre-populate the database for Schema Import Demo.
 -- It can be executed on H2 database available with Ignite.
 -- You can start H2 database server with "h2-server.sh" or "h2-server.bat" scripts.
+-- When started, copy the SQL below into H2 console and execute.
 --
 
 drop table PERSON;
