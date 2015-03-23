@@ -63,9 +63,6 @@ public class CacheDataStreamerExample {
             cfg.setName(CACHE_NAME);
 
             try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
-                System.out.println();
-                System.out.println(">>> Cache clear finished.");
-
                 long start = System.currentTimeMillis();
 
                 try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(CACHE_NAME)) {
