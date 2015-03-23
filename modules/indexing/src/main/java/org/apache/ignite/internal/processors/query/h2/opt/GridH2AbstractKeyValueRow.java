@@ -169,6 +169,19 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
+     * @param val Value.
+     * @throws IgniteCheckedException
+     */
+    public synchronized void unswapBeforeRemove(Object val) throws IgniteCheckedException {
+        assert val != null;
+
+        Value oldVal = super.getValue(VAL_COL);
+
+        if (oldVal == null || oldVal instanceof WeakValue)
+            onUnswap(val);
+    }
+
+    /**
      * Should be called when entry getting unswapped.
      *
      * @param val Value.

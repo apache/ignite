@@ -601,7 +601,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key) throws IgniteCheckedException {
+    public void remove(String space, Object key, Object val) throws IgniteCheckedException {
         assert key != null;
 
         ctx.indexing().remove(space, key);
@@ -613,7 +613,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            idx.remove(space, key);
+            idx.remove(space, key, val);
         }
         finally {
             busyLock.leaveBusy();

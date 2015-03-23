@@ -566,7 +566,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                 try {
                     if (cached.clearInternal(clearVer, swap)) {
-                        it.remove();
+                        map.remove(cached.key(), cached);
 
                         if (!cached.isInternal()) {
                             mapPubSize.decrement();
@@ -599,7 +599,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
         return new Iterator<GridDhtCacheEntry>() {
             /** */
-            KeyCacheObject lastKey;
+            GridDhtCacheEntry lastEntry;
 
             @Override public boolean hasNext() {
                 return it.hasNext();
@@ -611,13 +611,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                 byte[] keyBytes = entry.getKey();
 
                 try {
-                    lastKey = cctx.toCacheKeyObject(keyBytes);
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    GridDhtCacheEntry res = (GridDhtCacheEntry)cctx.cache().entryEx(lastKey, false);
+                    lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
 
-                    res.unswap(true, true);
-
-                    return res;
+                    return lastEntry;
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e);
@@ -625,17 +623,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
             }
 
             @Override public void remove() {
-                if (lastKey == null)
-                    throw new IllegalStateException();
-
-                map.remove(lastKey);
-
-                try {
-                    cctx.swap().remove(lastKey);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to remove swap entry for key: " + lastKey);
-                }
+                map.remove(lastEntry.key(), lastEntry);
             }
         };
     }

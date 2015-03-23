@@ -187,7 +187,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
         SwapSpaceSpiListener lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onSwapEvent(evtType, spaceName, key);
+            lsnr0.onSwapEvent(evtType, spaceName, key, null);
     }
 
     /**

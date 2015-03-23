@@ -42,7 +42,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -3154,7 +3153,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             return val0;
         }
 
-        return null;
+        GridCacheSwapEntry swapEntry = cctx.swap().read(key, true, true);
+
+        if (swapEntry == null)
+            return null;
+
+        // TODO do we need all this val.finishUnmarshal stuff??
+        return swapEntry.value();
     }
 
     /** {@inheritDoc} */
@@ -3697,14 +3702,15 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param prevVal Previous value (if needed for index update).
      * @throws IgniteCheckedException If failed.
      */
-    protected void clearIndex(@Nullable CacheObject prevVal) throws IgniteCheckedException {
+    protected void clearIndex(CacheObject prevVal) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         try {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr != null)
-                qryMgr.remove(key().value(cctx.cacheObjectContext(), false));
+                qryMgr.remove(key().value(cctx.cacheObjectContext(), false),
+                    prevVal.value(cctx.cacheObjectContext(), false));
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3721,7 +3727,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     protected CacheObject saveValueForIndexUnlocked() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        if (!cctx.cache().isMongoDataCache() && !cctx.cache().isMongoMetaCache())
+        if (cctx.queries() == null)
             return null;
 
         return rawGetOrUnmarshalUnlocked(false);

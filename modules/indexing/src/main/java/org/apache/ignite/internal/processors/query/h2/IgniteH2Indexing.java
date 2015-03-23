@@ -277,7 +277,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tblToUpdate Table to update.
      * @throws IgniteCheckedException In case of error.
      */
-    private void removeKey(@Nullable String spaceName, Object key, TableDescriptor tblToUpdate)
+    private void removeKey(@Nullable String spaceName, Object key, Object val, TableDescriptor tblToUpdate)
         throws IgniteCheckedException {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
@@ -285,7 +285,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (tbls.size() > 1) {
                 for (TableDescriptor tbl : tbls) {
                     if (tbl != tblToUpdate && tbl.type().keyClass().equals(key.getClass())) {
-                        if (tbl.tbl.update(key, null, 0)) {
+                        if (tbl.tbl.update(key, val, 0, true)) {
                             if (tbl.luceneIdx != null)
                                 tbl.luceneIdx.remove(key);
 
@@ -345,25 +345,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        removeKey(spaceName, k, tbl);
+        removeKey(spaceName, k, v, tbl);
 
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, expirationTime);
+        tbl.tbl.update(k, v, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
 
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().equals(key.getClass())) {
-                if (tbl.tbl.update(key, null, 0)) {
+                if (tbl.tbl.update(key, val, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
