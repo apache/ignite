@@ -52,5 +52,7 @@
 
         <property name="backups" value="1"/>
     </bean>
+    <bean id="nearCache-configuration" class="org.apache.ignite.configuration.NearCacheConfiguration">
+    </bean>
 </beans>
 
