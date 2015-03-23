@@ -26,9 +26,6 @@ import javafx.geometry.*;
 import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
@@ -38,7 +35,6 @@ import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
 
-import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
