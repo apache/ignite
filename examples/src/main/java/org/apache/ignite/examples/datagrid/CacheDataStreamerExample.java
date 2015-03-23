@@ -66,25 +66,25 @@ public class CacheDataStreamerExample {
                 System.out.println();
                 System.out.println(">>> Cache clear finished.");
 
-                try (IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(CACHE_NAME)) {
-                    long start = System.currentTimeMillis();
+                long start = System.currentTimeMillis();
 
+                try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(CACHE_NAME)) {
                     // Configure loader.
-                    ldr.perNodeBufferSize(1024);
-                    ldr.perNodeParallelOperations(8);
+                    stmr.perNodeBufferSize(1024);
+                    stmr.perNodeParallelOperations(8);
 
                     for (int i = 0; i < ENTRY_COUNT; i++) {
-                        ldr.addData(i, Integer.toString(i));
+                        stmr.addData(i, Integer.toString(i));
 
                         // Print out progress while loading cache.
                         if (i > 0 && i % 10000 == 0)
                             System.out.println("Loaded " + i + " keys.");
                     }
-
-                    long end = System.currentTimeMillis();
-
-                    System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
                 }
+
+                long end = System.currentTimeMillis();
+
+                System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
             }
         }
     }
