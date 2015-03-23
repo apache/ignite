@@ -43,39 +43,45 @@ import java.util.concurrent.locks.*;
 import static java.sql.Statement.*;
 
 /**
- * Base {@link CacheStore} implementation backed by JDBC. This implementation stores objects in underlying database
- * using mapping description.
+ * Implementation of {@link CacheStore} backed by JDBC.
+ * <p>
+ * Store works with database via SQL dialect. Ignite ships with dialects for most popular databases:
+ * <ul>
+ *     <li>{@link DB2Dialect} - dialect for IBM DB2 database.</li>
+ *     <li>{@link OracleDialect} - dialect for Oracle database.</li>
+ *     <li>{@link SQLServerDialect} - dialect for Microsoft SQL Server database.</li>
+ *     <li>{@link MySQLDialect} - dialect for Oracle MySQL database.</li>
+ *     <li>{@link H2Dialect} - dialect for H2 database.</li>
+ *     <li>{@link BasicJdbcDialect} - dialect for any database via plain JDBC.</li>
+ * </ul>
  * <p>
  * <h2 class="header">Configuration</h2>
- * Sections below describe mandatory and optional configuration settings as well
- * as providing example using Java and Spring XML.
- * <h3>Mandatory</h3>
- * There are no mandatory configuration parameters.
- * <h3>Optional</h3>
  * <ul>
  *     <li>Data source (see {@link #setDataSource(DataSource)}</li>
+ *     <li>Dialect (see {@link #setDialect(JdbcDialect)}</li>
  *     <li>Maximum batch size for writeAll and deleteAll operations. (see {@link #setBatchSize(int)})</li>
  *     <li>Max workers thread count. These threads are responsible for load cache. (see {@link #setMaxPoolSize(int)})</li>
  *     <li>Parallel load cache minimum threshold. (see {@link #setParallelLoadCacheMinimumThreshold(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- *     ...
- *     JdbcPojoCacheStore store = new JdbcPojoCacheStore();
- *     ...
+ * ...
+ * CacheConfiguration ccfg = new CacheConfiguration<>();
  *
+ * // Configure cache store.
+ * ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
+ * ccfg.setReadThrough(true);
+ * ccfg.setWriteThrough(true);
+ *
+ * // Enable database batching.
+ * ccfg.setWriteBehindEnabled(true);
+ *
+ * // Configure cache types metadata.
+ * ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
+ *
+ * cfg.setCacheConfiguration(ccfg);
+ * ...
  * </pre>
- * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
- *     ...
- *     &lt;bean id=&quot;cache.jdbc.store&quot;
- *         class=&quot;org.apache.ignite.cache.store.jdbc.JdbcPojoCacheStore&quot;&gt;
- *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
- *     &lt;/bean&gt;
- *     ...
- * </pre>
- * <p>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Max attempt write count. */
@@ -1465,7 +1471,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             loadQrySingle = dialect.loadQuery(fullTblName, keyCols, cols, 1);
 
-            maxKeysPerStmt = dialect.getMaxParamsCnt() / keyCols.size();
+            maxKeysPerStmt = dialect.getMaxParameterCount() / keyCols.size();
 
             loadQry = dialect.loadQuery(fullTblName, keyCols, cols, maxKeysPerStmt);
 

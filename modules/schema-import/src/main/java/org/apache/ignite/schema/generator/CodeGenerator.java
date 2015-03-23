@@ -479,10 +479,10 @@ public class CodeGenerator {
         String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
-        File configurationSnippet = new File(pkgFolder, "ConfigurationSnippet.java");
+        File cacheConfig = new File(pkgFolder, "CacheConfig.java");
 
-        if (configurationSnippet.exists()) {
-            MessageBox.Result choice = askOverwrite.confirm(configurationSnippet.getName());
+        if (cacheConfig.exists()) {
+            MessageBox.Result choice = askOverwrite.confirm(cacheConfig.getName());
 
             if (CANCEL == choice)
                 throw new IllegalStateException("Java snippet generation was canceled!");
@@ -495,7 +495,7 @@ public class CodeGenerator {
 
         header(src, pkg, "org.apache.ignite.cache.*;org.apache.ignite.cache.store.*;" +
             "org.apache.ignite.cache.store.jdbc.*;;javax.sql.*;java.sql.Types;java.util.*;",
-            "ConfigurationSnippet", "ConfigurationSnippet");
+            "CacheConfig", "CacheConfig");
 
         add1(src, "/** Configure cache store. */");
         add1(src, "public static CacheStore store() {");
@@ -551,6 +551,6 @@ public class CodeGenerator {
 
         add0(src, "}");
 
-        write(src, configurationSnippet);
+        write(src, cacheConfig);
     }
 }

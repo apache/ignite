@@ -15,45 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.jdbc;
+package org.apache.ignite.examples.datagrid.store.auto;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.examples.datagrid.store.*;
+import org.h2.jdbcx.*;
 import org.h2.tools.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.sql.*;
 
 /**
- * Example of {@link CacheJdbcPojoStore} implementation that uses JDBC
- * transaction with cache transactions and maps {@link Long} to {@link Person}.
+ * Start H2 database TCP server in order to access sample in-memory database from other processes.
  */
-public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
-    /**
-     * Constructor.
-     *
-     * @throws IgniteException If failed.
-     */
-    public CacheJdbcPojoPersonStore() throws IgniteException {
-        try {
-            // Try to connect to database server.
-            dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
+public class DbH2ServerStartup {
+    /** Create table script. */
+    private static final String CREATE_TABLE =
+        "create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));";
 
-            resolveDialect();
-        }
-        catch (CacheException ignore) {
-            // Construct example database in memory.
-            dataSrc = org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
-
-            prepareDb();
-        }
-    }
-
-    /** */
-    private static final String DB_SCRIPT =
-        "create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));\n" +
+    /** Sample data script. */
+    private static final String POPULATE_TABLE =
         "insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');\n" +
         "insert into PERSON(id, first_name, last_name) values(2, 'Galileo', 'Galilei');\n" +
         "insert into PERSON(id, first_name, last_name) values(3, 'Henry', 'More');\n" +
@@ -62,21 +42,37 @@ public class CacheJdbcPojoPersonStore extends CacheJdbcPojoStore<Long, Person> {
         "insert into PERSON(id, first_name, last_name) values(6, 'Isaac', 'Newton');";
 
     /**
-     * Prepares database for example execution. This method will create a table called "PERSONS"
-     * so it can be used by store implementation.
+     * Start H2 database TCP server.
      *
-     * @throws IgniteException If failed.
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If start H2 database TCP server failed.
      */
-    private void prepareDb() throws IgniteException {
+    public static void main(String[] args) throws IgniteException {
         try {
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
             Server.createTcpServer("-tcpDaemon").start();
 
-            // Load sample data into database.
-            RunScript.execute(dataSrc.getConnection(), new StringReader(DB_SCRIPT));
+            // Try to connect to database TCP server.
+            JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
+
+            // Create Person table in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(CREATE_TABLE));
+
+            // Populates Person table with sample data in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(POPULATE_TABLE));
         }
         catch (SQLException e) {
-            throw new IgniteException("Failed to initialize database", e);
+            throw new IgniteException("Failed to start database TCP server", e);
+        }
+
+        try {
+            do {
+                System.out.println("Type 'q' and press 'Enter' to stop H2 TCP server...");
+            }
+            while ('q' != System.in.read());
+        }
+        catch (IOException ignored) {
+            // No-op.
         }
     }
 }
