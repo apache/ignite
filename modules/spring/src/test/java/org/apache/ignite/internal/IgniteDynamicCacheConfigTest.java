@@ -119,6 +119,8 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
                 "modules/core/src/test/config/cache.xml");
 
             assertEquals(clientCache1, clientCache2);
+
+            clientCache1.put(1, 1);
         }
         finally {
             stopGrid(nodeCount() + 1);
@@ -149,6 +151,8 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
                 "modules/core/src/test/config/cache.xml");
 
             assertEquals(clientCache1, clientCache2);
+
+            clientCache1.put(1, 1);
         }
         finally {
             stopGrid(nodeCount() + 1);
@@ -160,6 +164,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
      */
     public void testGetOrCreateNearCache() throws Exception {
         testAttribute = false;
+
         IgniteCache cache = ignite(0).createCache(
             "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml");
 
@@ -181,6 +186,8 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
                 "modules/core/src/test/config/cache.xml");
 
             assertEquals(clientCache1, clientCache2);
+
+            clientCache1.put(1, 1);
         }
         finally {
             stopGrid(nodeCount() + 1);
