@@ -179,6 +179,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
         if (oldVal == null || oldVal instanceof WeakValue)
             onUnswap(val);
+        // Else we would assert that val.equals(oldVal) but value is not necessarily implements equals() correctly.
     }
 
     /**
@@ -222,6 +223,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
             Value v = super.getValue(col);
 
             if (col == VAL_COL) {
+                int loops = 0;
+
                 while ((v = WeakValue.unwrap(v)) == null) {
                     v = getOffheapValue(VAL_COL);
 
@@ -234,8 +237,10 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         return v;
                     }
 
+                    Object k = getValue(KEY_COL).getObject();
+
                     try {
-                        Object valObj = desc.readFromSwap(getValue(KEY_COL).getObject());
+                        Object valObj = desc.readFromSwap(k);
 
                         if (valObj != null) {
                             Value upd = wrap(valObj, desc.valueType());
@@ -255,6 +260,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                             // If nothing found in swap then we should be already unswapped.
                             v = syncValue();
                         }
+
+                        if (++loops == 1000)
+                            throw new IllegalStateException("Failed to get value for key: " + k);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);

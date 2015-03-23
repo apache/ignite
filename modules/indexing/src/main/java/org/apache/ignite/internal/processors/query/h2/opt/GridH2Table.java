@@ -302,7 +302,6 @@ public class GridH2Table extends TableBase {
      */
     public boolean update(Object key, Object val, long expirationTime, boolean rmv) throws IgniteCheckedException {
         assert desc != null;
-        assert val != null;
 
         GridH2Row row = desc.createRow(key, val, expirationTime);
 
@@ -382,7 +381,8 @@ public class GridH2Table extends TableBase {
                 if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
                     Value v = row.getValue(GridH2AbstractKeyValueRow.VAL_COL);
 
-                    ((GridH2AbstractKeyValueRow)old).unswapBeforeRemove(v);
+                    if (v != null)
+                        ((GridH2AbstractKeyValueRow)old).unswapBeforeRemove(v);
                 }
 
                 if (old != null) {

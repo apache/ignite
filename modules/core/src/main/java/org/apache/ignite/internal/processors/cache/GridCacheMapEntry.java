@@ -3710,7 +3710,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             if (qryMgr != null)
                 qryMgr.remove(key().value(cctx.cacheObjectContext(), false),
-                    prevVal.value(cctx.cacheObjectContext(), false));
+                    prevVal == null ? null : prevVal.value(cctx.cacheObjectContext(), false));
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);

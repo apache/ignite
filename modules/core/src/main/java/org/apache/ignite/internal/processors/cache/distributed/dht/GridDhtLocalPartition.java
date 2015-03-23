@@ -615,6 +615,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                     lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
 
+                    lastEntry.unswap(true, true);
+
                     return lastEntry;
                 }
                 catch (IgniteCheckedException e) {
