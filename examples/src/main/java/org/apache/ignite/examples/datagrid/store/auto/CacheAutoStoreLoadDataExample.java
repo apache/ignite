@@ -73,33 +73,17 @@ public class CacheAutoStoreLoadDataExample {
             CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
 
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
-                System.out.println(">>> Load cache from database using custom SQL.");
-
-                System.out.println(">>> Cache size: " + cache.size());
-
-                long start = System.currentTimeMillis();
-
-                // Start loading cache from persistent store on all caching nodes.
+                // Load cache on all data nodes with custom SQL statement.
                 cache.loadCache(null, "java.lang.Long", "select * from PERSON where id <= 3");
 
-                long end = System.currentTimeMillis();
-
-                System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
-
-                System.out.println(">>> Load cache data from database.");
+                System.out.println("Loaded cache entries: " + cache.size());
 
                 cache.clear();
 
-                System.out.println(">>> Cache size: " + cache.size());
-
-                start = System.currentTimeMillis();
-
-                // Start loading cache from persistent store on all caching nodes.
+                // Load cache on all data nodes with default SQL statement.
                 cache.loadCache(null);
 
-                end = System.currentTimeMillis();
-
-                System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+                System.out.println("Loaded cache entries: " + cache.size());
             }
         }
     }
