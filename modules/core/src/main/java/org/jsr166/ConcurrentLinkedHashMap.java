@@ -9,13 +9,13 @@
  * http://gee.cs.oswego.edu/dl/concurrency-interest/
  */
 
-package org.jdk8.backport;
+package org.jsr166;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * A hash table supporting full concurrency of retrievals and

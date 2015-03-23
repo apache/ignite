@@ -44,7 +44,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 

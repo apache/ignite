@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.configuration.*;
 import java.lang.reflect.*;

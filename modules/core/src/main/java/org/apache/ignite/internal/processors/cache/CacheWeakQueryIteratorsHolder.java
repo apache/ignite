@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.lang.ref.*;
 import java.util.*;
