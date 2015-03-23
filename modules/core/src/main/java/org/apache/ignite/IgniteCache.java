@@ -91,7 +91,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
+     *      filter values loaded from storage before they are put into cache.
      * @param args Optional user arguments to be passed into
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
