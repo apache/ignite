@@ -18,8 +18,10 @@
 package org.apache.ignite.schema;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 
 /**
@@ -34,7 +36,12 @@ public class Demo {
         CacheConfiguration ccfg = new CacheConfiguration<>();
 
         // Configure cache store.
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(CacheConfig.store()));
+        ccfg.setCacheStoreFactory(new Factory<CacheStore>() {
+            @Override public CacheStore create() {
+                return CacheConfig.store();
+            }
+        });
+
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
 
@@ -51,10 +58,11 @@ public class Demo {
             IgniteCache<PersonKey, Person> cache = ignite.jcache(null);
 
             // Demo for load cache with custom SQL.
-            cache.loadCache(null, "org.apache.ignite.examples.demo.PersonKey",
-                "select * from PERSON where ID = 3");
+            cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
+                "select * from PERSON where ID <= 3");
 
-            System.out.println(">>> Loaded Person: " + cache.get(new PersonKey(3)));
+            for (Cache.Entry<PersonKey, Person> aCache : cache)
+                System.out.println(">>> Loaded Person: " + aCache);
         }
     }
 }
