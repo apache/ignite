@@ -50,9 +50,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
  * Standalone Ignite node.
  */
 public class IgniteDriverNode extends IgniteNode {
-    /** Grid instance. */
-    private Ignite ignite;
-
     /** Client mode. */
     private boolean clientMode;
 

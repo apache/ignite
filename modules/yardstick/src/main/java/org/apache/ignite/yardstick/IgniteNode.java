@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
  */
 public class IgniteNode implements BenchmarkServer {
     /** Grid instance. */
-    private Ignite ignite;
+    protected Ignite ignite;
 
     /** Client mode. */
     private boolean clientMode;
