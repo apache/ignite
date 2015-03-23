@@ -17,6 +17,8 @@
 
 package org.apache.ignite.schema.generator;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.ui.*;
 import org.w3c.dom.*;
@@ -65,12 +67,12 @@ public class XmlGenerator {
      *
      * @param doc XML document.
      * @param parent Parent XML node.
-     * @param cls Bean class name.
+     * @param cls Bean class.
      */
-    private static Element addBean(Document doc, Node parent, String cls) {
+    private static Element addBean(Document doc, Node parent, Class<?> cls) {
         Element elem = doc.createElement("bean");
 
-        elem.setAttribute("class", cls);
+        elem.setAttribute("class", cls.getName());
 
         parent.appendChild(elem);
 
@@ -154,7 +156,7 @@ public class XmlGenerator {
             Element list = addElement(doc, prop, "list");
 
             for (PojoField field : fields) {
-                Element item = addBean(doc, list, "org.apache.ignite.cache.CacheTypeFieldMetadata");
+                Element item = addBean(doc, list, CacheTypeFieldMetadata.class);
 
                 addProperty(doc, item, "databaseName", field.dbName());
                 Element dbType = addProperty(doc, item, "databaseType", null);
@@ -208,7 +210,7 @@ public class XmlGenerator {
                 for (Map.Entry<String, IndexItem> field : fields.entrySet()) {
                     Element entry2 = addElement(doc, val1, "entry", "key", field.getKey());
 
-                    Element val2 = addBean(doc, entry2, "org.apache.ignite.lang.IgniteBiTuple");
+                    Element val2 = addBean(doc, entry2, IgniteBiTuple.class);
 
                     IndexItem idx = field.getValue();
 
@@ -229,7 +231,7 @@ public class XmlGenerator {
      */
     private static void addTypeMetadata(Document doc, Node parent, String pkg, PojoDescriptor pojo,
         boolean includeKeys) {
-        Element bean = addBean(doc, parent, "org.apache.ignite.cache.CacheTypeMetadata");
+        Element bean = addBean(doc, parent, CacheTypeMetadata.class);
 
         addProperty(doc, bean, "databaseSchema", pojo.schema());
 

@@ -28,6 +28,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
+import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
@@ -37,6 +39,7 @@ import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 import static javafx.embed.swing.SwingFXUtils.*;
 import static org.apache.ignite.schema.ui.Controls.*;
@@ -46,6 +49,9 @@ import static org.apache.ignite.schema.ui.Controls.*;
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaImportApp extends Application {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(SchemaImportApp.class.getName());
+
     /** Presets for database settings. */
     private static class Preset {
         /** Name in preferences. */
@@ -154,6 +160,9 @@ public class SchemaImportApp extends Application {
         PREF_XML_SINGLE,
         PREF_NAMING_PATTERN, PREF_NAMING_REPLACE
     };
+
+    /** */
+    private static final String CUSTOM_PREFS = "-customPrefs=";
 
 
     /** */
@@ -1308,19 +1317,6 @@ public class SchemaImportApp extends Application {
         prefs.put(key, String.valueOf(val));
     }
 
-    /**
-     * Override parameter in preferences.
-     *
-     * @param key Parameter name in preferences.
-     * @param val Value specified in application parameters.
-     */
-    private void overrideParam(String key, String val) {
-        String param = key + "=";
-
-        if (val.startsWith(param))
-            prefs.setProperty(key, val.substring(param.length()));
-    }
-
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
@@ -1329,14 +1325,45 @@ public class SchemaImportApp extends Application {
             try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(prefsFile))) {
                 prefs.load(in);
             }
-            catch (IOException ignore) {
-                // No-op.
+            catch (IOException e) {
+                log.log(Level.SEVERE, "Failed to load preferences. Default preferences will be used", e);
             }
 
         // Override params.
-        for (String arg : getParameters().getRaw())
-            for (String pref : PREFS)
-                overrideParam(pref,  arg);
+        for (String arg : getParameters().getRaw()) {
+            if (arg.startsWith(CUSTOM_PREFS)) {
+                String customPrefsFileName = arg.substring(CUSTOM_PREFS.length());
+
+                if (customPrefsFileName.isEmpty())
+                    log.log(Level.WARNING, "Path to file with custom preferences is not specified.");
+                else {
+                    File customPrefsFile = U.resolveIgnitePath(customPrefsFileName);
+
+                    if (customPrefsFile == null)
+                        log.log(Level.WARNING, "Failed to resolve path to file with custom preferences: " +
+                            customPrefsFile);
+                    else {
+                        Properties customPrefs = new Properties();
+
+                        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(customPrefsFile))) {
+                            customPrefs.load(in);
+                        }
+                        catch (IOException e) {
+                            log.log(Level.SEVERE, "Failed to load custom preferences.", e);
+                        }
+
+                        String igniteHome = GridFilenameUtils.separatorsToUnix(U.getIgniteHome());
+
+                        for (Map.Entry<Object, Object> prop : customPrefs.entrySet()) {
+                            String key = prop.getKey().toString();
+                            String val = prop.getValue().toString().replaceAll("%IGNITE_HOME%", igniteHome);
+
+                            prefs.setProperty(key, val);
+                        }
+                    }
+                }
+            }
+        }
 
         // Restore presets.
         for (Preset preset : presets) {
