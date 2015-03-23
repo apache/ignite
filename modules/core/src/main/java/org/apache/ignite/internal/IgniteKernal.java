@@ -1867,7 +1867,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         NL);
                 }
 
-            U.onGridStop();
+            try {
+                U.onGridStop();
+            }
+            catch (InterruptedException e) {
+                // Preserve interrupt status.
+                Thread.currentThread().interrupt();
+            }
         }
         else {
             // Proper notification.
