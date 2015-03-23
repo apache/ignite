@@ -18,12 +18,10 @@
 package org.apache.ignite.schema;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 
 /**
  * Demo for CacheJdbcPojoStore.
@@ -33,6 +31,9 @@ import javax.cache.configuration.*;
  * Custom SQL will be executed to populate cache with data from database.
  */
 public class Demo {
+    /** */
+    private static final String CACHE_NAME = "Person";
+
     /**
      * Executes demo.
      *
@@ -44,29 +45,15 @@ public class Demo {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        CacheConfiguration ccfg = new CacheConfiguration<>();
-
         // Configure cache store.
-        ccfg.setCacheStoreFactory(new Factory<CacheStore>() {
-            @Override public CacheStore create() {
-                return CacheConfig.store();
-            }
-        });
-
-        ccfg.setReadThrough(true);
-        ccfg.setWriteThrough(true);
-
-        // Enable database batching.
-        ccfg.setWriteBehindEnabled(true);
-
-        // Configure cache types metadata.
-        ccfg.setTypeMetadata(CacheConfig.typeMetadata());
+        CacheConfiguration ccfg = CacheConfig.cache(CACHE_NAME,
+            org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
 
         cfg.setCacheConfiguration(ccfg);
 
         // Start Ignite node.
         try (Ignite ignite = Ignition.start(cfg)) {
-            IgniteCache<PersonKey, Person> cache = ignite.jcache(null);
+            IgniteCache<PersonKey, Person> cache = ignite.jcache(CACHE_NAME);
 
             // Demo for load cache with custom SQL.
             cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
@@ -75,5 +62,30 @@ public class Demo {
             for (Cache.Entry<PersonKey, Person> person : cache)
                 System.out.println(">>> Loaded Person: " + person);
         }
+    }
+
+    /** Demonstrates cache preload from database.  */
+    private static void preload() {
+        // TODO
+    }
+
+    /** Demonstrates cache wright through to database.  */
+    private static void writeThrough() {
+        // TODO
+    }
+
+    /** Demonstrates cache read through from database.  */
+    private static void readThrough() {
+        // TODO
+    }
+
+    /** Demonstrates cache remove from database.  */
+    private static void remove() {
+        // TODO
+    }
+
+    /** Demonstrates cache transaction from database.  */
+    private static void transaction() {
+        // TODO
     }
 }
