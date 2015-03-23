@@ -78,13 +78,13 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** {@inheritDoc} */
     @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
-        return loadConfigurations(cfgUrl, IgniteConfiguration.class);
+        return loadConfigurations(cfgUrl, IgniteConfiguration.class, excludedProps);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, Class<T> cl) throws IgniteCheckedException {
-        ApplicationContext springCtx = applicationContext(cfgUrl);
+        URL cfgUrl, Class<T> cl, String... excludedProps) throws IgniteCheckedException {
+        ApplicationContext springCtx = applicationContext(cfgUrl, excludedProps);
         Map<String, T> cfgMap;
 
         try {

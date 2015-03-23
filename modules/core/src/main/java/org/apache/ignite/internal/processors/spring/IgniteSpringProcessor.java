@@ -56,12 +56,13 @@ public interface IgniteSpringProcessor {
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
      * @param cl Required type of configuration.
+     * @param excludedProps Properties to exclude.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
      * @throws IgniteCheckedException If configuration could not be
      *      read.
      */
     public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, Class<T> cl) throws IgniteCheckedException;
+        URL cfgUrl, Class<T> cl, String... excludedProps) throws IgniteCheckedException;
 
     /**
      * Loads bean instances that match the given types from given configuration file.
