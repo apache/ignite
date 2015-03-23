@@ -71,6 +71,7 @@
                 <include>rest/**</include>
                 <include>memcached/**</include>
                 <include>schema-import/**</include>
+                <include>README.txt</include>
             </includes>
         </fileSet>
 
