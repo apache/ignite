@@ -230,7 +230,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 For books used for tests in "org.apache.ignite.internal.processors.hadoop.books"
 ==============================================================================
 This code bundles book text files used for testing purposes which contain
-the following disclaimer:
+the following header:
 
 This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
