@@ -22,18 +22,18 @@ import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
-import org.h2.jdbcx.*;
-import org.h2.tools.*;
-
-import java.io.*;
-import java.sql.*;
 
 /**
  * Demonstrates how to load data from database.
  * <p>
  * This example uses {@link CacheJdbcPojoStore} as a persistent store.
  * <p>
- * To run this example your should start {@link H2Startup} first.
+ * To start the example, you should:
+ * <ul>
+ *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start example using {@link CacheAutoStoreLoadDataExample}.</li>
+ * </ul>
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -45,16 +45,6 @@ public class CacheAutoStoreLoadDataExample {
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
-    /** */
-    private static final String DB_SCRIPT =
-        "delete from PERSON;\n" +
-        "insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');\n" +
-        "insert into PERSON(id, first_name, last_name) values(2, 'Galileo', 'Galilei');\n" +
-        "insert into PERSON(id, first_name, last_name) values(3, 'Henry', 'More');\n" +
-        "insert into PERSON(id, first_name, last_name) values(4, 'Polish', 'Brethren');\n" +
-        "insert into PERSON(id, first_name, last_name) values(5, 'Robert', 'Boyle');\n" +
-        "insert into PERSON(id, first_name, last_name) values(6, 'Isaac', 'Newton');";
-
     /**
      * Executes example.
      *
@@ -63,8 +53,6 @@ public class CacheAutoStoreLoadDataExample {
      */
     public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
-
-        initializeDatabase();
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
@@ -85,24 +73,6 @@ public class CacheAutoStoreLoadDataExample {
 
                 System.out.println("Loaded cache entries: " + cache.size());
             }
-        }
-    }
-
-    /**
-     * Prepares database for load example execution.
-     *
-     * @throws IgniteException If failed.
-     */
-    private static void initializeDatabase() throws IgniteException {
-        try {
-            // Try to connect to database server.
-            JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
-
-            // Load sample data into database.
-            RunScript.execute(dataSrc.getConnection(), new StringReader(DB_SCRIPT));
-        }
-        catch (SQLException e) {
-            throw new IgniteException("Failed to initialize database", e);
         }
     }
 }

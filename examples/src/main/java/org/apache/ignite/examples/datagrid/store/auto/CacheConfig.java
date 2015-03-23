@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  */
 public class CacheConfig {
     /**
-     * Configure cache with JDBC mappings.
+     * Configure cache with store.
      */
     public static CacheConfiguration<Long, Person> jdbcPojoStoreCache() {
         CacheConfiguration<Long, Person> cfg = new CacheConfiguration<>();

@@ -31,7 +31,12 @@ import java.util.*;
  * <p>
  * This example uses {@link CacheJdbcPojoStore} as a persistent store.
  * <p>
- * To run this example your should start {@link H2Startup} first.
+ * To start the example, you should:
+ * <ul>
+ *     <li>Start H2 database TCP server using {@link DbH2ServerStartup}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start example using {@link CacheAutoStoreExample}.</li>
+ * </ul>
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.

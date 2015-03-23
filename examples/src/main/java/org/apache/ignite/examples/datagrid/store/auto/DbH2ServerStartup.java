@@ -27,10 +27,19 @@ import java.sql.*;
 /**
  * Start H2 database TCP server in order to access sample in-memory database from other processes.
  */
-public class H2Startup {
-    /** */
-    private static final String DB_SCRIPT =
+public class DbH2ServerStartup {
+    /** Create table script. */
+    private static final String CREATE_TABLE =
         "create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));";
+
+    /** Sample data script. */
+    private static final String POPULATE_TABLE =
+        "insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');\n" +
+        "insert into PERSON(id, first_name, last_name) values(2, 'Galileo', 'Galilei');\n" +
+        "insert into PERSON(id, first_name, last_name) values(3, 'Henry', 'More');\n" +
+        "insert into PERSON(id, first_name, last_name) values(4, 'Polish', 'Brethren');\n" +
+        "insert into PERSON(id, first_name, last_name) values(5, 'Robert', 'Boyle');\n" +
+        "insert into PERSON(id, first_name, last_name) values(6, 'Isaac', 'Newton');";
 
     /**
      * Start H2 database TCP server.
@@ -46,8 +55,11 @@ public class H2Startup {
             // Try to connect to database TCP server.
             JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
 
-            // Load sample data into database.
-            RunScript.execute(dataSrc.getConnection(), new StringReader(DB_SCRIPT));
+            // Create Person table in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(CREATE_TABLE));
+
+            // Populates Person table with sample data in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(POPULATE_TABLE));
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to start database TCP server", e);
