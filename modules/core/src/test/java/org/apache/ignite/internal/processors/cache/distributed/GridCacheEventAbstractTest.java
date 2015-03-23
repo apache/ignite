@@ -207,13 +207,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                     String key = "key";
                     Integer val = 1;
 
-                    cache.put(key, val);
+                    assert cache.getAndPut(key, val) == null;
 
                     assert cache.containsKey(key);
 
                     assertEquals(val, cache.get(key));
 
-                    assertEquals(val, cache.remove(key));
+                    assertEquals(val, cache.getAndRemove(key));
 
                     assert !cache.containsKey(key);
                 }
@@ -239,15 +239,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 Transaction tx = grid(0).transactions().txStart();
 
-                assert !cache.containsKey(key);
-
-                cache.put(key, val);
+                assert cache.getAndPut(key, val) == null;
 
                 assert cache.containsKey(key);
 
                 assert val.equals(cache.get(key));
 
-                assert val.equals(cache.remove(key));
+                assert val.equals(cache.getAndRemove(key));
 
                 assert !cache.containsKey(key);
 
@@ -271,17 +269,15 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid().transactions().txStart();
+                Transaction tx = grid(0).transactions().txStart();
 
-                assert !cache.containsKey(key);
-
-                cache.put(key, val);
+                assert cache.getAndPut(key, val) == null;
 
                 assert cache.containsKey(key);
 
                 assert val.equals(cache.get(key));
 
-                assert val.equals(cache.remove(key));
+                assert val.equals(cache.getAndRemove(key));
 
                 assert !cache.containsKey(key);
 
@@ -315,7 +311,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                asyncCache.put(key, val);
+                asyncCache.getAndPut(key, val);
 
                 assert asyncCache.future().get() == null;
 
@@ -325,7 +321,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert val.equals(asyncCache.future().get());
 
-                asyncCache.remove(key);
+                asyncCache.getAndRemove(key);
 
                 assert val.equals(asyncCache.future().get());
 
@@ -349,9 +345,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid().transactions().txStart();
+                Transaction tx = grid(0).transactions().txStart();
 
-                asyncCache.put(key, val);
+                asyncCache.getAndPut(key, val);
 
                 assert asyncCache.future().get() == null;
 
@@ -361,7 +357,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert val.equals(asyncCache.future().get());
 
-                asyncCache.remove(key);
+                asyncCache.getAndRemove(key);
 
                 assert val.equals(asyncCache.future().get());
 
@@ -389,9 +385,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid().transactions().txStart();
+                Transaction tx = grid(0).transactions().txStart();
 
-                asyncCache.put(key, val);
+                asyncCache.getAndPut(key, val);
 
                 assert asyncCache.future().get() == null;
 
@@ -401,13 +397,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert val.equals(asyncCache.future().get());
 
-                asyncCache.remove(key);
+                asyncCache.getAndRemove(key);
 
                 assert val.equals(asyncCache.future().get());
 
                 assert !cache.containsKey(key);
 
-                asyncCache.put(key, val);
+                asyncCache.getAndPut(key, val);
 
                 assert asyncCache.future().get() == null;
 
@@ -457,7 +453,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid().transactions().txStart();
+                Transaction tx = grid(0).transactions().txStart();
 
                 cache.put(key, val);
 
@@ -487,7 +483,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid().transactions().txStart();
+                Transaction tx = grid(0).transactions().txStart();
 
                 cache.put(key, val);
 
@@ -522,7 +518,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Integer val = e.getValue();
 
                 assert cache.getAndPutIfAbsent(key, val) == null;
-                assert val.equals(cache.putIfAbsent(key, val));
+                assert val.equals(cache.getAndPutIfAbsent(key, val));
 
                 assert cache.containsKey(key);
 
@@ -552,10 +548,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                try (Transaction tx = grid().transactions().txStart();) {
+                try (Transaction tx = grid(0).transactions().txStart();) {
                     assert cache.getAndPutIfAbsent(key, val) == null;
 
-                    assertEquals(val, cache.putIfAbsent(key, val));
+                    assertEquals(val, cache.getAndPutIfAbsent(key, val));
 
                     assert cache.containsKey(key);
 
@@ -611,7 +607,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert asyncCache.future().get() == true;
 
-                asyncCache.getAndPutIfAbsent(key, val);
+                asyncCache.putIfAbsent(key, val);
 
                 assert asyncCache.future().get() == false;
 
@@ -634,7 +630,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
-                try (Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                     Map.Entry<String, Integer> e = iter.next();
 
                     String key = e.getKey();
