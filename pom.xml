@@ -346,23 +346,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-schema-load</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-load.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>release</id>
                                 <phase>prepare-package</phase>
                                 <goals>
@@ -374,6 +357,23 @@
                                     </descriptors>
                                     <finalName>release-package</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
@@ -448,27 +448,5 @@
                 </plugins>
             </build>
         </profile>
-
-
-       <profile>
-           <id>java8</id>
-           <activation>
-               <jdk>[1.8,)</jdk>
-           </activation>
-           <properties>
-               <javadoc.opts>-Xdoclint:none</javadoc.opts>
-           </properties>
-           <build>
-               <plugins>
-                   <plugin>
-                       <artifactId>maven-compiler-plugin</artifactId>
-                       <configuration>
-                           <source>1.8</source>
-                           <target>1.8</target>
-                       </configuration>
-                   </plugin>
-               </plugins>
-           </build>
-       </profile>
-   </profiles>
+    </profiles>
 </project>

@@ -256,7 +256,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>2.10.1</version>
                     <configuration>
                         <taglets>
                             <taglet>
@@ -276,7 +276,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <source>1.7</source>
+                        <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
                             <link>http://docs.oracle.com/javase/7/docs/api/</link>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
@@ -320,7 +320,7 @@
                             </group>
                             <group>
                                 <title>Streaming APIs</title>
-                                <packages>org.apache.ignite.streamer*</packages>
+                                <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
                             </group>
                             <group>
                                 <title>Security APIs</title>
@@ -570,6 +570,26 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4</version>
+                <configuration>
+                    <rules>
+                        <requireJavaVersion>
+                            <version>[1.7,)</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -629,20 +649,18 @@
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
-                                        <exclude>**/*.md</exclude><!--readme-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/*.sql</exclude><!--sql files -->
                                         <!--special excludes-->
-                                        <exclude>src/main/java/com/romix/scala/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--own license-->
-                                        <exclude>src/main/java/org/pcollections/**</exclude><!--own license-->
-                                        <exclude>src/main/java/org/jdk8/backport/*.java</exclude><!--own license-->
+                                        <exclude>DEVNOTES.txt</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
-                                        <exclude>src/test/config/start-nodes.ini</exclude><!---->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
@@ -650,23 +668,21 @@
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
-                                        <exclude>modules/winservice/IgniteService.sln</exclude>
-                                        <exclude>modules/winservice/IgniteService/IgniteService.csproj</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude><!---->
-                                        <exclude>ipc/shmem/config.guess</exclude><!--own license-->
-                                        <exclude>ipc/shmem/config.sub</exclude><!--own license-->
-                                        <exclude>ipc/shmem/configure</exclude><!--own license-->
+                                        <exclude>ipc/shmem/compile</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/config.guess</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/config.sub</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/configure</exclude><!--free software-->
                                         <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/configure.ac</exclude><!---->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--own license-->
-                                        <exclude>ipc/shmem/install-sh</exclude><!--own license-->
-                                        <exclude>ipc/shmem/depcomp</exclude><!--own license-->
+                                        <exclude>ipc/shmem/configure.ac</exclude><!--cannot be changed-->
+                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/install-sh</exclude><!--free license-->
+                                        <exclude>ipc/shmem/depcomp</exclude><!--generated by Autoconf and licensed under AL-->
                                         <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/libtool</exclude><!--own license-->
-                                        <exclude>ipc/shmem/missing</exclude><!--own license-->
+                                        <exclude>ipc/shmem/libtool</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/missing</exclude><!--generated by Autoconf and licensed under AL-->
                                         <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
                                         <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/include/org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h</exclude><!--auto generated files-->
@@ -708,6 +724,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -746,6 +763,27 @@
                         <version>2.17</version>
                         <configuration>
                             <forkCount>1</forkCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>java8</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+            <properties>
+                <javadoc.opts>-Xdoclint:none</javadoc.opts>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
                         </configuration>
                     </plugin>
                 </plugins>
