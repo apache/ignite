@@ -29,7 +29,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
-import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
@@ -1305,6 +1304,26 @@ public class SchemaImportApp extends Application {
         prefs.put(key, String.valueOf(val));
     }
 
+    /**
+     * Resolve path.
+     *
+     * @param key Preferences key.
+     * @param dflt Default value.
+     * @return String with full file path or default value.
+     */
+    private String resolveFilePath(String key, String dflt) {
+        String path = prefs.getProperty(key);
+
+        if (path != null) {
+            File file = U.resolveIgnitePath(path);
+
+            if (file != null)
+                return file.getAbsolutePath();
+        }
+
+        return dflt;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
@@ -1341,14 +1360,7 @@ public class SchemaImportApp extends Application {
                         log.log(Level.SEVERE, "Failed to load custom preferences.", e);
                     }
 
-                    String igniteHome = GridFilenameUtils.separatorsToUnix(U.getIgniteHome());
-
-                    for (Map.Entry<Object, Object> prop : customPrefs.entrySet()) {
-                        String key = prop.getKey().toString();
-                        String val = prop.getValue().toString().replaceAll("%IGNITE_HOME%", igniteHome);
-
-                        prefs.setProperty(key, val);
-                    }
+                    prefs.putAll(customPrefs);
                 }
             }
         }
@@ -1413,13 +1425,13 @@ public class SchemaImportApp extends Application {
 
         // Restore connection pane settings.
         rdbmsCb.getSelectionModel().select(getIntProp(PREF_JDBC_DB_PRESET, 0));
-        jdbcDrvJarTf.setText(getStringProp(PREF_JDBC_DRIVER_JAR, "h2.jar"));
+        jdbcDrvJarTf.setText(resolveFilePath(PREF_JDBC_DRIVER_JAR, "h2.jar"));
         jdbcDrvClsTf.setText(getStringProp(PREF_JDBC_DRIVER_CLASS, "org.h2.Driver"));
         jdbcUrlTf.setText(getStringProp(PREF_JDBC_URL, "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
         userTf.setText(getStringProp(PREF_JDBC_USER, "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(getStringProp(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
+        outFolderTf.setText(resolveFilePath(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
 
         pkgTf.setText(getStringProp(PREF_POJO_PACKAGE, "org.apache.ignite"));
         pojoIncludeKeysCh.setSelected(getBoolProp(PREF_POJO_INCLUDE, true));
