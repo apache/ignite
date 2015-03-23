@@ -75,34 +75,56 @@ public class CacheJdbcStoreExample {
             cacheCfg.setWriteThrough(true);
 
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
-                long start = System.currentTimeMillis();
+                // Make initial cache loading from persistent store. This is a
+                // distributed operation and will call CacheStore.loadCache(...)
+                // method on all nodes in topology.
+                loadCache(cache);
 
-                // Start loading cache from persistent store on all caching nodes.
-                cache.loadCache(null, ENTRY_COUNT);
-
-                long end = System.currentTimeMillis();
-
-                System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
-
-                // Start transaction and make several operations with write/read-through.
-                try (Transaction tx = ignite.transactions().txStart()) {
-                    Person val = cache.get(id);
-
-                    System.out.println("Read value: " + val);
-
-                    val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
-
-                    System.out.println("Overwrote old value: " + val);
-
-                    val = cache.get(id);
-
-                    System.out.println("Read value: " + val);
-
-                    tx.commit();
-                }
-
-                System.out.println("Read value after commit: " + cache.get(id));
+                // Start transaction and execute several cache operations with
+                // read/write-through to persistent store.
+                executeTransaction(cache);
             }
         }
+    }
+
+    /**
+     * Makes initial cache loading.
+     *
+     * @param cache Cache to load.
+     */
+    private static void loadCache(IgniteCache<Long, Person> cache) {
+        long start = System.currentTimeMillis();
+
+        // Start loading cache from persistent store on all caching nodes.
+        cache.loadCache(null, ENTRY_COUNT);
+
+        long end = System.currentTimeMillis();
+
+        System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+    }
+
+    /**
+     * Executes transaction with read/write-through to persistent store.
+     *
+     * @param cache Cache to execute transaction on.
+     */
+    private static void executeTransaction(IgniteCache<Long, Person> cache) {
+        try (Transaction tx = Ignition.ignite().transactions().txStart()) {
+            Person val = cache.get(id);
+
+            System.out.println("Read value: " + val);
+
+            val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
+
+            System.out.println("Overwrote old value: " + val);
+
+            val = cache.get(id);
+
+            System.out.println("Read value: " + val);
+
+            tx.commit();
+        }
+
+        System.out.println("Read value after commit: " + cache.get(id));
     }
 }
