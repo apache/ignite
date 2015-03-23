@@ -19,6 +19,7 @@ package org.apache.ignite.schema;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.*;
@@ -26,8 +27,18 @@ import javax.cache.configuration.*;
 
 /**
  * Demo for CacheJdbcPojoStore.
+ *
+ * This example demonstrates the use of cache with {@link CacheJdbcPojoStore}.
+ *
+ * Custom SQL will be executed to populate cache with data from database.
  */
 public class Demo {
+    /**
+     * Executes demo.
+     *
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If example execution failed.
+     */
     public static void main(String[] args) throws IgniteException {
         System.out.println(">>> Start demo...");
 
