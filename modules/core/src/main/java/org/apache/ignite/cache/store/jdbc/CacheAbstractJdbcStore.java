@@ -66,7 +66,7 @@ import static java.sql.Statement.*;
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
  * ...
- * CacheConfiguration ccfg = new CacheConfiguration<>();
+ * CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
  *
  * // Configure cache store.
  * ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
@@ -312,7 +312,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) throws CacheWriterException {
+    @Override public void sessionEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
         Transaction tx = ses.transaction();

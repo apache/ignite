@@ -20,6 +20,9 @@
 # Starts H2 database server and console for Ignite Schema Import demo.
 #
 
+# Remember command line parameters
+ARGS=$@
+
 #
 # Import common functions.
 #
@@ -55,9 +58,9 @@ fi
 # Starts H2 server and console.
 case $osname in
     Darwin*)
-        "${JAVA}" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
+        "${JAVA}" "${DOCK_OPTS}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console ${ARGS}
         ;;
    *)
-        "${JAVA}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console "$@"
+        "${JAVA}" -cp "${IGNITE_HOME}/libs/ignite-indexing/h2-1.3.175.jar" org.h2.tools.Console ${ARGS}
         ;;
 esac

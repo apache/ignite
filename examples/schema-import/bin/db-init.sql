@@ -1,4 +1,5 @@
 -- Script of database initialization for Schema Import Demo.
+drop table PERSON;
 create table PERSON(id integer not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));
 
 insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');

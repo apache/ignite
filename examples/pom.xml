@@ -248,7 +248,7 @@
         </profile>
 
         <profile>
-            <id>java8</id>
+            <id>java8-examples</id>
 
             <activation>
                 <jdk>[1.8,)</jdk>
