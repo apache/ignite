@@ -17,8 +17,8 @@ Schema Import Utility Demo
    H2 database will start and H2 Console will be opened in your default browser.
    Paste content of "examples/schema-import/bin/db-init.sql" into H2 Console and execute.
 
-2. Start Schema Import utility: "bin/ignite-schema-import.sh -customPrefs=examples/schema-import/bin/schema-import.properties"
-   Schema Utility will start with predifined settings for this demo.
+2. Start Schema Import utility: "bin/ignite-schema-import.sh examples/schema-import/bin/schema-import.properties"
+   Schema Utility will start with predefined settings for this demo.
    Click "Next", "Generate" and answer "Yes" to override warning.
 
 3. Import "examples/schema-import/pom.xml" in your Java IDE.
