@@ -47,6 +47,7 @@
                 <exclude>org.apache.ignite:ignite-visor-console</exclude>
                 <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
                 <exclude>org.apache.ignite:ignite-schema-import</exclude>
+                <exclude>org.apache.ignite:ignite-codegen</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
