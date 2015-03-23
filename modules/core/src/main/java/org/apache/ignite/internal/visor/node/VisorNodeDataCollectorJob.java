@@ -27,8 +27,6 @@ import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
 import org.apache.ignite.internal.visor.igfs.*;
-import org.apache.ignite.internal.visor.streamer.*;
-import org.apache.ignite.streamer.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -176,34 +174,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
     }
 
-    /**
-     * Collect streamers.
-     *
-     * @param res Job result.
-     */
-    protected void streamers(VisorNodeDataCollectorJobResult res) {
-        try {
-            StreamerConfiguration[] cfgs = ignite.configuration().getStreamerConfiguration();
-
-            if (cfgs != null) {
-                for (StreamerConfiguration cfg : cfgs) {
-                    long start0 = U.currentTimeMillis();
-
-                    try {
-                        res.streamers().add(VisorStreamer.from(ignite.streamer(cfg.getName())));
-                    }
-                    finally {
-                        if (debug)
-                            log(ignite.log(), "Collected streamer: " + cfg.getName(), getClass(), start0);
-                    }
-                }
-            }
-        }
-        catch (Throwable streamersEx) {
-            res.streamersEx(streamersEx);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorTaskArg arg) {
         return run(new VisorNodeDataCollectorJobResult(), arg);
@@ -237,12 +207,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         igfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
-
-        streamers(res);
-
-        if (debug)
-            log(ignite.log(), "Collected streamers", getClass(), start0);
+            log(ignite.log(), "Collected igfs", getClass(), start0);
 
         res.errorCount(ignite.context().exceptionRegistry().errorCount());
 

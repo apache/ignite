@@ -197,8 +197,8 @@ public class IgfsServerManager extends IgfsManager {
                         it.remove();
                     }
                     catch (IgniteCheckedException e) {
-                        if (GridWorker.log.isDebugEnabled())
-                            GridWorker.log.debug("Failed to bind IGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to bind IGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
                     }
                 }
 

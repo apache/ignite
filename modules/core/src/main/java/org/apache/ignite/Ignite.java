@@ -44,7 +44,6 @@ import java.util.concurrent.*;
  * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
- * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
@@ -232,22 +231,6 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of IGFS instances.
      */
     public Collection<IgniteFileSystem> fileSystems();
-
-    /**
-     * Gets an instance of streamer by name, if one does not exist then
-     * {@link IllegalArgumentException} will be thrown.
-     *
-     * @param name Streamer name.
-     * @return Streamer for given name.
-     */
-    public IgniteStreamer streamer(@Nullable String name);
-
-    /**
-     * Gets all instances of streamers.
-     *
-     * @return Collection of all streamer instances.
-     */
-    public Collection<IgniteStreamer> streamers();
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag

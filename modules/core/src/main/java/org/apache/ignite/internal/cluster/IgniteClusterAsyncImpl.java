@@ -213,11 +213,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames) {
-        return cluster.forStreamer(streamerName, streamerNames);
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterGroup forRemotes() {
         return cluster.forRemotes();
     }

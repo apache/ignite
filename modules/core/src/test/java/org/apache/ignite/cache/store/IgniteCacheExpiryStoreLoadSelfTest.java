@@ -197,7 +197,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             // No-op.
         }
 

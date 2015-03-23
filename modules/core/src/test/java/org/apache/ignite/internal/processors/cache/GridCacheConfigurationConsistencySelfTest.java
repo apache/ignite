@@ -1010,7 +1010,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) {
+        @Override public void sessionEnd(boolean commit) {
             // No-op.
         }
     }

@@ -422,7 +422,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 if (isReplicatedDataNode() || ctx.isLocal())
                     return doLocalQuery(p);
 
-                return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
+                return ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
 
             return query(qry, projection(false));
@@ -462,7 +462,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (isReplicatedDataNode() || ctx.isLocal())
                 return doLocalFieldsQuery(qry);
 
-            return ctx.kernalContext().query().queryTwoStep(ctx.name(), qry.getSql(), qry.getArgs());
+            return ctx.kernalContext().query().queryTwoStep(ctx, qry);
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -480,8 +480,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<Entry<K,V>> doLocalQuery(SqlQuery p) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
-            ctx.name(), p.getType(), p.getSql(), p.getArgs()));
+        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(ctx, p));
     }
 
     /**
@@ -489,8 +488,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
-        return ctx.kernalContext().query().queryLocalFields(
-            ctx.name(), q.getSql(), q.getArgs());
+        return ctx.kernalContext().query().queryLocalFields(ctx, q);
     }
 
     /**

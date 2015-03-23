@@ -135,13 +135,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteStreamer> streamers() {
-        assert g != null;
-
-        return g.streamers();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         assert g != null;
 
@@ -265,13 +258,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.fileSystems();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteStreamer streamer(@Nullable String name) {
-        assert g != null;
-
-        return g.streamer(name);
     }
 
     /** {@inheritDoc} */
