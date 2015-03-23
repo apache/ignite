@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.future;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,7 +37,7 @@ public class GridFutureListenPerformanceTest {
      * @throws InterruptedException If failed.
      */
     public static void main(String[] args) throws InterruptedException {
-        final LongAdder cnt = new LongAdder();
+        final LongAdder8 cnt = new LongAdder8();
 
         final ConcurrentLinkedDeque8<GridFutureAdapter<Object>> futs = new ConcurrentLinkedDeque8<>();
 

@@ -33,7 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -244,7 +244,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     GridCacheEntryEx entry = c.peekEx(k);
 
-                    for (int r = 0; r < 3; r++) {
+                    for (int r = 0; r < 10; r++) {
                         try {
                             if (affNodes.contains(locNode)) {
                                 assert c.affinity().isPrimaryOrBackup(locNode, k);
@@ -274,10 +274,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
                         }
                         catch (AssertionError e) {
-                            if (r == 2)
-                                throw e;
+                            if (r == 9) {
+                                System.err.println("Failed to verify cache contents: " + e.getMessage());
 
-                            System.err.println("Failed to verify cache contents: " + e.getMessage());
+                                throw e;
+                            }
+
+                            System.err.println("Failed to verify cache contents, will retry: " + e.getMessage());
 
                             // Give some time to finish async updates.
                             U.sleep(1000);

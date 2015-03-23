@@ -18,7 +18,7 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 

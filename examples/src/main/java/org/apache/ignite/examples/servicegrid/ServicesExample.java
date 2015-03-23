@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.servicegrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -45,19 +44,15 @@ public class ServicesExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
+        // Mark this node as client node.
+        Ignition.setClientMode(true);
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            ClusterGroup rmts = ignite.cluster().forRemotes();
-
-            if (rmts.nodes().isEmpty()) {
-                System.err.println(">>>");
-                System.err.println(">>> Must start at least one remote node using " +
-                    ExampleNodeStartup.class.getSimpleName() + '.');
-                System.err.println(">>>");
-
+            if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
-            }
 
-            IgniteServices svcs = ignite.services(rmts);
+            // Deploy services only on server nodes.
+            IgniteServices svcs = ignite.services(ignite.cluster().forServers());
 
             try {
                 // Deploy cluster singleton.

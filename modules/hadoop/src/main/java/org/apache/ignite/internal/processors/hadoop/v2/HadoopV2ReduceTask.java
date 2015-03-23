@@ -56,7 +56,10 @@ public class HadoopV2ReduceTask extends HadoopV2Task {
         try {
             outputFormat = reduce || !taskCtx.job().info().hasReducer() ? prepareWriter(jobCtx) : null;
 
-            Reducer reducer = ReflectionUtils.newInstance(reduce ? jobCtx.getReducerClass() : jobCtx.getCombinerClass(),
+            Reducer reducer;
+            if (reduce) reducer = ReflectionUtils.newInstance(jobCtx.getReducerClass(),
+                jobCtx.getConfiguration());
+            else reducer = ReflectionUtils.newInstance(jobCtx.getCombinerClass(),
                 jobCtx.getConfiguration());
 
             try {

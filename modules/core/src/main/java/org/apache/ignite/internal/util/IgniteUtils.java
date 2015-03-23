@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -44,8 +43,8 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.misc.*;
 
 import javax.management.*;
@@ -290,10 +289,10 @@ public abstract class IgniteUtils {
     private static Thread timer;
 
     /** Grid counter. */
-    private static int gridCnt;
+    static int gridCnt;
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    static final Object mux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
@@ -1068,6 +1067,22 @@ public abstract class IgniteUtils {
         }
 
         return ctor;
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+        try {
+            return Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            return dflt;
+        }
     }
 
     /**
@@ -2769,6 +2784,8 @@ public abstract class IgniteUtils {
     public static void onGridStart() {
         synchronized (mux) {
             if (gridCnt == 0) {
+                assert timer == null;
+
                 timer = new Thread(new Runnable() {
                     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
                     @Override public void run() {
@@ -2798,8 +2815,9 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     * @throws InterruptedException If interrupted.
      */
-    public static void onGridStop(){
+    public static void onGridStop() throws InterruptedException {
         synchronized (mux) {
             // Grid start may fail and onGridStart() does not get called.
             if (gridCnt == 0)
@@ -2807,10 +2825,14 @@ public abstract class IgniteUtils {
 
             --gridCnt;
 
-            if (gridCnt == 0 && timer != null) {
-                timer.interrupt();
+            Thread timer0 = timer;
 
+            if (gridCnt == 0 && timer0 != null) {
                 timer = null;
+
+                timer0.interrupt();
+
+                timer0.join();
             }
         }
     }
@@ -3201,6 +3223,33 @@ public abstract class IgniteUtils {
      */
     @Nullable public static URL resolveIgniteUrl(String path) {
         return resolveIgniteUrl(path, true);
+    }
+
+    /**
+     * Resolve Spring configuration URL.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @return URL.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
+        A.notNull(springCfgPath, "springCfgPath");
+
+        URL url;
+
+        try {
+            url = new URL(springCfgPath);
+        }
+        catch (MalformedURLException e) {
+            url = U.resolveIgniteUrl(springCfgPath);
+
+            if (url == null)
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
+                    ". Note that this path should be either absolute or a relative local file system path, " +
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
+        }
+
+        return url;
     }
 
     /**
@@ -7354,8 +7403,6 @@ public abstract class IgniteUtils {
 
         try {
             for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
-                Method[] mtds = c.getDeclaredMethods();
-
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {

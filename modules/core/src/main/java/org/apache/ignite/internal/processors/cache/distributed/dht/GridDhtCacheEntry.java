@@ -590,7 +590,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ManualArrayToCollectionCopy"})
     protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert Thread.holdsLock(this);
 
@@ -611,7 +611,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     newRdrs = new ArrayList<>(rdrs.length);
 
                     for (int k = 0; k < i; k++)
-                        newRdrs.add(rdrs[i]);
+                        newRdrs.add(rdrs[k]);
                 }
             }
             // If node is still alive and no failed nodes

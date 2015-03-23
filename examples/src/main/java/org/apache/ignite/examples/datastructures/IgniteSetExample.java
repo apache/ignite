@@ -70,7 +70,6 @@ public class IgniteSetExample {
 
                 clearAndRemoveSet();
             }
-
         }
 
         System.out.println("Ignite set example finished.");

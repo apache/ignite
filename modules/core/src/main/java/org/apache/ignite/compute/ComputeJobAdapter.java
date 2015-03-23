@@ -129,7 +129,7 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final Object call() {
+    @Override public final Object call() {
         return execute();
     }
 }

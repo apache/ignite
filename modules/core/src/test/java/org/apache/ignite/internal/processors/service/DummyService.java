@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.services.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;

@@ -17,8 +17,11 @@
 #
 
 #
-# Ignite Schema Import Utility.
+# Starts Ignite Schema Import Utility.
 #
+
+# Remember command line parameters
+ARGS=$@
 
 #
 # Import common functions.
@@ -46,11 +49,23 @@ checkJava
 setIgniteHome
 
 #
-# Set CLASS PATH.
+# Parse command line parameters.
+#
+. "${SCRIPTS_HOME}"/include/parseargs.sh
+
+#
+# Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*"
+CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*${SEP}${IGNITE_LIBS}"
+
+#
+# JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
+#
+# ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
+#
+JVM_OPTS="-Xms256m -Xmx1g -XX:MaxPermSize=128M ${JVM_OPTS}"
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
@@ -60,19 +75,13 @@ if [ "${DOCK_OPTS}" == "" ]; then
 fi
 
 #
-# JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
+# Starts Ignite Schema Import Utility.
 #
-# ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
-#
-if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms256m -Xmx1g"
-fi
-
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp
+        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp ${ARGS}
         ;;
    *)
-        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp
+        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp ${ARGS}
         ;;
 esac

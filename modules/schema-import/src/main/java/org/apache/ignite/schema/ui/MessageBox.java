@@ -124,7 +124,7 @@ public class MessageBox extends ModalDialog {
         contentPnl.add(ta);
 
         // Workaround for vertical scrollbar.
-        if (msg.split("\r\n|\r|\n").length < 4)
+        if (msg.length() < 100 && msg.split("\r\n|\r|\n").length < 4)
             showingProperty().addListener(new ChangeListener<Boolean>() {
                 @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
                     if (newVal) {

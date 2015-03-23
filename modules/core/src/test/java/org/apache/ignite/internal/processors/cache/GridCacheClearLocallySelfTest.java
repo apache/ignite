@@ -89,8 +89,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgPartitioned.setWriteSynchronizationMode(FULL_SYNC);
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        nearCfg.setName(CACHE_PARTITIONED);
-
         ccfgPartitioned.setNearConfiguration(nearCfg);
 
         ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestGridName(0)));
@@ -150,9 +148,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             if (i == 1) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                nearCfg.setName(CACHE_PARTITIONED);
-
-                ignite.createCache(nearCfg);
+                ignite.createNearCache(CACHE_PARTITIONED, nearCfg);
             }
 
             if (i == 2)

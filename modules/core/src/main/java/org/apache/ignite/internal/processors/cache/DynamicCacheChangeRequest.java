@@ -51,24 +51,34 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Start only client cache, do not start data nodes. */
     private boolean clientStartOnly;
 
+    /** Stop flag. */
+    private boolean stop;
+
+    /** Fail if exists flag. */
+    private boolean failIfExists;
+
     /**
      * Constructor creates cache stop request.
      *
      * @param cacheName Cache stop name.
+     * @param initiatingNodeId Initiating node ID.
+     * @param stop Stop flag.
      */
-    public DynamicCacheChangeRequest(String cacheName) {
+    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId, boolean stop) {
         this.cacheName = cacheName;
+        this.initiatingNodeId = initiatingNodeId;
+
+        this.stop = stop;
     }
 
     /**
-     * Constructor creates near cache start request.
+     * Constructor means for start requests.
      *
+     * @param cacheName Cache name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(
-        UUID initiatingNodeId
-    ) {
-        this.initiatingNodeId = initiatingNodeId;
+    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+        this(cacheName, initiatingNodeId, false);
     }
 
     /**
@@ -88,22 +98,22 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return {@code True} if this is a start request.
      */
-    public boolean isStart() {
+    public boolean start() {
         return startCfg != null;
     }
 
     /**
      * @return {@code True} if this is a stop request.
      */
-    public boolean isStop() {
-        return initiatingNodeId == null && startCfg == null;
+    public boolean stop() {
+        return stop;
     }
 
     /**
      * @return Cache name.
      */
     public String cacheName() {
-        return cacheName != null ? cacheName : startCfg.getName();
+        return cacheName;
     }
 
     /**
@@ -160,6 +170,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void clientStartOnly(boolean clientStartOnly) {
         this.clientStartOnly = clientStartOnly;
+    }
+
+    /**
+     * @return Fail if exists flag.
+     */
+    public boolean failIfExists() {
+        return failIfExists;
+    }
+
+    /**
+     * @param failIfExists Fail if exists flag.
+     */
+    public void failIfExists(boolean failIfExists) {
+        this.failIfExists = failIfExists;
     }
 
     /** {@inheritDoc} */

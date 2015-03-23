@@ -16,7 +16,7 @@
 ::
 
 ::
-:: Ignite Schema Import Utility.
+:: Starts Ignite Schema Import Utility.
 ::
 
 @echo off
@@ -24,34 +24,30 @@
 if "%OS%" == "Windows_NT"  setlocal
 
 :: Check JAVA_HOME.
-if defined JAVA_HOME  goto checkJdk
-    echo %0, ERROR:
-    echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
-    echo You can also download latest JDK at http://java.com/download.
+if not "%JAVA_HOME%" == "" goto checkJdk
+    echo %0, ERROR: JAVA_HOME environment variable is not found.
+    echo %0, ERROR: Please create JAVA_HOME variable pointing to location of JDK 1.7 or JDK 1.8.
+    echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
 goto error_finish
 
 :checkJdk
 :: Check that JDK is where it should be.
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
-    echo %0, ERROR:
-    echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
-    echo You can also download latest JDK at http://java.com/download.
+    echo %0, ERROR: The JDK is not found in %JAVA_HOME%.
+    echo %0, ERROR: Please modify your script so that JAVA_HOME would point to valid location of JDK.
 goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
-    echo %0, ERROR:
-    echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
-    echo You can also download latest JDK at http://java.com/download.
+    echo %0, ERROR: The version of JAVA installed in %JAVA_HOME% is incorrect.
+    echo %0, ERROR: Please install JDK 1.7 or 1.8.
+    echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
 goto error_finish
 
 :: Check IGNITE_HOME.
 :checkIgniteHome1
-if defined IGNITE_HOME goto checkIgniteHome2
+if not "%IGNITE_HOME%" == "" goto checkIgniteHome2
     pushd "%~dp0"/..
     set IGNITE_HOME=%CD%
     popd
@@ -70,27 +66,44 @@ set IGNITE_HOME=%IGNITE_HOME:~0,-1%
 goto checkIgniteHome2
 
 :checkIgniteHome3
-if exist "%IGNITE_HOME%\config" goto run
+if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
     echo %0, ERROR: Ignite installation folder is not found or IGNITE_HOME environment variable is not valid.
     echo Please create IGNITE_HOME environment variable pointing to location of
     echo Ignite installation folder.
     goto error_finish
 
+:checkIgniteHome4
+
+::
+:: Set SCRIPTS_HOME - base path to scripts.
+::
+set SCRIPTS_HOME=%IGNITE_HOME%\bin
+
+:: Remove trailing spaces
+for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
+
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
+    echo %0, WARN: IGNITE_HOME environment variable may be pointing to wrong folder: %IGNITE_HOME%
+
 :run
 
 ::
-:: Set CLASS PATH.
+:: Set IGNITE_LIBS
 ::
-set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*
+call "%SCRIPTS_HOME%\include\setenv.bat"
+call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
+set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*;%IGNITE_LIBS%
 
 ::
-:: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
+:: Set program name.
 ::
-:: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
-::
-if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
+set PROG_NAME=ignite-schema-import.bat
+if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp
+::
+:: Starts Ignite Schema Import Utility.
+::
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp %*
 
 :error_finish
 

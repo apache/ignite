@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.*;
+
 /**
  * Query for Lucene based fulltext search.
  *
  * @see IgniteCache#query(Query)
- * @see IgniteCache#localQuery(Query)
  */
-public final class TextQuery extends Query<TextQuery> {
+public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,18 +39,13 @@ public final class TextQuery extends Query<TextQuery> {
     private String txt;
 
     /**
-     * Default constructor.
-     */
-    public TextQuery() {
-        // No-op.
-    }
-
-    /**
      * Constructs query for the given search string.
      *
+     * @param type Type.
      * @param txt Search string.
      */
-    public TextQuery(String txt) {
+    public TextQuery(String type, String txt) {
+        setType(type);
         setText(txt);
     }
 
@@ -60,9 +56,8 @@ public final class TextQuery extends Query<TextQuery> {
      * @param txt Search string.
      */
     public TextQuery(Class<?> type, String txt) {
-        this(txt);
-
         setType(type);
+        setText(txt);
     }
 
     /**
@@ -80,7 +75,7 @@ public final class TextQuery extends Query<TextQuery> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public TextQuery setType(Class<?> type) {
+    public TextQuery<K, V> setType(Class<?> type) {
         return setType(GridQueryProcessor.typeName(type));
     }
 
@@ -90,7 +85,7 @@ public final class TextQuery extends Query<TextQuery> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public TextQuery setType(String type) {
+    public TextQuery<K, V> setType(String type) {
         this.type = type;
 
         return this;
@@ -111,12 +106,22 @@ public final class TextQuery extends Query<TextQuery> {
      * @param txt Text search string.
      * @return {@code this} For chaining.
      */
-    public TextQuery setText(String txt) {
+    public TextQuery<K, V> setText(String txt) {
         A.notNull(txt, "txt");
 
         this.txt = txt;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TextQuery<K, V> setPageSize(int pageSize) {
+        return (TextQuery<K, V>)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TextQuery<K, V> setLocal(boolean loc) {
+        return (TextQuery<K, V>)super.setLocal(loc);
     }
 
     /** {@inheritDoc} */

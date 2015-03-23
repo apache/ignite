@@ -30,7 +30,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Base class for {@link CacheStore} that implementation backed by JDBC and POJO via reflection.
+ * Implementation of {@link CacheStore} backed by JDBC and POJO via reflection.
  *
  * This implementation stores objects in underlying database using java beans mapping description via reflection.
  *
@@ -62,6 +62,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param clsName Class name.
          * @param fields Fields.
+         *
+         * @throws CacheException If failed to construct type cache.
          */
         public PojoMethodsCache(String clsName, Collection<CacheTypeFieldMetadata> fields) throws CacheException {
             try {

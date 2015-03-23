@@ -49,8 +49,8 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.management.*;
 import java.io.*;
@@ -81,8 +81,8 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
- * <li>{@code GridCommandLineStartup}</li>
- * <li>{@code GridServletStartup}</li>
+ * <li>{@code CommandLineStartup}</li>
+ * <li>{@code ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -542,7 +542,7 @@ public class IgnitionEx {
      */
     public static Ignite startWithClosure(@Nullable String springCfgPath, @Nullable String gridName,
         IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo) throws IgniteCheckedException {
-        URL url = resolveSpringUrl(springCfgPath);
+        URL url = U.resolveSpringUrl(springCfgPath);
 
         return start(url, gridName, null, cfgClo);
     }
@@ -665,7 +665,7 @@ public class IgnitionEx {
      */
     public static Ignite start(String springCfgPath, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        URL url = resolveSpringUrl(springCfgPath);
+        URL url = U.resolveSpringUrl(springCfgPath);
 
         return start(url, gridName, springCtx);
     }
@@ -805,33 +805,6 @@ public class IgnitionEx {
         IgniteNamedInstance res = !grids.isEmpty() ? grids.get(0) : null;
 
         return res != null ? res.grid() : null;
-    }
-
-    /**
-     * Resolve Spring configuration URL.
-     *
-     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
-     * @return URL.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
-        A.notNull(springCfgPath, "springCfgPath");
-
-        URL url;
-
-        try {
-            url = new URL(springCfgPath);
-        }
-        catch (MalformedURLException e) {
-            url = U.resolveIgniteUrl(springCfgPath);
-
-            if (url == null)
-                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
-                    ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
-        }
-
-        return url;
     }
 
     /**

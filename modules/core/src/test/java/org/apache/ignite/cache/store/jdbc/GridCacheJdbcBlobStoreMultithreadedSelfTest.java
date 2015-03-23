@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.configuration.*;
 import java.lang.reflect.*;
@@ -64,7 +64,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         Ignite grid = startGrid(GRID_CNT - 2);
 
-        grid.createCache(new NearCacheConfiguration());
+        grid.createNearCache(null, new NearCacheConfiguration());
 
         grid = startGrid(GRID_CNT - 1);
 
@@ -245,8 +245,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             CacheStore store = cctx.store().configuredStore();
 
-            long opened = ((LongAdder)U.field(store, "opened")).sum();
-            long closed = ((LongAdder)U.field(store, "closed")).sum();
+            long opened = ((LongAdder8)U.field(store, "opened")).sum();
+            long closed = ((LongAdder8)U.field(store, "closed")).sum();
 
             assert opened > 0;
             assert closed > 0;

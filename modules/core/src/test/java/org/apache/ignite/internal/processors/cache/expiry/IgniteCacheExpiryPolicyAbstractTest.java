@@ -40,6 +40,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -49,16 +50,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbstractTest {
     /** */
+    private static final long TTL_FOR_EXPIRE = 500L;
+
+    /** */
     private Factory<? extends ExpiryPolicy> factory;
 
     /** */
     private boolean nearCache;
 
     /** */
-    private Integer lastKey = 0;
+    private boolean disableEagerTtl;
 
     /** */
-    private static final long TTL_FOR_EXPIRE = 500L;
+    private Integer lastKey = 0;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -72,6 +76,22 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         factory = null;
 
         storeMap.clear();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+
+        if (nearCache)
+            cfg.setNearConfiguration(new NearCacheConfiguration());
+
+        cfg.setExpiryPolicyFactory(factory);
+
+        if (disableEagerTtl)
+            cfg.setEagerTtl(false);
+
+        return cfg;
     }
 
     /**
@@ -145,6 +165,33 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             zeroOnAccess(key);
         }
+
+        IgniteCache<Integer, Object> cache = jcache(0);
+
+        Integer key = primaryKey(cache);
+
+        IgniteCache<Integer, Object> cache0 = cache.withExpiryPolicy(new TestPolicy(60_000L, 60_000L, 60_000L));
+
+        cache0.put(key, 1);
+
+        cache.get(key); // Access using get.
+
+        assertFalse(cache.iterator().hasNext());
+
+        cache0.put(key, 1);
+
+        assertNotNull(cache.iterator().next()); // Access using iterator.
+
+        assertFalse(cache.iterator().hasNext());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccessEagerTtlDisabled() throws Exception {
+        disableEagerTtl = true;
+
+        testZeroOnAccess();
     }
 
     /**
@@ -159,6 +206,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
 
         waitExpired(F.asList(key));
+
+        assertFalse(cache.iterator().hasNext());
     }
 
     /**
@@ -711,9 +760,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearCreateUpdate() throws Exception {
+    public void _testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -834,9 +884,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearAccess() throws Exception {
+    public void _testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -994,6 +1045,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
 
+            if (e != null && e.deleted()) {
+                assertEquals(0, e.ttl());
+
+                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+
+                continue;
+            }
+
             if (e == null)
                 assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
             else {
@@ -1030,18 +1089,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         assertTrue(found);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        if (nearCache)
-            cfg.setNearConfiguration(new NearCacheConfiguration());
-
-        cfg.setExpiryPolicyFactory(factory);
-
-        return cfg;
     }
 
     /**

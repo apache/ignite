@@ -17,16 +17,14 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.event.*;
 import java.util.*;
 
 /**
@@ -86,7 +84,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
 
     /** Continuous query filter. */
     @GridToStringInclude
-    private final CacheEntryEventFilter<K, V> contQryFilter;
+    private final CacheEntryEventSerializableFilter<K, V> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -137,7 +135,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
-        @Nullable CacheEntryEventFilter<K, V> contQryFilter,
+        @Nullable CacheEntryEventSerializableFilter<K, V> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName,
@@ -222,7 +220,7 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public CacheEntryEventFilter<K, V> continuousQueryFilter() {
+    @Nullable public CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
         return contQryFilter;
     }
 

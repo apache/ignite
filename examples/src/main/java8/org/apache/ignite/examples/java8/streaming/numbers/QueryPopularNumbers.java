@@ -19,7 +19,7 @@ package org.apache.ignite.examples.java8.streaming.numbers;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 
 import java.util.*;
 
@@ -32,11 +32,7 @@ import java.util.*;
  *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
  * </ul>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-ignite.xml} configuration.
+ * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class QueryPopularNumbers {
     public static void main(String[] args) throws Exception {
@@ -44,25 +40,34 @@ public class QueryPopularNumbers {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            // Start new cache or get existing one.
+            if (!ExamplesUtils.hasServerNodes(ignite))
+                return;
+
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure())) {
-                if (!ExamplesUtils.hasServerNodes(ignite))
-                    return;
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
 
-                // Query top 10 popular numbers every 5 seconds.
-                while (true) {
-                    // Select top 10 words.
-                    SqlFieldsQuery top10 = new SqlFieldsQuery(
-                        "select _key, _val from Long order by _val desc limit 10");
+            // Select top 10 words.
+            SqlFieldsQuery top10Qry = new SqlFieldsQuery("select _key, _val from Long order by _val desc limit 10");
 
-                    // Execute query.
-                    List<List<?>> results = stmCache.queryFields(top10).getAll();
+            // Select average, min, and max counts among all the words.
+            SqlFieldsQuery statsQry = new SqlFieldsQuery("select avg(_val), min(_val), max(_val) from Long");
 
-                    ExamplesUtils.printQueryResults(results);
+            // Query top 10 popular numbers every 5 seconds.
+            while (true) {
+                // Execute queries.
+                List<List<?>> top10 = stmCache.query(top10Qry).getAll();
+                List<List<?>> stats = stmCache.query(statsQry).getAll();
 
-                    Thread.sleep(5000);
-                }
+                // Print average count.
+                List<?> row = stats.get(0);
+
+                if (row.get(0) != null)
+                    System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
+
+                // Print top 10 words.
+                ExamplesUtils.printQueryResults(top10);
+
+                Thread.sleep(5000);
             }
         }
     }

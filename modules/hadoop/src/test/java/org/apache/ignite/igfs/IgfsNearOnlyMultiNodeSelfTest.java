@@ -59,17 +59,9 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(nodeCount());
 
-        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        grid(0).createNearCache("data", new NearCacheConfiguration());
 
-        nearCfg.setName("data");
-
-        grid(0).createCache(nearCfg);
-
-        nearCfg = new NearCacheConfiguration();
-
-        nearCfg.setName("meta");
-
-        grid(0).createCache(nearCfg);
+        grid(0).createNearCache("meta", new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */

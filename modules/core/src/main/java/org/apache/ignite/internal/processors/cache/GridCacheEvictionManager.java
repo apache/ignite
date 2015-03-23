@@ -40,8 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import static org.jsr166.ConcurrentLinkedDeque8.*;
 
 /**
  * Cache eviction manager.
@@ -1395,7 +1395,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
          *
          */
         private BackupWorker() {
-            super(cctx.gridName(), "cache-eviction-backup-worker", log);
+            super(cctx.gridName(), "cache-eviction-backup-worker", GridCacheEvictionManager.this.log);
 
             assert plcEnabled;
         }

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
+import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -76,6 +77,7 @@ import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -451,7 +453,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -1751,6 +1754,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
+                GridCacheProcessor cache = ctx.cache();
+
+                if (cache != null)
+                    cache.blockGateways();
+
                 assert gw.getState() == STARTED || gw.getState() == STARTING;
 
                 // No more kernal calls from this point on.
@@ -1861,7 +1869,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         NL);
                 }
 
-            U.onGridStop();
+            try {
+                U.onGridStop();
+            }
+            catch (InterruptedException e) {
+                // Preserve interrupt status.
+                Thread.currentThread().interrupt();
+            }
         }
         else {
             // Proper notification.
@@ -2255,7 +2269,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, null).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2268,20 +2282,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String springCfgPath) {
+        return createCache(getCacheConfiguration(springCfgPath));
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
 
         guard();
 
         try {
-            try {
-                ctx.cache().dynamicStartCache(cacheCfg, null).get();
-            }
-            catch (IgniteCheckedException e) {
-                // Ignore error if cache exists.
-                if (!e.hasCause(IgniteCacheExistsException.class))
-                    throw e;
-            }
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2291,6 +2303,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath) {
+        return getOrCreateCache(getCacheConfiguration(springCfgPath));
     }
 
     /** {@inheritDoc} */
@@ -2304,7 +2321,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2314,19 +2331,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
-
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> createCache(String springCfgPath, String nearSpringCfgPath) {
+        return createCache(getCacheConfiguration(springCfgPath), getNearCacheConfiguration(nearSpringCfgPath));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
         A.notNull(nearCfg, "nearCfg");
 
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(null, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
 
-            return ctx.cache().publicJCache(nearCfg.getName());
+            return ctx.cache().publicJCache(cacheCfg.getName());
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2334,20 +2357,81 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath, String nearSpringCfgPath) {
+        return getOrCreateCache(getCacheConfiguration(springCfgPath), getNearCacheConfiguration(nearSpringCfgPath));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, String nearSpringCfgPath) {
+        return createNearCache(cacheName, getNearCacheConfiguration(nearSpringCfgPath));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
+        NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
+        String nearSpringCfgPath) {
+        return getOrCreateNearCache(cacheName, getNearCacheConfiguration(nearSpringCfgPath));
     }
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
         guard();
 
+        IgniteInternalFuture<?> stopFut;
+
         try {
-            ctx.cache().dynamicStopCache(cacheName).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
+            stopFut = ctx.cache().dynamicStopCache(cacheName);
         }
         finally {
             unguard();
+        }
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
         }
     }
 
@@ -2769,5 +2853,48 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
+    }
+
+    /**
+     * @param springCfgPath Spring XML configuration file path or URL.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration getCacheConfiguration(String springCfgPath) {
+        return getConfiguration(springCfgPath, CacheConfiguration.class);
+    }
+
+    /**
+     * @param nearSpringCfgPath Spring XML configuration file path or URL.
+     * @return Cache configuration.
+     */
+    private NearCacheConfiguration getNearCacheConfiguration(String nearSpringCfgPath) {
+        return getConfiguration(nearSpringCfgPath, NearCacheConfiguration.class);
+    }
+
+    /**
+     * @param springCfgPath Spring XML configuration file path or URL.
+     * @param cl Required type of configuration.
+     * @return Cache configuration.
+     */
+    private <T> T getConfiguration(String springCfgPath, Class<T> cl) {
+        try {
+            if (springCfgPath == null)
+                return null;
+
+            URL url = U.resolveSpringUrl(springCfgPath);
+
+            IgniteSpringProcessor spring = SPRING.create(false);
+
+            IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> cfgMap =
+                spring.loadConfigurations(url, cl);
+
+            if (cfgMap.get1().size() != 1)
+                throw new IgniteException("File " + url.toString() + " should have one cache configuration.");
+
+            return F.first(cfgMap.get1());
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }

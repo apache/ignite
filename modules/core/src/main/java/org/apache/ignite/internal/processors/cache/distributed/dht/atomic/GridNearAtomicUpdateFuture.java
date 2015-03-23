@@ -34,8 +34,8 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -484,7 +484,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+                "left the grid)."));
 
             return;
         }
@@ -542,7 +543,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 onDone(err);
 
-                throw err;
+                return;
             }
 
             if (val == null && op != GridCacheOperation.DELETE) {
@@ -550,7 +551,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 onDone(err);
 
-                throw err;
+                return;
             }
 
             KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
@@ -627,7 +628,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                     onDone(err);
 
-                    throw err;
+                    return;
                 }
 
                 Object val;

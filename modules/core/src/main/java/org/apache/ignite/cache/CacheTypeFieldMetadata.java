@@ -19,10 +19,15 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
  * Type field metadata.
  */
-public class CacheTypeFieldMetadata {
+public class CacheTypeFieldMetadata implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Column name in database. */
     private String dbName;
 

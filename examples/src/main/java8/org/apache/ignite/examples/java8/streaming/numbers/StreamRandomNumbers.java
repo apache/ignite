@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.java8.streaming.numbers;
 
 import org.apache.ignite.*;
-import org.apache.ignite.examples.java8.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
@@ -32,11 +32,7 @@ import java.util.*;
  *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
  * </ul>
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-ignite.xml} configuration.
+ * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class StreamRandomNumbers {
     /** Random number generator. */
@@ -50,29 +46,28 @@ public class StreamRandomNumbers {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            // Create new cache or get existing one.
+            if (!ExamplesUtils.hasServerNodes(ignite))
+                return;
+
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.configure())) {
-                if (!ExamplesUtils.hasServerNodes(ignite))
-                    return;
+            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
 
-                try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                    // Allow data updates.
-                    stmr.allowOverwrite(true);
+            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
+                // Allow data updates.
+                stmr.allowOverwrite(true);
 
-                    // Configure data transformation to count instances of the same word.
-                    stmr.receiver(new StreamTransformer<>((e, arg) -> {
-                        Long val = e.getValue();
+                // Configure data transformation to count instances of the same word.
+                stmr.receiver(StreamTransformer.from((e, arg) -> {
+                    Long val = e.getValue();
 
-                        e.setValue(val == null ? 1L : val + 1);
+                    e.setValue(val == null ? 1L : val + 1);
 
-                        return null;
-                    }));
+                    return null;
+                }));
 
-                    // Stream random numbers into the streamer cache.
-                    while (true)
-                        stmr.addData(RAND.nextInt(RANGE), 1L);
-                }
+                // Stream random numbers into the streamer cache.
+                while (true)
+                    stmr.addData(RAND.nextInt(RANGE), 1L);
             }
         }
     }

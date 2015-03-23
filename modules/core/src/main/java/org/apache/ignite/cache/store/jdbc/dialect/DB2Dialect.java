@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 /**
- * A dialect compatible with the DB2 database.
+ * A dialect compatible with the IBM DB2 database.
  */
 public class DB2Dialect extends BasicJdbcDialect {
     /** {@inheritDoc} */

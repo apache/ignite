@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
 import java.util.concurrent.*;
@@ -76,31 +75,9 @@ public class CacheApiExample {
         String v = cache.getAndPut(1, "1");
         assert v == null;
 
-        // Put and do not return previous value (all methods ending with 'x' return boolean).
+        // Put and do not return previous value.
         // Performs better when previous value is not needed.
         cache.put(2, "2");
-
-        // Put asynchronously.
-        final IgniteCache<Integer, String> asyncCache = cache.withAsync();
-
-        asyncCache.put(3, "3");
-
-        asyncCache.get(3);
-
-        IgniteFuture<String> fut = asyncCache.future();
-
-        //Asynchronously wait for result.
-        fut.listen(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override
-            public void apply(IgniteFuture<String> fut) {
-                try {
-                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
-                }
-                catch (IgniteException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
         // Put-if-absent.
         boolean b1 = cache.putIfAbsent(4, "4");

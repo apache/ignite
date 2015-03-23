@@ -20,9 +20,7 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import sun.misc.*;
 
@@ -62,13 +60,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Object curObj;
 
     /** */
-    private List<T2<OptimizedFieldType, Long>> curFields;
-
-    /** */
-    private List<IgniteBiTuple<Integer, OptimizedFieldType>> curFieldInfoList;
-
-    /** */
-    private Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> curFieldInfoMap;
+    private OptimizedClassDescriptor.ClassFields curFields;
 
     /** */
     private Class<?> curCls;
@@ -133,16 +125,12 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         curObj = null;
         curFields = null;
-        curFieldInfoList = null;
-        curFieldInfoMap = null;
     }
 
     /** {@inheritDoc} */
     @Override public Object readObjectOverride() throws ClassNotFoundException, IOException {
         curObj = null;
         curFields = null;
-        curFieldInfoList = null;
-        curFieldInfoMap = null;
 
         byte ref = in.readByte();
 
@@ -357,54 +345,81 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void readFields(Object obj, List<T2<OptimizedFieldType, Long>> fieldOffs) throws ClassNotFoundException,
+    void readFields(Object obj, OptimizedClassDescriptor.ClassFields fieldOffs) throws ClassNotFoundException,
         IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
-            T2<OptimizedFieldType, Long> t = fieldOffs.get(i);
+            OptimizedClassDescriptor.FieldInfo t = fieldOffs.get(i);
 
-            switch ((t.get1())) {
+            switch ((t.type())) {
                 case BYTE:
-                    setByte(obj, t.get2(), readByte());
+                    byte resByte = readByte();
+
+                    if (t.field() != null)
+                        setByte(obj, t.offset(), resByte);
 
                     break;
 
                 case SHORT:
-                    setShort(obj, t.get2(), readShort());
+                    short resShort = readShort();
+
+                    if (t.field() != null)
+                        setShort(obj, t.offset(), resShort);
 
                     break;
 
                 case INT:
-                    setInt(obj, t.get2(), readInt());
+                    int resInt = readInt();
+
+                    if (t.field() != null)
+                        setInt(obj, t.offset(), resInt);
 
                     break;
 
                 case LONG:
-                    setLong(obj, t.get2(), readLong());
+                    long resLong = readLong();
+
+                    if (t.field() != null)
+                        setLong(obj, t.offset(), resLong);
 
                     break;
 
                 case FLOAT:
-                    setFloat(obj, t.get2(), readFloat());
+                    float resFloat = readFloat();
+
+                    if (t.field() != null)
+                        setFloat(obj, t.offset(), resFloat);
 
                     break;
 
                 case DOUBLE:
-                    setDouble(obj, t.get2(), readDouble());
+                    double resDouble = readDouble();
+
+                    if (t.field() != null)
+                        setDouble(obj, t.offset(), resDouble);
 
                     break;
 
                 case CHAR:
-                    setChar(obj, t.get2(), readChar());
+                    char resChar = readChar();
+
+                    if (t.field() != null)
+                        setChar(obj, t.offset(), resChar);
 
                     break;
 
                 case BOOLEAN:
-                    setBoolean(obj, t.get2(), readBoolean());
+                    boolean resBoolean = readBoolean();
+
+                    if (t.field() != null)
+                        setBoolean(obj, t.offset(), resBoolean);
 
                     break;
 
                 case OTHER:
-                    setObject(obj, t.get2(), readObject());
+                    Object resObject = readObject();
+
+                    if (t.field() != null)
+                        setObject(obj, t.offset(), resObject);
             }
         }
     }
@@ -479,9 +494,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             if (mtd != null) {
                 curObj = obj;
-                curFields = fields.fieldOffs(i);
-                curFieldInfoList = fields.fieldInfoList(i);
-                curFieldInfoMap = fields.fieldInfoMap(i);
+                curFields = fields.fields(i);
 
                 try {
                     mtd.invoke(obj, this);
@@ -491,7 +504,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 }
             }
             else
-                readFields(obj, fields.fieldOffs(i));
+                readFields(obj, fields.fields(i));
         }
 
         if (readResolveMtd != null) {
@@ -1007,8 +1020,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * {@link GetField} implementation.
      */
     private static class GetFieldImpl extends GetField {
-        /** Field info map. */
-        private final Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap;
+        /** Field info. */
+        private final OptimizedClassDescriptor.ClassFields fieldInfo;
 
         /** Values. */
         private final Object[] objs;
@@ -1020,18 +1033,16 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private GetFieldImpl(OptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
-            fieldInfoMap = in.curFieldInfoMap;
+            fieldInfo = in.curFields;
 
-            List<IgniteBiTuple<Integer, OptimizedFieldType>> infos = in.curFieldInfoList;
+            objs = new Object[fieldInfo.size()];
 
-            objs = new Object[infos.size()];
-
-            for (int i = 0; i < infos.size(); i++) {
-                IgniteBiTuple<Integer, OptimizedFieldType> t = infos.get(i);
+            for (int i = 0; i < fieldInfo.size(); i++) {
+                OptimizedClassDescriptor.FieldInfo t = fieldInfo.get(i);
 
                 Object obj = null;
 
-                switch (t.get2()) {
+                switch (t.type()) {
                     case BYTE:
                         obj = in.readByte();
 
@@ -1076,7 +1087,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                         obj = in.readObject();
                 }
 
-                objs[t.get1()] = obj;
+                objs[i] = obj;
             }
         }
 
@@ -1087,7 +1098,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         /** {@inheritDoc} */
         @Override public boolean defaulted(String name) throws IOException {
-            return objs[fieldInfoMap.get(name).get1()] == null;
+            return objs[fieldInfo.getIndex(name)] == null;
         }
 
         /** {@inheritDoc} */
@@ -1142,7 +1153,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          */
         @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
-            return objs[fieldInfoMap.get(name).get1()] != null ? (T)objs[fieldInfoMap.get(name).get1()] : dflt;
+            return objs[fieldInfo.getIndex(name)] != null ? (T)objs[fieldInfo.getIndex(name)] : dflt;
         }
     }
 }

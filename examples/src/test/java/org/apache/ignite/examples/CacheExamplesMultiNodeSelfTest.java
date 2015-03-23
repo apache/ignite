@@ -35,14 +35,4 @@ public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
     @Override protected long getTestTimeout() {
         return 10 * 60 * 1000;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testCacheStoreExample() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testCacheStoreLoaderExample() throws Exception {
-        // No-op.
-    }
 }
