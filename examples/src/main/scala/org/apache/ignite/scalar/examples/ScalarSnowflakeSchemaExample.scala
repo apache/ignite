@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-import org.jdk8.backport.ThreadLocalRandom8
+import org.jsr166.ThreadLocalRandom8
 
 import scala.collection.JavaConversions._
 

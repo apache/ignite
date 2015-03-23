@@ -63,7 +63,8 @@ public class ComputeAsyncExample {
             }
 
             // Wait for completion of all futures.
-            futs.forEach(IgniteFuture::get);
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");

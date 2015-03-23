@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.integration.*;
 import java.util.concurrent.*;
