@@ -114,7 +114,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Object,Object>() {
+                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object,Object>() {
                         @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
                             if (filterSleepMs > 0) {
                                 try {

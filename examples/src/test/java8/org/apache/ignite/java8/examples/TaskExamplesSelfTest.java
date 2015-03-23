@@ -15,14 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.java8.examples;
 
-import javax.cache.event.*;
-import java.io.*;
+//import org.apache.ignite.examples.java8.computegrid.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * This filter adds {@link Serializable} interface to {@link javax.cache.event.CacheEntryEventFilter} object.
+ * Hello world examples self test.
  */
-public interface IgniteCacheEntryEventFilter<K, V> extends CacheEntryEventFilter<K, V>, Serializable {
-    // No-op.
+public class TaskExamplesSelfTest extends GridAbstractExamplesTest {
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskSplitExample() throws Exception {
+//        ComputeTaskSplitExample.main(EMPTY_ARGS);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTaskMapExample() throws Exception {
+//        ComputeTaskMapExample.main(EMPTY_ARGS);
+//    }
 }

@@ -332,7 +332,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, Integer>() {
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, Integer>() {
             @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                 throw new RuntimeException("Test error.");
             }
@@ -375,7 +375,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer,Integer>() {
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer,Integer>() {
             @Override public boolean evaluate(CacheEntryEvent<? extends Integer,? extends Integer> evt) {
                 return evt.getKey() > 2;
             }
@@ -971,7 +971,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 }
             });
 
-            qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Integer, Integer>() {
+            qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, Integer>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                     return evt.getValue() >= 50;
                 }

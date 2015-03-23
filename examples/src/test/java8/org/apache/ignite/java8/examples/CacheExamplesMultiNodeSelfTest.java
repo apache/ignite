@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
-
-
-import org.apache.ignite.cache.*;
+package org.apache.ignite.java8.examples;
 
 /**
- * Extended continuous query filter.
+ * Cache examples multi-node self test.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
-    /**
-     * Callback for query unregister event.
-     */
-    public void onQueryUnregister();
+public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected String defaultConfig() {
+        return "examples/config/example-ignite.xml";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
 }

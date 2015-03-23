@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.java8.examples;
 
-
-import org.apache.ignite.cache.*;
+//import org.apache.ignite.examples.java8.misc.client.memcache.*;
 
 /**
- * Extended continuous query filter.
+ * MemcacheRestExample multi-node self test.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
-    /**
-     * Callback for query unregister event.
-     */
-    public void onQueryUnregister();
+public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
+    /** {@inheritDoc} */
+//    @Override protected void beforeTest() throws Exception {
+//        for (int i = 0; i < RMT_NODES_CNT; i++)
+//            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
+//    }
 }

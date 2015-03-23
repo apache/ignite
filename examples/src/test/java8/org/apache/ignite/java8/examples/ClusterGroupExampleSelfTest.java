@@ -15,29 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.java8.examples;
 
-import junit.framework.*;
-import org.apache.ignite.testframework.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+//import org.apache.ignite.examples.java8.computegrid.cluster.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Examples test suite.
- * <p>
- * Contains only Spring ignite examples tests.
+ *
  */
-public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesJ8SelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        return suite;
+public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        // Start up a node.
+        startGrid("ignite-cluster-groups-example", DFLT_CFG);
     }
+
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testComputeClusterGroupsExample() throws Exception {
+//        ClusterGroupExample.main(EMPTY_ARGS);
+//    }
 }

@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.java8.examples;
 
-
-import org.apache.ignite.cache.*;
+//import org.apache.ignite.examples.java8.datagrid.hibernate.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Extended continuous query filter.
+ * Tests the {@link org.apache.ignite.examples.java8.datagrid.hibernate.HibernateL2CacheExample}.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
+public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
     /**
-     * Callback for query unregister event.
+     * @throws Exception If failed.
      */
-    public void onQueryUnregister();
+//    public void testHibernateL2CacheExample() throws Exception {
+//        HibernateL2CacheExample.main(EMPTY_ARGS);
+//    }
 }

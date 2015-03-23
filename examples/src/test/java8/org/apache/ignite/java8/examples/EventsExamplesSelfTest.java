@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.java8.examples;
 
-
-import org.apache.ignite.cache.*;
+import org.apache.ignite.examples.java8.events.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Extended continuous query filter.
+ * Events examples self test.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
+public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * Callback for query unregister event.
+     * @throws Exception If failed.
      */
-    public void onQueryUnregister();
+    public void testEventsExample() throws Exception {
+        EventsExample.main(EMPTY_ARGS);
+    }
 }

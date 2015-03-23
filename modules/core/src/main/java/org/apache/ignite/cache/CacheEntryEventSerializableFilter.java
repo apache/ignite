@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.cache;
 
-
-import org.apache.ignite.cache.*;
+import javax.cache.event.*;
+import java.io.*;
 
 /**
- * Extended continuous query filter.
+ * This filter adds {@link Serializable} interface to {@link javax.cache.event.CacheEntryEventFilter} object.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
-    /**
-     * Callback for query unregister event.
-     */
-    public void onQueryUnregister();
+public interface CacheEntryEventSerializableFilter<K, V> extends CacheEntryEventFilter<K, V>, Serializable {
+    // No-op.
 }

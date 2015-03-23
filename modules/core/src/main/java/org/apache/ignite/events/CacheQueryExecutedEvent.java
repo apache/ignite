@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.event.*;
 import java.util.*;
 
 /**
@@ -85,7 +84,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
 
     /** Continuous query filter. */
     @GridToStringInclude
-    private final IgniteCacheEntryEventFilter<K, V> contQryFilter;
+    private final CacheEntryEventSerializableFilter<K, V> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -118,7 +117,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
-        @Nullable IgniteCacheEntryEventFilter<K, V> contQryFilter,
+        @Nullable CacheEntryEventSerializableFilter<K, V> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName) {
@@ -195,7 +194,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public IgniteCacheEntryEventFilter<K, V> continuousQueryFilter() {
+    @Nullable public CacheEntryEventSerializableFilter<K, V> continuousQueryFilter() {
         return contQryFilter;
     }
 
