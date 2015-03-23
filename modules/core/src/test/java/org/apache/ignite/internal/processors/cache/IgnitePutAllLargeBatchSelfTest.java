@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
@@ -211,13 +211,13 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                GridCache<Object, Object> checkCache = ((IgniteKernal)grid(g)).cache(null);
+                IgniteCache<Object, Object> checkCache =grid(g).jcache(null);
 
                 ClusterNode checkNode = grid(g).localNode();
 
                 for (int i = 0; i < keyCnt; i++) {
-                    if (checkCache.affinity().isPrimaryOrBackup(checkNode, i))
-                        assertEquals(i * i, checkCache.peek(i, F.asList(GridCachePeekMode.PARTITIONED_ONLY)));
+                    if (grid(g).affinity(null).isPrimaryOrBackup(checkNode, i))
+                        assertEquals(i * i, checkCache.localPeek(i, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
                 }
             }
         }

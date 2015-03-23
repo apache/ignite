@@ -676,7 +676,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
+            if (grid.affinity(DATA_CACHE_NAME).isPrimary(node, key))
                 return node.id();
         }
 
@@ -695,7 +695,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimaryOrBackup(node, key))
+            if (grid.affinity(DATA_CACHE_NAME).isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 

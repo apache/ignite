@@ -224,7 +224,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-        final GridCache<String, Integer> c = cache();
+        final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(fullCache(), 1).get(0);
 
@@ -271,7 +271,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())
@@ -315,7 +315,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())
@@ -356,7 +356,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())

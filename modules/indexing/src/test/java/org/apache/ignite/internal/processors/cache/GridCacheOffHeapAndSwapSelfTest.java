@@ -287,7 +287,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         for (long i = 0; i < ENTRY_CNT; i++) {
             // Avoid entry creation.
-            int part = cache.affinity().partition(i);
+            int part = grid(0).affinity(null).partition(i);
 
             Collection<Long> list = grouped.get(part);
 
