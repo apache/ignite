@@ -58,7 +58,6 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
 
         // Multi-node.
         suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(CacheStoreLoadDataExampleMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(ContinuationExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(ContinuousMapperExamplesMultiNodeSelfTest.class));
