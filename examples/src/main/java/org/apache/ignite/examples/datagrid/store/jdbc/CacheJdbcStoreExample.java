@@ -15,16 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store;
+package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.examples.datagrid.store.*;
+import org.apache.ignite.transactions.*;
+
+import javax.cache.configuration.*;
+import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Loads data on all cache nodes from persistent store at cache startup by calling
- * {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
+ * Demonstrates usage of cache with underlying persistent store configured.
+ * <p>
+ * This example uses {@link CacheJdbcPersonStore} as a persistent store.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -32,12 +40,15 @@ import org.apache.ignite.lang.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheStoreLoadDataExample {
+public class CacheJdbcStoreExample {
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
     /** Number of entries to load. */
     private static final int ENTRY_COUNT = 100_000;
+
+    /** Global person ID to use across entire example. */
+    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /**
      * Executes example.
@@ -48,11 +59,24 @@ public class CacheStoreLoadDataExample {
     public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
+        // To start ignite with desired configuration uncomment the appropriate line.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> Cache store load data example started.");
+            System.out.println(">>> Cache store example started.");
 
-            CacheConfiguration<Long, Person> cacheCfg = CacheStoreExampleCacheConfigurator.cacheConfiguration();
+            CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>();
+
+            // Set atomicity as transaction, since we are showing transactions in example.
+            cacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+            cacheCfg.setCacheStoreFactory(new Factory<CacheStore<? super Long, ? super Person>>() {
+                @Override public CacheStore<? super Long, ? super Person> create() {
+                    return new CacheJdbcPersonStore();
+                }
+            });
+
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
 
             try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
                 long start = System.currentTimeMillis();
@@ -63,6 +87,25 @@ public class CacheStoreLoadDataExample {
                 long end = System.currentTimeMillis();
 
                 System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+
+                // Start transaction and make several operations with write/read-through.
+                try (Transaction tx = ignite.transactions().txStart()) {
+                    Person val = cache.get(id);
+
+                    System.out.println("Read value: " + val);
+
+                    val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
+
+                    System.out.println("Overwrote old value: " + val);
+
+                    val = cache.get(id);
+
+                    System.out.println("Read value: " + val);
+
+                    tx.commit();
+                }
+
+                System.out.println("Read value after commit: " + cache.get(id));
             }
         }
     }
