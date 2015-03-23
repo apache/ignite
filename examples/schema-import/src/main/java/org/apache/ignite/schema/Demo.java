@@ -34,7 +34,7 @@ public class Demo {
         CacheConfiguration ccfg = new CacheConfiguration<>();
 
         // Configure cache store.
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(CacheConfig.store()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
 
@@ -42,7 +42,7 @@ public class Demo {
         ccfg.setWriteBehindEnabled(true);
 
         // Configure cache types metadata.
-        ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
+        ccfg.setTypeMetadata(CacheConfig.typeMetadata());
 
         cfg.setCacheConfiguration(ccfg);
 

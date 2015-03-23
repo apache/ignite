@@ -289,10 +289,10 @@ public abstract class IgniteUtils {
     private static Thread timer;
 
     /** Grid counter. */
-    private static int gridCnt;
+    static int gridCnt;
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    static final Object mux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
@@ -2784,6 +2784,8 @@ public abstract class IgniteUtils {
     public static void onGridStart() {
         synchronized (mux) {
             if (gridCnt == 0) {
+                assert timer == null;
+
                 timer = new Thread(new Runnable() {
                     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
                     @Override public void run() {
@@ -2813,8 +2815,9 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     * @throws InterruptedException If interrupted.
      */
-    public static void onGridStop(){
+    public static void onGridStop() throws InterruptedException {
         synchronized (mux) {
             // Grid start may fail and onGridStart() does not get called.
             if (gridCnt == 0)
@@ -2822,10 +2825,14 @@ public abstract class IgniteUtils {
 
             --gridCnt;
 
-            if (gridCnt == 0 && timer != null) {
-                timer.interrupt();
+            Thread timer0 = timer;
 
+            if (gridCnt == 0 && timer0 != null) {
                 timer = null;
+
+                timer0.interrupt();
+
+                timer0.join();
             }
         }
     }
