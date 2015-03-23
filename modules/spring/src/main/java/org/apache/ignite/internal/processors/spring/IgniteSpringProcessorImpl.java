@@ -78,35 +78,20 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** {@inheritDoc} */
     @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
-        ApplicationContext springCtx = applicationContext(cfgUrl, excludedProps);
-
-        Map<String, IgniteConfiguration> cfgMap;
-
-        try {
-            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
-        }
-        catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
-                e.getMessage() + ']', e);
-        }
-
-        if (cfgMap == null || cfgMap.isEmpty())
-            throw new IgniteCheckedException("Failed to find grid configuration in: " + cfgUrl);
-
-        return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
+        return loadConfigurations(cfgUrl, IgniteConfiguration.class);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Collection<CacheConfiguration>, ? extends GridSpringResourceContext> loadCacheConfigurations (
-        URL cfgUrl) throws IgniteCheckedException {
+    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL cfgUrl, Class<T> cl) throws IgniteCheckedException {
         ApplicationContext springCtx = applicationContext(cfgUrl);
-        Map<String, CacheConfiguration> cfgMap;
+        Map<String, T> cfgMap;
 
         try {
-            cfgMap = springCtx.getBeansOfType(CacheConfiguration.class);
+            cfgMap = springCtx.getBeansOfType(cl);
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to instantiate bean [type=" + CacheConfiguration.class +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cl +
                 ", err=" + e.getMessage() + ']', e);
         }
 
