@@ -278,6 +278,7 @@
                                 <configuration>
                                     <sources>
                                         <source>src/main/java8</source>
+                                        <source>schema-import/src/main/java</source>
                                     </sources>
                                 </configuration>
                             </execution>
