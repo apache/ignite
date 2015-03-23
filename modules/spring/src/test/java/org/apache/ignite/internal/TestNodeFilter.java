@@ -24,8 +24,11 @@ import org.apache.ignite.lang.*;
  *
  */
 public class TestNodeFilter implements IgnitePredicate<ClusterNode> {
+    /** */
+    public static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
+
     @Override public boolean apply(ClusterNode n) {
-        Boolean val = n.attribute("TEST_ATTRIBUTE_NAM");
+        Boolean val = n.attribute(TEST_ATTRIBUTE_NAME);
 
         return val != null && val;
     }

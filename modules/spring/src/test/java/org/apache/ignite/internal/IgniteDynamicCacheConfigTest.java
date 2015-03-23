@@ -38,7 +38,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     private static final String STATIC_CACHE_NAME = "TestStaticCache";
 
     /** */
-    private static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
+    private static final String TEST_ATTRIBUTE_NAME = TestNodeFilter.TEST_ATTRIBUTE_NAME;
 
     /** */
     private boolean testAttribute = true;
