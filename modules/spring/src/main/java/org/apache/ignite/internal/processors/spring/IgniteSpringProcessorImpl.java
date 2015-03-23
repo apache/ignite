@@ -96,7 +96,7 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
         }
 
         if (cfgMap == null || cfgMap.isEmpty())
-            throw new IgniteCheckedException("Failed to find cache configuration in: " + cfgUrl);
+            throw new IgniteCheckedException("Failed to find configuration in: " + cfgUrl);
 
         return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
     }
@@ -216,6 +216,7 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
      * @param cfgUrl Resource where config file is located.
      * @param excludedProps Properties to be excluded.
      * @return Spring application context.
+     * @throws IgniteCheckedException If configuration could not be read.
      */
     public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) throws IgniteCheckedException {
         try {
