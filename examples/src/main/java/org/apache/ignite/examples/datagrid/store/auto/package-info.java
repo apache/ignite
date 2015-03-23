@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains CacheJdbcPojoStore example.
+ * Contains automatic JDBC store example.
  */
 package org.apache.ignite.examples.datagrid.store.auto;
