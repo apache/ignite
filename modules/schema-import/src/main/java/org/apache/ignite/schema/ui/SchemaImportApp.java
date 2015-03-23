@@ -416,6 +416,9 @@ public class SchemaImportApp extends Application {
             return;
         }
 
+        if (checkInput(outFolderTf, true, "Output folder should not be empty!"))
+            return;
+
         lockUI(genLayerPnl, genPnl, prevBtn, nextBtn);
 
         final String outFolder = outFolderTf.getText();
