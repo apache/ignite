@@ -298,23 +298,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         asyncRes = new IgniteFinishedFutureImpl<>(res);
     }
 
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMeta(UUID name, V1 val) {
-        return tx.addMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 meta(UUID name) {
-        return tx.<V1>meta(name);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 removeMeta(UUID name) {
-        return tx.<V1>removeMeta(name);
-    }
-
     /**
      * @param fut Internal future.
      */

@@ -255,7 +255,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 

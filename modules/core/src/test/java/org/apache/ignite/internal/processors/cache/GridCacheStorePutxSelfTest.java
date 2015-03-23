@@ -151,7 +151,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) {
+        @Override public void sessionEnd(boolean commit) {
             // No-op.
         }
     }

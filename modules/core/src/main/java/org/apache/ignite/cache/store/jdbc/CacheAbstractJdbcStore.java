@@ -303,7 +303,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) throws CacheWriterException {
+    @Override public void sessionEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
         Transaction tx = ses.transaction();

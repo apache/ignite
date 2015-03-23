@@ -150,7 +150,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
                 "write cacheA",
                 "delete cacheA",
                 "write cacheB",
-                "txEnd true"
+                "sessionEnd true"
             ),
             evts);
     }
@@ -251,8 +251,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             throws CacheLoaderException {
         }
 
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
-            evts.offer("txEnd " + commit);
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
+            evts.offer("sessionEnd " + commit);
         }
 
         /** {@inheritDoc} */
