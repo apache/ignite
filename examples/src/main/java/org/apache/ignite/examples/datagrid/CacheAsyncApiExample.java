@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.lang.*;
 
-import javax.cache.processor.*;
-import java.util.concurrent.*;
+import java.util.*;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -34,9 +34,9 @@ import java.util.concurrent.*;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheApiExample {
+public class CacheAsyncApiExample {
     /** Cache name. */
-    private static final String CACHE_NAME = CacheApiExample.class.getSimpleName();
+    private static final String CACHE_NAME = CacheAsyncApiExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -47,7 +47,7 @@ public class CacheApiExample {
     public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> Cache API example started.");
+            System.out.println(">>> Cache asynchronous API example started.");
 
             CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
@@ -55,51 +55,32 @@ public class CacheApiExample {
             cfg.setName(CACHE_NAME);
 
             try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
-                // Demonstrate atomic map operations.
-                atomicMapOperations(cache);
+                // Enable asynchronous mode.
+                IgniteCache<Integer, String> asyncCache = cache.withAsync();
+
+                Collection<IgniteFuture<?>> futs = new ArrayList<>();
+
+                // Execute several puts asynchronously.
+                for (int i = 0; i < 10; i++) {
+                    asyncCache.put(i, String.valueOf(i));
+
+                    futs.add(asyncCache.future());
+                }
+
+                // Wait for completion of all futures.
+                for (IgniteFuture<?> fut : futs)
+                    fut.get();
+
+                // Execute get operation asynchronously.
+                asyncCache.get(1);
+
+                // Asynchronously wait for result.
+                asyncCache.<String>future().listen(new IgniteInClosure<IgniteFuture<String>>() {
+                    @Override public void apply(IgniteFuture<String> fut) {
+                        System.out.println("Get operation completed [value=" + fut.get() + ']');
+                    }
+                });
             }
         }
-    }
-
-    /**
-     * Demonstrates cache operations similar to {@link ConcurrentMap} API. Note that
-     * cache API is a lot richer than the JDK {@link ConcurrentMap}.
-     *
-     * @throws IgniteException If failed.
-     */
-    private static void atomicMapOperations(final IgniteCache<Integer, String> cache) throws IgniteException {
-        System.out.println();
-        System.out.println(">>> Cache atomic map operation examples.");
-
-        // Put and return previous value.
-        String v = cache.getAndPut(1, "1");
-        assert v == null;
-
-        // Put and do not return previous value.
-        // Performs better when previous value is not needed.
-        cache.put(2, "2");
-
-        // Put-if-absent.
-        boolean b1 = cache.putIfAbsent(4, "4");
-        boolean b2 = cache.putIfAbsent(4, "44");
-        assert b1 && !b2;
-
-        // Invoke - assign new value based on previous value.
-        cache.put(6, "6");
-        cache.invoke(6, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
-                String v = entry.getValue();
-
-                entry.setValue(v + "6"); // Set new value based on previous value.
-
-                return null;
-            }
-        });
-
-        // Replace.
-        cache.put(7, "7");
-        b1 = cache.replace(7, "7", "77");
-        b2 = cache.replace(7, "7", "777");
-        assert b1 & !b2;
     }
 }

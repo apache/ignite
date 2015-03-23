@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
-import java.util.*;
-
 /**
  * Demonstrates a simple use of {@link IgniteRunnable}.
  * <p>
@@ -44,12 +42,9 @@ public class ComputeRunnableExample {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
-            Collection<IgniteFuture> futs = new ArrayList<>();
+            IgniteCompute compute = ignite.compute();
 
-            // Enable asynchronous mode.
-            IgniteCompute compute = ignite.compute().withAsync();
-
-            // Iterate through all words in the sentence and create callable jobs.
+            // Iterate through all words in the sentence and create runnable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
                 compute.run(new IgniteRunnable() {
@@ -58,13 +53,7 @@ public class ComputeRunnableExample {
                         System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                     }
                 });
-
-                futs.add(compute.future());
             }
-
-            // Wait for all futures to complete.
-            for (IgniteFuture<?> f : futs)
-                f.get();
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");

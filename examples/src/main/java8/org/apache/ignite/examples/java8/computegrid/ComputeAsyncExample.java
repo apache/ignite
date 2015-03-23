@@ -26,13 +26,13 @@ import java.util.*;
 /**
  * Demonstrates a simple use of {@link IgniteRunnable}.
  * <p>
- * Remote nodes should always be 0started with special configuration file which
+ * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public class ComputeRunnableExample {
+public class ComputeAsyncExample {
     /**
      * Executes example.
      *
@@ -42,9 +42,12 @@ public class ComputeRunnableExample {
     public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println("Compute runnable example started.");
+            System.out.println("Compute asynchronous example started.");
 
-            IgniteCompute compute = ignite.compute();
+            // Enable asynchronous mode.
+            IgniteCompute compute = ignite.compute().withAsync();
+
+            Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
             // Iterate through all words in the sentence and create runnable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
@@ -53,7 +56,12 @@ public class ComputeRunnableExample {
                     System.out.println();
                     System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
+
+                futs.add(compute.future());
             }
+
+            // Wait for completion of all futures.
+            futs.forEach(IgniteFuture::get);
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");
