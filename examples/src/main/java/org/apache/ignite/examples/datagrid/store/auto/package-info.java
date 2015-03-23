@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-/*
- * This software includes code from IntelliJ IDEA Community Edition
- * Copyright (C) JetBrains s.r.o.
- * https://www.jetbrains.com/idea/
- */
-
 /**
- * {@code Nullable} and {@code NotNull} annotations.
+ * <!-- Package description. -->
+ * Contains dummy cache store implementation.
  */
-package org.jetbrains.annotations;
+package org.apache.ignite.examples.datagrid.store.auto;
