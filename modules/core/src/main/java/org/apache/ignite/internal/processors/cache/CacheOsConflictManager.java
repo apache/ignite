@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.version.*;
 
 /**
- * Stub conflict resolver manager.
+ * OS conflict resolver manager.
  */
-public class CacheStubConflictManager<K ,V> extends CacheConflictManager<K ,V> {
+public class CacheOsConflictManager<K ,V> extends GridCacheManagerAdapter<K ,V>
+    implements CacheConflictManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */
