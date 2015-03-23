@@ -152,20 +152,6 @@ public class SchemaImportApp extends Application {
     private static final String PREF_NAMING_REPLACE = "naming.replace";
 
     /** */
-    private static final String[] PREFS = {
-        PREF_WINDOW_X, PREF_WINDOW_Y, PREF_WINDOW_WIDTH, PREF_WINDOW_HEIGHT,
-        PREF_JDBC_DB_PRESET, PREF_JDBC_DRIVER_JAR, PREF_JDBC_DRIVER_CLASS, PREF_JDBC_URL, PREF_JDBC_USER,
-        PREF_OUT_FOLDER,
-        PREF_POJO_PACKAGE, PREF_POJO_INCLUDE, PREF_POJO_CONSTRUCTOR,
-        PREF_XML_SINGLE,
-        PREF_NAMING_PATTERN, PREF_NAMING_REPLACE
-    };
-
-    /** */
-    private static final String CUSTOM_PREFS = "-customPrefs=";
-
-
-    /** */
     private Stage owner;
 
     /** */
@@ -1329,37 +1315,37 @@ public class SchemaImportApp extends Application {
                 log.log(Level.SEVERE, "Failed to load preferences. Default preferences will be used", e);
             }
 
-        // Override params.
-        for (String arg : getParameters().getRaw()) {
-            if (arg.startsWith(CUSTOM_PREFS)) {
-                String customPrefsFileName = arg.substring(CUSTOM_PREFS.length());
+        // Load custom preferences.
+        List<String> params = getParameters().getRaw();
 
-                if (customPrefsFileName.isEmpty())
-                    log.log(Level.WARNING, "Path to file with custom preferences is not specified.");
+        if (!params.isEmpty()) {
+            String customPrefsFileName = params.get(0);
+
+            if (customPrefsFileName.isEmpty())
+                log.log(Level.WARNING, "Path to file with custom preferences is not specified.");
+            else {
+                File customPrefsFile = U.resolveIgnitePath(customPrefsFileName);
+
+                if (customPrefsFile == null)
+                    log.log(Level.WARNING, "Failed to resolve path to file with custom preferences: " +
+                        customPrefsFile);
                 else {
-                    File customPrefsFile = U.resolveIgnitePath(customPrefsFileName);
+                    Properties customPrefs = new Properties();
 
-                    if (customPrefsFile == null)
-                        log.log(Level.WARNING, "Failed to resolve path to file with custom preferences: " +
-                            customPrefsFile);
-                    else {
-                        Properties customPrefs = new Properties();
+                    try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(customPrefsFile))) {
+                        customPrefs.load(in);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to load custom preferences.", e);
+                    }
 
-                        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(customPrefsFile))) {
-                            customPrefs.load(in);
-                        }
-                        catch (IOException e) {
-                            log.log(Level.SEVERE, "Failed to load custom preferences.", e);
-                        }
+                    String igniteHome = GridFilenameUtils.separatorsToUnix(U.getIgniteHome());
 
-                        String igniteHome = GridFilenameUtils.separatorsToUnix(U.getIgniteHome());
+                    for (Map.Entry<Object, Object> prop : customPrefs.entrySet()) {
+                        String key = prop.getKey().toString();
+                        String val = prop.getValue().toString().replaceAll("%IGNITE_HOME%", igniteHome);
 
-                        for (Map.Entry<Object, Object> prop : customPrefs.entrySet()) {
-                            String key = prop.getKey().toString();
-                            String val = prop.getValue().toString().replaceAll("%IGNITE_HOME%", igniteHome);
-
-                            prefs.setProperty(key, val);
-                        }
+                        prefs.setProperty(key, val);
                     }
                 }
             }
