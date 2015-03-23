@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
+import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -76,6 +77,7 @@ import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -2271,6 +2273,29 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    public <K, V> IgniteCache<K, V> createCache(@Nullable String springCfgPath) throws IgniteCheckedException {
+        if (springCfgPath == null) {
+            return createCache((CacheConfiguration) null);
+        }
+        else {
+            URL url = U.resolveSpringUrl(springCfgPath);
+
+            IgniteSpringProcessor spring = SPRING.create(false);
+
+            IgniteBiTuple<Collection<CacheConfiguration>, ? extends GridSpringResourceContext> cfgMap =
+                spring.loadCacheConfigurations(url);
+
+            if (cfgMap.size() != 1)
+                throw new IgniteCheckedException("File " + url.toString() + " should have one cache configuration");
+
+            for (CacheConfiguration cfg : cfgMap.get1())
+                return createCache(cfg);
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -78,20 +78,7 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** {@inheritDoc} */
     @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
-        ApplicationContext springCtx;
-
-        try {
-            springCtx = applicationContext(cfgUrl, excludedProps);
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + cfgUrl + ']', e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    cfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
+        ApplicationContext springCtx = applicationContext(cfgUrl, excludedProps);
 
         Map<String, IgniteConfiguration> cfgMap;
 
@@ -105,6 +92,26 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
 
         if (cfgMap == null || cfgMap.isEmpty())
             throw new IgniteCheckedException("Failed to find grid configuration in: " + cfgUrl);
+
+        return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBiTuple<Collection<CacheConfiguration>, ? extends GridSpringResourceContext> loadCacheConfigurations (
+        URL cfgUrl) throws IgniteCheckedException {
+        ApplicationContext springCtx = applicationContext(cfgUrl);
+        Map<String, CacheConfiguration> cfgMap;
+
+        try {
+            cfgMap = springCtx.getBeansOfType(CacheConfiguration.class);
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + CacheConfiguration.class +
+                ", err=" + e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new IgniteCheckedException("Failed to find cache configuration in: " + cfgUrl);
 
         return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
     }
@@ -225,44 +232,55 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
      * @param excludedProps Properties to be excluded.
      * @return Spring application context.
      */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) {
-        GenericApplicationContext springCtx = new GenericApplicationContext();
+    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) throws IgniteCheckedException {
+        try {
+            GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                    throws BeansException {
+                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                    if (def.getBeanClassName() != null) {
-                        try {
-                            Class.forName(def.getBeanClassName());
+                        if (def.getBeanClassName() != null) {
+                            try {
+                                Class.forName(def.getBeanClassName());
+                            }
+                            catch (ClassNotFoundException ignored) {
+                                ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
+
+                                continue;
+                            }
                         }
-                        catch (ClassNotFoundException ignored) {
-                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
 
-                            continue;
-                        }
-                    }
+                        MutablePropertyValues vals = def.getPropertyValues();
 
-                    MutablePropertyValues vals = def.getPropertyValues();
-
-                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp))
-                                vals.removePropertyValue(val);
+                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                            for (String excludedProp : excludedProps) {
+                                if (val.getName().equals(excludedProp))
+                                    vals.removePropertyValue(val);
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        springCtx.addBeanFactoryPostProcessor(postProc);
+            springCtx.addBeanFactoryPostProcessor(postProc);
 
-        new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
-        springCtx.refresh();
+            springCtx.refresh();
 
-        return springCtx;
+            return springCtx;
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + cfgUrl + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
     }
 }

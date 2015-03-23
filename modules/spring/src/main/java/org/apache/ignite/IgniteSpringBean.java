@@ -240,6 +240,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable String springCfgPath) throws IgniteCheckedException {
+        assert g != null;
+
+        return g.createCache(springCfgPath);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
         assert g != null;
 
