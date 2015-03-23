@@ -2889,7 +2889,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 spring.loadConfigurations(url, cl);
 
             if (cfgMap.get1().size() != 1)
-                throw new IgniteException("File " + url.toString() + " should have one cache configuration");
+                throw new IgniteException("File " + url.toString() + " should have one cache configuration.");
 
             return F.first(cfgMap.get1());
         }

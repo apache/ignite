@@ -27,6 +27,7 @@ public class TestNodeFilter implements IgnitePredicate<ClusterNode> {
     /** */
     public static final String TEST_ATTRIBUTE_NAME = "TEST_ATTRIBUTE_NAME";
 
+    /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode n) {
         Boolean val = n.attribute(TEST_ATTRIBUTE_NAME);
 

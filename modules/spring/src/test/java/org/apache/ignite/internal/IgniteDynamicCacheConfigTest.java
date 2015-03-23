@@ -21,7 +21,6 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.http.*;
@@ -80,8 +79,6 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
-
         return cfg;
     }
 
@@ -112,7 +109,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
             assertEquals(CACHE_NAME, cache.getName());
 
-            IgniteCache clientCache1 = ignite(nodeCount() + 1).createNearCache(CACHE_NAME,
+            IgniteCache<Integer, Integer> clientCache1 = ignite(nodeCount() + 1).createNearCache(CACHE_NAME,
                 "modules/core/src/test/config/cache.xml");
 
             IgniteCache clientCache2 = ignite(nodeCount() + 1).getOrCreateNearCache(CACHE_NAME,
@@ -144,7 +141,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
             assertEquals(cache.getName(), CACHE_NAME);
 
-            IgniteCache clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
+            IgniteCache<Integer, Integer> clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
                 "modules/core/src/test/config/cache.xml");
 
             IgniteCache clientCache2 = ignite(clientNode).getOrCreateNearCache(CACHE_NAME,
@@ -179,7 +176,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
 
             assertEquals(cache.getName(), cache1.getName());
 
-            IgniteCache clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
+            IgniteCache<Integer, Integer> clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
                 "modules/core/src/test/config/cache.xml");
 
             IgniteCache clientCache2 = ignite(clientNode).getOrCreateNearCache(CACHE_NAME,
