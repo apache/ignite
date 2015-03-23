@@ -50,11 +50,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         super.beforeTestsStarted();
 
-        if (!clientOnly()) {
-            grid(nearOnlyGridName).createCache((String)null, new NearCacheConfiguration());
-        }
+        if (!clientOnly())
+            grid(nearOnlyGridName).createNearCache(null, new NearCacheConfiguration());
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

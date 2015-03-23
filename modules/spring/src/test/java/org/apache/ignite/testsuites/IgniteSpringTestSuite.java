@@ -43,6 +43,8 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridSpringCacheManagerSelfTest.class));
 
+        suite.addTest(new TestSuite(IgniteDynamicCacheConfigTest.class));
+
         return suite;
     }
 }

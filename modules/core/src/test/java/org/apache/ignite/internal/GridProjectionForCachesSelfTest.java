@@ -99,7 +99,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 5; i++)
             startGrid(i);
 
-        grid(1).createCache(CACHE_NAME, new NearCacheConfiguration());
+        grid(1).createNearCache(CACHE_NAME, new NearCacheConfiguration());
 
         grid(2).jcache(null);
         grid(3).jcache(null);

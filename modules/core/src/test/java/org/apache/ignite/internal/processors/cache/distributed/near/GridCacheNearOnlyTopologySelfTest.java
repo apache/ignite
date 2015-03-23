@@ -113,7 +113,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createCache((String)null, new NearCacheConfiguration());
+                    ignite.createNearCache(null, new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 100; i++)
@@ -135,7 +135,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createCache((String)null, new NearCacheConfiguration());
+                    ignite.createNearCache(null, new NearCacheConfiguration());
             }
 
             cache = false;
@@ -166,7 +166,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createCache((String)null, new NearCacheConfiguration());
+                    ignite.createNearCache(null, new NearCacheConfiguration());
             }
 
             for (int i = 0; i < 10; i++)
@@ -239,7 +239,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createCache((String)null, new NearCacheConfiguration());
+                    ignite.createNearCache(null, new NearCacheConfiguration());
             }
         }
         finally {
