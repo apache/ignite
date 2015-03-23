@@ -23,8 +23,12 @@ import javafx.collections.*;
 import javafx.concurrent.*;
 import javafx.event.*;
 import javafx.geometry.*;
+import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
@@ -34,10 +38,12 @@ import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
 
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
@@ -1397,11 +1403,8 @@ public class SchemaImportApp extends Application {
 
             // Ensure that window fit any available screen.
             if (!Screen.getScreensForRectangle(x, y, w, h).isEmpty()) {
-                if (x > 0)
-                    primaryStage.setX(x);
-
-                if (y > 0)
-                    primaryStage.setY(y);
+                primaryStage.setX(x);
+                primaryStage.setY(y);
 
                 primaryStage.setWidth(w);
                 primaryStage.setHeight(h);

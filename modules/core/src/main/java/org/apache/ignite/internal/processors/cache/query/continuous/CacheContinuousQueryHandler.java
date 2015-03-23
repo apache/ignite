@@ -54,7 +54,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private IgniteCacheEntryEventFilter<K, V> rmtFilter;
+    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Deployable object for filter. */
     private DeployableObject rmtFilterDep;
@@ -106,7 +106,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         String cacheName,
         Object topic,
         CacheEntryUpdatedListener<K, V> locLsnr,
-        IgniteCacheEntryEventFilter<K, V> rmtFilter,
+        CacheEntryEventSerializableFilter<K, V> rmtFilter,
         boolean internal,
         boolean notifyExisting,
         boolean oldValRequired,
@@ -425,7 +425,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             rmtFilterDep = (DeployableObject)in.readObject();
         else
-            rmtFilter = (IgniteCacheEntryEventFilter<K, V>)in.readObject();
+            rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();

@@ -118,7 +118,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     private CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private IgniteCacheEntryEventFilter<K, V> rmtFilter;
+    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Time interval. */
     private long timeInterval = DFLT_TIME_INTERVAL;
@@ -198,7 +198,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param rmtFilter Key-value filter.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setRemoteFilter(IgniteCacheEntryEventFilter<K, V> rmtFilter) {
+    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventSerializableFilter<K, V> rmtFilter) {
         this.rmtFilter = rmtFilter;
 
         return this;
@@ -209,7 +209,7 @@ public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @return Remote filter.
      */
-    public IgniteCacheEntryEventFilter<K, V> getRemoteFilter() {
+    public CacheEntryEventSerializableFilter<K, V> getRemoteFilter() {
         return rmtFilter;
     }
 

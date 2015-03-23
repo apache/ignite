@@ -212,8 +212,8 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
-        delegate.txEnd(commit);
+    @Override public void sessionEnd(boolean commit) {
+        delegate.sessionEnd(commit);
     }
 
     /**

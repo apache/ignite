@@ -250,7 +250,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeQuery(CacheEntryUpdatedListener locLsnr, IgniteCacheEntryEventFilter rmtFilter,
+    public UUID executeQuery(CacheEntryUpdatedListener locLsnr, CacheEntryEventSerializableFilter rmtFilter,
         int bufSize, long timeInterval, boolean autoUnsubscribe, ClusterGroup grp) throws IgniteCheckedException {
         return executeQuery0(
             locLsnr,
@@ -275,7 +275,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public UUID executeInternalQuery(CacheEntryUpdatedListener<?, ?> locLsnr,
-        IgniteCacheEntryEventFilter rmtFilter,
+        CacheEntryEventSerializableFilter rmtFilter,
         boolean loc,
         boolean notifyExisting)
         throws IgniteCheckedException
@@ -357,7 +357,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    private UUID executeQuery0(CacheEntryUpdatedListener locLsnr, final IgniteCacheEntryEventFilter rmtFilter,
+    private UUID executeQuery0(CacheEntryUpdatedListener locLsnr, final CacheEntryEventSerializableFilter rmtFilter,
         int bufSize, long timeInterval, boolean autoUnsubscribe, boolean internal, boolean notifyExisting,
         boolean oldValRequired, boolean sync, boolean ignoreExpired, ClusterGroup grp) throws IgniteCheckedException {
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -579,7 +579,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: " + fltr);
             }
 
-            IgniteCacheEntryEventFilter rmtFilter = new JCacheQueryRemoteFilter(fltr, types);
+            CacheEntryEventSerializableFilter rmtFilter = new JCacheQueryRemoteFilter(fltr, types);
 
             routineId = executeQuery0(
                 locLsnr,
@@ -692,7 +692,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /**
      */
-    private static class JCacheQueryRemoteFilter implements IgniteCacheEntryEventFilter, Externalizable {
+    private static class JCacheQueryRemoteFilter implements CacheEntryEventSerializableFilter, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -745,7 +745,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            impl = (IgniteCacheEntryEventFilter)in.readObject();
+            impl = (CacheEntryEventSerializableFilter)in.readObject();
             types = in.readByte();
         }
 

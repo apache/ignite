@@ -88,7 +88,7 @@ public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
      *
      * @param commit {@inheritDoc}
      */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 }
