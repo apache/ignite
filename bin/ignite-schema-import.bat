@@ -92,16 +92,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-set CP=%JAVA_HOME%/jre/lib/jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import/*;%IGNITE_LIBS%
-
-::
-:: Parse command line parameters.
-::
-call "%SCRIPTS_HOME%\include\parseargs.bat" %*
-if %ERRORLEVEL% neq 0 (
-    echo Arguments parsing failed
-    exit /b %ERRORLEVEL%
-)
+set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*;%IGNITE_LIBS%
 
 ::
 :: Set program name.
@@ -110,14 +101,9 @@ set PROG_NAME=ignite-schema-import.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 ::
-:: Program args.
-::
-if "%ARGS%" == "" set ARGS=%*
-
-::
 :: Starts Ignite Schema Import Utility.
 ::
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp %ARGS%
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.schema.ui.SchemaImportApp %*
 
 :error_finish
 
