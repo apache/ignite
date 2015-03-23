@@ -14,8 +14,10 @@ To execute this build you need to be in GIT root folder.
 Look for ignite-fabric-<version>.zip in ./target directory.
 
 
-Running JCache TCK tests for Ignite cache
------------------------------------------
+JCache TCK compliance
+======================
+To test compliance with JCache TCK use:
+
 mvn test -P !release,jcache-tck -pl :ignite-core -am
 
 
