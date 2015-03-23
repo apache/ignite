@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains dummy cache store implementation.
+ * Contains CacheJdbcPojoStore example.
  */
 package org.apache.ignite.examples.datagrid.store.auto;

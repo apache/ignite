@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.examples.datagrid.store.auto;
 
 import org.apache.ignite.*;

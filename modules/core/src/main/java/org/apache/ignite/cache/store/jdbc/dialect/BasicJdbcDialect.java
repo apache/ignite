@@ -259,7 +259,7 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxParamsCnt() {
+    @Override public int getMaxParameterCount() {
         return maxParamsCnt;
     }
 
@@ -268,7 +268,7 @@ public class BasicJdbcDialect implements JdbcDialect {
      *
      * @param maxParamsCnt Max query parameters count.
      */
-    public void setMaxParamsCnt(int maxParamsCnt) {
+    public void setMaxParameterCount(int maxParamsCnt) {
         this.maxParamsCnt = maxParamsCnt;
     }
 }

@@ -29,8 +29,9 @@ import java.io.*;
 import java.sql.*;
 
 /**
- * Example of load data from database through {@link CacheJdbcPojoStore} implementation.
- * This example shows how to load all data or with custom SQL.
+ * Demonstrates how to load data from database.
+ * <p>
+ * This example uses {@link CacheJdbcPojoStore} as a persistent store.
  * <p>
  * To run this example your should start {@link H2Startup} first.
  * <p>
@@ -71,8 +72,8 @@ public class CacheAutoStoreLoadDataExample {
 
             CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
 
-            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
-                System.out.println(">>> Load cache from database using custom script.");
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
+                System.out.println(">>> Load cache from database using custom SQL.");
 
                 System.out.println(">>> Cache size: " + cache.size());
 
@@ -85,7 +86,7 @@ public class CacheAutoStoreLoadDataExample {
 
                 System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
 
-                System.out.println(">>> Load cache from database.");
+                System.out.println(">>> Load cache data from database.");
 
                 cache.clear();
 

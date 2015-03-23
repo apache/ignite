@@ -27,8 +27,9 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 /**
- * Example of {@link CacheJdbcPojoStore} implementation that uses JDBC
- * transaction with cache transactions and maps {@link Long} to {@link Person}.
+ * Demonstrates usage of cache with underlying persistent store configured.
+ * <p>
+ * This example uses {@link CacheJdbcPojoStore} as a persistent store.
  * <p>
  * To run this example your should start {@link H2Startup} first.
  * <p>
@@ -56,7 +57,7 @@ public class CacheAutoStoreExample {
 
             CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
 
-            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
                 try (Transaction tx = ignite.transactions().txStart()) {
                     Person val = cache.get(id);
 

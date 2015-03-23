@@ -1465,7 +1465,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             loadQrySingle = dialect.loadQuery(fullTblName, keyCols, cols, 1);
 
-            maxKeysPerStmt = dialect.getMaxParamsCnt() / keyCols.size();
+            maxKeysPerStmt = dialect.getMaxParameterCount() / keyCols.size();
 
             loadQry = dialect.loadQuery(fullTblName, keyCols, cols, maxKeysPerStmt);
 
