@@ -62,6 +62,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param clsName Class name.
          * @param fields Fields.
+         *
+         * @throws CacheException If failed to construct type cache.
          */
         public PojoMethodsCache(String clsName, Collection<CacheTypeFieldMetadata> fields) throws CacheException {
             try {

@@ -60,7 +60,7 @@ import static java.sql.Statement.*;
  *     <li>Data source (see {@link #setDataSource(DataSource)}</li>
  *     <li>Dialect (see {@link #setDialect(JdbcDialect)}</li>
  *     <li>Maximum batch size for writeAll and deleteAll operations. (see {@link #setBatchSize(int)})</li>
- *     <li>Max workers thread count. These threads are responsible for load cache. (see {@link #setMaxPoolSize(int)})</li>
+ *     <li>Max workers thread count. These threads are responsible for load cache. (see {@link #setMaximumPoolSize(int)})</li>
  *     <li>Parallel load cache minimum threshold. (see {@link #setParallelLoadCacheMinimumThreshold(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
@@ -155,6 +155,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param loadColIdxs Select query columns index.
      * @param rs ResultSet.
      * @return Constructed object.
+     * @throws CacheLoaderException If failed to construct cache object.
      */
     protected abstract <R> R buildObject(@Nullable String cacheName, String typeName,
         Collection<CacheTypeFieldMetadata> fields, Map<String, Integer> loadColIdxs, ResultSet rs)
@@ -165,6 +166,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      *
      * @param key Key object.
      * @return Key type id.
+     * @throws CacheException If failed to get type key id from object.
      */
     protected abstract Object keyTypeId(Object key) throws CacheException;
 
@@ -173,6 +175,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      *
      * @param type String description of key type.
      * @return Key type id.
+     * @throws CacheException If failed to get type key id from object.
      */
     protected abstract Object keyTypeId(String type) throws CacheException;
 
@@ -180,7 +183,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * Prepare internal store specific builders for provided types metadata.
      *
      * @param types Collection of types.
-     * @throws CacheException If failed to prepare.
+     * @throws CacheException If failed to prepare internal builders for types.
      */
     protected abstract void prepareBuilders(@Nullable String cacheName, Collection<CacheTypeMetadata> types)
         throws CacheException;
@@ -501,7 +504,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     /**
      * @param clsName Class name.
      * @param fields Fields descriptors.
-     * @throws CacheException If failed.
+     * @throws CacheException If failed to check type metadata.
      */
     private static void checkMapping(@Nullable String cacheName, String clsName,
         Collection<CacheTypeFieldMetadata> fields) throws CacheException {
@@ -543,7 +546,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /**
      * @return Type mappings for specified cache name.
-     * @throws CacheException If failed to initialize.
+     * @throws CacheException If failed to initialize cache mappings.
      */
     private Map<Object, EntryMapping> cacheMappings(@Nullable String cacheName) throws CacheException {
         Map<Object, EntryMapping> entryMappings = cacheMappings.get(cacheName);
@@ -598,7 +601,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param keyTypeId Key type id.
      * @param key Key object.
      * @return Entry mapping.
-     * @throws CacheException if mapping for key was not found.
+     * @throws CacheException If mapping for key was not found.
      */
     private EntryMapping entryMapping(String cacheName, Object keyTypeId, Object key) throws CacheException {
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
@@ -787,6 +790,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param updStmt Update statement.
      * @param em Entry mapping.
      * @param entry Cache entry.
+     * @throws CacheWriterException If failed to update record in database.
      */
     private void writeUpsert(PreparedStatement insStmt, PreparedStatement updStmt,
         EntryMapping em, Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
@@ -1074,6 +1078,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param fromIdx Objects in batch start from index.
      * @param prepared Expected objects in batch.
      * @param lazyObjs All objects used in batch statement as array.
+     * @throws SQLException If failed to execute batch statement.
      */
     private void executeBatch(EntryMapping em, Statement stmt, String desc, int fromIdx, int prepared,
         LazyValue<Object[]> lazyObjs) throws SQLException {
@@ -1306,7 +1311,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      *
      * @return Max workers thread count.
      */
-    public int getMaxPoolSize() {
+    public int getMaximumPoolSize() {
         return maxPoolSz;
     }
 
@@ -1315,7 +1320,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      *
      * @param maxPoolSz Max workers thread count.
      */
-    public void setMaxPoolSize(int maxPoolSz) {
+    public void setMaximumPoolSize(int maxPoolSz) {
         this.maxPoolSz = maxPoolSz;
     }
 
