@@ -653,12 +653,12 @@ public class SchemaImportApp extends Application {
 
         if (drv == null) {
             if (jdbcDrvJarPath.isEmpty())
-                throw new IllegalStateException("Driver jar file name is not specified");
+                throw new IllegalStateException("Driver jar file name is not specified.");
 
             File drvJar = new File(jdbcDrvJarPath);
 
             if (!drvJar.exists())
-                throw new IllegalStateException("Driver jar file is not found");
+                throw new IllegalStateException("Driver jar file is not found.");
 
             try {
                 URL u = new URL("jar:" + drvJar.toURI() + "!/");
