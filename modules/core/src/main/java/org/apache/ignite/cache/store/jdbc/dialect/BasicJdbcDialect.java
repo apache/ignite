@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Represents a dialect of SQL implemented by a particular RDBMS.
+ * Basic implementation of dialect based on JDBC specification.
  */
 public class BasicJdbcDialect implements JdbcDialect {
     /** Default max query parameters count. */
