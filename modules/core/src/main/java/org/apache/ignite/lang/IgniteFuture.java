@@ -22,12 +22,12 @@ import org.apache.ignite.*;
 import java.util.concurrent.*;
 
 /**
- * Extension for standard {@link Future} interface. It adds simplified exception handling,
- * functional programming support and ability to listen for future completion via functional
- * callback.
+ * Future with simplified exception handling, functional programming support
+ * and ability to listen for future completion via functional callback.
+ *
  * @param <V> Type of the result for the future.
  */
-public interface IgniteFuture<V> extends Future<V> {
+public interface IgniteFuture<V> {
     /**
      * Synchronously waits for completion of the computation and
      * returns computation result.
@@ -37,7 +37,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} thrown if computation was cancelled.
      * @throws IgniteException If computation failed.
      */
-    @Override public V get() throws IgniteException;
+    public V get() throws IgniteException;
 
     /**
      * Synchronously waits for completion of the computation for
@@ -65,7 +65,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
      * @throws IgniteException If computation failed.
      */
-    @Override public V get(long timeout, TimeUnit unit) throws IgniteException;
+    public V get(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Cancels this future.
@@ -74,6 +74,25 @@ public interface IgniteFuture<V> extends Future<V> {
      * @throws IgniteException If cancellation failed.
      */
     public boolean cancel() throws IgniteException;
+
+    /**
+     * Returns {@code true} if this task was cancelled before it completed
+     * normally.
+     *
+     * @return {@code true} if this task was cancelled before it completed
+     */
+    public boolean isCancelled();
+
+    /**
+     * Returns {@code true} if this task completed.
+     * <p>
+     * Completion may be due to normal termination, an exception, or
+     * cancellation - in all of these cases, this method will return
+     * {@code true}.
+     *
+     * @return {@code true} if this task completed.
+     */
+    public boolean isDone();
 
     /**
      * Gets start time for this future.

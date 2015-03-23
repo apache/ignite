@@ -151,6 +151,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
+        if (ctx.cache().internalCache(cacheName) == null)
+            return false;
+
         if (locLsnr != null)
             ctx.resource().injectGeneric(locLsnr);
 
@@ -196,6 +199,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                     try {
                         notify = rmtFilter.evaluate(evt);
+                    }
+                    catch (Exception e) {
+                        U.error(cctx.logger(CacheContinuousQueryHandler.class), "CacheEntryEventFilter failed: " + e);
                     }
                     finally {
                         cctx.forceFlags(f);

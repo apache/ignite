@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -50,6 +51,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
+        @Override public boolean apply(Object k, Object v) {
+            return true;
+        }
+    };
 
     /** Context. */
     private GridCacheContext<K, V> ctx;
@@ -252,28 +260,20 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    private IgniteBiPredicate<K,V> acceptAll() {
-        return new IgniteBiPredicate<K,V>() {
-            @Override public boolean apply(K k, V v) {
-                return true;
-            }
-        };
-    }
-
     /**
      * @param filter Filter.
      * @param grp Optional cluster group.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Entry<K,V>> doQuery(Query filter, @Nullable ClusterGroup grp) {
+    private QueryCursor<Entry<K,V>> query(Query filter, @Nullable ClusterGroup grp) {
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K,V> p = ((ScanQuery)filter).getFilter();
 
-            qry = delegate.queries().createScanQuery(p != null ? p : acceptAll());
+            qry = delegate.queries().createScanQuery(p != null ? p : ACCEPT_ALL);
 
             if (grp != null)
                 qry.projection(grp);
@@ -298,30 +298,51 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute(((SpiQuery)filter).getArgs());
         }
-        else if (filter instanceof SqlQuery) {
-            SqlQuery q = (SqlQuery)filter;
+        else {
+            if (filter instanceof SqlFieldsQuery)
+                throw new CacheException("Use methods 'queryFields' and 'localQueryFields' for " +
+                    SqlFieldsQuery.class.getSimpleName() + ".");
 
-            qry = ((GridCacheQueriesEx)delegate.queries()).createSqlQuery(q.getType(), q.getSql());
-
-            if (grp != null)
-                qry.projection(grp);
-
-            if (q.getPageSize() > 0)
-                qry.pageSize(q.getPageSize());
-
-            qry.enableDedup(false);
-            qry.includeBackups(false);
-
-            fut = qry.execute(q.getArgs());
+            throw new CacheException("Unsupported query type: " + filter);
         }
-        else
-            throw new IgniteException("Unsupported query predicate: " + filter);
 
-        return new QueryCursorImpl<>(new ClIter<Map.Entry<K,V>,Cache.Entry<K,V>>(fut) {
-            @Override protected Cache.Entry<K,V> convert(Map.Entry<K,V> e) {
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+            /** */
+            Map.Entry<K,V> cur;
+
+            @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
+                if (!onHasNext())
+                    throw new NoSuchElementException();
+
+                Map.Entry<K,V> e = cur;
+
+                cur = null;
+
                 return new CacheEntryImpl<>(e.getKey(), e.getValue());
             }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return cur != null || (cur = fut.next()) != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                fut.cancel();
+            }
         });
+    }
+
+    /**
+     * @param local Enforce local.
+     * @return Local node cluster group.
+     */
+    private ClusterGroup projection(boolean local) {
+        if (local || ctx.isLocal() || isReplicatedDataNode())
+            return ctx.kernalContext().grid().cluster().forLocal();
+
+        if (ctx.isReplicated())
+            return ctx.kernalContext().grid().cluster().forDataNodes(ctx.name()).forRandom();
+
+        return null;
     }
 
     /**
@@ -382,14 +403,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    /**
-     * @param loc Enforce local.
-     * @return Local node cluster group.
-     */
-    private ClusterGroup projection(boolean loc) {
-        return loc ? ctx.kernalContext().grid().cluster().forLocal() : null;
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> query(Query qry) {
@@ -401,9 +414,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             validate(qry);
 
             if (qry instanceof ContinuousQuery)
-                return queryContinuous((ContinuousQuery<K, V>)qry, false);
+                return queryContinuous((ContinuousQuery<K,V>)qry, false);
 
-            return doQuery(qry, projection(false));
+            if (qry instanceof SqlQuery) {
+                SqlQuery p = (SqlQuery)qry;
+
+                if (isReplicatedDataNode() || ctx.isLocal())
+                    return doLocalQuery(p);
+
+                return ctx.kernalContext().query().queryTwoStep(ctx, p);
+            }
+
+            return query(qry, projection(false));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -416,6 +438,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
+    /**
+     * @return {@code true} If this is a replicated cache and we are on a data node.
+     */
+    private boolean isReplicatedDataNode() {
+        if (!ctx.isReplicated())
+            return false;
+
+        ClusterGroup grp = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name());
+
+        return grp.node(ctx.localNodeId()) != null;
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry) {
         A.notNull(qry, "qry");
@@ -425,18 +459,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             validate(qry);
 
-            CacheQuery<List<?>> q = ((GridCacheQueriesEx<K,V>)delegate.queries()).createSqlFieldsQuery(qry.getSql(), false);
+            if (isReplicatedDataNode() || ctx.isLocal())
+                return doLocalFieldsQuery(qry);
 
-            if (qry.getPageSize() > 0)
-                q.pageSize(qry.getPageSize());
-
-            CacheQueryFuture<List<?>> fut = q.execute(qry.getArgs());
-
-            return new QueryCursorImpl<>(new ClIter<List<?>, List<?>>(fut) {
-                @Override protected List<?> convert(List<?> row) {
-                    return row;
-                }
-            });
+            return ctx.kernalContext().query().queryTwoStep(ctx, qry);
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -454,8 +480,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<Entry<K,V>> doLocalQuery(SqlQuery p) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
-            ctx.name(), p.getType(), p.getSql(), p.getArgs()));
+        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(ctx, p));
     }
 
     /**
@@ -463,8 +488,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
-            ctx.name(), q.getSql(), q.getArgs()));
+        return ctx.kernalContext().query().queryLocalFields(ctx, q);
     }
 
     /**
@@ -474,7 +498,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @throws CacheException If query indexing disabled for sql query.
      */
     private void validate(Query qry) {
-        if (!(qry instanceof ScanQuery) && !(qry instanceof ContinuousQuery) && !ctx.config().isQueryIndexEnabled())
+        if (!GridQueryProcessor.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
+            !(qry instanceof ContinuousQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
     }
 
@@ -488,13 +513,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             validate(qry);
 
-            if (qry instanceof SqlQuery)
-                return doLocalQuery((SqlQuery)qry);
-
             if (qry instanceof ContinuousQuery)
                 return queryContinuous((ContinuousQuery<K,V>)qry, true);
 
-            return doQuery(qry, projection(true));
+            if (qry instanceof SqlQuery)
+                return doLocalQuery((SqlQuery)qry);
+
+            return query(qry, projection(true));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -538,6 +563,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryMetrics queryMetrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.queries().metrics();
         }
         finally {
             gate.leave(prev);
@@ -1043,6 +1080,42 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public void clear(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync())
+                setFuture(delegate.clearAsync(key));
+            else
+                delegate.clear(key);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (isAsync())
+                setFuture(delegate.clearAsync(keys));
+            else
+                delegate.clearAll(keys);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1054,6 +1127,31 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localClear(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.clearLocally(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localClearAll(Set<K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            for (K key : keys)
+                delegate.clearLocally(key);
         }
         finally {
             gate.leave(prev);
@@ -1099,7 +1197,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... args)
+    @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -1163,7 +1261,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        IgniteEntryProcessor<K, V, T> entryProcessor,
+        CacheEntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

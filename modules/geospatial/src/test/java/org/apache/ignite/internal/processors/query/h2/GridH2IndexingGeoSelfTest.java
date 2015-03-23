@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -51,6 +50,13 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR * 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Class<?>[] indexedTypes() {
+        return new Class<?>[]{
+            Integer.class, EnemyCamp.class
+        };
     }
 
     /**

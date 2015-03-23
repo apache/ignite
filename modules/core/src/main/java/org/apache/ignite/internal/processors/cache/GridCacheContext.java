@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -145,12 +147,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Grid cache. */
     private GridCacheAdapter<K, V> cache;
-
-    /** No value filter array. */
-    private CacheEntryPredicate[] noValArr;
-
-    /** Has value filter array. */
-    private CacheEntryPredicate[] hasValArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -277,9 +273,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.rslvrMgr = add(rslvrMgr);
 
         log = ctx.log(getClass());
-
-        noValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
-        hasValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
 
         // Create unsafe memory only if writing values
         unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
@@ -963,14 +956,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate[] noValArray() {
-        return noValArr;
+        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate[] hasValArray() {
-        return hasValArr;
+        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
     }
 
     /**

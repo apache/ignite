@@ -173,14 +173,14 @@ public class HadoopPopularWordsTest {
      * @return Instance of the Hadoop MapRed job.
      * @throws IOException If failed.
      */
+    @SuppressWarnings("deprecation")
     private Job createConfigBasedHadoopJob() throws IOException {
         Job jobCfg = new Job();
 
         Configuration cfg = jobCfg.getConfiguration();
 
         // Use explicit configuration of distributed file system, if provided.
-        if (DFS_CFG != null)
-            cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
+        cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
 
         jobCfg.setJobName("HadoopPopularWordExample");
         jobCfg.setJarByClass(HadoopPopularWordsTest.class);

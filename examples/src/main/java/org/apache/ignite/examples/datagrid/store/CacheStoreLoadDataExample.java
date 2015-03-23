@@ -22,9 +22,8 @@ import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Loads data from persistent store at cache startup by calling
- * {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method on
- * all nodes.
+ * Loads data on all cache nodes from persistent store at cache startup by calling
+ * {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
  * <p>
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
  * Also you can change type of underlying store modifying configuration in the
@@ -35,7 +34,7 @@ public class CacheStoreLoadDataExample {
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
     /** Number of entries to load. */
-    private static final int ENTRY_COUNT = 1000000;
+    private static final int ENTRY_COUNT = 100_000;
 
     /**
      * Executes example.
@@ -57,17 +56,12 @@ public class CacheStoreLoadDataExample {
 
             long start = System.currentTimeMillis();
 
-            // Start loading cache on all caching nodes.
-            ignite.compute(ignite.cluster().forCacheNodes(null)).broadcast(new IgniteRunnable() {
-                @Override public void run() {
-                    // Load cache from persistent store.
-                    cache.loadCache(null, ENTRY_COUNT);
-                }
-            });
+            // Start loading cache from persistent store on all caching nodes.
+            cache.loadCache(null, ENTRY_COUNT);
 
             long end = System.currentTimeMillis();
 
-            System.out.println(">>> Loaded " + cache.size() +" keys with backups in " + (end - start) + "ms.");
+            System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
         }
     }
 }

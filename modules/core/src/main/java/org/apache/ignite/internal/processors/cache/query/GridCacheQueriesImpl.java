@@ -159,18 +159,13 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+    @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
         return ctx.kernalContext().query().queryTwoStep(space, qry);
     }
 
-    /**
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
-     * @return Result.
-     */
-    public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
-        return ctx.kernalContext().query().queryTwoStep(space, sqlQry, params);
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+        return ctx.kernalContext().query().queryTwoStep(ctx, new SqlFieldsQuery(sqlQry).setArgs(params));
     }
 
     /** {@inheritDoc} */

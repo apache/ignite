@@ -17,6 +17,7 @@
 
 package org.apache.ignite.schema.ui;
 
+import javafx.beans.value.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.control.*;
@@ -115,12 +116,25 @@ public class MessageBox extends ModalDialog {
 
         contentPnl.add(hBox(0, true, imageView(iconFile, 48)));
 
-        TextArea ta = new TextArea(msg);
+        final TextArea ta = new TextArea(msg);
         ta.setEditable(false);
         ta.setWrapText(true);
         ta.setFocusTraversable(false);
 
         contentPnl.add(ta);
+
+        // Workaround for vertical scrollbar.
+        if (msg.split("\r\n|\r|\n").length < 4)
+            showingProperty().addListener(new ChangeListener<Boolean>() {
+                @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                    if (newVal) {
+                        ScrollBar scrollBar = (ScrollBar)ta.lookup(".scroll-bar:vertical");
+
+                        if (scrollBar != null)
+                            scrollBar.setDisable(true);
+                    }
+                }
+            });
 
         final CheckBox rememberChoiceCh = checkBox("Remember choice", "", false);
 

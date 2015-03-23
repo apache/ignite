@@ -29,8 +29,8 @@ import java.util.concurrent.*;
  * with {@link Executor} implementations. Only for internal use.
  */
 public abstract class GridWorker implements Runnable {
-    /** Grid logger. */
-    protected static volatile IgniteLogger log;
+    /** Ignite logger. */
+    protected final IgniteLogger log;
 
     /** Thread name. */
     private final String name;
@@ -75,13 +75,7 @@ public abstract class GridWorker implements Runnable {
         this.gridName = gridName;
         this.name = name;
         this.lsnr = lsnr;
-
-        if (GridWorker.log == null) {
-            synchronized (GridWorker.class) {
-                if (GridWorker.log == null)
-                    GridWorker.log = log.getLogger(GridWorker.class);
-            }
-        }
+        this.log = log;
     }
 
     /**
@@ -102,8 +96,6 @@ public abstract class GridWorker implements Runnable {
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
-
-        IgniteLogger log = GridWorker.log;
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);

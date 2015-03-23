@@ -30,9 +30,9 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -304,6 +304,9 @@ public abstract class IgniteUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap8<>();
+
+    /** */
+    private static volatile Boolean hasShmem;
 
     /**
      * Initializes enterprise check.
@@ -1061,6 +1064,22 @@ public abstract class IgniteUtils {
         }
 
         return ctor;
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+        try {
+            return Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            return dflt;
+        }
     }
 
     /**
@@ -3053,7 +3072,6 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "modules").isDirectory() ||
                 !new File(cur, "config").isDirectory())
                 continue;
 
@@ -7053,28 +7071,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks if given node has specified streamer started.
-     *
-     * @param n Node to check.
-     * @param streamerName Streamer name to check.
-     * @return {@code True} if given node has specified streamer started.
-     */
-    public static boolean hasStreamer(ClusterNode n, @Nullable String streamerName) {
-        assert n != null;
-
-        GridStreamerAttributes[] attrs = n.attribute(ATTR_STREAMER);
-
-        if (attrs != null) {
-            for (GridStreamerAttributes attr : attrs) {
-                if (F.eq(streamerName, attr.name()))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Gets cache mode or a cache on given node or {@code null} if cache is not
      * present on given node.
      *
@@ -9036,5 +9032,27 @@ public abstract class IgniteUtils {
     public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
         if (!cond)
             throw new IgniteException("Parameter failed condition check: " + condDesc);
+    }
+
+    /**
+     * @return Whether shared memory libraries exist.
+     */
+    public static boolean hasSharedMemory() {
+        if (hasShmem == null) {
+            if (isWindows())
+                hasShmem = false;
+            else {
+                try {
+                    IpcSharedMemoryNativeLoader.load();
+
+                    hasShmem = true;
+                }
+                catch (IgniteCheckedException e) {
+                    hasShmem = false;
+                }
+            }
+        }
+
+        return hasShmem;
     }
 }

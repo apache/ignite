@@ -1115,7 +1115,6 @@ public abstract class GridAbstractTest extends TestCase {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setStartSize(1024);
-        cfg.setQueryIndexEnabled(true);
         cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
@@ -1181,7 +1180,7 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                OptimizedMarshaller.clearCache();
+                U.clearClassCache();
                 MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }

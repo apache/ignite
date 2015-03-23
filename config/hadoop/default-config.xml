@@ -123,11 +123,11 @@
 
                     <!-- Configure TCP endpoint for communication with the file system instance. -->
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="tcp"/>
-                            <entry key="host" value="0.0.0.0"/>
-                            <entry key="port" value="10500"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                            <property name="host" value="0.0.0.0" />
+                            <property name="port" value="10500" />
+                        </bean>
                     </property>
 
                     <!-- Example secondary file system configuration (IGFS configured over Hadoop HDFS): -->

@@ -154,7 +154,8 @@ public class VisorIgfsConfiguration implements Serializable {
         cfg.fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
         cfg.fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
 
-        Map<String, String> endpointCfg = igfs.getIpcEndpointConfiguration();
+        IgfsIpcEndpointConfiguration  endpointCfg = igfs.getIpcEndpointConfiguration();
+
         cfg.ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
         cfg.ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
@@ -332,7 +333,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return IPC endpoint config (in JSON format) to publish IGFS over.
+     * @return IPC endpoint config to publish IGFS over.
      */
     @Nullable public String ipcEndpointConfiguration() {
         return ipcEndpointCfg;

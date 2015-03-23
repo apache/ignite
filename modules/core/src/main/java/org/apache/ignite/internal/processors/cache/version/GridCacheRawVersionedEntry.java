@@ -54,7 +54,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     private GridCacheVersion ver;
 
     /**
-     * {@code Externalizable) support.
+     * {@code Externalizable} support.
      */
     public GridCacheRawVersionedEntry() {
         // No-op.

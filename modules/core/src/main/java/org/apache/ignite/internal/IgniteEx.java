@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -54,7 +53,7 @@ public interface IgniteEx extends Ignite {
 
     /**
      * Gets default cache instance if one is configured or <tt>null</tt> otherwise returning even non-public caches.
-     * The {@link org.apache.ignite.cache.GridCache#name()} method on default instance returns <tt>null</tt>.
+     * The {@link org.apache.ignite.internal.processors.cache.GridCache#name()} method on default instance returns <tt>null</tt>.
      *
      * @param <K> Key type.
      * @param <V> Value type.
@@ -142,4 +141,11 @@ public interface IgniteEx extends Ignite {
      * @return Local grid node.
      */
     public ClusterNode localNode();
+
+    /**
+     * Internal context.
+     *
+     * @return Kernal context.
+     */
+    public GridKernalContext context();
 }

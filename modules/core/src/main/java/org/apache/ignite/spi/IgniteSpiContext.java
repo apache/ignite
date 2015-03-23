@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
@@ -347,11 +346,4 @@ public interface IgniteSpiContext {
      * @return Message factory.
      */
     public MessageFactory messageFactory();
-
-    /**
-     * Gets exception registry.
-     *
-     * @return Exception registry.
-     */
-    public IgniteExceptionRegistry exceptionRegistry();
 }

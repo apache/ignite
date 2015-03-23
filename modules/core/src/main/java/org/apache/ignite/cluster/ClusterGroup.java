@@ -168,15 +168,6 @@ public interface ClusterGroup {
     public ClusterGroup forClientNodes(String cacheName);
 
     /**
-     * Creates projection for all nodes that have streamer with specified name running.
-     *
-     * @param streamerName Streamer name.
-     * @param streamerNames Optional additional streamer names to include into projection.
-     * @return Projection over nodes that have specified streamer running.
-     */
-    public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames);
-
-    /**
      * Gets grid projection consisting from the nodes in this projection excluding the local node.
      *
      * @return Grid projection consisting from the nodes in this projection excluding the local node, if any.

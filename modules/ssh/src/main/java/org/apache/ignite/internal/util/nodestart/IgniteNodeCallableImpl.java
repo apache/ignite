@@ -41,20 +41,8 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
     /** Default Ignite home path for Linux (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
-    /** Default start script path for Windows. */
-    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v -np";
-
     /** Default start script path for Linux. */
     private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
-
-    /**
-     * Logs folder for Windows.
-     * Folder for linux is configured in {@code ignite-log4j.xml}.
-     */
-    private static final String LOG_DIR_WIN = "work\\log";
-
-    /** Windows service executable. */
-    private static final String SVC_EXE = "bin\\include\\igniteservice.exe";
 
     /** Date format for log file name. */
     private static final SimpleDateFormat FILE_NAME_DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy--HH-mm-ss");
@@ -125,7 +113,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
             String script = spec.script();
 
             if (script == null)
-                script = win ? DFLT_SCRIPT_WIN : DFLT_SCRIPT_LINUX;
+                script = DFLT_SCRIPT_LINUX;
 
             String cfg = spec.configuration();
 
@@ -136,32 +124,8 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
             String scriptOutputFileName = FILE_NAME_DATE_FORMAT.format(new Date()) + '-'
                 + UUID.randomUUID().toString().substring(0, 8) + ".log";
 
-            if (win) {
-                String logDir = igniteHome + '\\' + LOG_DIR_WIN;
-                String tmpDir = env(ses, "%TMP%", logDir);
-                String scriptOutputDir = tmpDir + "\\ignite-startNodes";
-
-                shell(ses, "mkdir " + logDir);
-                shell(ses, "mkdir " + scriptOutputDir);
-
-                UUID id = UUID.randomUUID();
-
-                String svcName = "Ignite-" + id;
-                String svcPath = igniteHome + '\\' + SVC_EXE;
-
-                startNodeCmd = new SB().
-                    a("cmd /c if exist \"").a(svcPath).a("\"").
-                    a(" sc create ").a(svcName).
-                    a(" binPath= \"").a(svcPath).a("\"").
-                    a(" && ").
-                    a("sc start ").a(svcName).
-                    a(" ").a(svcName).
-                    a(" \"").a(igniteHome).a('\\').a(script).
-                    a(" ").a(cfg).a("\"").
-                    a(" \"").a(logDir).a("\\ignite.").a(id).
-                    a(".log\" > ").a(scriptOutputDir).a("\\").a(scriptOutputFileName).
-                    toString();
-            }
+            if (win)
+                throw new UnsupportedOperationException("Apache Ignite cannot be auto-started on Windows from IgniteCluster.startNodes(…) API.");
             else { // Assume Unix.
                 int spaceIdx = script.indexOf(' ');
 

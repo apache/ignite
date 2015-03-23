@@ -40,9 +40,11 @@ public final class TextQuery extends Query<TextQuery> {
     /**
      * Constructs query for the given search string.
      *
+     * @param type Type.
      * @param txt Search string.
      */
-    public TextQuery(String txt) {
+    public TextQuery(String type, String txt) {
+        setType(type);
         setText(txt);
     }
 
@@ -53,9 +55,8 @@ public final class TextQuery extends Query<TextQuery> {
      * @param txt Search string.
      */
     public TextQuery(Class<?> type, String txt) {
-        this(txt);
-
         setType(type);
+        setText(txt);
     }
 
     /**

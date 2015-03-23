@@ -18,17 +18,20 @@
 package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Cache objects processor.
  */
 public interface IgniteCacheObjectProcessor extends GridProcessor {
-    /** {@inheritDoc} */
+    /**
+     * @see GridComponent#onKernalStart()
+     */
     public void onCacheProcessorStarted();
 
     /**

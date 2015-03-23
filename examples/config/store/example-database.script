@@ -13,15 +13,15 @@
 --  See the License for the specific language governing permissions and
 --  limitations under the License.
 
-create table PERSONS(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));
+create table PERSON(id bigint not null, first_name varchar(50), last_name varchar(50), PRIMARY KEY(id));
 
-insert into PERSONS(id, first_name, last_name) values(1, 'first-name-1', 'last-name-1');
-insert into PERSONS(id, first_name, last_name) values(2, 'first-name-2', 'last-name-2');
-insert into PERSONS(id, first_name, last_name) values(3, 'first-name-3', 'last-name-3');
-insert into PERSONS(id, first_name, last_name) values(4, 'first-name-4', 'last-name-4');
-insert into PERSONS(id, first_name, last_name) values(5, 'first-name-5', 'last-name-5');
-insert into PERSONS(id, first_name, last_name) values(6, 'first-name-6', 'last-name-6');
-insert into PERSONS(id, first_name, last_name) values(7, 'first-name-7', 'last-name-7');
-insert into PERSONS(id, first_name, last_name) values(8, 'first-name-8', 'last-name-8');
-insert into PERSONS(id, first_name, last_name) values(9, 'first-name-9', 'last-name-9');
-insert into PERSONS(id, first_name, last_name) values(10, 'first-name-10', 'last-name-10');
+insert into PERSON(id, first_name, last_name) values(1, 'first-name-1', 'last-name-1');
+insert into PERSON(id, first_name, last_name) values(2, 'first-name-2', 'last-name-2');
+insert into PERSON(id, first_name, last_name) values(3, 'first-name-3', 'last-name-3');
+insert into PERSON(id, first_name, last_name) values(4, 'first-name-4', 'last-name-4');
+insert into PERSON(id, first_name, last_name) values(5, 'first-name-5', 'last-name-5');
+insert into PERSON(id, first_name, last_name) values(6, 'first-name-6', 'last-name-6');
+insert into PERSON(id, first_name, last_name) values(7, 'first-name-7', 'last-name-7');
+insert into PERSON(id, first_name, last_name) values(8, 'first-name-8', 'last-name-8');
+insert into PERSON(id, first_name, last_name) values(9, 'first-name-9', 'last-name-9');
+insert into PERSON(id, first_name, last_name) values(10, 'first-name-10', 'last-name-10');

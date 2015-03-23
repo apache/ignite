@@ -35,8 +35,6 @@
                     <property name="name" value="cache"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
             </list>
         </property>
@@ -50,12 +48,6 @@
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
-            </bean>
-        </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="sharedMemoryPort" value="-1"/>
             </bean>
         </property>
 

@@ -72,10 +72,13 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", String.valueOf(DFLT_IPC_PORT));
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(DFLT_IPC_PORT);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(igfsCfg);
@@ -98,7 +101,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -107,7 +109,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setEvictionPolicy(null);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return new CacheConfiguration[] {metaCacheCfg, cacheCfg};

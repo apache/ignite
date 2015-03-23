@@ -49,7 +49,6 @@ import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -1616,17 +1615,6 @@ public class IgnitionEx {
                 myCfg.setFileSystemConfiguration(clone);
             }
 
-            StreamerConfiguration[] streamerCfgs = myCfg.getStreamerConfiguration();
-
-            if (streamerCfgs != null) {
-                StreamerConfiguration[] clone = streamerCfgs.clone();
-
-                for (int i = 0; i < streamerCfgs.length; i++)
-                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
-
-                myCfg.setStreamerConfiguration(clone);
-            }
-
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
@@ -1872,7 +1860,6 @@ public class IgnitionEx {
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
-            cache.setQueryIndexEnabled(false);
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
@@ -1896,7 +1883,6 @@ public class IgnitionEx {
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
             cache.setSwapEnabled(false);
-            cache.setQueryIndexEnabled(false);
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
@@ -1920,7 +1906,6 @@ public class IgnitionEx {
             ccfg.setName(CU.ATOMICS_CACHE_NAME);
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setSwapEnabled(false);
-            ccfg.setQueryIndexEnabled(false);
             ccfg.setRebalanceMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());

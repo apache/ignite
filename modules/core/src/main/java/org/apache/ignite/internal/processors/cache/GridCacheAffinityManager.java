@@ -33,50 +33,13 @@ import java.util.*;
  * Cache affinity manager.
  */
 public class GridCacheAffinityManager extends GridCacheManagerAdapter {
-    /** Factor for maximum number of attempts to calculate all partition affinity keys. */
-    private static final int MAX_PARTITION_KEY_ATTEMPT_RATIO = 10;
-
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
-
-    /** Affinity keys. */
-    private GridPartitionLockKey[] partAffKeys;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
             cctx.config().getAffinityMapper(), cctx.config().getBackups());
-
-        // Generate internal keys for partitions.
-        int partCnt = partitions();
-
-        partAffKeys = new GridPartitionLockKey[partCnt];
-
-        Collection<Integer> found = new HashSet<>();
-
-        long affKey = 0;
-
-        while (true) {
-            GridPartitionLockKey key = new GridPartitionLockKey(affKey);
-
-            int part = aff.partition(key);
-
-            if (found.add(part)) {
-                // This is a key for not yet calculated partition.
-                key.partitionId(part);
-
-                partAffKeys[part] = key;
-
-                if (found.size() == partCnt)
-                    break;
-            }
-
-            affKey++;
-
-            if (affKey > partCnt * MAX_PARTITION_KEY_ATTEMPT_RATIO)
-                throw new IllegalStateException("Failed to calculate partition affinity keys for given affinity " +
-                    "function [attemptCnt=" + affKey + ", found=" + found + ", cacheName=" + cctx.name() + ']');
-        }
     }
 
     /** {@inheritDoc} */
@@ -175,19 +138,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public int partitions() {
         return aff.partitions();
-    }
-
-    /**
-     * Gets partition affinity key for given partition id. Partition affinity keys are precalculated
-     * on manager start.
-     *
-     * @param partId Partition ID.
-     * @return Affinity key.
-     */
-    public GridPartitionLockKey partitionAffinityKey(int partId) {
-        assert partId >=0 && partId < partAffKeys.length;
-
-        return partAffKeys[partId];
     }
 
     /**

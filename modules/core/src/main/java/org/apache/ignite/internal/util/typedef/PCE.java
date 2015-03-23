@@ -27,7 +27,7 @@ import javax.cache.*;
  * Defines {@code alias} for <tt>GridPredicate&lt;Entry&lt;K, V&gt;&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.cache.Entry}.
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link javax.cache.Cache.Entry}.
  * @see org.apache.ignite.lang.IgnitePredicate
  * @see GridFunc
  */

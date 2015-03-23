@@ -37,7 +37,6 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.streamer.*;
 
 import javax.cache.event.*;
 import javax.cache.expiry.*;
@@ -346,9 +345,6 @@ public class IgniteConfiguration {
     /** IGFS configuration. */
     private FileSystemConfiguration[] igfsCfg;
 
-    /** Streamer configuration. */
-    private StreamerConfiguration[] streamerCfg;
-
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
 
@@ -360,9 +356,6 @@ public class IgniteConfiguration {
 
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
-
-    /** */
-    private QueryConfiguration qryCfg;
 
     /** */
     private AtomicConfiguration atomicCfg = new AtomicConfiguration();
@@ -441,14 +434,12 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        qryCfg = cfg.getQueryConfiguration();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        streamerCfg = cfg.getStreamerConfiguration();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -1457,7 +1448,7 @@ public class IgniteConfiguration {
     /**
      * Sets fully configured instances of {@link IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link IndexingSpi}.
+     * @param indexingSpi Fully configured instance of {@link IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
     public void setIndexingSpi(IndexingSpi indexingSpi) {
@@ -1745,24 +1736,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets streamers configurations.
-     *
-     * @return Streamers configurations.
-     */
-    public StreamerConfiguration[] getStreamerConfiguration() {
-        return streamerCfg;
-    }
-
-    /**
-     * Sets streamer configuration.
-     *
-     * @param streamerCfg Streamer configuration.
-     */
-    public void setStreamerConfiguration(StreamerConfiguration... streamerCfg) {
-        this.streamerCfg = streamerCfg;
-    }
-
-    /**
      * Gets hadoop configuration.
      *
      * @return Hadoop configuration.
@@ -1883,20 +1856,6 @@ public class IgniteConfiguration {
      */
     public void setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public QueryConfiguration getQueryConfiguration() {
-        return qryCfg;
-    }
-
-    /**
-     * @param qryCfg Query configuration.
-     */
-    public void setQueryConfiguration(QueryConfiguration qryCfg) {
-        this.qryCfg = qryCfg;
     }
 
     /**

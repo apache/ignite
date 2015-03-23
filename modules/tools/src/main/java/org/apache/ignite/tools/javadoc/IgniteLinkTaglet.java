@@ -24,8 +24,8 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Represents {@ignitelink ...} tag. This tag can
- * be used as replacement of {@link ...} tag that references to the Ignite class that is not in classpath.
+ * Represents {@ignitelink Class} tag. This tag can
+ * be used as replacement of {@link Class} tag that references to the Ignite class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
 public class IgniteLinkTaglet implements Taglet {

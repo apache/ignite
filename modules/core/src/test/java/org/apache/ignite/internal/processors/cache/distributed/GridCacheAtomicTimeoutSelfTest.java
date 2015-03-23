@@ -56,8 +56,6 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -81,6 +79,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
