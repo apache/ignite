@@ -22,11 +22,11 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.h2.jdbcx.*;
 
 import javax.cache.configuration.*;
 import java.sql.*;
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
@@ -40,7 +40,7 @@ public class CacheConfig {
     public static CacheConfiguration<Long, Person> jdbcPojoStoreCache() {
         CacheConfiguration<Long, Person> cfg = new CacheConfiguration<>();
 
-        // Set atomicity as transaction, since we are showing transactions in example.
+        // Set atomicity as transaction, since we are showing transactions in the example.
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheStoreFactory(new Factory<CacheStore<? super Long, ? super Person>>() {
@@ -53,22 +53,22 @@ public class CacheConfig {
             }
         });
 
-        CacheTypeMetadata tm = new CacheTypeMetadata();
+        CacheTypeMetadata meta = new CacheTypeMetadata();
 
-        tm.setDatabaseTable("PERSON");
+        meta.setDatabaseTable("PERSON");
 
-        tm.setKeyType("java.lang.Long");
-        tm.setValueType("org.apache.ignite.examples.datagrid.store.Person");
+        meta.setKeyType("java.lang.Long");
+        meta.setValueType("org.apache.ignite.examples.datagrid.store.Person");
 
-        tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
+        meta.setKeyFields(Collections.singletonList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
 
-        tm.setValueFields(F.asList(
+        meta.setValueFields(Arrays.asList(
             new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", long.class),
             new CacheTypeFieldMetadata("FIRST_NAME", Types.VARCHAR, "firstName", String.class),
             new CacheTypeFieldMetadata("LAST_NAME", Types.VARCHAR, "lastName", String.class)
         ));
 
-        cfg.setTypeMetadata(F.asList(tm));
+        cfg.setTypeMetadata(Collections.singletonList(meta));
 
         cfg.setWriteBehindEnabled(true);
 

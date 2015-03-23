@@ -184,14 +184,32 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
         final IgfsPath statPath = new IgfsPath("/xxx/yyy/zzz/" + jobId + "/performance");
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return igfs.exists(statPath);
             }
         }, 10000);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(statPath)));
+        final long apiEvtCnt0 = apiEvtCnt;
 
-        assertEquals(apiEvtCnt, HadoopTestUtils.simpleCheckJobStatFile(reader));
+        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(statPath)))) {
+                        return apiEvtCnt0 == HadoopTestUtils.simpleCheckJobStatFile(reader);
+                    }
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 10000);
+
+        if (!res) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(statPath)));
+
+            assert false : "Invalid API events count [exp=" + apiEvtCnt0 +
+                ", actual=" + HadoopTestUtils.simpleCheckJobStatFile(reader) + ']';
+        }
     }
 }

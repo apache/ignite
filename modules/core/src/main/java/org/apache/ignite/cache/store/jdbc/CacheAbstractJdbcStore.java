@@ -66,7 +66,7 @@ import static java.sql.Statement.*;
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
  * ...
- * CacheConfiguration ccfg = new CacheConfiguration<>();
+ * CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
  *
  * // Configure cache store.
  * ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
