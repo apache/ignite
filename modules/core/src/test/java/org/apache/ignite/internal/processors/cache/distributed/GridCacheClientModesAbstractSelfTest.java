@@ -51,7 +51,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         super.beforeTestsStarted();
 
         if (!clientOnly()) {
-            grid(nearOnlyGridName).createCache((String)null, new NearCacheConfiguration());
+            grid(nearOnlyGridName).createNearCache((String) null, new NearCacheConfiguration());
         }
     }
 

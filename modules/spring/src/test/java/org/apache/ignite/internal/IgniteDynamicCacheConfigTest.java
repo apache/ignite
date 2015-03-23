@@ -26,15 +26,15 @@ import org.apache.ignite.testframework.junits.common.*;
  */
 public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGrids(1);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         stopAllGrids();
     }
@@ -46,6 +46,19 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
         IgniteCache cache = ignite(0).createCache("modules/core/src/test/config/cache.xml");
 
         assertEquals("TestDynamicCache", cache.getName());
+
+        IgniteCache cache1 = ignite(0).getOrCreateCache("modules/core/src/test/config/cache.xml");
+
+        assertEquals(cache, cache1);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicNearCacheStartFromConfig() throws Exception {
+        IgniteCache cache1 = ignite(0).getOrCreateCache("modules/core/src/test/config/cache.xml",
+            "modules/core/src/test/config/cache.xml");
+
+        assertEquals("TestDynamicCache", cache1.getName());
+    }
 }

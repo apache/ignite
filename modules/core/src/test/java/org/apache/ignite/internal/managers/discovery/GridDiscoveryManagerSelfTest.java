@@ -99,9 +99,9 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteKernal g1 = (IgniteKernal)startGrid(1); // NEAR_ONLY cache.
 
-        grid(1).createCache((String)null, new NearCacheConfiguration());
+        grid(1).createNearCache((String) null, new NearCacheConfiguration());
 
-        grid(1).createCache(CACHE_NAME, new NearCacheConfiguration());
+        grid(1).createNearCache(CACHE_NAME, new NearCacheConfiguration());
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, one));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, two));

@@ -240,7 +240,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable String springCfgPath) throws IgniteCheckedException {
+    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable String springCfgPath) {
         assert g != null;
 
         return g.createCache(springCfgPath);
@@ -254,11 +254,25 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath) {
+        assert g != null;
+
+        return g.getOrCreateCache(springCfgPath);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
         assert g != null;
 
         return g.createCache(cacheCfg, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String springCfgPath, String nearSpringCfgPath) {
+        assert g != null;
+
+        return g.createCache(springCfgPath, nearSpringCfgPath);
     }
 
     /** {@inheritDoc} */
@@ -269,17 +283,38 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath, String nearSpringCfgPath) {
         assert g != null;
 
-        return g.createCache(cacheName, nearCfg);
+        return g.getOrCreateCache(springCfgPath, nearSpringCfgPath);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         assert g != null;
 
-        return g.getOrCreateCache(cacheName, nearCfg);
+        return g.createNearCache(cacheName, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, String nearSpringCfgPath) {
+        assert g != null;
+
+        return g.createNearCache(cacheName, nearSpringCfgPath);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        assert g != null;
+
+        return g.getOrCreateNearCache(cacheName, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, String nearSpringCfgPath) {
+        assert g != null;
+
+        return g.getOrCreateNearCache(cacheName, nearSpringCfgPath);
     }
 
     /** {@inheritDoc} */

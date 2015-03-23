@@ -48,19 +48,20 @@ public interface IgniteSpringProcessor {
         URL cfgUrl, String... excludedProps) throws IgniteCheckedException;
 
     /**
-     * Loads all cache configurations specified within given configuration file.
+     * Loads all configurations with given type specified within given configuration file.
      * <p>
      * Usually Spring XML configuration file will contain only one Cache definition. Note that
      * Cache configuration bean(s) is retrieved form configuration file by type, so the name of
      * the Cache configuration bean is ignored.
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
+     * @param cl Required type of configuration.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
      * @throws IgniteCheckedException If configuration could not be
      *      read.
      */
-    public IgniteBiTuple<Collection<CacheConfiguration>, ? extends GridSpringResourceContext> loadCacheConfigurations(
-        URL cfgUrl) throws IgniteCheckedException;
+    public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        URL cfgUrl, Class<T> cl) throws IgniteCheckedException;
 
     /**
      * Loads bean instances that match the given types from given configuration file.

@@ -148,7 +148,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             if (i == 1) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                ignite.createCache(CACHE_PARTITIONED, nearCfg);
+                ignite.createNearCache(CACHE_PARTITIONED, nearCfg);
             }
 
             if (i == 2)
