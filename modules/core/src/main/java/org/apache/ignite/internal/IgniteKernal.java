@@ -2882,7 +2882,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> cfgMap =
                 spring.loadConfigurations(url, cl);
 
-            if (cfgMap.size() != 1)
+            if (cfgMap.get1().size() != 1)
                 throw new IgniteException("File " + url.toString() + " should have one cache configuration");
 
             return F.first(cfgMap.get1());
