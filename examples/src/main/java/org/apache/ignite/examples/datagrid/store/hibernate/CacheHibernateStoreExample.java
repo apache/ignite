@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid.store.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
@@ -69,16 +68,13 @@ public class CacheHibernateStoreExample {
             // Set atomicity as transaction, since we are showing transactions in example.
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            cacheCfg.setCacheStoreFactory(new Factory<CacheStore<? super Long, ? super Person>>() {
-                @Override public CacheStore<? super Long, ? super Person> create() {
-                    return new CacheHibernatePersonStore();
-                }
-            });
+            // Configure Hibernate store.
+            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheHibernatePersonStore.class));
 
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
 
-            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
                 long start = System.currentTimeMillis();
 
                 // Start loading cache from persistent store on all caching nodes.
