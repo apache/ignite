@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -43,7 +42,7 @@ public class GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest extends GridC
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setBackups(1);
         cfg.setAtomicWriteOrderMode(PRIMARY);
 

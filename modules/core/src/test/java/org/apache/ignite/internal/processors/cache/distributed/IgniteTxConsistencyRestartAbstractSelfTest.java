@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -74,8 +74,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setDistributionMode(partitionDistributionMode());
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setNearConfiguration(nearConfiguration());
+        ccfg.setRebalanceMode(SYNC);
 
         if (cacheMode() == CacheMode.PARTITIONED)
             ccfg.setBackups(1);
@@ -91,7 +91,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @return Partition distribution mode for PARTITIONED cache.
      */
-    protected abstract CacheDistributionMode partitionDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @throws Exception If failed.
@@ -99,7 +99,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        IgniteDataLoader<Object, Object> ldr = grid(0).dataLoader(null);
+        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);

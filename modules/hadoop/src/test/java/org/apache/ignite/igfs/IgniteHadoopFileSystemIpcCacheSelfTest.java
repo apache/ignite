@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -72,10 +71,12 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
         igfsCfg.setName("igfs");
         igfsCfg.setManagementPort(FileSystemConfiguration.DFLT_MGMT_PORT + cnt);
 
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "shmem");
-            put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
-        }});
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -84,12 +85,6 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
         cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
-
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
 
         cnt++;
 
@@ -106,11 +101,10 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -118,7 +112,6 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return new CacheConfiguration[] {metaCacheCfg, cacheCfg};

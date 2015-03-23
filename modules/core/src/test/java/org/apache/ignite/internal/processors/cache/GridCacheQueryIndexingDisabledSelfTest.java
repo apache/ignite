@@ -40,7 +40,6 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setQueryIndexEnabled(false);
 
         return ccfg;
     }

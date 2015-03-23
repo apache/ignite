@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
@@ -166,12 +166,48 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        @Nullable NearCacheConfiguration<K, V> nearCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         return null;
     }
 
@@ -182,16 +218,6 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> fileSystems() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStreamer streamer(@Nullable String name) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteStreamer> streamers() {
         return null;
     }
 

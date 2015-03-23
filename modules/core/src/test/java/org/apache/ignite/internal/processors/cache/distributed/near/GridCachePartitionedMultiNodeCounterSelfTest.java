@@ -40,9 +40,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -99,9 +98,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         // Default cache configuration.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(backups);

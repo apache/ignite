@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.dr.os;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -79,7 +80,7 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException {
+    @Override public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException {
         // No-op.
     }
 

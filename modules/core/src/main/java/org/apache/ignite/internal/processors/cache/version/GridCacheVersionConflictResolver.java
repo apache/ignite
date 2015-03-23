@@ -36,7 +36,7 @@ public class GridCacheVersionConflictResolver extends GridCacheVersionAbstractCo
             else {
                 if (atomicVerComparator) {
                     // Handle special case when version check using ATOMIC cache comparator is required.
-                    if (GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(oldEntry.version(), newEntry.version()) >= 0)
+                    if (GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(oldEntry.version(), newEntry.version(), false) >= 0)
                         ctx.useOld();
                     else
                         ctx.useNew();

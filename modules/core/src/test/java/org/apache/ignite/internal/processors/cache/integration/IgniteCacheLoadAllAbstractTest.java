@@ -23,7 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -38,7 +38,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private volatile boolean writeThrough = true;
 
     /** */
-    private ConcurrentHashMap8<Object, Object> storeMap = new ConcurrentHashMap8<>();
+    private static ConcurrentHashMap8<Object, Object> storeMap;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -47,54 +47,18 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
         ccfg.setWriteThrough(writeThrough);
 
-        ccfg.setCacheLoaderFactory(new Factory<CacheLoader>() {
-            @Override public CacheLoader create() {
-                return new CacheLoader<Object, Object>() {
-                    @Override public Object load(Object key) throws CacheLoaderException {
-                        return storeMap.get(key);
-                    }
+        ccfg.setCacheLoaderFactory(new CacheLoaderFactory());
 
-                    @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
-                        Map<Object, Object> loaded = new HashMap<>();
-
-                        for (Object key : keys) {
-                            Object val = storeMap.get(key);
-
-                            if (val != null)
-                                loaded.put(key, val);
-                        }
-
-                        return loaded;
-                    }
-                };
-            }
-        });
-
-        ccfg.setCacheWriterFactory(new Factory<CacheWriter>() {
-            @Override public CacheWriter create() {
-                return new CacheWriter<Object, Object>() {
-                    @Override public void write(Cache.Entry<?, ?> e) {
-                        storeMap.put(e.getKey(), e.getValue());
-                    }
-
-                    @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
-                        for (Cache.Entry<?, ?> e : entries)
-                            write(e);
-                    }
-
-                    @Override public void delete(Object key) {
-                        storeMap.remove(key);
-                    }
-
-                    @Override public void deleteAll(Collection<?> keys) {
-                        for (Object key : keys)
-                            delete(key);
-                    }
-                };
-            }
-        });
+        ccfg.setCacheWriterFactory(new CacheWriterFactory());
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        storeMap = new ConcurrentHashMap8<>();
     }
 
     /** {@inheritDoc} */
@@ -232,6 +196,59 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
                 assertNull(cache.get(key));
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CacheLoaderFactory implements Factory<CacheLoader> {
+        @Override public CacheLoader create() {
+            return new CacheLoader<Object, Object>() {
+                @Override public Object load(Object key) throws CacheLoaderException {
+                    return storeMap.get(key);
+                }
+
+                @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
+                    Map<Object, Object> loaded = new HashMap<>();
+
+                    for (Object key : keys) {
+                        Object val = storeMap.get(key);
+
+                        if (val != null)
+                            loaded.put(key, val);
+                    }
+
+                    return loaded;
+                }
+            };
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CacheWriterFactory implements Factory<CacheWriter> {
+        @Override public CacheWriter create() {
+            return new CacheWriter<Object, Object>() {
+                @Override public void write(Cache.Entry<?, ?> e) {
+                    storeMap.put(e.getKey(), e.getValue());
+                }
+
+                @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
+                    for (Cache.Entry<?, ?> e : entries)
+                        write(e);
+                }
+
+                @Override public void delete(Object key) {
+                    storeMap.remove(key);
+                }
+
+                @Override public void deleteAll(Collection<?> keys) {
+                    for (Object key : keys)
+                        delete(key);
+                }
+            };
         }
     }
 }

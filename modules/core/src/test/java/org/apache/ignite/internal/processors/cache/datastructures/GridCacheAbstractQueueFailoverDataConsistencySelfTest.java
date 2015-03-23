@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -357,7 +358,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         for (int i = 0; i < gridCount(); i++) {
             for (GridCacheEntryEx e : ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0()) {
-                if (aff.primary(grid(i).localNode(), e.key(), -1) && e.key().value(cctx.cacheObjectContext(), false) instanceof GridCacheQueueHeaderKey)
+                if (aff.primary(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
+                    && e.key().value(cctx.cacheObjectContext(), false) instanceof GridCacheQueueHeaderKey)
                     return i;
             }
         }

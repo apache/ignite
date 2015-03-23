@@ -29,10 +29,20 @@
     <bean id="testService" class="org.apache.ignite.spring.GridSpringCacheTestService"/>
 
     <!--
+        Test service with cacheable methods (dynamic cache).
+    -->
+    <bean id="dynamicTestService" class="org.apache.ignite.spring.GridSpringDynamicCacheTestService"/>
+
+    <!--
         Cache manager.
     -->
     <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
         <property name="gridName" value="testGrid"/>
+        <property name="dynamicCacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="backups" value="2"/>
+            </bean>
+        </property>
     </bean>
 
     <!--

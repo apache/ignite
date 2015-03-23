@@ -24,7 +24,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -56,11 +55,11 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
-        ccfg.setPreloadMode(CachePreloadMode.SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
     }

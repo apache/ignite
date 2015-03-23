@@ -37,9 +37,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -66,9 +65,8 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -71,15 +72,16 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
-                long topVer,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
+                AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
                 long ttl,
-                int hdrId)
-            {
+                int hdrId
+            ) {
                 return new GridLocalCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
             }
         });
@@ -183,9 +185,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        long topVer = ctx.affinity().affinityTopologyVersion();
+    @Override public void unlockAll(
+        Collection<? extends K> keys,
+        CacheEntryPredicate[] filter
+    ) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {
             GridLocalCacheEntry entry = peekExx(ctx.toCacheKeyObject(key));

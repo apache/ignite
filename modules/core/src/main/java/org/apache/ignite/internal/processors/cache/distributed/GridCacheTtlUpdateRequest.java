@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.nio.*;
 import java.util.*;
@@ -57,7 +59,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     private long ttl;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * Required empty constructor.
@@ -71,7 +73,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
      * @param topVer Topology version.
      * @param ttl TTL.
      */
-    public GridCacheTtlUpdateRequest(int cacheId, long topVer, long ttl) {
+    public GridCacheTtlUpdateRequest(int cacheId, AffinityTopologyVersion topVer, long ttl) {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
         this.cacheId = cacheId;
@@ -82,7 +84,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -220,7 +222,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -278,7 +280,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

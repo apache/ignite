@@ -48,7 +48,7 @@ class GridAffinityUtils {
      * @return Affinity job.
      */
     static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(
-        String cacheName, long topVer) {
+        String cacheName, AffinityTopologyVersion topVer) {
         return new AffinityJob(cacheName, topVer);
     }
 
@@ -135,12 +135,12 @@ class GridAffinityUtils {
         private String cacheName;
 
         /** */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * @param cacheName Cache name.
          */
-        private AffinityJob(@Nullable String cacheName, long topVer) {
+        private AffinityJob(@Nullable String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.topVer = topVer;
         }
@@ -166,6 +166,8 @@ class GridAffinityUtils {
 
             GridKernalContext ctx = kernal.context();
 
+            cctx.affinity().affinityReadyFuture(topVer).get();
+
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
@@ -175,13 +177,13 @@ class GridAffinityUtils {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
     }
 }

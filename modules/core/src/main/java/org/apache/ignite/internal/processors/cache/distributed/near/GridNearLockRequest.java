@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -41,7 +42,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
     private IgniteUuid miniId;
@@ -109,7 +110,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      */
     public GridNearLockRequest(
         int cacheId,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         UUID nodeId,
         long threadId,
         IgniteUuid futId,
@@ -147,7 +148,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             grpLockKey,
             partLock);
 
-        assert topVer > 0;
+        assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
         this.topVer = topVer;
         this.implicitTx = implicitTx;
@@ -163,7 +164,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -407,7 +408,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -517,7 +518,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 33:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

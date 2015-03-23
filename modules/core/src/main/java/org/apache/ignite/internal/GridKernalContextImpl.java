@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.spring.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -200,7 +199,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridDataLoaderProcessor dataLdrProc;
+    private DataStreamProcessor dataLdrProc;
 
     /** */
     @GridToStringInclude
@@ -217,10 +216,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridAffinityProcessor affProc;
-
-    /** */
-    @GridToStringInclude
-    private GridStreamProcessor streamProc;
 
     /** */
     @GridToStringExclude
@@ -306,9 +301,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
-    /** Exception registry. */
-    private IgniteExceptionRegistry registry;
-
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
 
@@ -340,7 +332,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
-        IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         ExecutorService execSvc,
@@ -356,7 +347,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.registry = registry;
         this.utilityCachePool = utilityCachePool;
         this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
@@ -392,6 +382,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param comp Manager to add.
      */
     public void add(GridComponent comp) {
+        add(comp, true);
+    }
+
+    /**
+     * @param comp Manager to add.
+     */
+    public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
 
         /*
@@ -457,14 +454,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             affProc = (GridAffinityProcessor)comp;
         else if (comp instanceof GridRestProcessor)
             restProc = (GridRestProcessor)comp;
-        else if (comp instanceof GridDataLoaderProcessor)
-            dataLdrProc = (GridDataLoaderProcessor)comp;
+        else if (comp instanceof DataStreamProcessor)
+            dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridStreamProcessor)
-            streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
@@ -482,7 +477,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
-        comps.add(comp);
+        if (addToList)
+            comps.add(comp);
     }
 
     /**
@@ -595,11 +591,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamProcessor stream() {
-        return streamProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDeploymentManager deploy() {
         return depMgr;
     }
@@ -671,8 +662,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
-        return (GridDataLoaderProcessor<K, V>)dataLdrProc;
+    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+        return (DataStreamProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */
@@ -871,7 +862,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
-        return registry;
+        return IgniteExceptionRegistry.get();
     }
 
     /** {@inheritDoc} */

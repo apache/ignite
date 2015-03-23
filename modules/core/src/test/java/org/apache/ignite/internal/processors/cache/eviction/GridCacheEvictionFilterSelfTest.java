@@ -28,14 +28,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Base class for eviction tests.
@@ -67,16 +67,22 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-        cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(plc);
+        cc.setEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
         cc.setEvictSynchronized(false);
-        cc.setEvictNearSynchronized(false);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionFilter(filter);
-        cc.setPreloadMode(SYNC);
+        cc.setEvictionFilter(notSerializableProxy(filter, CacheEvictionFilter.class));
+        cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
+
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
+
+            cc.setNearConfiguration(nearCfg);
+        }
+        else
+            cc.setNearConfiguration(null);
 
         if (mode == PARTITIONED)
             cc.setBackups(1);

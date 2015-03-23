@@ -88,8 +88,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

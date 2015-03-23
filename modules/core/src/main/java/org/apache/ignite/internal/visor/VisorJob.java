@@ -28,6 +28,9 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
  * Base class for Visor jobs.
+ *
+ * @param <A> Job argument type.
+ * @param <R> Job result type.
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     /** Auto-injected grid instance. */

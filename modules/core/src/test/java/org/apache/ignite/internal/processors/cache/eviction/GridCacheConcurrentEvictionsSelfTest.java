@@ -52,9 +52,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     private CacheEvictionPolicy<?, ?> plc;
 
     /** */
-    private CacheEvictionPolicy<?, ?> nearPlc;
-
-    /** */
     private int warmUpPutsCnt;
 
     /** */
@@ -75,10 +72,9 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(nearPlc);
 
         c.setCacheConfiguration(cc);
 
@@ -96,7 +92,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         super.afterTest();
 
         plc = null;
-        nearPlc = null;
     }
 
     /**
@@ -105,7 +100,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     public void testConcurrentPutsFifoLocal() throws Exception {
         mode = LOCAL;
         plc = new CacheFifoEvictionPolicy<Object, Object>(1000);
-        nearPlc = null;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 
@@ -118,7 +112,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     public void testConcurrentPutsLruLocal() throws Exception {
         mode = LOCAL;
         plc = new CacheLruEvictionPolicy<Object, Object>(1000);
-        nearPlc = null;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 

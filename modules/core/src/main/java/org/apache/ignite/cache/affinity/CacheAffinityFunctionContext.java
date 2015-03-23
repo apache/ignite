@@ -19,6 +19,7 @@ package org.apache.ignite.cache.affinity;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -59,7 +60,7 @@ public interface CacheAffinityFunctionContext {
      *
      * @return Current topology version number.
      */
-    public long currentTopologyVersion();
+    public AffinityTopologyVersion currentTopologyVersion();
 
     /**
      * Gets discovery event caused topology change.

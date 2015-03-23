@@ -69,7 +69,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName("test-cache");
         ccfg.setCacheMode(LOCAL);
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);

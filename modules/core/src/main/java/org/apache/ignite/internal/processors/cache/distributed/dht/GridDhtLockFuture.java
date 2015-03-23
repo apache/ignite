@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -33,8 +34,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -67,7 +68,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private GridCacheVersion nearLockVer;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Thread. */
     private long threadId;
@@ -144,7 +145,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridCacheContext<K, V> cctx,
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
         long timeout,
@@ -156,7 +157,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;
@@ -1051,7 +1052,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                 boolean replicate = cctx.isDrEnabled();
 
-                boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+                boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
                 for (GridCacheEntryInfo info : res.preloadEntries()) {
                     try {
@@ -1061,7 +1062,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null);
                         }
                     }

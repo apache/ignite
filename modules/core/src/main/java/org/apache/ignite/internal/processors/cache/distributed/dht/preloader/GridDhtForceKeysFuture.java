@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.*;
@@ -73,7 +74,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private AtomicInteger topCntr = new AtomicInteger(1);
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Future ID. */
     private IgniteUuid futId = IgniteUuid.randomUuid();
@@ -92,11 +93,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     public GridDhtForceKeysFuture(
         GridCacheContext<K, V> cctx,
-        long topVer,
+        AffinityTopologyVersion topVer,
         Collection<KeyCacheObject> keys,
         GridDhtPreloader<K, V> preloader
     ) {
-        assert topVer != 0 : topVer;
+        assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
 
         this.cctx = cctx;
@@ -285,10 +286,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         try {
             if (e != null && !e.isNewLocked()) {
                 if (log.isDebugEnabled())
-                    log.debug("Will not preload key (entry is not new) [cacheName=" + cctx.name() +
+                    log.debug("Will not rebalance key (entry is not new) [cacheName=" + cctx.name() +
                         ", key=" + key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
 
-                // Key has been preloaded or retrieved already.
+                // Key has been rebalanced or retrieved already.
                 return;
             }
         }
@@ -301,12 +302,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         List<ClusterNode> owners = F.isEmpty(exc) ? top.owners(part, topVer) :
             new ArrayList<>(F.view(top.owners(part, topVer), F.notIn(exc)));
 
-        if (owners.isEmpty() || (owners.contains(loc) && cctx.preloadEnabled())) {
+        if (owners.isEmpty() || (owners.contains(loc) && cctx.rebalanceEnabled())) {
             if (log.isDebugEnabled())
-                log.debug("Will not preload key (local node is owner) [key=" + key + ", part=" + part +
+                log.debug("Will not rebalance key (local node is owner) [key=" + key + ", part=" + part +
                     "topVer=" + topVer + ", locId=" + cctx.nodeId() + ']');
 
-            // Key is already preloaded.
+            // Key is already rebalanced.
             return;
         }
 
@@ -319,7 +320,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         if (locPart == null)
             invalidParts.add(part);
-        // If preloader is disabled, then local partition is always MOVING.
+        // If rebalance is disabled, then local partition is always MOVING.
         else if (locPart.state() == MOVING) {
             Collections.sort(owners, CU.nodeComparator(false));
 
@@ -328,12 +329,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             assert pick != null;
 
-            if (!cctx.preloadEnabled() && loc.id().equals(pick.id()))
+            if (!cctx.rebalanceEnabled() && loc.id().equals(pick.id()))
                 pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
 
             if (pick == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Will not preload key (no nodes to request from with preloading disabled) [key=" +
+                    log.debug("Will not rebalance key (no nodes to request from with rebalancing disabled) [key=" +
                         key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
 
                 return;
@@ -346,14 +347,14 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             mappedKeys.add(key);
 
             if (log.isDebugEnabled())
-                log.debug("Will preload key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
+                log.debug("Will rebalance key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
         else if (locPart.state() != OWNING)
             invalidParts.add(part);
         else {
             if (log.isDebugEnabled())
-                log.debug("Will not preload key (local partition is not MOVING) [cacheName=" + cctx.name() +
+                log.debug("Will not rebalance key (local partition is not MOVING) [cacheName=" + cctx.name() +
                     ", key=" + key + ", part=" + locPart + ", locId=" + cctx.nodeId() + ']');
         }
     }
@@ -461,8 +462,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     remapMissed = true;
             }
 
-            // If preloading is disabled, we need to check other backups.
-            if (!cctx.preloadEnabled()) {
+            // If rebalancing is disabled, we need to check other backups.
+            if (!cctx.rebalanceEnabled()) {
                 Collection<KeyCacheObject> retryKeys = F.view(
                     keys,
                     F0.notIn(missedKeys),
@@ -472,14 +473,14 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     map(retryKeys, F.concat(false, node, exc));
             }
 
-            boolean rec = cctx.events().isRecordable(EVT_CACHE_PRELOAD_OBJECT_LOADED);
+            boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
             boolean replicate = cctx.isDrEnabled();
 
             for (GridCacheEntryInfo info : res.forcedInfos()) {
                 int p = cctx.affinity().partition(info.key());
 
-                GridDhtLocalPartition locPart = top.localPartition(p, -1, false);
+                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
                     GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
@@ -496,7 +497,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_PRELOAD_OBJECT_LOADED, info.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null);
                         }
                     }
@@ -507,7 +508,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     }
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())
-                            log.debug("Trying to preload removed entry (will ignore) [cacheName=" +
+                            log.debug("Trying to rebalance removed entry (will ignore) [cacheName=" +
                                 cctx.namex() + ", entry=" + entry + ']');
                     }
                     finally {

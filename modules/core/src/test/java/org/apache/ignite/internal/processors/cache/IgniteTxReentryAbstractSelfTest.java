@@ -85,7 +85,9 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+        if (nearEnabled())
+            cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(cacheCfg);
 

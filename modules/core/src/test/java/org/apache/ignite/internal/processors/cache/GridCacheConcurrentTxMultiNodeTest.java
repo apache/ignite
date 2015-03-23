@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -45,9 +46,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -111,13 +111,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setDistributionMode(PARTITIONED_ONLY);
             cc.setEvictionPolicy(new CacheLruEvictionPolicy(1000));
             cc.setEvictSynchronized(false);
-            cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setPreloadMode(NONE);
+            cc.setRebalanceMode(NONE);
 
             c.setCacheConfiguration(cc);
         }
@@ -736,7 +734,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private Long id;
 
         /** */
@@ -808,7 +806,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private String terminalId;
 
         /**

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -63,7 +63,7 @@ public class GridIoManagerBenchmark {
     public static final int TEST_TOPIC = 1;
 
     /** */
-    private static final LongAdder msgCntr = new LongAdder();
+    private static final LongAdder8 msgCntr = new LongAdder8();
 
     /** */
     private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();

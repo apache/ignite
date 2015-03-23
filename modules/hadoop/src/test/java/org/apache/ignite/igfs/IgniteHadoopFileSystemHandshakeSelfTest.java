@@ -22,10 +22,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
+import org.apache.ignite.hadoop.fs.v2.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -33,11 +32,9 @@ import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
@@ -200,29 +197,21 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         cfg.setDiscoverySpi(discoSpi);
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
-
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("partitioned");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
@@ -234,10 +223,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         igfsCfg.setName(dfltIgfsName ? null : IGFS_NAME);
         igfsCfg.setPrefetchBlocks(1);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", String.valueOf(DFLT_IPC_PORT));
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(DFLT_IPC_PORT);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         igfsCfg.setManagementPort(-1);
         igfsCfg.setBlockSize(512 * 1024);

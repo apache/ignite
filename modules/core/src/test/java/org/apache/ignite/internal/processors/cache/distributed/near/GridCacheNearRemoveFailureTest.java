@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -37,7 +36,7 @@ public class GridCacheNearRemoveFailureTest extends GridCacheAbstractRemoveFailu
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setBackups(1);
 
         return cfg;

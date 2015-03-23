@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,7 +37,7 @@ public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
      * @param hdrId Header id.
      */
     public GridDhtAtomicCacheEntry(GridCacheContext ctx,
-        long topVer,
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         int hash,
         CacheObject val,

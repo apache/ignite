@@ -69,6 +69,8 @@
             <outputDirectory>/examples</outputDirectory>
             <includes>
                 <include>rest/**</include>
+                <include>memcached/**</include>
+                <include>schema-import/**</include>
             </includes>
         </fileSet>
 

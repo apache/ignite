@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -284,7 +285,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 // 6          +     +
                 // 7          +       - only local node
 
-                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, ver);
+                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, new AffinityTopologyVersion(ver));
 
                 Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<ClusterNode, UUID>() {
                     @Override public UUID apply(ClusterNode n) {

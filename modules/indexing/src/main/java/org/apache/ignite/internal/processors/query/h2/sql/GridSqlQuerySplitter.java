@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.h2.jdbc.*;
+import org.h2.value.*;
 
-import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
@@ -34,6 +35,9 @@ public class GridSqlQuerySplitter {
 
     /** */
     private static final String COLUMN_PREFIX = "__C";
+
+    /** */
+    public static final String TABLE_FUNC_NAME = "__Z0";
 
     /**
      * @param idx Index of table.
@@ -52,72 +56,160 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param conn Connection.
-     * @param query Query.
+     * @param stmt Prepared statement.
      * @param params Parameters.
      * @return Two step query.
      */
-    public static GridCacheTwoStepQuery split(Connection conn, String query, Object[] params) {
-        // TODO possibly get column types from query.
-        GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
+    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params) {
+        if (params == null)
+            params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        if (srcQry.groups().isEmpty()) { // Simple case.
-            String tbl0 = table(0);
+        GridSqlSelect srcQry = GridSqlQueryParser.parse(stmt);
 
-            GridCacheTwoStepQuery res = new GridCacheTwoStepQuery("select * from " + tbl0);
+        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
-            res.addMapQuery(tbl0, srcQry.getSQL(), params);
-
-            return res;
-        }
+        GridSqlSelect mapQry = srcQry.clone();
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
-
         GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
 
-        for (int i = 0, len = mapExps.size(); i < len; i++)
-            splitSelectExpression(mapExps, rdcExps, i);
+        Set<String> colNames = new HashSet<>();
 
-        // Build map query.
-        GridSqlSelect mapQry = srcQry.clone();
+        for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
+            splitSelectExpression(mapExps, rdcExps, colNames, i);
 
+        // Fill select expressions.
         mapQry.clearSelect();
 
         for (GridSqlElement exp : mapExps)
             mapQry.addSelectExpression(exp);
 
-        mapQry.clearGroups();
-
-        for (int col : srcQry.groupColumns())
-            mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
-
-        // TODO sort support
-
-        // Reduce query.
-        GridSqlSelect rdcQry = new GridSqlSelect();
-
         for (GridSqlElement rdcExp : rdcExps)
             rdcQry.addSelectExpression(rdcExp);
 
-        rdcQry.from(new GridSqlTable(null, table(0)));
+        // -- GROUP BY
+        if (!srcQry.groups().isEmpty()) {
+            mapQry.clearGroups();
 
-        for (int col : srcQry.groupColumns())
-            rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
+            for (int col : srcQry.groupColumns())
+                mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL());
+            for (int col : srcQry.groupColumns())
+                rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
+        }
 
-        res.addMapQuery(table(0), mapQry.getSQL(), params);
+        // -- HAVING
+        if (srcQry.having() != null) {
+            // TODO Find aggregate functions in HAVING clause.
+            rdcQry.whereAnd(column(columnName(srcQry.havingColumn())));
+
+            mapQry.having(null);
+        }
+
+        // -- ORDER BY
+        if (!srcQry.sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : srcQry.sort().values())
+                rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
+        }
+
+        // -- LIMIT
+        if (srcQry.limit() != null)
+            rdcQry.limit(srcQry.limit());
+
+        // -- OFFSET
+        if (srcQry.offset() != null) {
+            mapQry.offset(null);
+
+            rdcQry.offset(srcQry.offset());
+        }
+
+        // -- DISTINCT
+        if (srcQry.distinct()) {
+            mapQry.distinct(false);
+            rdcQry.distinct(true);
+        }
+
+        // Build resulting two step query.
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL(),
+            findParams(rdcQry, params, new ArrayList<>()).toArray());
+
+        res.addMapQuery(mergeTable, mapQry.getSQL(),
+            findParams(mapQry, params, new ArrayList<>(params.length)).toArray());
 
         return res;
     }
 
     /**
+     * @param qry Select.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
+        if (params.length == 0)
+            return target;
+
+        for (GridSqlElement el : qry.select())
+            findParams(el, params, target);
+
+        findParams(qry.from(), params, target);
+        findParams(qry.where(), params, target);
+
+        for (GridSqlElement el : qry.groups())
+            findParams(el, params, target);
+
+        findParams(qry.having(), params, target);
+
+        for (GridSqlElement el : qry.sort().keySet())
+            findParams(el, params, target);
+
+        findParams(qry.limit(), params, target);
+        findParams(qry.offset(), params, target);
+
+        return target;
+    }
+
+    /**
+     * @param el Element.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     */
+    private static void findParams(GridSqlElement el, Object[] params, ArrayList<Object> target) {
+        if (el == null)
+            return;
+
+        if (el instanceof GridSqlParameter) {
+            // H2 Supports queries like "select ?5" but first 4 non-existing parameters are need to be set to any value.
+            // Here we will set them to NULL.
+            int idx = ((GridSqlParameter)el).index();
+
+            while (target.size() < idx)
+                target.add(null);
+
+            Object param = params[idx];
+
+            if (idx == target.size())
+                target.add(param);
+            else
+                target.set(idx, param);
+        }
+        else if (el instanceof GridSqlSubquery)
+            findParams(((GridSqlSubquery)el).select(), params, target);
+        else
+            for (GridSqlElement child : el)
+                findParams(child, params, target);
+    }
+
+    /**
      * @param mapSelect Selects for map query.
      * @param rdcSelect Selects for reduce query.
+     * @param colNames Set of unique top level column names.
      * @param idx Index.
      */
-    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect, int idx) {
+    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
+        Set<String> colNames, int idx) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -135,7 +227,7 @@ public class GridSqlQuerySplitter {
             String mapAggAlias = columnName(idx);
 
             switch (agg.type()) {
-                case AVG: // SUM( AVG(CAST(x AS DECIMAL))*COUNT(x) )/SUM( COUNT(x) ).
+                case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
                     //-- COUNT(x) map
                     GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
 
@@ -147,9 +239,9 @@ public class GridSqlQuerySplitter {
 
                     mapSelect.add(cntMapAgg);
 
-                    //-- AVG(CAST(x AS DECIMAL)) map
+                    //-- AVG(CAST(x AS DOUBLE)) map
                     mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
-                        function(CAST).setCastType("DECIMAL").addChild(agg.child()));
+                        function(CAST).setCastType("DOUBLE").addChild(agg.child()));
 
                     //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
                     GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
@@ -203,14 +295,30 @@ public class GridSqlQuerySplitter {
             rdcSelect[idx] = rdcAgg;
         }
         else {
-            if (alias == null) { // Generate alias if none.
-                alias = alias(columnName(idx), mapSelect.get(idx));
+            String mapColAlias = columnName(idx);
+            String rdcColAlias;
 
-                mapSelect.set(idx, alias);
+            if (alias == null)  // Original column name for reduce column.
+                rdcColAlias = el instanceof GridSqlColumn ? ((GridSqlColumn)el).columnName() : mapColAlias;
+            else // Set initial alias for reduce column.
+                rdcColAlias = alias.alias();
+
+            // Always wrap map column into generated alias.
+            mapSelect.set(idx, alias(mapColAlias, el)); // `el` is known not to be an alias.
+
+            if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
+                GridSqlElement rdcEl = column(mapColAlias);
+
+                GridSqlType type = el.expressionResultType();
+
+                if (type != null && type.type() == Value.UUID) // There is no JDBC type UUID, so conversion to bytes occurs.
+                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl);
+
+                if (colNames.add(rdcColAlias)) // To handle column name duplication (usually wildcard for few tables).
+                    rdcEl = alias(rdcColAlias, rdcEl);
+
+                rdcSelect[idx] = rdcEl;
             }
-
-            if (idx < rdcSelect.length)
-                rdcSelect[idx] = column(alias.alias());
         }
     }
 
@@ -256,5 +364,13 @@ public class GridSqlQuerySplitter {
      */
     private static GridSqlFunction function(GridSqlFunctionType type) {
         return new GridSqlFunction(type);
+    }
+
+    /**
+     * @param name Table name.
+     * @return Table.
+     */
+    private static GridSqlTable table(String name) {
+        return new GridSqlTable(null, name);
     }
 }

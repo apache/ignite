@@ -20,7 +20,6 @@ package org.apache.ignite.testframework.junits;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
@@ -39,7 +38,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             new IgniteKernal(null),
             new IgniteConfiguration(),
             new GridKernalGatewayImpl(null),
-            IgniteExceptionRegistry.DUMMY_REGISTRY,
             null,
             null,
             null,

@@ -35,9 +35,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -71,17 +70,20 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictNearSynchronized(true);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setBackups(1);
 
         // Set eviction queue size explicitly.
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setEvictMaxOverflowRatio(0);
         cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10));
-        cacheCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10));
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        nearCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10));
+
+        cfg.setNearCacheConfiguration(nearCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

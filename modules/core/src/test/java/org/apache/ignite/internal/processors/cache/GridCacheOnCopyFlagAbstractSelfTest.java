@@ -31,7 +31,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**
@@ -111,9 +110,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         ccfg.setInterceptor(interceptor);
 
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setDistributionMode(distributionMode());
         ccfg.setCacheMode(cacheMode());
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
 
         return ccfg;
     }
@@ -601,7 +599,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor<Object, Object> {
+    private static class Interceptor implements CacheInterceptor<Object, Object> {
         /** */
         CacheInterceptor<TestKey, TestValue> delegate = new CacheInterceptorAdapter<>();
 

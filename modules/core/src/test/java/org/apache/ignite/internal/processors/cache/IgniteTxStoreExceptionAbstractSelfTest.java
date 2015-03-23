@@ -23,13 +23,12 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -38,11 +37,11 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException}.
+ * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
-    private static TestStore store = new TestStore();
+    private static TestStore store;
 
     /** */
     private static final int PRIMARY = 0;
@@ -75,7 +74,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
@@ -85,9 +84,18 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        store = new TestStore();
+
         super.beforeTestsStarted();
 
         lastKey = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        store = null;
     }
 
     /** {@inheritDoc} */
@@ -648,7 +656,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) {
+        @Override public void sessionEnd(boolean commit) {
             if (fail && commit)
                 throw new CacheWriterException("Store exception");
         }

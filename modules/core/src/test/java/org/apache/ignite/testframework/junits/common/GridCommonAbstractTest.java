@@ -25,6 +25,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
@@ -44,7 +45,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -365,7 +366,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (GridCache<?, ?> c : ((IgniteEx)g).cachesx()) {
                 CacheConfiguration cfg = c.configuration();
 
-                if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
+                if (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceMode() != NONE && g.cluster().nodes().size() > 1) {
                     CacheAffinityFunction aff = cfg.getAffinity();
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
@@ -381,7 +382,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             int exp = affNodes.size();
 
-                            Collection<ClusterNode> owners = top.nodes(p, -1);
+                            Collection<ClusterNode> owners = top.nodes(p, AffinityTopologyVersion.NONE);
 
                             int actual = owners.size();
 

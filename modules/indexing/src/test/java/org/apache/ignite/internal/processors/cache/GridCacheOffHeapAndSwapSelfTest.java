@@ -36,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -74,34 +73,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     private final Map<Long, Object> versions = new HashMap<>();
 
     /** Listener on swap events. Updates counters. */
-    private final IgnitePredicate<Event> swapLsnr = new IgnitePredicate<Event>() {
-        @Override public boolean apply(Event evt) {
-            assert evt != null;
-
-            switch (evt.type()) {
-                case EVT_CACHE_OBJECT_TO_OFFHEAP:
-                    offheapedCnt.incrementAndGet();
-
-                    break;
-                case EVT_CACHE_OBJECT_FROM_OFFHEAP:
-                    onheapedCnt.incrementAndGet();
-
-                    break;
-
-                case EVT_CACHE_OBJECT_SWAPPED:
-                    swappedCnt.incrementAndGet();
-
-                    break;
-
-                case EVT_CACHE_OBJECT_UNSWAPPED:
-                    unswapedCnt.incrementAndGet();
-
-                    break;
-            }
-
-            return true;
-        }
-    };
+    private IgnitePredicate<Event> swapLsnr;
 
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -120,7 +92,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
@@ -128,19 +100,14 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(1);
         cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
         cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictNearSynchronized(true);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setIndexedTypes(
+            Long.class, Long.class
+        );
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cacheCfg.setEvictionPolicy(null);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -152,10 +119,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(1);
-
-        grid(0).events().localListen(swapLsnr,
-            EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP,
-            EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +130,35 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        swapLsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt != null;
+
+                switch (evt.type()) {
+                    case EVT_CACHE_OBJECT_TO_OFFHEAP:
+                        offheapedCnt.incrementAndGet();
+
+                        break;
+                    case EVT_CACHE_OBJECT_FROM_OFFHEAP:
+                        onheapedCnt.incrementAndGet();
+
+                        break;
+
+                    case EVT_CACHE_OBJECT_SWAPPED:
+                        swappedCnt.incrementAndGet();
+
+                        break;
+
+                    case EVT_CACHE_OBJECT_UNSWAPPED:
+                        unswapedCnt.incrementAndGet();
+
+                        break;
+                }
+
+                return true;
+            }
+        };
+
         grid(0).events().localListen(swapLsnr,
             EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP,
             EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
@@ -174,7 +166,9 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ((IgniteKernal)grid(0)).cache(null).clear();
+        grid(0).events().stopLocalListen(swapLsnr);
+
+        grid(0).jcache(null).removeAll();
     }
 
     /** Resets event counters. */

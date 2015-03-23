@@ -47,8 +47,6 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
 
             testMultithreadedTaskRun();
 
-            testMultithreadedCachePut();
-
             long now = System.currentTimeMillis();
 
             if (now - lastPrint > STATISTICS_PRINT_INTERVAL) {

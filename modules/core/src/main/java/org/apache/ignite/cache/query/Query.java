@@ -18,10 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 
 import java.io.*;
 
@@ -29,22 +26,21 @@ import java.io.*;
  * Base class for all Ignite cache queries.
  * Use {@link SqlQuery} and {@link TextQuery} for SQL and
  * text queries accordingly.
- * <p>
- * Also contains convenience shortcuts for query object construction:
- * {@link #sql(Class, String)}, {@link #sql(String)}, {@link #text(Class, String)},
- * {@link #scan(IgniteBiPredicate)} and {@link #spi()}.
  *
  * @see IgniteCache#query(Query)
- * @see IgniteCache#localQuery(Query)
- * @see IgniteCache#queryFields(SqlFieldsQuery)
- * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
-public abstract class Query<T extends Query> implements Serializable {
+public abstract class Query<R> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default query page size. */
+    public static final int DFLT_PAGE_SIZE = 1024;
+
     /** Page size. */
-    private int pageSize;
+    private int pageSize = DFLT_PAGE_SIZE;
+
+    /** Local flag. */
+    private boolean loc;
 
     /**
      * Empty constructor.
@@ -54,68 +50,7 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Factory method for SQL fields queries.
-     *
-     * @param sql SQL Query string.
-     * @return SQL Fields query instance.
-     */
-    public static SqlFieldsQuery sql(String sql) {
-        return new SqlFieldsQuery(sql);
-    }
-
-    /**
-     * Factory method for SQL queries.
-     *
-     * @param type Type to be queried.
-     * @param sql SQL Query string.
-     * @return SQL Query instance.
-     */
-    public static SqlQuery sql(Class<?> type, String sql) {
-        return new SqlQuery(type, sql);
-    }
-
-    /**
-     * Factory method for Lucene fulltext queries.
-     *
-     * @param type Type to be queried.
-     * @param txt Search string.
-     * @return Fulltext query.
-     */
-    public static TextQuery text(Class<?> type, String txt) {
-        return new TextQuery(txt).setType(type);
-    }
-
-    /**
-     * Factory method for SPI queries.
-     *
-     * @param filter Filter.
-     * @return SPI Query.
-     */
-    public static <K, V> ScanQuery<K, V> scan(final IgniteBiPredicate<K, V> filter) {
-        return new ScanQuery<>(filter);
-    }
-
-    /**
-     * Factory method for SPI queries.
-     *
-     * @return SPI Query.
-     * @see IndexingSpi
-     */
-    public static SpiQuery spi() {
-        return new SpiQuery();
-    }
-
-    /**
-     * Factory method for continuous queries.
-     *
-     * @return Continuous query.
-     */
-    public static <K, V> ContinuousQuery<K, V> continuous() {
-        return new ContinuousQuery<>();
-    }
-
-    /**
-     * Gets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Gets optional page size, if {@code 0}, then default is used.
      *
      * @return Optional page size.
      */
@@ -124,16 +59,39 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Sets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Sets optional page size, if {@code 0}, then default is used.
      *
      * @param pageSize Optional page size.
-     * @return {@code this} For chaining.
+     * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unchecked")
-    public T setPageSize(int pageSize) {
+    public Query<R> setPageSize(int pageSize) {
+        if (pageSize <= 0)
+            throw new IllegalArgumentException("Page size must be above zero.");
+
         this.pageSize = pageSize;
 
-        return (T)this;
+        return this;
+    }
+
+    /**
+     * Returns {@code true} if this query should be executed on local node only.
+     *
+     * @return Local flag.
+     */
+    public boolean isLocal() {
+        return loc;
+    }
+
+    /**
+     * Sets whether this query should be executed on local node only.
+     *
+     * @param loc Local flag.
+     * @return {@code this} for chaining.
+     */
+    public Query<R> setLocal(boolean loc) {
+        this.loc = loc;
+
+        return this;
     }
 
     /** {@inheritDoc} */

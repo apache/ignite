@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -50,7 +52,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     private Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param cacheId Cache ID.
@@ -64,7 +66,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        long topVer
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -122,7 +124,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     /**
      * @return Topology version for which keys are requested.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -186,7 +188,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -232,7 +234,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

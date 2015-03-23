@@ -31,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -61,8 +61,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setAtomicityMode(atomicityMode());
         cCfg.setAtomicWriteOrderMode(writeOrderMode());
-        cCfg.setDistributionMode(distributionMode());
-        cCfg.setPreloadMode(SYNC);
+        cCfg.setNearConfiguration(nearConfiguration());
+        cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
         cCfg.setBackups(1);
 
@@ -89,8 +89,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @return Distribution mode.
      */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /**
@@ -134,7 +134,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                    if (nearEnabled() && cache == cache0)
                         assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
                         assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
@@ -194,7 +194,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                    if (nearEnabled() && cache == cache0)
                         assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
                         assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));

@@ -84,7 +84,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

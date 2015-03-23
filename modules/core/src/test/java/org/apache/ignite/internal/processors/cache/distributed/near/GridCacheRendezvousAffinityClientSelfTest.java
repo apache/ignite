@@ -47,7 +47,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
         ccfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         if (client)
-            ccfg.setDistributionMode(CLIENT_ONLY);
+            cfg.setClientMode(true);
 
         cfg.setCacheConfiguration(ccfg);
 

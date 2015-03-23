@@ -18,8 +18,8 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
@@ -47,8 +47,8 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * <pre name="code" class="brush: xml; gutter: false;">
  * org.apache.ignite.hibernate.grid_name=&lt;grid name&gt;
  * </pre>
- * Each Hibernate cache region must be associated with some {@link GridCache}, by default it is assumed that
- * for each cache region there is a {@link GridCache} with the same name. Also it is possible to define
+ * Each Hibernate cache region must be associated with some {@link org.apache.ignite.internal.processors.cache.GridCache}, by default it is assumed that
+ * for each cache region there is a {@link org.apache.ignite.internal.processors.cache.GridCache} with the same name. Also it is possible to define
  * region to cache mapping using properties with prefix {@code org.apache.ignite.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:
@@ -92,16 +92,10 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
+        String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
         String gridName = props.getProperty(GRID_NAME_PROPERTY);
 
-        if (gridName != null)
-            ignite = G.ignite(gridName);
-        else {
-            String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
-
-            if (gridCfg == null)
-                throw new CacheException("Either grid name or path to grid configuration must be specified.");
-
+        if (gridCfg != null) {
             try {
                 ignite = G.start(gridCfg);
             }
@@ -109,9 +103,8 @@ public class HibernateRegionFactory implements RegionFactory {
                 throw new CacheException(e);
             }
         }
-
-        if (ignite == null)
-            throw new CacheException("Grid '" + gridName + "' for hibernate L2 cache is not started.");
+        else
+            ignite = Ignition.ignite(gridName);
 
         String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
 

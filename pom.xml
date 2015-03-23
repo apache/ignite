@@ -65,7 +65,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/schema-load</module>
+        <module>modules/schema-import</module>
         <module>modules/codegen</module>
     </modules>
 
@@ -125,7 +125,7 @@
                                         </fileset>
 
                                         <fileset>
-                                            <directory>bin/include/schema-load</directory>
+                                            <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>
@@ -449,64 +449,26 @@
             </build>
         </profile>
 
-        <profile>
-            <id>opt-clns-prop</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
-                        <inherited>false</inherited>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <executions>
-                            <execution>
-                                <id>optimized-classnames-generation</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>process-classes</phase>
-                                <configuration>
-                                    <target>
-                                        <java classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator" fork="true" failonerror="true" maxmemory="1g">
-                                            <classpath>
-                                                <path location="${project.basedir}/modules/core/target/classes" />
-                                                <path location="${project.basedir}/modules/aop/target/classes" />
-                                                <path location="${project.basedir}/modules/aws/target/classes" />
-                                                <path location="${project.basedir}/modules/email/target/classes" />
-                                                <path location="${project.basedir}/modules/hadoop/target/classes" />
-                                                <path location="${project.basedir}/modules/hibernate/target/classes" />
-                                                <path location="${project.basedir}/modules/indexing/target/classes" />
-                                                <path location="${project.basedir}/modules/jcl/target/classes" />
-                                                <path location="${project.basedir}/modules/jta/target/classes" />
-                                                <path location="${project.basedir}/modules/log4j/target/classes" />
-                                                <path location="${project.basedir}/modules/rest-http/target/classes" />
-                                                <path location="${project.basedir}/modules/schedule/target/classes" />
-                                                <path location="${project.basedir}/modules/slf4j/target/classes" />
-                                                <path location="${project.basedir}/modules/spring/target/classes" />
-                                                <path location="${project.basedir}/modules/ssh/target/classes" />
-                                                <path location="${project.basedir}/modules/urideploy/target/classes" />
-                                                <path location="${project.basedir}/modules/web/target/classes" />
-                                                <path location="${project.basedir}/modules/scalar/target/classes" />
-                                                <path location="${project.basedir}/modules/visor-console/target/classes" />
-                                                <path refid="maven.plugin.classpath" />
-                                            </classpath>
-                                            <arg value="${project.basedir}/modules/core/src/main/java" />
-                                            <jvmarg value="-XX:MaxPermSize=1g" />
-                                        </java>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+
+       <profile>
+           <id>java8</id>
+           <activation>
+               <jdk>[1.8,)</jdk>
+           </activation>
+           <properties>
+               <javadoc.opts>-Xdoclint:none</javadoc.opts>
+           </properties>
+           <build>
+               <plugins>
+                   <plugin>
+                       <artifactId>maven-compiler-plugin</artifactId>
+                       <configuration>
+                           <source>1.8</source>
+                           <target>1.8</target>
+                       </configuration>
+                   </plugin>
+               </plugins>
+           </build>
+       </profile>
+   </profiles>
 </project>

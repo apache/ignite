@@ -20,10 +20,8 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.jdk8.backport.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -151,9 +149,6 @@ class OptimizedMarshallerUtils {
     /** JDK marshaller. */
     static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
 
-    /** Class descriptors by class. */
-    private static final ConcurrentMap<Class, OptimizedClassDescriptor> DESC_BY_CLS = new ConcurrentHashMap8<>();
-
     static {
         try {
             HASH_SET_MAP_OFF = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
@@ -172,25 +167,38 @@ class OptimizedMarshallerUtils {
     /**
      * Gets descriptor for provided class.
      *
+     * @param clsMap Class descriptors by class map.
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class cls, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws IOException {
-        OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
+    static OptimizedClassDescriptor classDescriptor(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        Class cls,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
+        throws IOException
+    {
+        OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
             int typeId = resolveTypeId(cls.getName(), mapper);
 
-            boolean registered = ctx.registerClass(typeId, cls);
+            boolean registered;
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, ctx, mapper);
+            try {
+                registered = ctx.registerClass(typeId, cls);
+            }
+            catch (Exception e) {
+                throw new IOException("Failed to register class: " + cls.getName(), e);
+            }
+
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
 
             if (registered) {
-                OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc);
+                OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
 
                 if (old != null)
                     desc = old;
@@ -223,6 +231,7 @@ class OptimizedMarshallerUtils {
     /**
      * Gets descriptor for provided ID.
      *
+     * @param clsMap Class descriptors by class map.
      * @param id ID.
      * @param ldr Class loader.
      * @param ctx Context.
@@ -231,44 +240,25 @@ class OptimizedMarshallerUtils {
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
      */
-    static OptimizedClassDescriptor classDescriptor(int id, ClassLoader ldr, MarshallerContext ctx,
+    static OptimizedClassDescriptor classDescriptor(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        int id,
+        ClassLoader ldr,
+        MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
         Class cls = ctx.getClass(id, ldr);
 
-        OptimizedClassDescriptor desc = DESC_BY_CLS.get(cls);
+        OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor old = DESC_BY_CLS.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), ctx, mapper));
+            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
 
             if (old != null)
                 desc = old;
         }
 
         return desc;
-    }
-
-    /**
-     * Undeployment callback.
-     *
-     * @param ldr Undeployed class loader.
-     */
-    public static void onUndeploy(ClassLoader ldr) {
-        for (Class<?> cls : DESC_BY_CLS.keySet()) {
-            if (ldr.equals(cls.getClassLoader()))
-                DESC_BY_CLS.remove(cls);
-        }
-
-        U.clearClassCache(ldr);
-    }
-
-    /**
-     * Intended for test purposes only.
-     */
-    public static void clearCache() {
-        DESC_BY_CLS.clear();
-
-        U.clearClassCache();
     }
 
     /**

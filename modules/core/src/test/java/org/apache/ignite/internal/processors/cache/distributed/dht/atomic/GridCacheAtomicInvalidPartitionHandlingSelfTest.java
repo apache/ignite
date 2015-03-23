@@ -33,7 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -88,7 +88,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setWriteSynchronizationMode(writeSync);
 
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
 
         return ccfg;
     }

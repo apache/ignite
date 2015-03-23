@@ -95,8 +95,6 @@
 
                     <!-- LOCAL cache mode. -->
                     <property name="cacheMode" value="LOCAL"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <!--
@@ -124,9 +122,6 @@
                     </property>
 
                     <property name="portableEnabled" value="true"/>
-
-                    <!-- Enable queries for partitioned cache -->
-                    <property name="queryIndexEnabled" value="true"/>
 
                     <property name="typeMetadata">
                         <list>
@@ -187,8 +182,6 @@
                     <property name="cacheMode" value="LOCAL"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
 
                     <property name="store">
                         <bean class="org.apache.ignite.internal.client.HashMapStore"/>

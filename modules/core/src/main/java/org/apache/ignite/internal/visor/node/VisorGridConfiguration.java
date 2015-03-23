@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.cache.*;
-import org.apache.ignite.internal.visor.streamer.*;
 
 import java.io.*;
 import java.util.*;
@@ -75,9 +74,6 @@ public class VisorGridConfiguration implements Serializable {
     /** Igfss. */
     private Iterable<VisorIgfsConfiguration> igfss;
 
-    /** Streamers. */
-    private Iterable<VisorStreamerConfiguration> streamers;
-
     /** Environment. */
     private Map<String, String> env;
 
@@ -89,9 +85,6 @@ public class VisorGridConfiguration implements Serializable {
 
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
-
-    /** Query configuration */
-    private VisorQueryConfiguration qryCfg;
 
     /**
      * @param ignite Grid.
@@ -115,12 +108,10 @@ public class VisorGridConfiguration implements Serializable {
         userAttrs = c.getUserAttributes();
         caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
-        streamers = VisorStreamerConfiguration.list(c.getStreamerConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
         txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
-        qryCfg = VisorQueryConfiguration.from(c.getQueryConfiguration());
 
         return this;
     }
@@ -217,13 +208,6 @@ public class VisorGridConfiguration implements Serializable {
     }
 
     /**
-     * @return Streamers.
-     */
-    public Iterable<VisorStreamerConfiguration> streamers() {
-        return streamers;
-    }
-
-    /**
      * @return Environment.
      */
     public Map<String, String> env() {
@@ -249,13 +233,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public VisorTransactionConfiguration transaction() {
         return txCfg;
-    }
-
-    /**
-     * @return Query configuration.
-     */
-    public VisorQueryConfiguration queryConfiguration() {
-        return qryCfg;
     }
 
     /** {@inheritDoc} */

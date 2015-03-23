@@ -103,26 +103,8 @@
                     <!-- Enable primary sync write mode. -->
                     <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
 
-                    <!-- Disable near cache in atomic mode. -->
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
 
                     <!--
                         This shows how to configure number of backups. The below configuration
@@ -130,8 +112,8 @@
                     -->
                     <property name="backups" value="1"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <!--
@@ -146,7 +128,9 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>
@@ -159,28 +143,13 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
-
-                    <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="backups" value="1"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <!--
@@ -199,26 +168,11 @@
                     <!-- REPLICATED cache mode. -->
                     <property name="cacheMode" value="REPLICATED"/>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="150000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
 
                 <!--
@@ -233,21 +187,6 @@
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="150000"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is false.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
                 </bean>
             </list>
         </property>

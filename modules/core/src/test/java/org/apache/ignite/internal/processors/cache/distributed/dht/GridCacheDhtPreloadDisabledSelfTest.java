@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,9 +37,8 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -82,12 +82,11 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
-        //cacheCfg.setPreloadThreadPoolSize(1);
+        //cacheCfg.setRebalanceThreadPoolSize(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -133,7 +132,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 List<Collection<ClusterNode>> mappings = new ArrayList<>(nodeCnt);
 
                 for (int i = 0; i < nodeCnt; i++) {
-                    Collection<ClusterNode> nodes = topology(i).nodes(p, -1);
+                    Collection<ClusterNode> nodes = topology(i).nodes(p, AffinityTopologyVersion.NONE);
                     List<ClusterNode> owners = topology(i).owners(p);
 
                     int size = backups + 1;
@@ -255,7 +254,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                         return true;
                     }
-                }, EVTS_CACHE_PRELOAD);
+                }, EVTS_CACHE_REBALANCE);
 
             list.add(g);
         }

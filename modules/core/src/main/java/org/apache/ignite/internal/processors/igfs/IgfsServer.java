@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.igfs.common.*;
 import org.apache.ignite.internal.util.ipc.*;
@@ -27,11 +28,10 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
-import java.util.*;
 
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
@@ -49,7 +49,7 @@ public class IgfsServer {
     private final IgfsMarshaller marsh;
 
     /** Endpoint configuration. */
-    private final Map<String,String> endpointCfg;
+    private final IgfsIpcEndpointConfiguration endpointCfg;
 
     /** Server endpoint. */
     private IpcServerEndpoint srvEndpoint;
@@ -72,7 +72,7 @@ public class IgfsServer {
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public IgfsServer(IgfsContext igfsCtx, Map<String, String> endpointCfg, boolean mgmt) {
+    public IgfsServer(IgfsContext igfsCtx, IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt) {
         assert igfsCtx != null;
         assert endpointCfg != null;
 
@@ -91,7 +91,7 @@ public class IgfsServer {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        srvEndpoint = IpcServerEndpointDeserializer.deserialize(endpointCfg);
+        srvEndpoint = createEndpoint(endpointCfg, mgmt);
 
         if (U.isWindows() && srvEndpoint instanceof IpcSharedMemoryServerEndpoint)
             throw new IgniteCheckedException(IpcSharedMemoryServerEndpoint.class.getSimpleName() +
@@ -132,6 +132,47 @@ public class IgfsServer {
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();
+    }
+
+    /**
+     * Create server IPC endpoint.
+     *
+     * @param endpointCfg Endpoint configuration.
+     * @param mgmt Management flag.
+     * @return Server endpoint.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static IpcServerEndpoint createEndpoint(IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt)
+        throws IgniteCheckedException {
+        A.notNull(endpointCfg, "endpointCfg");
+
+        IgfsIpcEndpointType typ = endpointCfg.getType();
+
+        if (typ == null)
+            throw new IgniteCheckedException("Failed to create server endpoint (type is not specified)");
+
+        switch (typ) {
+            case SHMEM: {
+                IpcSharedMemoryServerEndpoint endpoint = new IpcSharedMemoryServerEndpoint();
+
+                endpoint.setPort(endpointCfg.getPort());
+                endpoint.setSize(endpointCfg.getMemorySize());
+                endpoint.setTokenDirectoryPath(endpointCfg.getTokenDirectoryPath());
+
+                return endpoint;
+            }
+            case TCP: {
+                IpcServerTcpEndpoint endpoint = new IpcServerTcpEndpoint();
+
+                endpoint.setHost(endpointCfg.getHost());
+                endpoint.setPort(endpointCfg.getPort());
+                endpoint.setManagement(mgmt);
+
+                return endpoint;
+            }
+            default:
+                throw new IgniteCheckedException("Failed to create server endpoint (type is unknown): " + typ);
+        }
     }
 
     /**
@@ -217,7 +258,7 @@ public class IgfsServer {
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
         protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
-            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, IgfsServer.this.log);
 
             this.endpoint = endpoint;
 
@@ -385,7 +426,7 @@ public class IgfsServer {
          * Creates accept worker.
          */
         protected AcceptWorker() {
-            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", log);
+            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", IgfsServer.this.log);
         }
 
         /** {@inheritDoc} */

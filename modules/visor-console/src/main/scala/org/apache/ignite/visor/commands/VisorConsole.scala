@@ -34,7 +34,7 @@ import scala.io._
 // Note the importing of implicit conversions.
 import org.apache.ignite.visor.commands.ack.VisorAckCommand
 import org.apache.ignite.visor.commands.alert.VisorAlertCommand
-import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheCompactCommand, VisorCacheSwapCommand}
+import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheSwapCommand}
 import org.apache.ignite.visor.commands.config.VisorConfigurationCommand
 import org.apache.ignite.visor.commands.deploy.VisorDeployCommand
 import org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand
@@ -75,7 +75,6 @@ object VisorConsole extends App {
     VisorAlertCommand
     VisorCacheCommand
     VisorCacheClearCommand
-    VisorCacheCompactCommand
     VisorCacheSwapCommand
     VisorConfigurationCommand
     VisorDeployCommand
@@ -225,8 +224,10 @@ object VisorConsole extends App {
      * Setting up mac os specific menu.
      */
     private def customizeUI() {
-        def urlIcon(iconPath: String) = {
-            val dockIconUrl = getClass.getResource(iconPath)
+        def urlIcon(iconName: String) = {
+            val iconPath = "org/apache/ignite/startup/cmdline/" + iconName
+
+            val dockIconUrl = U.detectClassLoader(getClass).getResource(iconPath)
 
             assert(dockIconUrl != null, "Unknown icon path: " + iconPath)
 

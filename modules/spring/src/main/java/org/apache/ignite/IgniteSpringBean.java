@@ -135,13 +135,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteStreamer> streamers() {
-        assert g != null;
-
-        return g.streamers();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         assert g != null;
 
@@ -240,6 +233,56 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
+        assert g != null;
+
+        return g.createCache(cacheCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        assert g != null;
+
+        return g.getOrCreateCache(cacheCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg) {
+        assert g != null;
+
+        return g.createCache(cacheCfg, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
+        assert g != null;
+
+        return g.getOrCreateCache(cacheCfg, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        assert g != null;
+
+        return g.createCache(cacheName, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        assert g != null;
+
+        return g.getOrCreateCache(cacheName, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        assert g != null;
+
+        g.destroyCache(cacheName);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         assert g != null;
 
@@ -247,10 +290,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         assert g != null;
 
-        return g.dataLoader(cacheName);
+        return g.dataStreamer(cacheName);
     }
 
     /** {@inheritDoc} */
@@ -265,13 +308,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.fileSystems();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteStreamer streamer(@Nullable String name) {
-        assert g != null;
-
-        return g.streamer(name);
     }
 
     /** {@inheritDoc} */

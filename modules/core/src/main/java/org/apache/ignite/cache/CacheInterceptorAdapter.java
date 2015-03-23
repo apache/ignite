@@ -27,6 +27,9 @@ import javax.cache.*;
  * interceptor callbacks.
  */
 public class CacheInterceptorAdapter<K, V> implements CacheInterceptor<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public V onGet(K key, V val) {
         return val;

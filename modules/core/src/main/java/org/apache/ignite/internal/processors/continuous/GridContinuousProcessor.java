@@ -26,6 +26,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -37,8 +38,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -348,7 +349,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID nodeId, Object obj) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Object obj) {
         DiscoveryData data = (DiscoveryData)obj;
 
         if (!ctx.isDaemon() && data != null) {
@@ -365,6 +366,45 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Callback invoked when cache is started.
+     *
+     * @param ctx Cache context.
+     */
+    public void onCacheStart(GridCacheContext ctx) throws IgniteCheckedException {
+        for (Map.Entry<UUID, RemoteRoutineInfo> entry : rmtInfos.entrySet()) {
+            UUID routineId = entry.getKey();
+            RemoteRoutineInfo rmtInfo = entry.getValue();
+
+            GridContinuousHandler hnd = rmtInfo.hnd;
+
+            if (hnd.isForQuery() && F.eq(ctx.name(), hnd.cacheName()) && rmtInfo.clearDelayedRegister()) {
+                GridContinuousHandler.RegisterStatus status = hnd.register(rmtInfo.nodeId, routineId, this.ctx);
+
+                assert status != GridContinuousHandler.RegisterStatus.DELAYED;
+
+                if (status == GridContinuousHandler.RegisterStatus.REGISTERED)
+                    hnd.onListenerRegistered(routineId, this.ctx);
+            }
+        }
+    }
+
+    /**
+     * @param ctx Callback invoked when cache is stopped.
+     */
+    public void onCacheStop(GridCacheContext ctx) {
+        Iterator<Map.Entry<UUID, RemoteRoutineInfo>> it = rmtInfos.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<UUID, RemoteRoutineInfo> entry = it.next();
+
+            GridContinuousHandler hnd = entry.getValue().hnd;
+
+            if (hnd.isForQuery() && F.eq(ctx.name(), hnd.cacheName()))
+                it.remove();
         }
     }
 
@@ -1044,7 +1084,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 checker.start();
             }
 
-            return hnd.register(nodeId, routineId, ctx);
+            GridContinuousHandler.RegisterStatus status = hnd.register(nodeId, routineId, ctx);
+
+            if (status == GridContinuousHandler.RegisterStatus.DELAYED) {
+                info.markDelayedRegister();
+
+                return false;
+            }
+            else
+                return status == GridContinuousHandler.RegisterStatus.REGISTERED;
         }
 
         return false;
@@ -1250,6 +1298,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Automatic unsubscribe flag. */
         private boolean autoUnsubscribe;
 
+        /** Delayed register flag. */
+        private boolean delayedRegister;
+
         /**
          * @param nodeId Master node ID.
          * @param hnd Continuous routine handler.
@@ -1271,6 +1322,30 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.autoUnsubscribe = autoUnsubscribe;
 
             buf = new ConcurrentLinkedDeque8<>();
+        }
+
+        /**
+         * Marks info to be registered when cache is started.
+         */
+        public void markDelayedRegister() {
+            assert hnd.isForQuery();
+
+            delayedRegister = true;
+        }
+
+        /**
+         * Clears delayed register flag if it was set.
+         *
+         * @return {@code True} if flag was cleared.
+         */
+        public boolean clearDelayedRegister() {
+            if (delayedRegister) {
+                delayedRegister = false;
+
+                return true;
+            }
+
+            return false;
         }
 
         /**

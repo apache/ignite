@@ -41,7 +41,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests for fields queries.
@@ -73,8 +73,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         if (hasCache)
             cfg.setCacheConfiguration(cache(null, null), cache(CACHE, null), cache(EMPTY_CACHE, null));
-        else
+        else {
+            cfg.setClientMode(true);
             cfg.setCacheConfiguration();
+        }
 
         cfg.setDiscoverySpi(discovery());
 
@@ -93,15 +95,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cache.setPreloadMode(SYNC);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
-        qcfg.setIndexFixedTyping(true);
-
-        cache.setQueryConfiguration(qcfg);
+        cache.setRebalanceMode(SYNC);
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);

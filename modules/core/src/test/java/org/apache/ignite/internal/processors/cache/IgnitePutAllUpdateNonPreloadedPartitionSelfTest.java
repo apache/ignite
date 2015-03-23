@@ -56,10 +56,10 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(backups);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        ccfg.setPreloadPartitionedDelay(-1);
+        ccfg.setRebalanceDelay(-1);
 
         return ccfg;
     }
@@ -74,7 +74,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                ((IgniteKernal)grid(i)).cache(null).forceRepartition().get();
+                grid(i).jcache(null).rebalance().get();
 
             startGrid(GRID_CNT - 1);
 

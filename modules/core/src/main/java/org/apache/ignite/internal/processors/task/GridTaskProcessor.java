@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -35,8 +35,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,7 +73,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks. */
-    private final LongAdder execTasks = new LongAdder();
+    private final LongAdder8 execTasks = new LongAdder8();
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx =
@@ -94,8 +94,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
-
-        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */
@@ -108,6 +106,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
     }
 
     /** {@inheritDoc} */

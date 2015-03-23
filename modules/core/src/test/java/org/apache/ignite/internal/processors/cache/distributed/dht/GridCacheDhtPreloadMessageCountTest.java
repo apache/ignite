@@ -47,7 +47,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     private static final int KEY_CNT = 1000;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = CachePreloadMode.SYNC;
+    private CacheRebalanceMode preloadMode = CacheRebalanceMode.SYNC;
 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -62,7 +62,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
+        cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new CacheRendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
 

@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -76,9 +75,8 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(atomicityMode);
 
         return cfg;

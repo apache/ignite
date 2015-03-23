@@ -32,9 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
@@ -86,12 +85,11 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(true);
-        cc.setEvictNearSynchronized(false);
         cc.setEvictSynchronized(false);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         return cc;
     }

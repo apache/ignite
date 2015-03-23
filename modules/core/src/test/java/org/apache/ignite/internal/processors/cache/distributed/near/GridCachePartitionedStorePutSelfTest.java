@@ -84,7 +84,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
         cfg.setLoadPreviousValue(true);

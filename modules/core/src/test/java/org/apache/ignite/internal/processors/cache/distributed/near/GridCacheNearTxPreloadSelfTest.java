@@ -37,7 +37,7 @@ public class GridCacheNearTxPreloadSelfTest extends IgniteTxPreloadAbstractTest 
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setBackups(4);
 
         return cfg;

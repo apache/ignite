@@ -67,6 +67,11 @@ public interface GridKernalGateway {
     public void readLock() throws IllegalStateException;
 
     /**
+     * Same as {@link #readLock()} but doesn't throw IllegalStateException if grid stop.
+     */
+    public void readLockAnyway();
+
+    /**
      * Sets kernal state. Various kernal states drive the logic inside of the gateway.
      *
      * @param state Kernal state to set.

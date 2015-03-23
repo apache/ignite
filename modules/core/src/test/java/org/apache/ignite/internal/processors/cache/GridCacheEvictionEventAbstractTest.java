@@ -61,7 +61,6 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(atomicityMode());
-        cc.setEvictNearSynchronized(isNearEvictSynchronized());
 
         c.setCacheConfiguration(cc);
 
@@ -79,13 +78,6 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
      * @return Atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return {@code True} if near evicts synchronized.
-     */
-    protected boolean isNearEvictSynchronized() {
-        return false;
-    }
 
     /**
      * @throws Exception If failed.

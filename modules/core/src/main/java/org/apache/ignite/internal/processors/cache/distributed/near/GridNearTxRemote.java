@@ -116,12 +116,13 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         writeMap = new LinkedHashMap<>(
             writeEntries != null ? Math.max(txSize, writeEntries.size()) : txSize, 1.0f);
 
-        if (writeEntries != null)
+        if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
                 entry.unmarshal(ctx, true, ldr);
 
                 addEntry(entry);
             }
+        }
     }
 
     /**

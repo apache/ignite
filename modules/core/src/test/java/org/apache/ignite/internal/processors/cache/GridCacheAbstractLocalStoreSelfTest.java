@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -44,7 +43,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -119,16 +118,16 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDistributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_1));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
         else if (gridName.endsWith("2"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_2));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
         else
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_3));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
@@ -145,7 +144,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Cache atomicity mode.
@@ -220,7 +219,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
+            }, EventType.EVT_CACHE_REBALANCE_PART_UNLOADED);
         }
 
         final Ignite ignite2 = startGrid(2);
@@ -314,7 +313,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EventType.EVT_CACHE_PRELOAD_PART_UNLOADED);
+            }, EventType.EVT_CACHE_REBALANCE_PART_UNLOADED);
         }
 
         final Ignite ignite2 = startGrid(2);
@@ -383,7 +382,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             // No-op.
         }
 

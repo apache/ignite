@@ -82,11 +82,14 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(swapEnabled);
+        cacheCfg.setIndexedTypes(
+            Integer.class, CacheValue.class
+        );
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -652,7 +655,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assert val != null;
-            assertEquals(CU.value(entry.key(), entry.context(), false), val.value());
+            assertEquals(CU.value(entry.key(), entry.context(), false), new Integer(val.value()));
             assert entry.version().equals(versions.get(i));
         }
     }

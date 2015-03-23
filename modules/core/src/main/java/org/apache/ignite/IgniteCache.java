@@ -18,6 +18,8 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -29,6 +31,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -46,6 +49,7 @@ import java.util.concurrent.locks.*;
  *  These methods don't specify any keys to load, and leave it to the underlying storage to load cache
  *  data based on the optionally passed in arguments.
  * </li>
+ * <li>Various {@code 'query(..)'} methods to allow cache data querying.</li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
@@ -87,7 +91,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
+     *      filter values loaded from storage before they are put into cache.
      * @param args Optional user arguments to be passed into
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
@@ -133,7 +137,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#write(Cache.Entry)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -192,7 +196,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
     /**
-     * Queries cache. Accepts any subclass of {@link Query}.
+     * Queries cache. Accepts any subclass of {@link Query} interface.
      *
      * @param qry Query.
      * @return Cursor.
@@ -201,37 +205,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see TextQuery
      * @see SpiQuery
      */
-    public QueryCursor<Entry<K, V>> query(Query qry);
+    public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
-     * Queries separate entry fields.
+     * Allows for iteration over local cache entries.
      *
-     * @param qry SQL Query.
-     * @return Cursor.
+     * @param peekModes Peek modes.
+     * @return Iterable over local cache entries.
+     * @throws CacheException If failed.
      */
-    public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry);
-
-    /**
-     * Queries cache locally. Accepts any subclass of {@link Query}.
-     *
-     * @param qry Query.
-     * @return Cursor.
-     * @see ScanQuery
-     * @see SqlQuery
-     * @see TextQuery
-     * @see SpiQuery
-     */
-    public QueryCursor<Entry<K, V>> localQuery(Query qry);
-
-    /**
-     * Queries separate entry fields locally.
-     *
-     * @param qry SQL Query.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry);
-
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
+
+    /**
+     * Gets query metrics.
+     *
+     * @return Metrics.
+     */
+    public QueryMetrics queryMetrics();
 
     /**
      * Attempts to evict all entries associated with keys. Note,
@@ -292,7 +282,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached on this nodes.
+     * Gets the number of all entries cached on this node.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size on this node.
@@ -377,38 +367,88 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public void clear();
 
+    /**
+     * Clear entry from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     *
+     * @param key Key to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clear(K key);
+
+    /**
+     * Clear entries from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     *
+     * @param keys Keys to clear.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the clear
+     */
+    @IgniteAsyncSupported
+    public void clearAll(Set<K> keys);
+
+    /**
+     * Clear entry from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache, it does not remove entries from
+     * remote caches.
+     *
+     * @param key Key to clear.
+     */
+    public void localClear(K key);
+
+    /**
+     * Clear entries from the cache and swap storage, without notifying listeners or
+     * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
+     * and is not participating in a transaction.
+     * <p/>
+     * Note that this operation is local as it merely clears
+     * an entry from local cache, it does not remove entries from
+     * remote caches.
+     *
+     * @param keys Keys to clear.
+     */
+    public void localClearAll(Set<K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the {@link Entry} specified by
-     * the provided key. If an {@link Entry} does not exist for the specified key,
+     * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
-     * {@link Entry}, consisting of the key with a null value is used instead.
+     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
      * This method different
      * <p>
      *
      * @param key            the key to the entry
-     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
      * @param arguments      additional arguments to pass to the
-     *                       {@link IgniteEntryProcessor}
+     *                       {@link CacheEntryProcessor}
      * @return the result of the processing, if any, defined by the
-     *         {@link IgniteEntryProcessor} implementation
-     * @throws NullPointerException    if key or {@link IgniteEntryProcessor} is null
+     *         {@link CacheEntryProcessor} implementation
+     * @throws NullPointerException    if key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException   if the cache is {@link #isClosed()}
      * @throws ClassCastException    if the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
      *                               configured for the {@link Cache}
      * @throws EntryProcessorException if an exception is thrown by the {@link
-     *                                 IgniteEntryProcessor}, a Caching Implementation
+     *                                 CacheEntryProcessor}, a Caching Implementation
      *                                 must wrap any {@link Exception} thrown
      *                                 wrapped in an {@link EntryProcessorException}.
-     * @see IgniteEntryProcessor
+     * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
-    public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... arguments);
+    public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
@@ -416,44 +456,66 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Invokes an {@link IgniteEntryProcessor} against the set of {@link Entry}s
+     * Invokes an {@link CacheEntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
      * specified by the set of keys.
      * <p>
-     * If an {@link Entry} does not exist for the specified key, an attempt is made
-     * to load it (if a loader is configured) or a surrogate {@link Entry},
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
      * consisting of the key and a value of null is provided.
      * <p>
      * The order that the entries for the keys are processed is undefined.
      * Implementations may choose to process the entries in any order, including
      * concurrently.  Furthermore there is no guarantee implementations will
-     * use the same {@link IgniteEntryProcessor} instance to process each entry, as
+     * use the same {@link CacheEntryProcessor} instance to process each entry, as
      * the case may be in a non-local cache topology.
      * <p>
-     * The result of executing the {@link IgniteEntryProcessor} is returned as a
+     * The result of executing the {@link CacheEntryProcessor} is returned as a
      * {@link Map} of {@link EntryProcessorResult}s, one result per key.  Should the
-     * {@link IgniteEntryProcessor} or Caching implementation throw an exception, the
+     * {@link CacheEntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
      * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
      *
      * @param keys           the set of keys for entries to process
-     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param entryProcessor the {@link CacheEntryProcessor} to invoke
      * @param args      additional arguments to pass to the
-     *                       {@link IgniteEntryProcessor}
+     *                       {@link CacheEntryProcessor}
      * @return the map of {@link EntryProcessorResult}s of the processing per key,
-     * if any, defined by the {@link IgniteEntryProcessor} implementation.  No mappings
-     * will be returned for {@link IgniteEntryProcessor}s that return a
+     * if any, defined by the {@link CacheEntryProcessor} implementation.  No mappings
+     * will be returned for {@link CacheEntryProcessor}s that return a
      * <code>null</code> value for a key.
-     * @throws NullPointerException    if keys or {@link IgniteEntryProcessor} are null
+     * @throws NullPointerException    if keys or {@link CacheEntryProcessor} are null
      * @throws IllegalStateException   if the cache is {@link #isClosed()}
      * @throws ClassCastException    if the implementation is configured to perform
      *                               runtime-type-checking, and the key or value
      *                               types are incompatible with those that have been
      *                               configured for the {@link Cache}
-     * @see IgniteEntryProcessor
+     * @see CacheEntryProcessor
      */
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        IgniteEntryProcessor<K, V, T> entryProcessor, Object... args);
+        CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
+
+    /**
+     * This cache node to re-balance its partitions. This method is usually used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
+     * When many nodes are started or stopped almost concurrently, it is more efficient to delay
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+     * happens.
+     * <p>
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
+     * usually make sure that new nodes get placed on the same place of consistent hash ring as
+     * the left nodes, and that nodes are restarted before
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
+     * on the same place in consistent hash ring, use
+     * {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * a node maps to the same hash ID if re-started.
+     * <p>
+     * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * rebalance re-partition delay.
+     * <p>
+     * @return Future that will be completed when rebalancing is finished.
+     */
+    public IgniteFuture<?> rebalance();
 
     /**
      * Gets snapshot metrics (statistics) for this cache.

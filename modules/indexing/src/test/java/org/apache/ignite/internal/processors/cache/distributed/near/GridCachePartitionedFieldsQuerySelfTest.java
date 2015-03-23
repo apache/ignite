@@ -27,7 +27,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -42,8 +41,8 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -55,7 +54,7 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     @Override protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
         CacheConfiguration cc = super.cache(name, spiName);
 
-        cc.setDistributionMode(distributionMode());
+        cc.setNearConfiguration(nearConfiguration());
 
         return cc;
     }

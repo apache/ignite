@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -38,7 +37,7 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(2); // 2 backups, so all nodes are involved.
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setNearConfiguration(new NearCacheConfiguration());
 
         c.setCacheConfiguration(cc);
 

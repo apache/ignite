@@ -18,7 +18,7 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -26,8 +26,8 @@ import java.util.*;
 
 /**
  * Defines grid projection which represents a common functionality over a group of nodes.
- * The {@link org.apache.ignite.Ignite} interface itself also extends {@code GridProjection} which makes
- * an instance of {@link org.apache.ignite.Ignite} a projection over all grid nodes.
+ * The {@link Ignite} interface itself also extends {@code GridProjection} which makes
+ * an instance of {@link Ignite} a projection over all grid nodes.
  * <h1 class="header">Clustering</h1>
  * Grid projection allows to group grid nodes into various subgroups to perform distributed
  * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
@@ -52,9 +52,9 @@ import java.util.*;
  * <h1 class="header">Features</h1>
  * Grid projection provides the following functionality over the underlying group of nodes:
  * <ul>
- * <li>{@link org.apache.ignite.IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
- * <li>{@link org.apache.ignite.IgniteMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
- * <li>{@link org.apache.ignite.IgniteEvents} - functionality for querying and listening to events on nodes in this projection.</li>
+ * <li>{@link IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
+ * <li>{@link IgniteMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
+ * <li>{@link IgniteEvents} - functionality for querying and listening to events on nodes in this projection.</li>
  * </ul>
  */
 public interface ClusterGroup {
@@ -130,7 +130,7 @@ public interface ClusterGroup {
      * specified in user attributes.
      * <p>
      * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()}
+     * grid node configuration. See {@link IgniteConfiguration#getUserAttributes()}
      * for more information.
      *
      * @param name Name of the attribute.
@@ -138,6 +138,24 @@ public interface ClusterGroup {
      * @return Grid projection for nodes containing specified attribute.
      */
     public ClusterGroup forAttribute(String name, @Nullable String val);
+
+    /**
+     * Creates a cluster group of nodes started in server mode.
+     *
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in server mode.
+     */
+    public ClusterGroup forServers();
+
+    /**
+     * Creates a cluster group of nodes started in client mode.
+
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in client mode.
+     */
+    public ClusterGroup forClients();
 
     /**
      * Creates projection for all nodes that have cache with specified name running.
@@ -148,33 +166,20 @@ public interface ClusterGroup {
     public ClusterGroup forCacheNodes(String cacheName);
 
     /**
-     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
-     * {@link CacheDistributionMode#PARTITIONED_ONLY} or {@link CacheDistributionMode#NEAR_PARTITIONED}.
+     * Creates projection for all affinity nodes that have cache with specified name running.
      *
      * @param cacheName Cache name.
      * @return Projection over nodes that have specified cache running.
-     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
      */
     public ClusterGroup forDataNodes(String cacheName);
 
     /**
-     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
-     * {@link CacheDistributionMode#CLIENT_ONLY} or {@link CacheDistributionMode#NEAR_ONLY}.
+     * Creates projection for all non-affinity nodes that have cache with specified name running.
      *
      * @param cacheName Cache name.
      * @return Projection over nodes that have specified cache running.
-     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
      */
     public ClusterGroup forClientNodes(String cacheName);
-
-    /**
-     * Creates projection for all nodes that have streamer with specified name running.
-     *
-     * @param streamerName Streamer name.
-     * @param streamerNames Optional additional streamer names to include into projection.
-     * @return Projection over nodes that have specified streamer running.
-     */
-    public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames);
 
     /**
      * Gets grid projection consisting from the nodes in this projection excluding the local node.

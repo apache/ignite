@@ -325,6 +325,18 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
 
     /**
+     * Property controlling default behavior of cache client flag.
+     */
+    public static final String IGNITE_CACHE_CLIENT = "IGNITE_CACHE_CLIENT";
+
+    /**
+     * Property controlling whether CacheManager will start grid with isolated IP finder when default URL
+     * is passed in. This is needed to pass TCK tests which use default URL and assume isolated cache managers
+     * for different class loaders.
+     */
+    public static final String IGNITE_JCACHE_DEFAULT_ISOLATED = "IGNITE_CACHE_CLIENT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

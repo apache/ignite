@@ -25,8 +25,6 @@ import org.jetbrains.annotations.*;
 import javax.cache.integration.*;
 import java.util.*;
 
-import static javax.cache.Cache.*;
-
 /**
  * API for cache persistent storage for read-through and write-through behavior.
  * Persistent store is configured via {@link org.apache.ignite.configuration.CacheConfiguration#getCacheStoreFactory()}
@@ -37,7 +35,7 @@ import static javax.cache.Cache.*;
  * such as {@link #loadAll(Iterable)},
  * {@link #writeAll(Collection)}, and {@link #deleteAll(Collection)}
  * by sequentially calling corresponding {@link #load(Object)},
- * {@link #write(Entry)}, and {@link #delete(Object)}
+ * {@link #write(javax.cache.Cache.Entry)}, and {@link #delete(Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However
  * in many cases it maybe more preferable to take advantage of database batch update
  * functionality, and therefore default adapter implementation may not be the best option.
@@ -97,5 +95,5 @@ public interface CacheStore<K, V> extends CacheLoader<K, V>, CacheWriter<K, V> {
      *      may bring cache transaction into {@link TransactionState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
-    public void txEnd(boolean commit) throws CacheWriterException;
+    public void sessionEnd(boolean commit) throws CacheWriterException;
 }

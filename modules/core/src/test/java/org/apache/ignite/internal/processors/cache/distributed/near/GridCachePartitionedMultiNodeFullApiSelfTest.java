@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -33,7 +34,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
@@ -50,7 +51,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         return cc;
     }
@@ -228,22 +229,32 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            boolean nearEnabled = nearEnabled(jcache(i));
+            IgniteCache<String, Integer> c = jcache(i);
+
+            assertEquals((Integer)1, c.get("key"));
+
+            boolean nearEnabled = nearEnabled(c);
+
+            if (nearEnabled)
+                assertTrue(((IgniteKernal)ignite(i)).internalCache().context().isNear());
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            IgniteCache<String, Integer> c = jcache(i);
+            CacheAffinity<Object> aff = ignite(i).affinity(null);
 
-            if (c.unwrap(Ignite.class).affinity(null).isBackup(grid(i).localNode(), "key")) {
+            info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
+                ", locNode=" + ignite(i).cluster().localNode().id() + ']');
+
+            if (aff.isBackup(grid(i).localNode(), "key")) {
                 assertNull(c.localPeek("key", NEAR));
 
                 assertEquals((Integer)1, c.localPeek("key", BACKUP));
             }
-            else if (!c.unwrap(Ignite.class).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+            else if (!aff.isPrimaryOrBackup(grid(i).localNode(), "key")) {
                 // Initialize near reader.
-                assertEquals((Integer)1, jcache(i).get("key"));
+                assertEquals((Integer)1, c.get("key"));
 
-                assertEquals(nearPeekVal, c.localPeek("key", NEAR));
+                assertEquals("Failed to validate near value for node: " + i, nearPeekVal, c.localPeek("key", NEAR));
 
                 assertNull(c.localPeek("key", PRIMARY, BACKUP));
             }
@@ -323,7 +334,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
         assertEquals(0, cache2.size() - cache2.nearSize());
 
-        CacheEntryPredicateAdapter prjFilter = new CacheEntryPredicateAdapter() {
+        CacheEntryPredicate prjFilter = new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
                 try {
                     Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);

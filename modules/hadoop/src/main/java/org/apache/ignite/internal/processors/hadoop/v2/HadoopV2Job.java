@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.v1.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.lang.reflect.*;

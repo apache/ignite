@@ -289,7 +289,6 @@ public class GridSwapEvictAllBenchmark {
         cfg.setSwapSpaceSpi(swap);
 
         ccfg.setCacheMode(CacheMode.LOCAL);
-        ccfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(ccfg);
 

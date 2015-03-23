@@ -277,7 +277,11 @@ public class GridDistributedTxMapping implements Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Whether empty or not.
+     *
+     * @return Empty or not.
+     */
     public boolean empty() {
         return entries.isEmpty();
     }

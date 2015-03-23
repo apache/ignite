@@ -34,9 +34,6 @@ public class FileSystemConfiguration {
     /** Default file system user name. */
     public static final String DFLT_USER_NAME = System.getProperty("user.name", "anonymous");
 
-    /** Default IPC port. */
-    public static final int DFLT_IPC_PORT = 10500;
-
     /** Default fragmentizer throttling block length. */
     public static final long DFLT_FRAGMENTIZER_THROTTLING_BLOCK_LENGTH = 16 * 1024 * 1024;
 
@@ -109,8 +106,8 @@ public class FileSystemConfiguration {
     /** Per node parallel operations. */
     private int perNodeParallelBatchCnt = DFLT_PER_NODE_PARALLEL_BATCH_CNT;
 
-    /** IPC endpoint properties to publish IGFS over. */
-    private Map<String, String> ipcEndpointCfg;
+    /** IPC endpoint configuration. */
+    private IgfsIpcEndpointConfiguration ipcEndpointCfg;
 
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled = DFLT_IPC_ENDPOINT_ENABLED;
@@ -401,52 +398,35 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Gets map of IPC endpoint configuration properties. There are 2 different
-     * types of endpoint supported: {@code shared-memory}, and {@code TCP}.
+     * Gets IPC endpoint configuration.
      * <p>
-     * The following configuration properties are supported for {@code shared-memory}
-     * endpoint:
-     * <ul>
-     *     <li>{@code type} - value is {@code shmem} to specify {@code shared-memory} approach.</li>
-     *     <li>{@code port} - endpoint port.</li>
-     *     <li>{@code size} - memory size allocated for single endpoint communication.</li>
-     *     <li>
-     *         {@code tokenDirectoryPath} - path, either absolute or relative to {@code IGNITE_HOME} to
-     *         store shared memory tokens.
-     *     </li>
-     * </ul>
-     * <p>
-     * The following configuration properties are supported for {@code TCP} approach:
-     * <ul>
-     *     <li>{@code type} - value is {@code tcp} to specify {@code TCP} approach.</li>
-     *     <li>{@code port} - endpoint bind port.</li>
-     *     <li>
-     *         {@code host} - endpoint bind host. If omitted '127.0.0.1' will be used.
-     *     </li>
-     * </ul>
-     * <p>
-     * Note that {@code shared-memory} approach is not supported on Windows environments.
-     * In case IGFS is failed to bind to particular port, further attempts will be performed every 3 seconds.
+     * Endpoint is needed for communication between IGFS and {@code IgniteHadoopFileSystem} shipped with <b>Ignite
+     * Hadoop Accelerator</b>.
      *
-     * @return Map of IPC endpoint configuration properties. In case the value is not set, defaults will be used. Default
-     * type for Windows is "tcp", for all other platforms - "shmem". Default port is {@link #DFLT_IPC_PORT}.
+     * @return IPC endpoint configuration.
      */
-    @Nullable public Map<String,String> getIpcEndpointConfiguration() {
+    @Nullable public IgfsIpcEndpointConfiguration getIpcEndpointConfiguration() {
         return ipcEndpointCfg;
     }
 
     /**
-     * Sets IPC endpoint configuration to publish IGFS over.
+     * Sets IPC endpoint configuration.
+     * <p>
+     * Endpoint is needed for communication between IGFS and {@code IgniteHadoopFileSystem} shipped with <b>Ignite
+     * Hadoop Accelerator</b>.
      *
-     * @param ipcEndpointCfg Map of IPC endpoint config properties.
+     * @param ipcEndpointCfg IPC endpoint configuration.
      */
-    public void setIpcEndpointConfiguration(@Nullable Map<String,String> ipcEndpointCfg) {
+    public void setIpcEndpointConfiguration(@Nullable IgfsIpcEndpointConfiguration ipcEndpointCfg) {
         this.ipcEndpointCfg = ipcEndpointCfg;
     }
 
     /**
      * Get IPC endpoint enabled flag. In case it is set to {@code true} endpoint will be created and bound to specific
      * port. Otherwise endpoint will not be created. Default value is {@link #DFLT_IPC_ENDPOINT_ENABLED}.
+     * <p>
+     * Endpoint is needed for communication between IGFS and {@code IgniteHadoopFileSystem} shipped with <b>Ignite
+     * Hadoop Accelerator</b>.
      *
      * @return {@code True} in case endpoint is enabled.
      */
@@ -456,6 +436,9 @@ public class FileSystemConfiguration {
 
     /**
      * Set IPC endpoint enabled flag. See {@link #isIpcEndpointEnabled()}.
+     * <p>
+     * Endpoint is needed for communication between IGFS and {@code IgniteHadoopFileSystem} shipped with <b>Ignite
+     * Hadoop Accelerator</b>.
      *
      * @param ipcEndpointEnabled IPC endpoint enabled flag.
      */

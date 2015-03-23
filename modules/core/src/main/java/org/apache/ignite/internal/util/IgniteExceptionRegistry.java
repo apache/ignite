@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -32,68 +33,71 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class IgniteExceptionRegistry {
     /** */
-    public static final IgniteExceptionRegistry DUMMY_REGISTRY = new DummyRegistry();
-    
-    /** */
     public static final int DEFAULT_QUEUE_SIZE = 1000;
+
+    /** */
+    private static final IgniteExceptionRegistry instance = new IgniteExceptionRegistry();
 
     /** */
     private int maxSize = IgniteSystemProperties.getInteger(IGNITE_EXCEPTION_REGISTRY_MAX_SIZE, DEFAULT_QUEUE_SIZE);
 
     /** */
-    private AtomicLong errorCnt = new AtomicLong();
+    private AtomicLong errCnt = new AtomicLong();
 
     /** */
-    private final ConcurrentLinkedDeque<ExceptionInfo> queue;
-
-    /** */
-    private final IgniteLogger log;
+    private final ConcurrentLinkedDeque<ExceptionInfo> q = new ConcurrentLinkedDeque<>();
 
     /**
-     * Constructor.
-     *
-     * @param log Ignite logger.
+     * @return Registry instance.
      */
-    public IgniteExceptionRegistry(IgniteLogger log) {
-        this.log = log;
-        this.queue = new ConcurrentLinkedDeque<>();
+    public static IgniteExceptionRegistry get() {
+        return instance;
     }
 
     /**
-     * Default constructor.
+     *
      */
-    protected IgniteExceptionRegistry() {
-        this.log = null;
-        this.queue = null;
+    private IgniteExceptionRegistry() {
+        // No-op.
     }
 
     /**
      * Puts exception into queue.
      * Thread-safe.
      *
+     * @param msg Message that describe reason why error was suppressed.
      * @param e Exception.
      */
     public void onException(String msg, Throwable e) {
-        errorCnt.incrementAndGet();
+        q.offerFirst(
+            new ExceptionInfo(
+                errCnt.incrementAndGet(),
+                e,
+                msg,
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
+                U.currentTimeMillis()));
 
-        // Remove extra entity.
-        while (queue.size() >= maxSize)
-            queue.pollLast();
+        // Remove extra entries.
+        int delta = q.size() - maxSize;
 
-        queue.offerFirst(new ExceptionInfo(e, msg, Thread.currentThread().getId(),
-            Thread.currentThread().getName(), U.currentTimeMillis()));
+        for (int i = 0; i < delta && q.size() > maxSize; i++)
+            q.pollLast();
     }
 
     /**
-     * Gets exceptions.
+     * Gets suppressed errors.
      *
-     * @return Exceptions.
+     * @param order Order number to filter errors.
+     * @return List of exceptions that happened after specified order.
      */
-    Collection<ExceptionInfo> getErrors() {
+    public List<ExceptionInfo> getErrors(long order) {
         List<ExceptionInfo> errors = new ArrayList<>();
 
-        for (ExceptionInfo entry : queue)
-            errors.add(entry);
+        for (ExceptionInfo error : q) {
+            if (error.order > order)
+                errors.add(error);
+        }
 
         return errors;
     }
@@ -111,26 +115,26 @@ public class IgniteExceptionRegistry {
 
     /**
      * Prints errors.
+     *
+     * @param log Logger.
      */
-    public void printErrors() {
-        int size = queue.size();
+    public void printErrors(IgniteLogger log) {
+        int size = q.size();
 
-        int cnt = 0;
+        Iterator<ExceptionInfo> descIter = q.descendingIterator();
 
-        Iterator<ExceptionInfo> descIter = queue.descendingIterator();
-
-        while (descIter.hasNext() && cnt < size){
+        for (int i = 0; i < size && descIter.hasNext(); i++) {
             ExceptionInfo error = descIter.next();
 
-            log.error(
-                "Time of occurrence: " + new Date(error.time()) + "\n" +
-                "Error message: " + error.message() + "\n" +
-                "Thread id: " + error.threadId() + "\n" +
-                "Thread name: " + error.threadName(),
+            U.error(
+                log,
+                "Error: " + (i + 1) + U.nl() +
+                "    Time: " + new Date(error.time()) + U.nl() +
+                "    Error: " + error.message() + U.nl() +
+                "    Thread ID: " + error.threadId() + U.nl() +
+                "    Thread name: " + error.threadName(),
                 error.error()
             );
-
-            ++cnt;
         }
     }
 
@@ -140,13 +144,20 @@ public class IgniteExceptionRegistry {
      * @return Errors count.
      */
     public long errorCount() {
-        return errorCnt.get();
+        return errCnt.get();
     }
 
     /**
-     *
+     * Detailed info about suppressed error.
      */
-    static class ExceptionInfo {
+    @SuppressWarnings("PublicInnerClass")
+    public static class ExceptionInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final long order;
+
         /** */
         @GridToStringExclude
         private final Throwable error;
@@ -166,13 +177,16 @@ public class IgniteExceptionRegistry {
         /**
          * Constructor.
          *
-         * @param exception Exception.
-         * @param threadId Thread id.
+         * @param order Locally unique ID that is atomically incremented for each new error.
+         * @param error Suppressed error.
+         * @param msg Message that describe reason why error was suppressed.
+         * @param threadId Thread ID.
          * @param threadName Thread name.
          * @param time Occurrence time.
          */
-        public ExceptionInfo(Throwable exception, String msg, long threadId, String threadName, long time) {
-            this.error = exception;
+        public ExceptionInfo(long order, Throwable error, String msg, long threadId, String threadName, long time) {
+            this.order = order;
+            this.error = error;
             this.threadId = threadId;
             this.threadName = threadName;
             this.time = time;
@@ -180,21 +194,28 @@ public class IgniteExceptionRegistry {
         }
 
         /**
-         * @return Gets message.
+         * @return Locally unique ID that is atomically incremented for each new error.
+         */
+        public long order() {
+            return order;
+        }
+
+        /**
+         * @return Gets message that describe reason why error was suppressed.
          */
         public String message() {
             return msg;
         }
 
         /**
-         * @return Exception.
+         * @return Suppressed error.
          */
         public Throwable error() {
             return error;
         }
 
         /**
-         * @return Gets thread id.
+         * @return Gets thread ID.
          */
         public long threadId() {
             return threadId;
@@ -217,43 +238,6 @@ public class IgniteExceptionRegistry {
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(ExceptionInfo.class, this);
-        }
-    }
-
-    /**
-     * Dummy registry.
-     */
-    private static final class DummyRegistry extends IgniteExceptionRegistry {
-        /**
-         * Constructor.
-         */
-        private DummyRegistry() {
-            super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onException(String msg, Throwable e) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override Collection<ExceptionInfo> getErrors() {
-            return Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setMaxSize(int maxSize) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void printErrors() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long errorCount() {
-            return -1L;
         }
     }
 }

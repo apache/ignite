@@ -547,7 +547,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
         assert(clause != null)
         assert(args != null)
 
-        val query = new SqlQuery(cls, clause)
+        val query = new SqlQuery[K, V](cls, clause)
 
         if (args != null && args.size > 0)
             query.setArgs(args.map(_.asInstanceOf[AnyRef]) : _*)
@@ -669,7 +669,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
         if (args != null && args.nonEmpty)
             query.setArgs(args.map(_.asInstanceOf[AnyRef]) : _*)
 
-        value.queryFields(query)
+        value.query(query)
     }
 
     /**
