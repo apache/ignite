@@ -52,7 +52,7 @@ setIgniteHome
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=H2 database"
+    DOCK_OPTS="-Dapple.awt.UIElement="true""
 fi
 
 # Starts H2 server and console.
