@@ -35,8 +35,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,7 +73,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks. */
-    private final LongAdder execTasks = new LongAdder();
+    private final LongAdder8 execTasks = new LongAdder8();
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx =

@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-import org.jdk8.backport.ThreadLocalRandom8
+import org.jsr166.ThreadLocalRandom8
 
 import scala.collection.JavaConversions._
 
@@ -45,15 +45,12 @@ import scala.collection.JavaConversions._
  * one <i>fact</i> - `FactPurchase`. Queries are executed by joining dimensions and facts
  * in various ways.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
- * <p>
- * Alternatively you can run `ExampleNodeStartup` in another JVM which will
- * start node with `examples/config/example-compute.xml` configuration.
+ * Remote nodes should be started using `ExampleNodeStartup` which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarSnowflakeSchemaExample {
     /** Configuration file name. */
-    private val CONFIG = "examples/config/example-compute.xml"
+    private val CONFIG = "examples/config/example-ignite.xml"
 
     /** Name of replicated cache specified in spring configuration. */
     private val REPL_NAME = "ScalarSnowflakeSchemaExampleReplicated"

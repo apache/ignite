@@ -29,10 +29,10 @@ import org.apache.ignite.scalar.scalar._
  * two nodes. It is analogous to `MessagingPingPongExample` on Java side.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
  */
 object ScalarPingPongExample extends App {
-    scalar("examples/config/example-compute.xml") {
+    scalar("examples/config/example-ignite.xml") {
         pingPong()
         //pingPong2()
     }

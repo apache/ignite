@@ -54,11 +54,10 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
-        suite.addTest(new TestSuite(ComputeClusterGroupsExampleSelfTest.class));
+        suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(CacheStoreLoadDataExampleMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(ContinuationExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(ContinuousMapperExamplesMultiNodeSelfTest.class));

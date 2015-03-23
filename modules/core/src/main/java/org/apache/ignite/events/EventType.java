@@ -640,6 +640,14 @@ public interface EventType {
     public static final int EVT_CACHE_STOPPED = 99;
 
     /**
+     * Built-in event type: cache nodes left.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_NODES_LEFT = 100;
+
+    /**
      * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -953,7 +961,8 @@ public interface EventType {
      */
     public static final int[] EVTS_CACHE_LIFECYCLE = {
         EVT_CACHE_STARTED,
-        EVT_CACHE_STOPPED
+        EVT_CACHE_STOPPED,
+        EVT_CACHE_NODES_LEFT
     };
 
     /**

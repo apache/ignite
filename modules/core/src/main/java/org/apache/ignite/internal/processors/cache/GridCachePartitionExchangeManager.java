@@ -36,8 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -151,6 +151,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         for (DynamicCacheChangeRequest req : batch.requests()) {
                             if (cctx.cache().dynamicCacheRegistered(req))
                                 valid.add(req);
+                            else
+                                cctx.cache().completeStartFuture(req);
                         }
 
                         if (!F.isEmpty(valid)) {
@@ -550,7 +552,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, AffinityTopologyVersion.NONE);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal())
+            if (!cacheCtx.isLocal() && cacheCtx.started())
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
         }
 
@@ -671,9 +673,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean addFuture(GridDhtPartitionsExchangeFuture fut) {
         if (fut.onAdded()) {
             exchWorker.addFuture(fut);
-
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                cacheCtx.preloader().onExchangeFutureAdded();
 
             return true;
         }
@@ -827,7 +826,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          *
          */
         private ExchangeWorker() {
-            super(cctx.gridName(), "partition-exchanger", log);
+            super(cctx.gridName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log);
         }
 
         /**

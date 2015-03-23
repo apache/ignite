@@ -26,6 +26,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.math.*;
@@ -43,6 +44,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
 
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+
     /**
      * @throws Exception If failed.
      */
@@ -56,7 +60,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testByte() throws Exception {
         byte val = 10;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Byte(val), marshalUnmarshal(val));
     }
 
     /**
@@ -65,7 +69,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testShort() throws Exception {
         short val = 100;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Short(val), marshalUnmarshal(val));
     }
 
     /**
@@ -74,7 +78,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testInteger() throws Exception {
         int val = 100;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Integer(val), marshalUnmarshal(val));
     }
 
     /**
@@ -83,7 +87,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testLong() throws Exception {
         long val = 1000L;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Long(val), marshalUnmarshal(val));
     }
 
     /**
@@ -110,11 +114,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testBoolean() throws Exception {
         boolean val = true;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Boolean(val), marshalUnmarshal(val));
 
         val = false;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Boolean(val), marshalUnmarshal(val));
     }
 
     /**
@@ -123,7 +127,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     public void testChar() throws Exception {
         char val = 10;
 
-        assertEquals(val, marshalUnmarshal(val));
+        assertEquals(new Character(val), marshalUnmarshal(val));
     }
 
     /**
@@ -1022,7 +1026,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
-            out.context(CTX, null, true);
+            out.context(clsMap, CTX, null, true);
 
             out.writeObject(obj);
 
@@ -1030,7 +1034,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.context(CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
 

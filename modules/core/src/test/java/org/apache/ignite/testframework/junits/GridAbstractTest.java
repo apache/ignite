@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -1198,7 +1197,7 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                OptimizedMarshaller.clearCache();
+                U.clearClassCache();
                 MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }

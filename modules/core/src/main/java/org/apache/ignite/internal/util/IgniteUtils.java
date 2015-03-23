@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
@@ -45,8 +43,8 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.misc.*;
 
 import javax.management.*;
@@ -1069,6 +1067,22 @@ public abstract class IgniteUtils {
         }
 
         return ctor;
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+        try {
+            return Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            return dflt;
+        }
     }
 
     /**
@@ -6994,28 +7008,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks if given node has specified streamer started.
-     *
-     * @param n Node to check.
-     * @param streamerName Streamer name to check.
-     * @return {@code True} if given node has specified streamer started.
-     */
-    public static boolean hasStreamer(ClusterNode n, @Nullable String streamerName) {
-        assert n != null;
-
-        GridStreamerAttributes[] attrs = n.attribute(ATTR_STREAMER);
-
-        if (attrs != null) {
-            for (GridStreamerAttributes attr : attrs) {
-                if (F.eq(streamerName, attr.name()))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Checks if given node has near cache enabled for the specified
      * partitioned cache.
      *
@@ -7377,8 +7369,6 @@ public abstract class IgniteUtils {
 
         try {
             for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
-                Method[] mtds = c.getDeclaredMethods();
-
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {

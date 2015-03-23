@@ -23,7 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;

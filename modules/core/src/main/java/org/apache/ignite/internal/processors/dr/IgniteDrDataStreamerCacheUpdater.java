@@ -53,10 +53,7 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
             if (log.isDebugEnabled())
                 log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-            IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
-
-            if (!f.isDone())
-                f.get();
+            cache.context().awaitStarted();
 
             CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 

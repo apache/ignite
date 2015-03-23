@@ -44,7 +44,6 @@ import java.util.concurrent.*;
  * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
- * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
@@ -220,6 +219,15 @@ public interface Ignite extends AutoCloseable {
         NearCacheConfiguration<K, V> nearCfg);
 
     /**
+     * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     *
+     * @param cacheCfg Cache configuration.
+     * @param nearCfg Near cache configuration for client.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
      * Starts a near cache on local node if cache was previously started with one of the
      * {@link #createCache(CacheConfiguration)} or {@link #createCache(CacheConfiguration, NearCacheConfiguration)}
      * methods.
@@ -227,7 +235,16 @@ public interface Ignite extends AutoCloseable {
      * @param nearCfg Near cache configuration.
      * @return Cache instance.
      */
-    public <K, V> IgniteCache<K, V> createCache(NearCacheConfiguration<K, V> nearCfg);
+    public <K, V> IgniteCache<K, V> createCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near configuration.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
 
     /**
      * Stops dynamically started cache.
@@ -282,22 +299,6 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of IGFS instances.
      */
     public Collection<IgniteFileSystem> fileSystems();
-
-    /**
-     * Gets an instance of streamer by name, if one does not exist then
-     * {@link IllegalArgumentException} will be thrown.
-     *
-     * @param name Streamer name.
-     * @return Streamer for given name.
-     */
-    public IgniteStreamer streamer(@Nullable String name);
-
-    /**
-     * Gets all instances of streamers.
-     *
-     * @return Collection of all streamer instances.
-     */
-    public Collection<IgniteStreamer> streamers();
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag

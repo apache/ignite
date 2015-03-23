@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -452,7 +451,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -760,7 +760,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new DataStreamProcessor(ctx));
-            startProcessor(new GridStreamProcessor(ctx));
             startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
@@ -1753,6 +1752,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
+                GridCacheProcessor cache = ctx.cache();
+
+                if (cache != null)
+                    cache.blockGateways();
+
                 assert gw.getState() == STARTED || gw.getState() == STARTING;
 
                 // No more kernal calls from this point on.
@@ -1805,7 +1809,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            OptimizedMarshaller.clearCache();
+            U.clearClassCache();
             MarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
@@ -2257,7 +2261,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, null).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2276,14 +2280,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            try {
-                ctx.cache().dynamicStartCache(cacheCfg, null).get();
-            }
-            catch (IgniteCheckedException e) {
-                // Ignore error if cache exists.
-                if (!e.hasCause(IgniteCacheExistsException.class))
-                    throw e;
-            }
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2306,7 +2303,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2316,19 +2313,57 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
-
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
         A.notNull(nearCfg, "nearCfg");
 
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(null, nearCfg).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
 
-            return ctx.cache().publicJCache(nearCfg.getName());
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    @Override
+    public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+
+            return ctx.cache().publicJCache(cacheName);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2342,14 +2377,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public void destroyCache(String cacheName) {
         guard();
 
+        IgniteInternalFuture<?> stopFut;
+
         try {
-            ctx.cache().dynamicStopCache(cacheName).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw CU.convertToCacheException(e);
+            stopFut = ctx.cache().dynamicStopCache(cacheName);
         }
         finally {
             unguard();
+        }
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
         }
     }
 
@@ -2487,30 +2528,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return (T)ctx.pluginProvider(name).plugin();
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStreamer streamer(@Nullable String name) {
-        guard();
-
-        try {
-            return ctx.stream().streamer(name);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteStreamer> streamers() {
-        guard();
-
-        try {
-            return ctx.stream().streamers();
         }
         finally {
             unguard();

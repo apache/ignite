@@ -349,9 +349,9 @@ class VisorCacheCommand {
                             ciT += (
                                 nodeId8Addr(nid),
                                 nm.getTotalCpus,
-                                formatDouble(nm.getHeapMemoryUsed / nm.getHeapMemoryMaximum * 100.0d) + " %",
+                                formatDouble(100d * nm.getHeapMemoryUsed / nm.getHeapMemoryMaximum) + " %",
 
-                                formatDouble(nm.getCurrentCpuLoad * 100.0) + " %",
+                                formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                                 X.timeSpan2HMSM(nm.getUpTime),
                                 cm.keySize(),
                                 (

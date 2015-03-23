@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import java.io.*;
@@ -532,7 +532,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * Predicate for queue continuous query.
      */
-    private static class QueueHeaderPredicate<K, V> implements CacheEntryEventFilter<K, V>,
+    private static class QueueHeaderPredicate<K, V> implements IgniteCacheEntryEventFilter<K, V>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;

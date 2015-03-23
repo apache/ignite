@@ -70,7 +70,7 @@ Example of spring configuration:
                         <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                             <property name="databaseTable" value="PERSON"/>
                             <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.PersonKey"/>
-                            <property name="valueType" value="org.apache.ignite.examples.datagrid.store.model.Person"/>
+                            <property name="valueType" value="org.apache.ignite.examples.datagrid.store.Person"/>
                             <property name="keyFields">
                                 <list>
                                     <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
@@ -149,7 +149,7 @@ CacheTypeMetadata tm = new CacheTypeMetadata();
 tm.setDatabaseTable("PERSON");
 
 tm.setKeyType("java.lang.Long");
-tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
+tm.setValueType("org.apache.ignite.examples.datagrid.store.Person");
 
 // Key fields for PERSONS.
 tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));

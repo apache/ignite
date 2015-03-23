@@ -105,11 +105,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel(boolean mayInterruptIfRunning) {
-        return mayInterruptIfRunning && cancel();
-    }
-
-    /** {@inheritDoc} */
     @Override public V get() {
         try {
             return fut.get();

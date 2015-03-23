@@ -117,7 +117,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
-        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
+        // suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class); TODO Ignite-257.
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
@@ -406,6 +406,9 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // TODO: IGNITE-477.
         // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
+
+        suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
+        suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
 
         return suite;
     }

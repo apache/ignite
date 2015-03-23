@@ -123,12 +123,6 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         if (jobRes.cachesEx() != null)
             taskRes.cachesEx().put(nid, jobRes.cachesEx());
 
-        if (!jobRes.streamers().isEmpty())
-            taskRes.streamers().put(nid, jobRes.streamers());
-
-        if (jobRes.streamersEx() != null)
-            taskRes.streamersEx().put(nid, jobRes.streamersEx());
-
         if (!jobRes.igfss().isEmpty())
             taskRes.igfss().put(nid, jobRes.igfss());
 

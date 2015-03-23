@@ -29,14 +29,14 @@ import scala.collection.JavaConversions._
  * example is to provide the simplest code example of this logic.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
  * <p>
  * Alternatively you can run `ExampleNodeStartup` in another JVM which will
- * start node with `examples/config/example-compute.xml` configuration.
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarCacheAffinityExample extends App {
     /** Configuration file name. */
-    private val CONFIG = "examples/config/example-compute.xml"
+    private val CONFIG = "examples/config/example-ignite.xml"
 
     /** Name of cache. */
     private val NAME = ScalarCacheAffinityExample.getClass.getSimpleName

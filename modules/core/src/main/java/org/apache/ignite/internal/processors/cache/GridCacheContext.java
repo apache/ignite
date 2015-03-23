@@ -144,12 +144,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Grid cache. */
     private GridCacheAdapter<K, V> cache;
 
-    /** No value filter array. */
-    private CacheEntryPredicate[] noValArr;
-
-    /** Has value filter array. */
-    private CacheEntryPredicate[] hasValArr;
-
     /** Cached local rich node. */
     private ClusterNode locNode;
 
@@ -194,6 +188,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     private CacheObjectContext cacheObjCtx;
+
+    /** */
+    private CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Start topology version. */
     private AffinityTopologyVersion startTopVer;
@@ -284,9 +281,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         log = ctx.log(getClass());
 
-        noValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
-        hasValArr = new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
-
         // Create unsafe memory only if writing values
         unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
             new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
@@ -343,6 +337,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean affinityNode() {
         return affNode;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    public void awaitStarted() throws IgniteCheckedException {
+        U.await(startLatch);
+
+        GridCachePreloader<K, V> prldr = preloader();
+
+        if (prldr != null)
+            prldr.startFuture().get();
+    }
+
+    /**
+     * @return Started flag.
+     */
+    public boolean started() {
+        if (startLatch.getCount() != 0)
+            return false;
+
+        GridCachePreloader<K, V> prldr = preloader();
+
+        return prldr == null || prldr.startFuture().isDone();
+    }
+
+    /**
+     * 
+     */
+    public void onStarted() {
+        startLatch.countDown();
     }
 
     /**
@@ -1001,14 +1026,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate[] noValArray() {
-        return noValArr;
+        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate[] hasValArray() {
-        return hasValArr;
+        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
     }
 
     /**

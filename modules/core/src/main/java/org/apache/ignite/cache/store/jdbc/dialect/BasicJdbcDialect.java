@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Represents a dialect of SQL implemented by a particular RDBMS.
+ * Basic implementation of dialect based on JDBC specification.
  */
 public class BasicJdbcDialect implements JdbcDialect {
     /** Default max query parameters count. */
@@ -259,7 +259,7 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxParamsCnt() {
+    @Override public int getMaxParameterCount() {
         return maxParamsCnt;
     }
 
@@ -268,7 +268,7 @@ public class BasicJdbcDialect implements JdbcDialect {
      *
      * @param maxParamsCnt Max query parameters count.
      */
-    public void setMaxParamsCnt(int maxParamsCnt) {
+    public void setMaxParameterCount(int maxParamsCnt) {
         this.maxParamsCnt = maxParamsCnt;
     }
 }

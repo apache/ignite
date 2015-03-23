@@ -438,12 +438,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel(boolean mayInterruptIfRunning) {
-        return mayInterruptIfRunning && cancel();
-
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean cancel() {
         synchronized (mux) {
             if (done)
@@ -843,11 +837,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         /** {@inheritDoc} */
         @Nullable @Override public R get(long timeout, TimeUnit unit) {
             return ref.get(timeout, unit);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            return ref.cancel(mayInterruptIfRunning);
         }
 
         /** {@inheritDoc} */

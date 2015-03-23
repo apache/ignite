@@ -338,7 +338,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         GridCacheEntryEx entry = cache0.peekEx(key);
 
                         assertNotNull("Missing entry for key: " + key, entry);
-                        assertEquals((key < 100 ? -1 : key),
+                        assertEquals(new Integer((key < 100 ? -1 : key)),
                             CU.value(entry.rawGetOrUnmarshal(false), cache0.context(), false));
                     }
                 }

@@ -22,9 +22,8 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
-import org.jdk8.backport.*;
-import org.jdk8.backport.ConcurrentLinkedDeque8.*;
-import org.jdk8.backport.LongAdder;
+import org.jsr166.*;
+import org.jsr166.ConcurrentLinkedDeque8.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -60,7 +59,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
-    private final LongAdder curSize = new LongAdder();
+    private final LongAdder8 curSize = new LongAdder8();
 
     /**
      * Default constructor.

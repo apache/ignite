@@ -63,7 +63,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     private static final byte IS_UNSWAPPED_MASK = 0x02;
 
     /** */
-    public static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
+    public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
      * NOTE
@@ -1710,17 +1710,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                     assert conflictCtx != null;
 
+                    boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+
                     // Use old value?
                     if (conflictCtx.isUseOld()) {
                         GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
 
                         // Handle special case with atomic comparator.
-                        if (!isNew() &&                                                           // Not initial value,
-                            verCheck &&                                                           // and atomic version check,
-                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
-                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
-                            cctx.writeThrough() &&                                                // and store is enabled,
-                            primary)                                                              // and we are primary.
+                        if (!isNew() &&                                                                       // Not initial value,
+                            verCheck &&                                                                       // and atomic version check,
+                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer, ignoreTime) == 0 && // and both versions are equal,
+                            cctx.writeThrough() &&                                                            // and store is enabled,
+                            primary)                                                                          // and we are primary.
                         {
                             CacheObject val = rawGetOrUnmarshalUnlocked(false);
 
@@ -1763,11 +1765,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     conflictVer = null;
             }
 
+            boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+
             // Perform version check only in case there was no explicit conflict resolution.
             if (conflictCtx == null) {
                 if (verCheck) {
-                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
-                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.writeThrough() && primary) {
+                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) >= 0) {
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 && cctx.writeThrough() && primary) {
                             if (log.isDebugEnabled())
                                 log.debug("Received entry update with same version as current (will update store) " +
                                     "[entry=" + this + ", newVer=" + newVer + ']');
@@ -1800,7 +1804,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                 }
                 else
-                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer) <= 0 :
+                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) <= 0 :
                         "Invalid version for inner update [entry=" + this + ", newVer=" + newVer + ']';
             }
 
@@ -3943,9 +3947,21 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @return {@code True} if entry is visitable.
      */
     public boolean visitable(CacheEntryPredicate[] filter) {
+        boolean rmv = false;
+
         try {
-            if (obsoleteOrDeleted() || (filter != CU.empty0() &&
-                !cctx.isAll(this, filter)))
+            synchronized (this) {
+                if (obsoleteOrDeleted())
+                    return false;
+
+                if (checkExpired()) {
+                    rmv = markObsolete0(cctx.versions().next(this.ver), true);
+
+                    return false;
+                }
+            }
+
+            if (filter != CU.empty0() && !cctx.isAll(this, filter))
                 return false;
         }
         catch (IgniteCheckedException e) {
@@ -3962,6 +3978,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 throw err;
 
             return false;
+        }
+        finally {
+            if (rmv) {
+                onMarkedObsolete();
+
+                cctx.cache().map().removeEntry(this);
+            }
         }
 
         IgniteInternalTx tx = cctx.tm().localTxx();

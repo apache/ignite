@@ -89,6 +89,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
 
 //        TODO IGNITE-77: restore adapter usage.
+//        TODO use cacheContext.awaitStarted() instead of preloader().startFuture().get()
 //        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 //
 //        IgniteFuture<?> f = cache.context().preloader().startFuture();

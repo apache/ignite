@@ -39,13 +39,12 @@ import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -443,21 +442,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 77:
                 msg = new GridTaskResultResponse();
-
-                break;
-
-            case 79:
-                msg = new GridStreamerCancelRequest();
-
-                break;
-
-            case 80:
-                msg = new GridStreamerExecutionRequest();
-
-                break;
-
-            case 81:
-                msg = new GridStreamerResponse();
 
                 break;
 

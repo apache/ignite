@@ -18,11 +18,10 @@
 package org.apache.ignite.loadtests.colocation;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.integration.*;
 import java.util.concurrent.*;
@@ -62,7 +61,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
 
             assert cache != null;
 
-            final LongAdder adder = new LongAdder();
+            final LongAdder8 adder = new LongAdder8();
 
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;

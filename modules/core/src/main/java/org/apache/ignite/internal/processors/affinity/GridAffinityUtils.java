@@ -166,6 +166,8 @@ class GridAffinityUtils {
 
             GridKernalContext ctx = kernal.context();
 
+            cctx.affinity().affinityReadyFuture(topVer).get();
+
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),

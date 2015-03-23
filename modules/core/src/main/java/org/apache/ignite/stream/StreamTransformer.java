@@ -27,25 +27,27 @@ import java.util.*;
  * Convenience adapter to transform update existing values in streaming cache
  * based on the previously cached value.
  */
-public class StreamTransformer<K, V> implements StreamReceiver<K, V> {
+public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, EntryProcessor<K, V, Object> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Entry processor. */
-    private EntryProcessor<K, V, Object> ep;
-
-    /**
-     * Entry processor to update cache values based on the previously cached value.
-     *
-     * @param ep Entry processor.
-     */
-    public StreamTransformer(CacheEntryProcessor<K, V, Object> ep) {
-        this.ep = ep;
-    }
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
         for (Map.Entry<K, V> entry : entries)
-            cache.invoke(entry.getKey(), ep);
+            cache.invoke(entry.getKey(), this);
+    }
+
+    /**
+     * Creates a new transformer based on instance of {@link CacheEntryProcessor}.
+     *
+     * @param ep Entry processor.
+     * @return Stream transformer.
+     */
+    public static <K, V> StreamTransformer<K, V> from(final CacheEntryProcessor<K, V, Object> ep) {
+        return new StreamTransformer<K, V>() {
+            @Override public Object process(MutableEntry<K, V> entry, Object... args) throws EntryProcessorException {
+                return ep.process(entry, args);
+            }
+        };
     }
 }
