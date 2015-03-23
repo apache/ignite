@@ -12,20 +12,31 @@ and Java domain model POJOs.
 
 Schema Import Utility Demo
 ==========================
-
 1. Start H2 database: "examples/schema-import/bin/h2-server.sh"
-   H2 database will start and H2 Console will be opened in your default browser.
+   H2 server will start and H2 Console will be opened in your default browser.
 
-2. Connect to H2 database with all default settings.
+2. Connect to H2 database with following settings:
+   Select "Generic H2 (Server)" settings.
+   Enter JDBC URL: "jdbc:h2:tcp://localhost/IGNITE_PATH/examples/schema-import/demo".
+   Note, you need to replace "IGNITE_PATH" with full path to folder where Ignite was installed.
+   Click "Connect".
 
 3. Paste content of "examples/schema-import/bin/db-init.sql" into H2 Console and execute.
 
 4. Start Schema Import utility: "bin/ignite-schema-import.sh examples/schema-import/bin/schema-import.properties"
    Schema Utility will start with predefined settings for this demo.
-   Click "Next", "Generate" and answer "Yes" to override warning.
+   Click "Next", "Generate" and answer "Yes" to all override warnings.
 
 5. Import "examples/schema-import/pom.xml" in your Java IDE.
-   Run "Demo.java" example.
+
+6. Set datasource in `CacheConfig.store()` method to:
+
+   DataSource dataSource =
+    org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/IGNITE_PATH/examples/schema-import/demo", "sa", "");
+
+   Note, you need to replace "IGNITE_PATH" with full path to folder where Ignite was installed.
+
+7. Run "Demo.java" example.
 
 For more information on how to get started with Apache Ignite Schema Import Utility please visit:
 
