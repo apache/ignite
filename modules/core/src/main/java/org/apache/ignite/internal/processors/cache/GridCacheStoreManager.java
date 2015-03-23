@@ -779,7 +779,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
         boolean ses = initSession(tx);
 
         try {
-            store.txEnd(commit);
+            store.sessionEnd(commit);
         }
         finally {
             if (ses) {
