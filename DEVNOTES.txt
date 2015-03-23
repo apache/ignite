@@ -27,4 +27,4 @@ To check license headers use:
 
 mvn clean validate -Pcheck-licenses
 
-For more information (exclude list and etc.) see "check-licenses" profile in pom.xml.
+For more information (e.g. exclude list) see "check-licenses" profile in pom.xml.
