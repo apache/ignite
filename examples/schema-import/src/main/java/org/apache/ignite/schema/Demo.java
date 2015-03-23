@@ -72,8 +72,8 @@ public class Demo {
             cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
                 "select * from PERSON where ID <= 3");
 
-            for (Cache.Entry<PersonKey, Person> aCache : cache)
-                System.out.println(">>> Loaded Person: " + aCache);
+            for (Cache.Entry<PersonKey, Person> person : cache)
+                System.out.println(">>> Loaded Person: " + person);
         }
     }
 }
