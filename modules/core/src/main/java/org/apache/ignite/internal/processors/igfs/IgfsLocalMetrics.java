@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 /**
  * Value object holding all local IGFS metrics which cannot be determined using file system traversal.

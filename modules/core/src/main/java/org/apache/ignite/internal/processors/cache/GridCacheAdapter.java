@@ -48,8 +48,8 @@ import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;

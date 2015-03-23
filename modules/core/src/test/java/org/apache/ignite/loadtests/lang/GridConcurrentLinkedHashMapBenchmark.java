@@ -18,13 +18,13 @@
 package org.apache.ignite.loadtests.lang;
 
 import org.apache.ignite.internal.util.typedef.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Benchmark for different accessors in {@link ConcurrentLinkedHashMap}.
+ * Benchmark for different accessors in {@link org.jsr166.ConcurrentLinkedHashMap}.
  */
 public class GridConcurrentLinkedHashMapBenchmark {
     /** Number of keys to use in benchmark. */
@@ -48,7 +48,7 @@ public class GridConcurrentLinkedHashMapBenchmark {
     }
 
     /**
-     * Tests {@link ConcurrentLinkedHashMap#getSafe(Object)} method.
+     * Tests {@link org.jsr166.ConcurrentLinkedHashMap#getSafe(Object)} method.
      *
      * @param threadCnt Number of threads to run.
      * @param writeProportion Amount of writes from total number of iterations.

@@ -20,7 +20,7 @@ package org.apache.ignite.lang;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;

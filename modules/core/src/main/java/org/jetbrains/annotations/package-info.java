@@ -15,29 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller;
-
-import org.apache.ignite.internal.*;
-import org.jsr166.*;
-
-import java.util.concurrent.*;
+/*
+ * This software includes code from IntelliJ IDEA Community Edition
+ * Copyright (C) JetBrains s.r.o.
+ * https://www.jetbrains.com/idea/
+ */
 
 /**
- * Test marshaller context.
+ * {@code Nullable} and {@code NotNull} annotations.
  */
-public class MarshallerContextTestImpl extends MarshallerContextAdapter {
-    /** */
-    private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
-
-    /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) {
-        map.putIfAbsent(id, clsName);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String className(int id) {
-        return map.get(id);
-    }
-}
+package org.jetbrains.annotations;

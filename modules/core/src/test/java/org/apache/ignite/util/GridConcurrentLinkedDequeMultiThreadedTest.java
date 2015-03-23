@@ -19,8 +19,8 @@ package org.apache.ignite.util;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
-import org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import org.jsr166.*;
+import org.jsr166.ConcurrentLinkedDeque8.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Test for {@link ConcurrentLinkedDeque8}.
+ * Test for {@link org.jsr166.ConcurrentLinkedDeque8}.
  */
 public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstractTest {
     /** */

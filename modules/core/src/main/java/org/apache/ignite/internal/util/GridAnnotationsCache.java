@@ -20,8 +20,8 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.lang.annotation.*;
 import java.util.concurrent.*;

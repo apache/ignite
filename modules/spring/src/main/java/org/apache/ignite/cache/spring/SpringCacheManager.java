@@ -19,7 +19,7 @@ package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 import org.springframework.beans.factory.*;
 import org.springframework.cache.*;
 
