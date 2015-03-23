@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.configuration.*;
 
@@ -85,5 +86,10 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setNearStartSize(int nearStartSize) {
         this.nearStartSize = nearStartSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NearCacheConfiguration.class, this, super.toString());
     }
 }
