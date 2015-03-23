@@ -197,7 +197,7 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
 
     /**
-     * Dynamically starts new cache with the given cache configuration.
+     * Dynamically starts new cache specified within given Spring XML configuration file.
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a client cache on local node.
@@ -216,7 +216,7 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg);
 
     /**
-     * Gets existing cache with the given name or creates new one with the given configuration.
+     * Gets existing cache with the given name or creates new one specified within given Spring XML configuration file.
      *
      * @param springCfgPath Spring XML configuration file path or URL.
      * @return Existing or newly created cache.
@@ -238,7 +238,7 @@ public interface Ignite extends AutoCloseable {
         NearCacheConfiguration<K, V> nearCfg);
 
     /**
-     * Dynamically starts new cache with the given cache configuration.
+     * Dynamically starts new cache specified within given Spring XML configuration file.
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a near cache with the given configuration on local node.
@@ -260,7 +260,7 @@ public interface Ignite extends AutoCloseable {
         NearCacheConfiguration<K, V> nearCfg);
 
     /**
-     * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     * Gets existing cache specified within given Spring XML configuration file or creates one if it does not exist.
      *
      * @param springCfgPath Spring XML configuration file for cache path or URL.
      * @param nearSpringCfgPath Spring XML configuration file for near cache path or URL.
