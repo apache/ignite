@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store;
+package org.apache.ignite.examples.datagrid.store.auto;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
-import static org.apache.ignite.examples.datagrid.store.CacheStoreExampleCacheConfigurator.*;
-
 /**
- * Demonstrates usage of cache with underlying persistent store configured.
+ * Example of {@link CacheJdbcPojoStore} implementation that uses JDBC
+ * transaction with cache transactions and maps {@link Long} to {@link Person}.
+ * <p>
+ * To run this example your should start {@link H2Startup} first.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -35,7 +38,7 @@ import static org.apache.ignite.examples.datagrid.store.CacheStoreExampleCacheCo
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheStoreExample {
+public class CacheAutoStoreExample {
     /** Global person ID to use across entire example. */
     private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
@@ -49,10 +52,9 @@ public class CacheStoreExample {
         // To start ignite with desired configuration uncomment the appropriate line.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> Cache store example started.");
-            System.out.println(">>> Store: " + STORE);
+            System.out.println(">>> Cache auto store example started.");
 
-            CacheConfiguration<Long, Person> cacheCfg = CacheStoreExampleCacheConfigurator.cacheConfiguration();
+            CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
 
             try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
                 try (Transaction tx = ignite.transactions().txStart()) {

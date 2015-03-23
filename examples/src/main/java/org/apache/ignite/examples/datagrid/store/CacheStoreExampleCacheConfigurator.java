@@ -18,17 +18,13 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.store.dummy.*;
 import org.apache.ignite.examples.datagrid.store.hibernate.*;
 import org.apache.ignite.examples.datagrid.store.jdbc.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import javax.cache.configuration.*;
-import java.sql.*;
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
@@ -44,9 +40,6 @@ public class CacheStoreExampleCacheConfigurator {
 
     /** Use org.apache.ignite.examples.datagrid.store.hibernate.CacheHibernatePersonStore to run example. */
     public static final String HIBERNATE = "HIBERNATE";
-
-    /** Use org.apache.ignite.examples.datagrid.store.jdbc.CacheJdbcPojoPersonStore to run example. */
-    public static final String AUTO = "AUTO";
 
     /** Store to use. */
     public static final String STORE = DUMMY;
@@ -80,10 +73,6 @@ public class CacheStoreExampleCacheConfigurator {
                         store = new CacheHibernatePersonStore();
                         break;
 
-                    case AUTO:
-                        store = new CacheJdbcPojoPersonStore();
-                        break;
-
                     default:
                         throw new IllegalStateException("Unexpected store configured: " + STORE);
                 }
@@ -92,34 +81,9 @@ public class CacheStoreExampleCacheConfigurator {
             }
         });
 
-        if (STORE.equals(AUTO))
-            cacheCfg.setTypeMetadata(typeMetadata());
-
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
 
         return cacheCfg;
-    }
-
-    /**
-     * @return Type mapping description.
-     */
-    private static Collection<CacheTypeMetadata> typeMetadata() {
-        CacheTypeMetadata tm = new CacheTypeMetadata();
-
-        tm.setDatabaseTable("PERSON");
-
-        tm.setKeyType("java.lang.Long");
-        tm.setValueType("org.apache.ignite.examples.datagrid.store.model.Person");
-
-        tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
-
-        tm.setValueFields(F.asList(
-            new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", long.class),
-            new CacheTypeFieldMetadata("FIRST_NAME", Types.VARCHAR, "firstName", String.class),
-            new CacheTypeFieldMetadata("LAST_NAME", Types.VARCHAR, "lastName", String.class)
-        ));
-
-        return F.asList(tm);
     }
 }
