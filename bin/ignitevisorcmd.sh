@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-# Remember visor tester command line parameters
+# Remember command line parameters
 ARGS=$@
 
 #

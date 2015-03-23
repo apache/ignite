@@ -19,7 +19,10 @@
 #
 # Starts Ignite Schema Import Utility.
 #
- 
+
+# Remember command line parameters
+ARGS=$@
+
 #
 # Import common functions.
 #
@@ -76,9 +79,9 @@ fi
 #
 case $osname in
     Darwin*)
-        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
+        "$JAVA" ${JVM_OPTS} "${DOCK_OPTS}" -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp ${ARGS}
         ;;
    *)
-        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp "$@"
+        "$JAVA" ${JVM_OPTS} -cp "${CP}" org.apache.ignite.schema.ui.SchemaImportApp ${ARGS}
         ;;
 esac
