@@ -702,7 +702,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
         finally {
             if (initSes && storeMgr != null)
-                storeMgr.endSession();
+                storeMgr.endSession(null);
         }
     }
 

@@ -270,7 +270,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                endSession();
+                endSession(tx);
             }
 
             if (log.isDebugEnabled())
@@ -445,7 +445,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                endSession();
+                endSession(tx);
             }
 
             if (log.isDebugEnabled())
@@ -498,7 +498,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                endSession();
+                endSession(null);
             }
 
             if (log.isDebugEnabled())
@@ -554,7 +554,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
-                endSession();
+                endSession(tx);
             }
 
             if (log.isDebugEnabled())
@@ -617,7 +617,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                     throw new IgniteCheckedException(e);
                 }
                 finally {
-                    endSession();
+                    endSession(tx);
                 }
 
                 if (log.isDebugEnabled())
@@ -664,7 +664,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
-                endSession();
+                endSession(tx);
             }
 
             if (log.isDebugEnabled())
@@ -718,7 +718,7 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
                 throw new IgniteCheckedException(e);
             }
             finally {
-                endSession();
+                endSession(tx);
             }
 
             if (log.isDebugEnabled())
@@ -785,9 +785,12 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     /**
      * Clears session holder.
      */
-    void endSession() {
+    void endSession(@Nullable IgniteInternalTx tx) {
         if (sesHolder != null)
             sesHolder.set(null);
+
+        if (tx == null)
+            store.sessionEnd(true);
     }
 
     /**
