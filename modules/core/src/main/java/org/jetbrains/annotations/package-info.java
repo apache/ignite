@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+/*
+ * This software includes code from IntelliJ IDEA Community Edition
+ * Copyright (C) JetBrains s.r.o.
+ * https://www.jetbrains.com/idea/
+ */
+
 /**
  * {@code Nullable} and {@code NotNull} annotations.
  */
