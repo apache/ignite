@@ -55,7 +55,7 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>readme.txt</include>
+                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
