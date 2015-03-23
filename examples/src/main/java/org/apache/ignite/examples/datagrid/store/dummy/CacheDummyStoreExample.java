@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store;
+package org.apache.ignite.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.examples.datagrid.store.CacheStoreExampleCacheConfigurator.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
+ * <p>
+ * This example uses {@link CacheDummyPersonStore} as a persistent store.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -35,7 +39,13 @@ import static org.apache.ignite.examples.datagrid.store.CacheStoreExampleCacheCo
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheStoreExample {
+public class CacheDummyStoreExample {
+    /** Heap size required to run this example. */
+    public static final int MIN_MEMORY = 1024 * 1024 * 1024;
+
+    /** Number of entries to load. */
+    private static final int ENTRY_COUNT = 100_000;
+
     /** Global person ID to use across entire example. */
     private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
@@ -46,15 +56,35 @@ public class CacheStoreExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
+        ExamplesUtils.checkMinMemory(MIN_MEMORY);
+
         // To start ignite with desired configuration uncomment the appropriate line.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
-            System.out.println(">>> Store: " + STORE);
 
-            CacheConfiguration<Long, Person> cacheCfg = CacheStoreExampleCacheConfigurator.cacheConfiguration();
+            CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>();
 
-            try (IgniteCache<Long, Person> cache = ignite.createCache(cacheCfg)) {
+            // Set atomicity as transaction, since we are showing transactions in example.
+            cacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+            // Configure Dummy store.
+            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheDummyPersonStore.class));
+
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
+                long start = System.currentTimeMillis();
+
+                // Start loading cache from persistent store on all caching nodes.
+                cache.loadCache(null, ENTRY_COUNT);
+
+                long end = System.currentTimeMillis();
+
+                System.out.println(">>> Loaded " + cache.size() + " keys with backups in " + (end - start) + "ms.");
+
+                // Start transaction and make several operations with write/read-through.
                 try (Transaction tx = ignite.transactions().txStart()) {
                     Person val = cache.get(id);
 
@@ -72,22 +102,6 @@ public class CacheStoreExample {
                 }
 
                 System.out.println("Read value after commit: " + cache.get(id));
-
-                // If example run with CacheJdbcPojoStore.
-                // Example of CacheJdbcPojoStore special features.
-                if (STORE.equals(AUTO)) {
-                    System.out.println(">>> Example of CacheJdbcPojoStore special feature: load from DB with custom SQL.");
-
-                    cache.clear();
-
-                    System.out.println("Cache size: " + cache.size());
-
-                    // Load values from DB into store with custom SQL.
-                    cache.loadCache(null, "java.lang.Long", "select * from PERSON where id = 2");
-
-                    System.out.println("Cache size: " + cache.size());
-                    System.out.println("Person: " + cache.get(2L));
-                }
             }
         }
     }
