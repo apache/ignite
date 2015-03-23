@@ -162,7 +162,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             fail();
         }
 

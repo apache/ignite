@@ -26,7 +26,7 @@ import java.util.*;
  * Session for the cache store operations. The main purpose of cache store session
  * is to hold context between multiple store invocations whenever in transaction. For example,
  * if using JDBC, you can store the ongoing database connection in the session {@link #properties()} map.
- * You can then commit this connection in the {@link CacheStore#txEnd(boolean)} method.
+ * You can then commit this connection in the {@link CacheStore#sessionEnd(boolean)} method.
  * <p>
  * {@code CacheStoreSession} can be injected into an implementation of {@link CacheStore} with
  * {@link CacheStoreSessionResource @CacheStoreSessionResource} annotation.

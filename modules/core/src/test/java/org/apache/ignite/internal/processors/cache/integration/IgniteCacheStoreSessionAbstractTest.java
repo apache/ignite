@@ -191,7 +191,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         expData.add(new ExpectedData(tx, expMtd, new HashMap<>(), expCacheName));
 
         if (tx)
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
     }
 
     /**
@@ -244,10 +244,10 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
 
-            checkSession("txEnd");
+            checkSession("sessionEnd");
         }
 
         /** {@inheritDoc} */
