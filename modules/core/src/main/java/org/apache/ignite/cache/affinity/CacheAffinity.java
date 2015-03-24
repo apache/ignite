@@ -205,15 +205,10 @@ public interface CacheAffinity<K> {
     /**
      * Gets primary and backup nodes for the key. Note that primary node is always
      * first in the returned collection.
-     * <p>
-     * If there are only cache nodes in the projection with
-     * {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
-     * method will return an empty collection.
      *
      * @param key Key to get affinity nodes for.
      * @return Collection of primary and backup nodes for the key with primary node
-     *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      always first.
      */
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
@@ -242,15 +237,10 @@ public interface CacheAffinity<K> {
     /**
      * Gets primary and backup nodes for partition. Note that primary node is always
      * first in the returned collection.
-     * <p>
-     * If there are only cache nodes in the projection with
-     * {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
-     * method will return an empty collection.
      *
      * @param part Partition to get affinity nodes for.
      * @return Collection of primary and backup nodes for partition with primary node
-     *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      always first.
      */
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
 }
