@@ -50,7 +50,7 @@ public enum IgniteComponentType {
     /** Spring XML parsing. */
     SPRING(
         null,
-        "org.apache.ignite.internal.processors.spring.IgniteSpringProcessorImpl",
+        "org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl",
         "ignite-spring"
     ),
 
@@ -64,7 +64,7 @@ public enum IgniteComponentType {
     /** Nodes starting using SSH. */
     SSH(
         null,
-        "org.apache.ignite.internal.util.nodestart.IgniteSshProcessorImpl",
+        "org.apache.ignite.internal.util.nodestart.IgniteSshHelperImpl",
         "ignite-ssh"
     ),
 

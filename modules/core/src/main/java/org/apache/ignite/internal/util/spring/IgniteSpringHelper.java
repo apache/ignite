@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.spring;
+package org.apache.ignite.internal.util.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
@@ -26,10 +26,10 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Spring processor which can parse Spring configuration files, interface was introduced to avoid mandatory
+ * Spring helper which can parse Spring configuration files, interface was introduced to avoid mandatory
  * runtime dependency on Spring framework.
  */
-public interface IgniteSpringProcessor {
+public interface IgniteSpringHelper {
     /**
      * Loads all grid configurations specified within given configuration file.
      * <p>

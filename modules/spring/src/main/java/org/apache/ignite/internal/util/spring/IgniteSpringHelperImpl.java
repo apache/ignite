@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.spring;
+package org.apache.ignite.internal.util.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
@@ -39,9 +39,9 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Spring configuration processor.
+ * Spring configuration helper.
  */
-public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
+public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     /** Path to {@code ignite.xml} file. */
     public static final String IGNITE_XML_PATH = "META-INF/ignite.xml";
 

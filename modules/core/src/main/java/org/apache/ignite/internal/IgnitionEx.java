@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.processors.spring.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -562,7 +562,7 @@ public class IgnitionEx {
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL springCfgUrl) throws IgniteCheckedException {
-        IgniteSpringProcessor spring = SPRING.create(false);
+        IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
     }
@@ -910,7 +910,7 @@ public class IgnitionEx {
         A.notNull(springXmlUrl, "springXmlUrl");
         A.notNull(beanName, "beanName");
 
-        IgniteSpringProcessor spring = SPRING.create(false);
+        IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadBean(springXmlUrl, beanName);
     }
