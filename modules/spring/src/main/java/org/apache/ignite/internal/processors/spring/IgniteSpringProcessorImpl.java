@@ -105,24 +105,7 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     @Override public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException {
         assert beanClasses.length > 0;
 
-        GenericApplicationContext springCtx;
-
-        try {
-            springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-            springCtx.refresh();
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + cfgUrl + ']', e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    cfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
+        ApplicationContext springCtx = initContext(cfgUrl);
 
         Map<Class<?>, Object> beans = new HashMap<>();
 
@@ -130,6 +113,52 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
             beans.put(cls, bean(springCtx, cls));
 
         return beans;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(url);
+
+        try {
+            return (T)springCtx.getBean(beanName);
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist [url=" + url +
+                ", beanName=" + beanName + ']');
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name [url=" + url +
+                ", beanName=" + beanName + ']', e);
+        }
+    }
+
+    /**
+     * @param url XML file URL.
+     * @return Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private ApplicationContext initContext(URL url) throws IgniteCheckedException {
+        GenericApplicationContext springCtx;
+
+        try {
+            springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(url));
+
+            springCtx.refresh();
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + url + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    url + ", err=" + e.getMessage() + ']', e);
+        }
+
+        return springCtx;
     }
 
     /** {@inheritDoc} */

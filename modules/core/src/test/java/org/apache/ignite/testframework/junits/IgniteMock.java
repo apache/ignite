@@ -171,17 +171,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(@Nullable String springCfgPath) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath) {
         return null;
     }
 
@@ -192,17 +182,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(String springCfgPath, String nearSpringCfgPath) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, String nearSpringCfgPath) {
         return null;
     }
 
@@ -212,17 +192,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String springCfgPath, String nearSpringCfgPath) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, String nearSpringCfgPath) {
         return null;
     }
 

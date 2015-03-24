@@ -880,6 +880,42 @@ public class IgnitionEx {
     }
 
     /**
+     * Loads spring bean by name.
+     *
+     * @param springXmlPath Spring XML file path.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static <T> T loadSpringBean(String springXmlPath, String beanName) throws IgniteCheckedException {
+        A.notNull(springXmlPath, "springXmlPath");
+        A.notNull(beanName, "beanName");
+
+        URL url = U.resolveSpringUrl(springXmlPath);
+
+        assert url != null;
+
+        return loadSpringBean(url, beanName);
+    }
+
+    /**
+     * Loads spring bean by name.
+     *
+     * @param springXmlUrl Spring XML file URL.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteCheckedException {
+        A.notNull(springXmlUrl, "springXmlUrl");
+        A.notNull(beanName, "beanName");
+
+        IgniteSpringProcessor spring = SPRING.create(false);
+
+        return spring.loadBean(springXmlUrl, beanName);
+    }
+
+    /**
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.

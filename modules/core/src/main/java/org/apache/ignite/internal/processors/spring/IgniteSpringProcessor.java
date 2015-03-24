@@ -71,6 +71,16 @@ public interface IgniteSpringProcessor {
     public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException;
 
     /**
+     * Loads bean instance by name.
+     *
+     * @param url Spring XML file URL.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException;
+
+    /**
      * Gets user version for given class loader by checking
      * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
      * {@code ignite.xml} file is not found, or user version is not specified there,
