@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.processors.spring.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -562,7 +562,7 @@ public class IgnitionEx {
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL springCfgUrl) throws IgniteCheckedException {
-        IgniteSpringProcessor spring = SPRING.create(false);
+        IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
     }
@@ -877,6 +877,42 @@ public class IgnitionEx {
             throw new IgniteCheckedException("Failed to start grid with provided configuration.");
 
         return grid;
+    }
+
+    /**
+     * Loads spring bean by name.
+     *
+     * @param springXmlPath Spring XML file path.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static <T> T loadSpringBean(String springXmlPath, String beanName) throws IgniteCheckedException {
+        A.notNull(springXmlPath, "springXmlPath");
+        A.notNull(beanName, "beanName");
+
+        URL url = U.resolveSpringUrl(springXmlPath);
+
+        assert url != null;
+
+        return loadSpringBean(url, beanName);
+    }
+
+    /**
+     * Loads spring bean by name.
+     *
+     * @param springXmlUrl Spring XML file URL.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteCheckedException {
+        A.notNull(springXmlUrl, "springXmlUrl");
+        A.notNull(beanName, "beanName");
+
+        IgniteSpringHelper spring = SPRING.create(false);
+
+        return spring.loadBean(springXmlUrl, beanName);
     }
 
     /**
@@ -1870,7 +1906,7 @@ public class IgnitionEx {
 
                 cache.setName(CU.MARSH_CACHE_NAME);
                 cache.setCacheMode(REPLICATED);
-                cache.setAtomicityMode(TRANSACTIONAL);
+                cache.setAtomicityMode(ATOMIC);
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);

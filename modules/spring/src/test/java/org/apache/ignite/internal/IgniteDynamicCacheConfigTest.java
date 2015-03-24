@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
@@ -86,12 +85,13 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDynamicCacheStartFromConfig() throws Exception {
-        IgniteCache cache = ignite(0).createCache("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+        IgniteCache cache = ignite(0).createCache(load(
+            "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
         assertEquals("TestDynamicCache", cache.getName());
 
-        IgniteCache cache1 = ignite(0).getOrCreateCache(
-            "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+        IgniteCache cache1 = ignite(0).getOrCreateCache(load(
+            "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
         assertEquals(cache, cache1);
     }
@@ -105,16 +105,16 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
         try {
             startGrid(nodeCount() + 1);
 
-            IgniteCache cache = ignite(0).createCache(
-                "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml");
+            IgniteCache cache = ignite(0).createCache(load(
+                "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml"));
 
             assertEquals(CACHE_NAME, cache.getName());
 
-            IgniteCache<Integer, Integer> clientCache1 = ignite(nodeCount() + 1).createNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+            IgniteCache clientCache1 = ignite(nodeCount() + 1).createNearCache(CACHE_NAME,
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             IgniteCache clientCache2 = ignite(nodeCount() + 1).getOrCreateNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             assertEquals(clientCache1, clientCache2);
 
@@ -137,16 +137,16 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
             startGrid(clientNode);
 
             IgniteCache cache = ignite(clientNode).createCache(
-                "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml",
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+                load("modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml"),
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             assertEquals(cache.getName(), CACHE_NAME);
 
-            IgniteCache<Integer, Integer> clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+            IgniteCache clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             IgniteCache clientCache2 = ignite(clientNode).getOrCreateNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             assertEquals(clientCache1, clientCache2);
 
@@ -163,8 +163,8 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     public void testGetOrCreateNearCache() throws Exception {
         testAttribute = false;
 
-        IgniteCache cache = ignite(0).createCache(
-            "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml");
+        IgniteCache cache = ignite(0).createCache(load(
+            "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml"));
 
         try {
             int clientNode = nodeCount() + 1;
@@ -172,16 +172,16 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
             startGrid(clientNode);
 
             IgniteCache cache1 = ignite(clientNode).getOrCreateCache(
-                "modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml",
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+                load("modules/spring/src/test/java/org/apache/ignite/internal/filtered-cache.xml"),
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             assertEquals(cache.getName(), cache1.getName());
 
-            IgniteCache<Integer, Integer> clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+            IgniteCache clientCache1 = ignite(clientNode).createNearCache(CACHE_NAME,
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             IgniteCache clientCache2 = ignite(clientNode).getOrCreateNearCache(CACHE_NAME,
-                "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml");
+                loadNear("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
             assertEquals(clientCache1, clientCache2);
 
@@ -197,21 +197,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
      */
     public void testDynamicCacheStartFromNotExistConfig() throws Exception {
         try {
-            ignite(0).getOrCreateCache("config/cache.xml");
-
-            fail();
-        }
-        catch (IgniteException e) {
-            // No-op.
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDynamicCacheStartFromInvalidConfig() throws Exception {
-        try {
-            ignite(0).getOrCreateCache("modules/spring/src/test/java/org/apache/ignite/internal/invalid-cache.xml");
+            ignite(0).getOrCreateCache(load("config/cache.xml"));
 
             fail();
         }
@@ -230,7 +216,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
                 GridTestUtils.resolveIgnitePath("modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
 
-            IgniteCache cache = ignite(0).createCache(srv.getBaseUrl());
+            IgniteCache cache = ignite(0).createCache(load(srv.getBaseUrl()));
 
             assertEquals("TestDynamicCache", cache.getName());
         }
@@ -238,5 +224,21 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
             if (srv != null)
                 srv.stop(1);
         }
+    }
+
+    /**
+     * @param path Path.
+     * @return Configuration.
+     */
+    private CacheConfiguration load(String path) {
+        return Ignition.loadSpringBean(path, "cache-configuration");
+    }
+
+    /**
+     * @param path Path.
+     * @return Configuration.
+     */
+    private NearCacheConfiguration loadNear(String path) {
+        return Ignition.loadSpringBean(path, "nearCache-configuration");
     }
 }

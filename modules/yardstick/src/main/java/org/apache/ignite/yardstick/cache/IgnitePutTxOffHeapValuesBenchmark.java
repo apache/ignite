@@ -27,6 +27,6 @@ import org.apache.ignite.cache.*;
 public class IgnitePutTxOffHeapValuesBenchmark extends IgnitePutTxBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("tx-offheap-values");
+        return ignite().cache("tx-offheap-values");
     }
 }

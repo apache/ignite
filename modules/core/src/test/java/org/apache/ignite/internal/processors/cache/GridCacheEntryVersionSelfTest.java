@@ -100,7 +100,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                     F.viewReadOnly(grid(0).affinity(null).mapKeyToPrimaryAndBackups(key), F.node2id()) + ']');
             }
 
-            grid(0).jcache(null).putAll(map);
+            grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 3; g++) {
                 IgniteKernal grid = (IgniteKernal)grid(g);
@@ -127,7 +127,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             startGrid(3);
 
-            grid(0).jcache(null).putAll(map);
+            grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 4; g++) {
                 IgniteKernal grid = (IgniteKernal)grid(g);

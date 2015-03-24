@@ -82,7 +82,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     }
 
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.ignite("node-1").jcache[String, String]("replicated")
+        val c = Ignition.ignite("node-1").cache[String, String]("replicated")
 
         for (i <- 0 to 3) {
             val kv = "" + i
@@ -98,7 +98,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     it should "run query and display information about caches" in {
         val g = Ignition.ignite("node-1")
 
-        val c = g.jcache[JavaInt, Foo]("replicated")
+        val c = g.cache[JavaInt, Foo]("replicated")
 
         c.put(0, Foo(20))
         c.put(1, Foo(100))

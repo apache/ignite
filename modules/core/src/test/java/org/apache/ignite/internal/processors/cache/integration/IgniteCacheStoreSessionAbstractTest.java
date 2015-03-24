@@ -27,7 +27,6 @@ import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -104,11 +103,11 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     public void testStoreSession() throws Exception {
         assertNull(jcache(0).getName());
 
-        assertEquals(CACHE_NAME1, ignite(0).jcache(CACHE_NAME1).getName());
+        assertEquals(CACHE_NAME1, ignite(0).cache(CACHE_NAME1).getName());
 
         testStoreSession(jcache(0));
 
-        testStoreSession(ignite(0).jcache(CACHE_NAME1));
+        testStoreSession(ignite(0).cache(CACHE_NAME1));
     }
 
     /**

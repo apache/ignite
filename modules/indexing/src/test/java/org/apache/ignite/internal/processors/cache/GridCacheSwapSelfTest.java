@@ -328,8 +328,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             startGrids(1);
 
             grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override
-                public boolean apply(Event evt) {
+                @Override public boolean apply(Event evt) {
                     assert evt != null;
 
                     switch (evt.type()) {

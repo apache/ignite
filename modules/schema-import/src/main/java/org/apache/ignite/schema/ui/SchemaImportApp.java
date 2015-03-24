@@ -359,29 +359,39 @@ public class SchemaImportApp extends Application {
 
             /** {@inheritDoc} */
             @Override protected void succeeded() {
-                super.succeeded();
+                try {
+                    super.succeeded();
 
-                pojosTbl.setItems(pojos);
+                    pojosTbl.setItems(pojos);
 
-                if (!pojos.isEmpty())
-                    pojosTbl.getSelectionModel().clearAndSelect(0);
+                    if (pojos.isEmpty()) {
+                        MessageBox.warningDialog(owner, "No tables found in database. Recheck JDBC URL.\n" +
+                            "JDBC URL: " +  jdbcUrl);
 
-                curTbl = pojosTbl;
+                        return;
+                    }
+                    else
+                        pojosTbl.getSelectionModel().clearAndSelect(0);
 
-                pojosTbl.requestFocus();
+                    curTbl = pojosTbl;
 
-                unlockUI(connLayerPnl, connPnl, nextBtn);
+                    pojosTbl.requestFocus();
 
-                hdrPane.setLeft(genIcon);
 
-                titleLb.setText("Generate XML And POJOs");
-                subTitleLb.setText(jdbcUrlTf.getText());
+                    hdrPane.setLeft(genIcon);
 
-                rootPane.setCenter(genLayerPnl);
+                    titleLb.setText("Generate XML And POJOs");
+                    subTitleLb.setText(jdbcUrlTf.getText());
 
-                prevBtn.setDisable(false);
-                nextBtn.setText("Generate");
-                tooltip(nextBtn, "Generate XML and POJO files");
+                    rootPane.setCenter(genLayerPnl);
+
+                    prevBtn.setDisable(false);
+                    nextBtn.setText("Generate");
+                    tooltip(nextBtn, "Generate XML and POJO files");
+                }
+                finally {
+                    unlockUI(connLayerPnl, connPnl, nextBtn);
+                }
             }
 
             /** {@inheritDoc} */
@@ -415,6 +425,9 @@ public class SchemaImportApp extends Application {
 
             return;
         }
+
+        if (checkInput(outFolderTf, true, "Output folder should not be empty!"))
+            return;
 
         lockUI(genLayerPnl, genPnl, prevBtn, nextBtn);
 
@@ -478,7 +491,7 @@ public class SchemaImportApp extends Application {
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "ignite-type-metadata.xml"), askOverwrite);
 
                 CodeGenerator.snippet(all, pkg, includeKeys, outFolder, askOverwrite);
 
@@ -650,12 +663,12 @@ public class SchemaImportApp extends Application {
 
         if (drv == null) {
             if (jdbcDrvJarPath.isEmpty())
-                throw new IllegalStateException("Driver jar file name is not specified");
+                throw new IllegalStateException("Driver jar file name is not specified.");
 
             File drvJar = new File(jdbcDrvJarPath);
 
             if (!drvJar.exists())
-                throw new IllegalStateException("Driver jar file is not found");
+                throw new IllegalStateException("Driver jar file is not found.");
 
             try {
                 URL u = new URL("jar:" + drvJar.toURI() + "!/");
@@ -947,7 +960,7 @@ public class SchemaImportApp extends Application {
             "If selected then generate empty and full constructors for POJOs", false), 3);
 
         xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
-            "If selected then all configurations will be saved into the file 'Ignite.xml'", true), 3);
+            "If selected then all configurations will be saved into the file 'ignite-type-metadata.xml'", true), 3);
 
         GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
         regexPnl.addColumn();

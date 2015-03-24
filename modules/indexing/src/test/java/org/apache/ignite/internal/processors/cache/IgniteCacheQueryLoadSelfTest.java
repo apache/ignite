@@ -116,7 +116,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
         cache.loadCache(null);
 
@@ -134,7 +134,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
         IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
 
@@ -156,7 +156,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
         cache.loadCache(new P2<Integer,ValueObject>() {
             @Override
@@ -179,7 +179,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
         IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
 
@@ -240,7 +240,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         CompletionListenerFuture fut = new CompletionListenerFuture();
 
-        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
+        grid().<Integer, Integer>cache(null).loadAll(F.asSet(keys), true, fut);
 
         fut.get();
 
@@ -260,7 +260,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         fut = new CompletionListenerFuture();
 
-        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
+        grid().<Integer, Integer>cache(null).loadAll(F.asSet(keys), true, fut);
 
         fut.get();
 

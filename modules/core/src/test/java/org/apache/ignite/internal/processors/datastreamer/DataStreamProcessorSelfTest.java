@@ -297,7 +297,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, -1);
@@ -682,7 +682,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            final IgniteCache<Integer, Integer> c = g.jcache(null);
+            final IgniteCache<Integer, Integer> c = g.cache(null);
 
             final IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(null);
 
@@ -734,7 +734,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            IgniteCache<Integer, Integer> c = g.jcache(null);
+            IgniteCache<Integer, Integer> c = g.cache(null);
 
             IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(null);
 
@@ -779,7 +779,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_PUT);
 
-            IgniteCache<Integer, Integer> c = g.jcache(null);
+            IgniteCache<Integer, Integer> c = g.cache(null);
 
             assertTrue(c.localSize() == 0);
 
@@ -858,7 +858,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     ldr.removeData(i);
             }
 
-            IgniteCache<Object, Object> cache = ignite.jcache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(null);
 
             for (int i = 0; i < 1000; i++) {
                 assertNull(storeMap.get(i));
@@ -909,7 +909,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     ldr.addData(String.valueOf(i), new TestObject(i));
             }
 
-            IgniteCache<String, TestObject> cache = ignite.jcache(null);
+            IgniteCache<String, TestObject> cache = ignite.cache(null);
 
             for (int i = 0; i < 100; i++) {
                 TestObject val = cache.get(String.valueOf(i));

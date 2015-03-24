@@ -98,7 +98,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.jcache(null).put(i, i);
+            g0.cache(null).put(i, i);
 
         assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
         assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
@@ -129,7 +129,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.jcache(null).put(i, i);
+            g0.cache(null).put(i, i);
 
         assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
         assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());

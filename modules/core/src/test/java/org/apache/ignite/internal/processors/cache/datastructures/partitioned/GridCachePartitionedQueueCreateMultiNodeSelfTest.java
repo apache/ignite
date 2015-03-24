@@ -169,7 +169,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    IgniteCache<Integer, String> cache = ignite.jcache(null);
+                    IgniteCache<Integer, String> cache = ignite.cache(null);
 
                     info("Partition: " + ignite.affinity(null).partition(1));
 

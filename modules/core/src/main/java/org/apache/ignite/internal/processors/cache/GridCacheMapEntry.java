@@ -4344,7 +4344,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> cls) {
             if (cls.isAssignableFrom(IgniteCache.class))
-                return (T)cctx.grid().jcache(cctx.name());
+                return (T)cctx.grid().cache(cctx.name());
 
             if (cls.isAssignableFrom(getClass()))
                 return (T)this;

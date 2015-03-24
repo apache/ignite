@@ -95,7 +95,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i] = startGrid(i);
 
-            caches[i] = ignites[i].jcache(CACHE);
+            caches[i] = ignites[i].cache(CACHE);
         }
     }
 

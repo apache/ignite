@@ -151,7 +151,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            IgniteCache<Object, Object> cache = g.jcache(null);
+            IgniteCache<Object, Object> cache = g.cache(null);
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);

@@ -575,6 +575,30 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testLoadBean() throws Exception {
+        final String path = "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Ignition.loadSpringBean(path, "wrongName");
+
+                    return null;
+                }
+            },
+            IgniteException.class,
+            null
+        );
+
+        CacheConfiguration cfg = Ignition.loadSpringBean(path, "cache-configuration");
+
+        assertEquals("TestDynamicCache", cfg.getName());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Override protected void afterTest() throws Exception {
         G.stopAll(false);
     }

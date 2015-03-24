@@ -76,7 +76,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).cache(null);
 
         vals = new ArrayList<>(VALS);
 
@@ -115,7 +115,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).cache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -128,7 +128,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     cache.put(key, val);
 
-                    if (i % 1_000 == 0 && i > 0)
+                    if (i % 20_000 == 0 && i > 0)
                         info("Done " + i + " out of " + iterations());
                 }
 
@@ -141,7 +141,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testRemove() throws Exception {
-        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).cache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -167,7 +167,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).cache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {

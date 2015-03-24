@@ -79,7 +79,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
         cache = false;
 
-        IgniteCache<Integer, Object> cache0 = ignite(0).jcache(null);
+        IgniteCache<Integer, Object> cache0 = ignite(0).cache(null);
 
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);
@@ -108,7 +108,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
         Ignite ignite = startGrid(2); // Check can start on more cache node.
 
-        assertNotNull(ignite.jcache(null));
+        assertNotNull(ignite.cache(null));
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -162,7 +161,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
                 load(cache, i, true);

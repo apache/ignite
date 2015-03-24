@@ -158,8 +158,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         cache().queries().rebuildAllIndexes().get();
 
-        IgniteCache<Integer, TestValue1> cache1 = grid(0).jcache(null);
-        IgniteCache<Integer, TestValue2> cache2 = grid(0).jcache(null);
+        IgniteCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache1.put(i, new TestValue1(i, "val2-" + i, i, i));
@@ -204,25 +204,25 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     public void testRebuildInterrupted() throws Exception {
         spi.sleepInRebuild = true;
 
-        IgniteCache<Integer, TestValue1> cache1 = grid(0).jcache(null);
-        IgniteCache<Integer, TestValue2> cache2 = grid(0).jcache(null);
+        IgniteCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
 
-        checkCancel(((IgniteKernal)grid(0)).cache(null).queries().rebuildIndexes("TestValue1"));
+        checkCancel(((IgniteKernal)grid(0)).getCache(null).queries().rebuildIndexes("TestValue1"));
 
-        checkCancel(((IgniteKernal)grid(0)).cache(null).queries().rebuildAllIndexes());
+        checkCancel(((IgniteKernal)grid(0)).getCache(null).queries().rebuildAllIndexes());
 
         spi.sleepInRebuild = false;
 
-        final IgniteInternalFuture<?> fut1 = ((IgniteKernal)grid(0)).cache(null).queries().rebuildIndexes(TestValue1.class);
+        final IgniteInternalFuture<?> fut1 = ((IgniteKernal)grid(0)).getCache(null).queries().rebuildIndexes(TestValue1.class);
 
         assertFalse(fut1.isCancelled());
 
         fut1.get();
 
-        final IgniteInternalFuture<?> fut2 = ((IgniteKernal)grid(0)).cache(null).queries().rebuildAllIndexes();
+        final IgniteInternalFuture<?> fut2 = ((IgniteKernal)grid(0)).getCache(null).queries().rebuildAllIndexes();
 
         assertFalse(fut2.isCancelled());
 

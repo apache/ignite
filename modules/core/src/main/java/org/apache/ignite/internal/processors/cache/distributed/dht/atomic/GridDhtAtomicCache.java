@@ -349,7 +349,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            filter);
+            filter,
+            true);
     }
 
     /** {@inheritDoc} */
@@ -365,7 +366,23 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            filter);
+            filter,
+            true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        A.notNull(key, "key", val, "val");
+
+        return (V)updateAllAsync0(F0.asMap(key, val),
+            null,
+            null,
+            null,
+            null,
+            true,
+            false,
+            ctx.noValArray(),
+            false).get();
     }
 
     /** {@inheritDoc} */
@@ -456,7 +473,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             true,
-            ctx.equalsValArray(oldVal));
+            ctx.equalsValArray(oldVal),
+            true);
     }
 
     /** {@inheritDoc} */
@@ -475,7 +493,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            filter).chain(RET2NULL);
+            filter,
+            true).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -495,7 +514,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null);
+            null,
+            true);
     }
 
     /** {@inheritDoc} */
@@ -678,7 +698,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null);
+            null,
+            true);
 
         return fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, EntryProcessorResult<T>>() {
             @Override public EntryProcessorResult<T> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut)
@@ -721,7 +742,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null);
+            null,
+            true);
     }
 
     /** {@inheritDoc} */
@@ -750,7 +772,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            null);
+            null,
+            true);
     }
 
     /**
@@ -764,6 +787,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter for atomic updates.
+     * @param waitTopFut Whether to wait for topology future.
      * @return Completion future.
      */
     @SuppressWarnings("ConstantConditions")
@@ -775,7 +799,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final Map<KeyCacheObject, GridCacheVersion> conflictRmvMap,
         final boolean retval,
         final boolean rawRetval,
-        @Nullable final CacheEntryPredicate[] filter
+        @Nullable final CacheEntryPredicate[] filter,
+        final boolean waitTopFut
     ) {
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
@@ -808,7 +833,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
-                updateFut.map();
+                updateFut.map(waitTopFut);
 
                 return updateFut;
             }
@@ -871,7 +896,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
-                updateFut.map();
+                updateFut.map(true);
 
                 return updateFut;
             }
@@ -2331,7 +2356,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.subjectId(),
             req.taskNameHash());
 
-        updateFut.map();
+        updateFut.map(true);
     }
 
     /**

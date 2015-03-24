@@ -47,6 +47,6 @@ public class IgniteJdbcStorePutGetBenchmark extends IgniteJdbcStoreAbstractBench
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Object, Object> cache() {
-        return ignite().jcache("atomic");
+        return ignite().cache("atomic");
     }
 }

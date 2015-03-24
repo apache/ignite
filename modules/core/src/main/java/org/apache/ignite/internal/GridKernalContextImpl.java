@@ -55,9 +55,9 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -235,7 +235,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private IgniteSpringProcessor spring;
+    private IgniteSpringHelper spring;
 
     /** */
     @GridToStringExclude

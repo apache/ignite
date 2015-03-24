@@ -81,7 +81,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Person> cache = grid(0).jcache(null);
+        IgniteCache<String, Person> cache = grid(0).cache(null);
 
         assert cache != null;
 
