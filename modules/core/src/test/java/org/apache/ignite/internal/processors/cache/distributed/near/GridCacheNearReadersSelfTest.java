@@ -143,8 +143,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         Ignite g1 = grid(n1.id());
         Ignite g2 = grid(n2.id());
 
-        IgniteCache<Integer, String> cache1 = g1.jcache(null);
-        IgniteCache<Integer, String> cache2 = g2.jcache(null);
+        IgniteCache<Integer, String> cache1 = g1.cache(null);
+        IgniteCache<Integer, String> cache2 = g2.cache(null);
 
         // Store some values in cache.
         assertNull(cache1.getAndPut(1, "v1"));
@@ -225,8 +225,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         ((IgniteKernal)g1).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
         ((IgniteKernal)g2).internalCache(null).preloader().request(cacheKeys, new AffinityTopologyVersion(2)).get();
 
-        IgniteCache<Integer, String> cache1 = g1.jcache(null);
-        IgniteCache<Integer, String> cache2 = g2.jcache(null);
+        IgniteCache<Integer, String> cache1 = g1.cache(null);
+        IgniteCache<Integer, String> cache2 = g2.cache(null);
 
         assertEquals(g1.affinity(null).mapKeyToNode(1), g1.cluster().localNode());
         assertFalse(g1.affinity(null).mapKeyToNode(2).equals(g1.cluster().localNode()));
@@ -304,8 +304,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
-            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).cache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).cache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 
@@ -340,9 +340,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
-            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
-            IgniteCache<Object, Object> prj2 = grid(2).jcache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).cache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).cache(null);
+            IgniteCache<Object, Object> prj2 = grid(2).cache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 
@@ -398,8 +398,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertFalse("Nodes cannot be equal: " + primary, primary.equals(backup));
 
-        IgniteCache<Integer, String> cache1 = grid(primary.id()).jcache(null);
-        IgniteCache<Integer, String> cache2 = grid(backup.id()).jcache(null);
+        IgniteCache<Integer, String> cache1 = grid(primary.id()).cache(null);
+        IgniteCache<Integer, String> cache2 = grid(backup.id()).cache(null);
 
         // Store a values in cache.
         assertNull(cache1.getAndPut(1, "v1"));

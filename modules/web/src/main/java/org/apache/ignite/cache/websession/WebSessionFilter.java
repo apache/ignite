@@ -212,7 +212,7 @@ public class WebSessionFilter implements Filter {
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
-        cache = webSesIgnite.jcache(cacheName);
+        cache = webSesIgnite.cache(cacheName);
 
         if (cache == null)
             throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);

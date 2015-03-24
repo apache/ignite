@@ -18,7 +18,6 @@
 package org.apache.ignite.testframework.junits.common;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -77,7 +76,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).jcache(null);
+        return grid(idx).cache(null);
     }
 
     /**
@@ -101,7 +100,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).getCache(null);
     }
 
     /**
@@ -110,14 +109,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).cache(cacheName);
+        return ((IgniteKernal)grid(idx)).getCache(cacheName);
     }
 
     /**
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache() {
-        return ((IgniteKernal)grid()).cache(null);
+        return ((IgniteKernal)grid()).getCache(null);
     }
 
     /**
@@ -131,7 +130,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().jcache(null);
+        return grid().cache(null);
     }
 
     /**
@@ -549,7 +548,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNotNull(node);
 
-        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
+        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).cache(cacheName);
     }
 
     /**

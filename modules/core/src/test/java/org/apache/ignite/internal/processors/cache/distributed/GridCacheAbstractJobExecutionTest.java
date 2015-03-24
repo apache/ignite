@@ -77,12 +77,12 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).jcache(null).removeAll();
+        grid(0).cache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            IgniteCache<String, int[]> c = g.jcache(null);
+            IgniteCache<String, int[]> c = g.cache(null);
 
             GridCacheAdapter<Object, Object> cache = ((IgniteEx)g).context().cache().internalCache();
 
@@ -141,7 +141,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) {
-                    IgniteCache<String, int[]> cache = ignite.jcache(null);
+                    IgniteCache<String, int[]> cache = ignite.cache(null);
 
                     try (Transaction tx = ignite.transactions().txStart(concur, isolation)) {
                         int[] arr = cache.get(key);
@@ -177,10 +177,10 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             for (int g = 0; g < GRID_CNT; g++) {
                 info("Will check grid: " + g);
 
-                info("Value: " + grid(i).jcache(null).localPeek(key));
+                info("Value: " + grid(i).cache(null).localPeek(key));
             }
 
-            IgniteCache<String, int[]> c = grid(i).jcache(null);
+            IgniteCache<String, int[]> c = grid(i).cache(null);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.

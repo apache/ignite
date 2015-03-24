@@ -108,7 +108,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
-                IgniteCache cache = ignite.jcache(cacheName);
+                IgniteCache cache = ignite.cache(cacheName);
 
                 if (futs[0] == null && callAsync(new VisorCacheSizeCallable(cache), 0))
                     return null;

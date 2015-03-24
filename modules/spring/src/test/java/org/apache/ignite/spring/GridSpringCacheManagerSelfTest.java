@@ -92,7 +92,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().jcache(CACHE_NAME).removeAll();
+        grid().cache(CACHE_NAME).removeAll();
 
         grid().destroyCache(DYNAMIC_CACHE_NAME);
     }
@@ -108,7 +108,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, svc.called());
 
-        IgniteCache<Integer, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         assertEquals(3, c.size());
 
@@ -127,7 +127,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, svc.called());
 
-        IgniteCache<GridSpringCacheTestKey, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         assertEquals(3, c.size());
 
@@ -139,7 +139,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleKeyPut() throws Exception {
-        IgniteCache<Integer, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "odd", svc.simpleKeyPut(i));
@@ -160,7 +160,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testComplexKeyPut() throws Exception {
-        IgniteCache<GridSpringCacheTestKey, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "suffix" + i + "odd", svc.complexKeyPut(i, "suffix" + i));
@@ -181,7 +181,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleKeyEvict() throws Exception {
-        IgniteCache<Integer, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.put(i, "value" + i);
@@ -205,7 +205,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testComplexKeyEvict() throws Exception {
-        IgniteCache<GridSpringCacheTestKey, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.put(new GridSpringCacheTestKey(i, "suffix" + i), "value" + i);
@@ -229,7 +229,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEvictAll() throws Exception {
-        IgniteCache<Integer, String> c = grid().jcache(CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.put(i, "value" + i);
@@ -256,7 +256,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, dynamicSvc.called());
 
-        IgniteCache<Integer, String> c = grid().jcache(DYNAMIC_CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(DYNAMIC_CACHE_NAME);
 
         // Check that correct config is used.
         assertEquals(2, c.getConfiguration(CacheConfiguration.class).getBackups());
@@ -278,7 +278,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(6, dynamicSvc.called());
 
-        IgniteCache<Integer, String> c = grid().jcache(DYNAMIC_CACHE_NAME);
+        IgniteCache<Integer, String> c = grid().cache(DYNAMIC_CACHE_NAME);
 
         // Check that correct config is used.
         assertEquals(2, c.getConfiguration(CacheConfiguration.class).getBackups());

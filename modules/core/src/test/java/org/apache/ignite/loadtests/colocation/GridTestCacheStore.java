@@ -57,7 +57,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
         try {
             ExecutorCompletionService<Object> completeSvc = new ExecutorCompletionService<>(execSvc);
 
-            final IgniteCache<GridTestKey, Long> cache = ignite.jcache("partitioned");
+            final IgniteCache<GridTestKey, Long> cache = ignite.cache("partitioned");
 
             assert cache != null;
 

@@ -208,7 +208,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      */
     // TODO: GG-8063, enabled when fixed.
     public void _testOptimisticSerializableConsistency() throws Exception {
-        final IgniteCache<Integer, Long> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Long> cache = grid(0).cache(null);
 
         final int THREADS = 2;
 

@@ -132,14 +132,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkAffinity() throws Exception {
-        CacheAffinity<Object> aff = ((IgniteKernal)grid(0)).cache(null).affinity();
+        CacheAffinity<Object> aff = ((IgniteKernal)grid(0)).getCache(null).affinity();
 
         for (Ignite grid : Ignition.allGrids()) {
             try {
                 if (grid.cluster().localNode().id().equals(grid(0).localNode().id()))
                     continue;
 
-                CacheAffinity<Object> checkAff = ((IgniteKernal)grid).cache(null).affinity();
+                CacheAffinity<Object> checkAff = ((IgniteKernal)grid).getCache(null).affinity();
 
                 for (int p = 0; p < PARTS; p++)
                     assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));

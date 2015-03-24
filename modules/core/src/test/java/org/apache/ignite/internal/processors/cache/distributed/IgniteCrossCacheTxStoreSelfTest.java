@@ -98,9 +98,9 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).jcache("cacheA").removeAll();
-        grid(0).jcache("cacheB").removeAll();
-        grid(0).jcache("cacheC").removeAll();
+        grid(0).cache("cacheA").removeAll();
+        grid(0).cache("cacheB").removeAll();
+        grid(0).cache("cacheC").removeAll();
     }
 
     /**
@@ -116,8 +116,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         Collection<String> evts = firstStore.events();
 
         try (Transaction tx = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheB = grid.jcache("cacheB");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheB = grid.cache("cacheB");
 
             cacheA.put("1", "1");
             cacheA.put("2", "2");
@@ -157,8 +157,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (Transaction ignored = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheC = grid.jcache("cacheC");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.cache("cacheC");
 
             cacheA.put("1", "2");
 
@@ -178,8 +178,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (Transaction ignored = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheC = grid.jcache("cacheD");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.cache("cacheD");
 
             cacheA.put("1", "2");
 

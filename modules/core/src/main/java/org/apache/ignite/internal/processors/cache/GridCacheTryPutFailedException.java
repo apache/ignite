@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
+package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.*;
+import org.apache.ignite.*;
 
 /**
- * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
+ * Try put failed exception.
  */
-public interface IgniteSshProcessor {
-    /**
-     * Creates {@link Callable} starting node using SSH.
-     *
-     * @param spec Specification.
-     * @param timeout Connection timeout.
-     * @return {@link Callable} starting node using SSH.
-     */
-    public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout);
+public class GridCacheTryPutFailedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 }

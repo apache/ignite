@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -681,6 +682,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         if (tx != null)
             cctx.tm().txContext(tx);
 
+        if (err.get() == null)
+            loadMissingFromStore();
+
         if (super.onDone(success, err.get())) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
@@ -886,10 +890,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param req Request.
      * @param e Entry.
      * @return Entry.
-     * @throws IgniteCheckedException If failed.
      */
-    private GridDhtCacheEntry addOwned(GridDhtLockRequest req, GridDhtCacheEntry e)
-        throws IgniteCheckedException {
+    private GridDhtCacheEntry addOwned(GridDhtLockRequest req, GridDhtCacheEntry e) {
         while (true) {
             try {
                 GridCacheMvccCandidate added = e.candidate(lockVer);
@@ -921,6 +923,53 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtLockFuture.class, this, super.toString());
+    }
+
+    /**
+     *
+     */
+    private void loadMissingFromStore() {
+        if (cctx.loadPreviousValue() && cctx.readThrough() && read) {
+            final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
+
+            final GridCacheVersion ver = version();
+
+            for (GridDhtCacheEntry entry : entries) {
+                if (!entry.hasValue())
+                    loadMap.put(entry.key(), entry);
+            }
+
+            try {
+                cctx.store().loadAllFromStore(
+                    tx,
+                    loadMap.keySet(),
+                    new CI2<KeyCacheObject, Object>() {
+                        @Override public void apply(KeyCacheObject key, Object val) {
+                            // No value loaded from store.
+                            if (val == null)
+                                return;
+
+                            GridDhtCacheEntry entry0 = loadMap.get(key);
+
+                            try {
+                                CacheObject val0 = cctx.toCacheObject(val);
+
+                                entry0.initialValue(val0, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                assert false : "Should not get removed exception while holding lock on entry " +
+                                    "[entry=" + entry0 + ", e=" + e + ']';
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
+                            }
+                        }
+                    });
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+            }
+        }
     }
 
     /**

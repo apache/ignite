@@ -62,7 +62,14 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
             for (int i = 0; i < CACHE_UPDATE_RETRIES_CNT; i++) {
                 try {
-                    String old = cache0.putIfAbsent(id, clsName);
+                    String old;
+
+                    try {
+                        old = cache0.tryPutIfAbsent(id, clsName);
+                    }
+                    catch (GridCacheTryPutFailedException ignored) {
+                        return false;
+                    }
 
                     if (old != null && !old.equals(clsName))
                         throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +

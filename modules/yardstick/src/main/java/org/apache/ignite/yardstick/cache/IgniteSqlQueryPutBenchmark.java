@@ -79,6 +79,6 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("query");
+        return ignite().cache("query");
     }
 }

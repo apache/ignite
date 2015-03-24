@@ -139,7 +139,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
             nearCfg.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
 
-            grid(0).createCache((String)null, nearCfg);
+            grid(0).createNearCache(null, nearCfg);
 
             int cnt = 1000;
 
@@ -156,7 +156,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(0).jcache(null);
+                IgniteCache<Integer, String> cache = grid(0).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

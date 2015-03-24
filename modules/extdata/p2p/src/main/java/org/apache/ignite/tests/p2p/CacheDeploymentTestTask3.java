@@ -44,7 +44,7 @@ public class CacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode,
                         X.println("Executing CacheDeploymentTestTask3 job on node " +
                                 ignite.cluster().localNode().id());
 
-                        ignite.<String, CacheDeploymentTestValue>jcache(null).put(val,
+                        ignite.<String, CacheDeploymentTestValue>cache(null).put(val,
                                 new CacheDeploymentTestValue());
 
                         return null;

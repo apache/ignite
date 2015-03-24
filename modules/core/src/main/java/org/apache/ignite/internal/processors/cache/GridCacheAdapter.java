@@ -2749,6 +2749,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
     }
 
+    /**
+     * Tries to put value in cache. Will fail with {@link GridCacheTryPutFailedException}
+     * if topology exchange is in progress.
+     *
+     * @param key Key.
+     * @param val value.
+     * @return Old value.
+     * @throws IgniteCheckedException In case of error.
+     */
+    @Nullable public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        // Supported only in ATOMIC cache.
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public V putIfAbsent(final K key, final V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
@@ -3718,7 +3732,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-            
+
             GridCacheEntryEx e = entry0(cacheKey, new AffinityTopologyVersion(ctx.discovery().topologyVersion()),
                 false, false);
 
@@ -4254,10 +4268,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 try {
                     removex(item.getKey());
-                } 
+                }
                 catch (IgniteCheckedException e) {
                     throw CU.convertToCacheException(e);
-                } 
+                }
                 finally {
                     ctx.gate().leave();
                 }
@@ -6189,7 +6203,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            IgniteCache<K, V> cache = ignite.jcache(cacheName);
+            IgniteCache<K, V> cache = ignite.cache(cacheName);
 
             assert cache != null : cacheName;
 

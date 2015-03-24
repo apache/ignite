@@ -59,9 +59,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).configuration().isClientMode()) {
                 if (clientHasNearCache())
-                    ignite(i).createCache((String)null, new NearCacheConfiguration<>());
+                    ignite(i).createNearCache(null, new NearCacheConfiguration<>());
                 else
-                    ignite(i).jcache(null);
+                    ignite(i).cache(null);
 
                 break;
             }

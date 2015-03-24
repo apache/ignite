@@ -226,10 +226,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         assert g != null;
 
-        return g.jcache(name);
+        return g.cache(name);
     }
 
     /** {@inheritDoc} */
@@ -262,17 +262,17 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         assert g != null;
 
-        return g.createCache(cacheName, nearCfg);
+        return g.createNearCache(cacheName, nearCfg);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         assert g != null;
 
-        return g.getOrCreateCache(cacheName, nearCfg);
+        return g.getOrCreateNearCache(cacheName, nearCfg);
     }
 
     /** {@inheritDoc} */

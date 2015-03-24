@@ -104,7 +104,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     try (Transaction ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        g0.jcache(null).get(1);
+                        g0.cache(null).get(1);
 
                         latch.countDown();
 
@@ -127,7 +127,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         info("Before remove.");
 
-        g1.jcache(null).remove(1);
+        g1.cache(null).remove(1);
     }
 
     /**

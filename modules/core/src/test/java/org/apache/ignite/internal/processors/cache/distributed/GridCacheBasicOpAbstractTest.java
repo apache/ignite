@@ -87,7 +87,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (Ignite g : G.allGrids())
-            g.jcache(null).clear();
+            g.cache(null).clear();
     }
 
     /**
@@ -100,9 +100,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            IgniteCache<String, String> cache1 = ignite1.jcache(null);
-            IgniteCache<String, String> cache2 = ignite2.jcache(null);
-            IgniteCache<String, String> cache3 = ignite3.jcache(null);
+            IgniteCache<String, String> cache1 = ignite1.cache(null);
+            IgniteCache<String, String> cache2 = ignite2.cache(null);
+            IgniteCache<String, String> cache3 = ignite3.cache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
@@ -175,11 +175,11 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            IgniteCache<String, String> cache1 = ignite1.jcache(null);
+            IgniteCache<String, String> cache1 = ignite1.cache(null);
             IgniteCache<String, String> cache1Async = cache1.withAsync();
-            IgniteCache<String, String> cache2 = ignite2.jcache(null);
+            IgniteCache<String, String> cache2 = ignite2.cache(null);
             IgniteCache<String, String> cache2Async = cache2.withAsync();
-            IgniteCache<String, String> cache3 = ignite3.jcache(null);
+            IgniteCache<String, String> cache3 = ignite3.cache(null);
             IgniteCache<String, String> cache3Async = cache3.withAsync();
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
@@ -275,9 +275,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         IgnitePredicate<Event> lsnr = new CacheEventListener(latch);
 
         try {
-            IgniteCache<String, String> cache1 = ignite1.jcache(null);
-            IgniteCache<String, String> cache2 = ignite2.jcache(null);
-            IgniteCache<String, String> cache3 = ignite3.jcache(null);
+            IgniteCache<String, String> cache1 = ignite1.cache(null);
+            IgniteCache<String, String> cache2 = ignite2.cache(null);
+            IgniteCache<String, String> cache3 = ignite3.cache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
@@ -344,9 +344,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      * @throws Exception In case of error.
      */
     public void testPutWithExpiration() throws Exception {
-        IgniteCache<String, String> cache1 = ignite1.jcache(null);
-        IgniteCache<String, String> cache2 = ignite2.jcache(null);
-        IgniteCache<String, String> cache3 = ignite3.jcache(null);
+        IgniteCache<String, String> cache1 = ignite1.cache(null);
+        IgniteCache<String, String> cache2 = ignite2.cache(null);
+        IgniteCache<String, String> cache3 = ignite3.cache(null);
 
         cache1.put("key", "val");
 

@@ -65,22 +65,19 @@ import static java.sql.Statement.*;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * ...
- * CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
+ *    ...
+ *    CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
  *
- * // Configure cache store.
- * ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
- * ccfg.setReadThrough(true);
- * ccfg.setWriteThrough(true);
+ *    // Configure cache store.
+ *    ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
+ *    ccfg.setReadThrough(true);
+ *    ccfg.setWriteThrough(true);
  *
- * // Enable database batching.
- * ccfg.setWriteBehindEnabled(true);
+ *    // Configure cache types metadata.
+ *    ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
  *
- * // Configure cache types metadata.
- * ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
- *
- * cfg.setCacheConfiguration(ccfg);
- * ...
+ *    cfg.setCacheConfiguration(ccfg);
+ *    ...
  * </pre>
  */
 public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
@@ -317,10 +314,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         Transaction tx = ses.transaction();
 
-        Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
+        if (tx != null) {
+            Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
 
-        if (conn != null) {
-            assert tx != null;
+            assert conn != null;
 
             try {
                 if (commit)
@@ -562,7 +559,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (entryMappings != null)
                 return entryMappings;
 
-            CacheConfiguration ccfg = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class);
+            CacheConfiguration ccfg = ignite().cache(cacheName).getConfiguration(CacheConfiguration.class);
 
             Collection<CacheTypeMetadata> types = ccfg.getTypeMetadata();
 
@@ -616,8 +613,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
         throws CacheLoaderException {
+        ExecutorService pool = null;
+
         try {
-            ExecutorService pool = Executors.newFixedThreadPool(maxPoolSz);
+            pool = Executors.newFixedThreadPool(maxPoolSz);
 
             Collection<Future<?>> futs = new ArrayList<>();
 
@@ -702,6 +701,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         }
         catch (IgniteCheckedException e) {
             throw new CacheLoaderException("Failed to load cache", e.getCause());
+        }
+        finally {
+            U.shutdownNow(getClass(), pool, log);
         }
     }
 

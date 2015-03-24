@@ -103,9 +103,9 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         info("Node 2: " + node2.cluster().localNode().id());
         info("Node 3: " + node3.cluster().localNode().id());
 
-        cache1 = node1.jcache(CACHE_NAME);
-        cache2 = node2.jcache(CACHE_NAME);
-        cache3 = node3.jcache(CACHE_NAME);
+        cache1 = node1.cache(CACHE_NAME);
+        cache2 = node2.cache(CACHE_NAME);
+        cache3 = node3.cache(CACHE_NAME);
     }
 
     /**

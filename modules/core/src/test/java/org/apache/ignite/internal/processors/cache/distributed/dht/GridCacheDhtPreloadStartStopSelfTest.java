@@ -179,7 +179,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         try {
             Ignite g1 = startGrid(0);
 
-            IgniteCache<Integer, String> c1 = g1.jcache(null);
+            IgniteCache<Integer, String> c1 = g1.cache(null);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
@@ -190,7 +190,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.jcache(null);
+                IgniteCache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt);
             }

@@ -29,7 +29,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
-import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
@@ -360,29 +359,39 @@ public class SchemaImportApp extends Application {
 
             /** {@inheritDoc} */
             @Override protected void succeeded() {
-                super.succeeded();
+                try {
+                    super.succeeded();
 
-                pojosTbl.setItems(pojos);
+                    pojosTbl.setItems(pojos);
 
-                if (!pojos.isEmpty())
-                    pojosTbl.getSelectionModel().clearAndSelect(0);
+                    if (pojos.isEmpty()) {
+                        MessageBox.warningDialog(owner, "No tables found in database. Recheck JDBC URL.\n" +
+                            "JDBC URL: " +  jdbcUrl);
 
-                curTbl = pojosTbl;
+                        return;
+                    }
+                    else
+                        pojosTbl.getSelectionModel().clearAndSelect(0);
 
-                pojosTbl.requestFocus();
+                    curTbl = pojosTbl;
 
-                unlockUI(connLayerPnl, connPnl, nextBtn);
+                    pojosTbl.requestFocus();
 
-                hdrPane.setLeft(genIcon);
 
-                titleLb.setText("Generate XML And POJOs");
-                subTitleLb.setText(jdbcUrlTf.getText());
+                    hdrPane.setLeft(genIcon);
 
-                rootPane.setCenter(genLayerPnl);
+                    titleLb.setText("Generate XML And POJOs");
+                    subTitleLb.setText(jdbcUrlTf.getText());
 
-                prevBtn.setDisable(false);
-                nextBtn.setText("Generate");
-                tooltip(nextBtn, "Generate XML and POJO files");
+                    rootPane.setCenter(genLayerPnl);
+
+                    prevBtn.setDisable(false);
+                    nextBtn.setText("Generate");
+                    tooltip(nextBtn, "Generate XML and POJO files");
+                }
+                finally {
+                    unlockUI(connLayerPnl, connPnl, nextBtn);
+                }
             }
 
             /** {@inheritDoc} */
@@ -416,6 +425,9 @@ public class SchemaImportApp extends Application {
 
             return;
         }
+
+        if (checkInput(outFolderTf, true, "Output folder should not be empty!"))
+            return;
 
         lockUI(genLayerPnl, genPnl, prevBtn, nextBtn);
 
@@ -479,7 +491,7 @@ public class SchemaImportApp extends Application {
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "ignite-type-metadata.xml"), askOverwrite);
 
                 CodeGenerator.snippet(all, pkg, includeKeys, outFolder, askOverwrite);
 
@@ -651,12 +663,12 @@ public class SchemaImportApp extends Application {
 
         if (drv == null) {
             if (jdbcDrvJarPath.isEmpty())
-                throw new IllegalStateException("Driver jar file name is not specified");
+                throw new IllegalStateException("Driver jar file name is not specified.");
 
             File drvJar = new File(jdbcDrvJarPath);
 
             if (!drvJar.exists())
-                throw new IllegalStateException("Driver jar file is not found");
+                throw new IllegalStateException("Driver jar file is not found.");
 
             try {
                 URL u = new URL("jar:" + drvJar.toURI() + "!/");
@@ -948,7 +960,7 @@ public class SchemaImportApp extends Application {
             "If selected then generate empty and full constructors for POJOs", false), 3);
 
         xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
-            "If selected then all configurations will be saved into the file 'Ignite.xml'", true), 3);
+            "If selected then all configurations will be saved into the file 'ignite-type-metadata.xml'", true), 3);
 
         GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
         regexPnl.addColumn();
@@ -1305,6 +1317,26 @@ public class SchemaImportApp extends Application {
         prefs.put(key, String.valueOf(val));
     }
 
+    /**
+     * Resolve path.
+     *
+     * @param key Preferences key.
+     * @param dflt Default value.
+     * @return String with full file path or default value.
+     */
+    private String resolveFilePath(String key, String dflt) {
+        String path = prefs.getProperty(key);
+
+        if (path != null) {
+            File file = U.resolveIgnitePath(path);
+
+            if (file != null)
+                return file.getAbsolutePath();
+        }
+
+        return dflt;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
@@ -1341,14 +1373,7 @@ public class SchemaImportApp extends Application {
                         log.log(Level.SEVERE, "Failed to load custom preferences.", e);
                     }
 
-                    String igniteHome = GridFilenameUtils.separatorsToUnix(U.getIgniteHome());
-
-                    for (Map.Entry<Object, Object> prop : customPrefs.entrySet()) {
-                        String key = prop.getKey().toString();
-                        String val = prop.getValue().toString().replaceAll("%IGNITE_HOME%", igniteHome);
-
-                        prefs.setProperty(key, val);
-                    }
+                    prefs.putAll(customPrefs);
                 }
             }
         }
@@ -1413,13 +1438,13 @@ public class SchemaImportApp extends Application {
 
         // Restore connection pane settings.
         rdbmsCb.getSelectionModel().select(getIntProp(PREF_JDBC_DB_PRESET, 0));
-        jdbcDrvJarTf.setText(getStringProp(PREF_JDBC_DRIVER_JAR, "h2.jar"));
+        jdbcDrvJarTf.setText(resolveFilePath(PREF_JDBC_DRIVER_JAR, "h2.jar"));
         jdbcDrvClsTf.setText(getStringProp(PREF_JDBC_DRIVER_CLASS, "org.h2.Driver"));
         jdbcUrlTf.setText(getStringProp(PREF_JDBC_URL, "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
         userTf.setText(getStringProp(PREF_JDBC_USER, "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(getStringProp(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
+        outFolderTf.setText(resolveFilePath(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
 
         pkgTf.setText(getStringProp(PREF_POJO_PACKAGE, "org.apache.ignite"));
         pojoIncludeKeysCh.setSelected(getBoolProp(PREF_POJO_INCLUDE, true));
