@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -99,7 +100,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
             }, EventType.EVT_NODE_JOINED);
         }
 
-        multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> oneMoreGrid = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 allowJoin.await();
 
@@ -109,21 +110,23 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
             }
         }, 1);
 
-        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
 
+        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.get(0);
 
             allowJoin.countDown();
 
             joined.await();
 
-//            Thread.sleep(1000);
-
-            cache.get(1);
+            assertNotNull(cache.get(1));
 
             tx.commit();
         }
+
+        oneMoreGrid.get();
+
+        assertNotNull(cache.get(1));
     }
 
     /**
