@@ -61,7 +61,8 @@ public class Demo {
         // Start Ignite node.
         try (Ignite ignite = Ignition.start()) {
             // Configure cache store.
-            CacheConfiguration<PersonKey, Person> cfg = CacheConfig.cache("PersonCache", new H2DemoStoreFactory<>());
+            CacheConfiguration<PersonKey, Person> cfg =
+                CacheConfig.cache("PersonCache", new H2DemoStoreFactory<PersonKey, Person>());
 
             try (IgniteCache<PersonKey, Person> cache = ignite.getOrCreateCache(cfg)) {
                 // Preload cache from database.
