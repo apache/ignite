@@ -185,30 +185,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cache Cache.
-     * @param timeout Timeout.
-     * @return {@code True} if success.
-     * @throws InterruptedException If thread was interrupted.
-     */
-    @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheEmpty(CacheProjection<Integer,Object> cache, long timeout)
-        throws InterruptedException {
-        assert cache != null;
-        assert timeout >= 0;
-
-        long end = System.currentTimeMillis() + timeout;
-
-        while (end - System.currentTimeMillis() >= 0) {
-            if (cache.isEmpty())
-                return true;
-
-            Thread.sleep(500);
-        }
-
-        return cache.isEmpty();
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testOffHeap() throws Exception {
