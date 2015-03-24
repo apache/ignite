@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
@@ -32,6 +34,7 @@ import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jsr166.*;
 
@@ -152,21 +155,63 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         this.writeOrder = writeOrder;
         this.writeSync = writeSync;
 
-        int gridCnt = 6;
+        final int gridCnt = 6;
 
         startGrids(gridCnt);
+
+        awaitPartitionMapExchange();
 
         try {
             final IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             final int range = 100_000;
 
+            final Set<Integer> keys = new LinkedHashSet<>();
+
             for (int i = 0; i < range; i++) {
                 cache.put(i, 0);
+
+                keys.add(i);
 
                 if (i > 0 && i % 10_000 == 0)
                     System.err.println("Put: " + i);
             }
+
+            final CacheAffinity<Integer> aff = grid(0).affinity(null);
+
+            boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    Iterator<Integer> it = keys.iterator();
+
+                    while (it.hasNext()) {
+                        Integer key = it.next();
+
+                        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
+
+                        for (int i = 0; i < gridCnt; i++) {
+                            ClusterNode locNode = grid(i).localNode();
+
+                            GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
+
+                            GridCacheEntryEx entry = c.peekEx(key);
+
+                            if (affNodes.contains(locNode)) {
+                                if (entry == null)
+                                    return false;
+                            }
+                            else
+                                assertNull(entry);
+                        }
+
+                        it.remove();
+                    }
+
+                    return true;
+                }
+            }, 30_000);
+
+            assertTrue(putDone);
+            assertTrue(keys.isEmpty());
 
             final AtomicBoolean done = new AtomicBoolean();
 
