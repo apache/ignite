@@ -32,7 +32,7 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        cache = ignite().jcache(args.cacheName());
+        cache = ignite().cache(args.cacheName());
     }
 
     /** {@inheritDoc} */

@@ -44,7 +44,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        cache = ignite().jcache(args.cacheName());
+        cache = ignite().cache(args.cacheName());
 
         CacheConfiguration cc = cache.getConfiguration(CacheConfiguration.class);
 
