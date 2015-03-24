@@ -53,7 +53,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         Ignite ignite0 = grid(0);
 
-        IgniteCache<UUID, Person> cache0 = ignite0.jcache(null);
+        IgniteCache<UUID, Person> cache0 = ignite0.cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -64,14 +64,14 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
-            .queryFields(new SqlFieldsQuery("select name from Person where salary > ?").setArgs(1600));
+            .query(new SqlFieldsQuery("select name from Person where salary > ?").setArgs(1600));
 
         Collection<List<?>> res = qry.getAll();
 
         assertEquals(3, res.size());
 
         // Fields query count(*)
-        qry = cache0.queryFields(new SqlFieldsQuery("select count(*) from Person"));
+        qry = cache0.query(new SqlFieldsQuery("select count(*) from Person"));
 
         res = qry.getAll();
 
@@ -92,7 +92,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        IgniteCache<UUID, Person> cache0 = grid(0).jcache(null);
+        IgniteCache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -104,7 +104,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         assert grid(0).cluster().nodes().size() == gridCount();
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.query(new SqlQuery(Person.class, "salary < 2000"));
+            cache0.query(new SqlQuery<UUID, Person>(Person.class, "salary < 2000"));
 
         // Execute on full projection, duplicates are expected.
         Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();
@@ -127,7 +127,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         for (Cache.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 }

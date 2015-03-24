@@ -34,7 +34,6 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -77,7 +76,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
 
@@ -172,7 +171,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         try {
             final Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             long start = System.currentTimeMillis();
 
@@ -208,7 +207,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             fut.get();
 
-            Collection<EvictableEntry<Integer, Integer>> queue = internalQueue(plc);
+            Collection<CacheEvictableEntry<Integer, Integer>> queue = internalQueue(plc);
 
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
@@ -248,7 +247,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @param plc Policy to get queue from.
      * @return Internal entries collection.
      */
-    private Collection<EvictableEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
+    private Collection<CacheEvictableEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
         if (plc instanceof CacheFifoEvictionPolicy) {
             CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>)plc;
 

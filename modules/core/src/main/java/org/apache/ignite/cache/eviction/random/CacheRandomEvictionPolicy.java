@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
+import java.io.*;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache
@@ -34,7 +35,10 @@ import javax.cache.*;
  * key has the same probability of being accessed.
  */
 public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
-    CacheRandomEvictionPolicyMBean {
+    CacheRandomEvictionPolicyMBean, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
@@ -78,7 +82,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
         if (!entry.isCached())
             return;
 
@@ -90,8 +94,18 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
             Cache.Entry<K, V> e = cache.randomEntry();
 
             if (e != null)
-                e.unwrap(EvictableEntry.class).evict();
+                e.unwrap(CacheEvictableEntry.class).evict();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(max);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        max = in.readInt();
     }
 
     /** {@inheritDoc} */

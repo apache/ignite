@@ -78,7 +78,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If test failed.
      */
     public void testLockReentry() throws IgniteCheckedException {
-        IgniteCache<Integer, String> cache = ignite.jcache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(null);
 
         assert !cache.isLocalLocked(1, false);
         assert !cache.isLocalLocked(1, true);
@@ -123,7 +123,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLock() throws Throwable {
-        final IgniteCache<Integer, String> cache = ignite.jcache(null);
+        final IgniteCache<Integer, String> cache = ignite.cache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -241,7 +241,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Throwable {
-        final IgniteCache<Integer, String> cache = ignite.jcache(null);
+        final IgniteCache<Integer, String> cache = ignite.cache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 

@@ -22,6 +22,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.context.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -117,8 +118,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
-        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
+        // suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class); TODO Ignite-257.
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
+        suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
+        suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
@@ -388,9 +391,11 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearPeekModesTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedPeekModesTest.class);
         suite.addTestSuite(IgniteCacheAtomicLocalPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxNearPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
@@ -404,6 +409,13 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // TODO: IGNITE-477.
         // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
+
+        suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
+        suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
+
+        suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
+
+        suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
 
         return suite;
     }

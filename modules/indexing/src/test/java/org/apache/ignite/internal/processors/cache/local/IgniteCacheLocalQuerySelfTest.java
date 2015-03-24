@@ -19,11 +19,8 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -48,7 +45,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
      * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
-        IgniteCache<Integer, String> cache = ignite.jcache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");
@@ -58,7 +55,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
         // Tests equals query.
         QueryCursor<Cache.Entry<Integer, String>> qry =
-            cache.localQuery(new SqlQuery(String.class, "_val='value1'"));
+            cache.query(new SqlQuery<Integer, String>(String.class, "_val='value1'").setLocal(true));
 
         Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
@@ -71,7 +68,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         assert "value1".equals(entry.getValue());
 
         // Tests like query.
-        qry = cache.localQuery(new SqlQuery(String.class, "_val like 'value%'"));
+        qry = cache.query(new SqlQuery<Integer, String>(String.class, "_val like 'value%'").setLocal(true));
 
         iter = qry.iterator();
 

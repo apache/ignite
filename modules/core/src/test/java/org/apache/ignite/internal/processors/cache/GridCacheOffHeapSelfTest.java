@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -121,8 +120,8 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
-            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).cache(null);
+            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).getCache(null);
+            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).getCache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -235,7 +234,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
 
-            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             populate(cache);
             evictAll(cache);
@@ -298,7 +297,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);

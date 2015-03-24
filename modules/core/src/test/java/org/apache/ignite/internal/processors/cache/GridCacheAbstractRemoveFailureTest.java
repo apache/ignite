@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -110,7 +109,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        final IgniteCache<Integer, Integer> sndCache0 = grid(0).jcache(null);
+        final IgniteCache<Integer, Integer> sndCache0 = grid(0).cache(null);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -289,7 +288,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = grid(i);
 
-            IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());

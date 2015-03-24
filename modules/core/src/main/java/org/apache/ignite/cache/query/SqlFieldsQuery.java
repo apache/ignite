@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * SQL Fields query.
  *
- * @see IgniteCache#queryFields(SqlFieldsQuery)
- * @see IgniteCache#localQueryFields(SqlFieldsQuery)
+ * @see IgniteCache#query(Query)
  */
-public final class SqlFieldsQuery extends Query<SqlFieldsQuery>{
+public final class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -89,6 +90,16 @@ public final class SqlFieldsQuery extends Query<SqlFieldsQuery>{
         this.args = args;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlFieldsQuery setPageSize(int pageSize) {
+        return (SqlFieldsQuery)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlFieldsQuery setLocal(boolean loc) {
+        return (SqlFieldsQuery)super.setLocal(loc);
     }
 
     /** {@inheritDoc} */

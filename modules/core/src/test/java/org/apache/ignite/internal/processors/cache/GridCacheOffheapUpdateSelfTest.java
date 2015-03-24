@@ -40,7 +40,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setOffHeapMaxMemory(0);
         ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
@@ -57,14 +57,14 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(2);
 
-            IgniteCache<Object, Object> rmtCache = ignite.jcache(null);
+            IgniteCache<Object, Object> rmtCache = ignite.cache(null);
 
             int key = 0;
 
             while (!ignite.affinity(null).isPrimary(grid(1).localNode(), key))
                 key++;
 
-            IgniteCache<Object, Object> locCache = grid(1).jcache(null);
+            IgniteCache<Object, Object> locCache = grid(1).cache(null);
 
             try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putIfAbsent(key, 0);
@@ -100,7 +100,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite grid = startGrid(0);
 
-            IgniteCache<Object, Object> cache = grid.jcache(null);
+            IgniteCache<Object, Object> cache = grid.cache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, 0);
@@ -110,7 +110,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             for (int i = 0; i < 30; i++)
-                grid(1).jcache(null).put(i, 10);
+                grid(1).cache(null).put(i, 10);
 
             // Find a key that does not belong to started node anymore.
             int key = 0;

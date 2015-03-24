@@ -32,7 +32,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
@@ -451,9 +450,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null)
                     return nodes(cctx, prj);
 
-                CacheDistributionMode mode = cctx.config().getDistributionMode();
-
-                return mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED ?
+                return cctx.affinityNode() ?
                     Collections.singletonList(cctx.localNode()) :
                     Collections.singletonList(F.rand(nodes(cctx, null)));
 
@@ -475,9 +472,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                CacheDistributionMode mode = U.distributionMode(n, cctx.name());
-
-                return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
+                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null);
             }
         });

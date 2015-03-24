@@ -172,7 +172,12 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
         if (o == null)
             return 1;
 
-        return locId < o.locId ? -1 : locId > o.locId ? 1 : gid.compareTo(o.globalId());
+        int res = Long.compare(locId, o.locId);
+
+        if (res == 0)
+            res = gid.compareTo(o.globalId());
+
+        return res;
     }
 
     /** {@inheritDoc} */

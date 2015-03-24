@@ -38,7 +38,6 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -71,8 +70,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -85,7 +84,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setName(name);
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
-        cache.setDistributionMode(distributionMode());
+        cache.setNearConfiguration(nearConfiguration());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setRebalanceMode(SYNC);
         cache.setIndexedTypes(
@@ -120,14 +119,14 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).getCache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<CacheAffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
 
         assert personCache != null;
 
@@ -163,7 +162,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      */
     public void testNoDataInCache() throws Exception {
         CacheQuery<List<?>> qry = ((IgniteKernal)grid(0))
-            .cache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
+            .getCache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -174,7 +173,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -185,7 +184,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
             "select age from Person where orgId = ?");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();

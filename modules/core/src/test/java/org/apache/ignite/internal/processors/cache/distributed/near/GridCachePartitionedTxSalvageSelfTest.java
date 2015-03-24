@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -246,7 +247,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         GridCacheAffinityManager affMgr = kernal.internalCache().context().affinity();
 
         for (int i = 0; i < KEY_CNT * GRID_CNT * 1.5; i++) {
-            if (!affMgr.localNode((Object)i, kernal.context().discovery().topologyVersion())) {
+            if (!affMgr.localNode((Object)i, new AffinityTopologyVersion(kernal.context().discovery().topologyVersion()))) {
                 keys.add(i);
 
                 if (keys.size() == KEY_CNT)

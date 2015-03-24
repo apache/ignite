@@ -22,10 +22,11 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
-import org.jdk8.backport.*;
-import org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import org.jsr166.*;
+import org.jsr166.ConcurrentLinkedDeque8.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.regex.*;
@@ -34,7 +35,10 @@ import java.util.regex.*;
  * IGFS eviction policy which evicts particular blocks.
  */
 public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
-    CacheIgfsPerBlockLruEvictionPolicyMXBean {
+    CacheIgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
 
@@ -51,11 +55,11 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
     private final AtomicBoolean excludeRecompile = new AtomicBoolean(true);
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<EvictableEntry<IgfsBlockKey, byte[]>> queue =
+    private final ConcurrentLinkedDeque8<CacheEvictableEntry<IgfsBlockKey, byte[]>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
-    private final LongAdder curSize = new LongAdder();
+    private final LongAdder8 curSize = new LongAdder8();
 
     /**
      * Default constructor.
@@ -89,7 +93,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<IgfsBlockKey, byte[]> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<IgfsBlockKey, byte[]> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -109,7 +113,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(EvictableEntry<IgfsBlockKey, byte[]> entry) {
+    private boolean touch(CacheEvictableEntry<IgfsBlockKey, byte[]> entry) {
         byte[] val = peek(entry);
 
         int blockSize = val != null ? val.length : 0;
@@ -119,7 +123,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         // Entry has not been enqueued yet.
         if (meta == null) {
             while (true) {
-                Node<EvictableEntry<IgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
+                Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
 
                 meta = new MetaEntry(node, blockSize);
 
@@ -151,11 +155,11 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         else {
             int oldBlockSize = meta.size();
 
-            Node<EvictableEntry<IgfsBlockKey, byte[]>> node = meta.node();
+            Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> node = meta.node();
 
             if (queue.unlinkx(node)) {
                 // Move node to tail.
-                Node<EvictableEntry<IgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
+                Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
 
                 int delta = blockSize - oldBlockSize;
 
@@ -183,8 +187,8 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      * @param entry Entry.
      * @return Peeked value.
      */
-    @Nullable private byte[] peek(EvictableEntry<IgfsBlockKey, byte[]> entry) {
-        return (byte[])((EvictableEntryImpl)entry).peek();
+    @Nullable private byte[] peek(CacheEvictableEntry<IgfsBlockKey, byte[]> entry) {
+        return (byte[])((CacheEvictableEntryImpl)entry).peek();
     }
 
     /**
@@ -198,7 +202,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
 
         for (int i = 0; i < cnt && (maxBlocks > 0 && queue.sizex() > maxBlocks ||
             maxSize > 0 && curSize.longValue() > maxSize); i++) {
-            EvictableEntry<IgfsBlockKey, byte[]> entry = queue.poll();
+            CacheEvictableEntry<IgfsBlockKey, byte[]> entry = queue.poll();
 
             if (entry == null)
                 break; // Queue is empty.
@@ -269,6 +273,22 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         return queue.size();
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(maxSize);
+        out.writeInt(maxBlocks);
+        out.writeObject(excludePaths);
+        out.writeObject(excludePatterns);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        maxSize = in.readLong();
+        maxBlocks = in.readInt();
+        excludePaths = (Collection<String>)in.readObject();
+        excludePatterns = (Collection<Pattern>)in.readObject();
+    }
+
     /**
      * Check whether provided path must be excluded from evictions.
      *
@@ -322,7 +342,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      */
     private static class MetaEntry {
         /** Queue node. */
-        private final Node<EvictableEntry<IgfsBlockKey, byte[]>> node;
+        private final Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> node;
 
         /** Data size. */
         private final int size;
@@ -333,7 +353,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
          * @param node Queue node.
          * @param size Data size.
          */
-        private MetaEntry(Node<EvictableEntry<IgfsBlockKey, byte[]>> node, int size) {
+        private MetaEntry(Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> node, int size) {
             assert node != null;
             assert size >= 0;
 
@@ -344,7 +364,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
         /**
          * @return Queue node.
          */
-        private Node<EvictableEntry<IgfsBlockKey, byte[]>> node() {
+        private Node<CacheEvictableEntry<IgfsBlockKey, byte[]>> node() {
             return node;
         }
 

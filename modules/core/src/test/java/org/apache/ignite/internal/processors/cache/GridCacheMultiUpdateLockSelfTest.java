@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
@@ -32,7 +33,6 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -74,7 +74,9 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+        if (!nearEnabled)
+            cfg.setNearConfiguration(null);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setRebalanceMode(SYNC);
@@ -112,12 +114,12 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
             GridDhtCacheAdapter cache = nearEnabled ? cctx.near().dht() : cctx.colocated();
 
-            long topVer = cache.beginMultiUpdate();
+            AffinityTopologyVersion topVer = cache.beginMultiUpdate();
 
             IgniteInternalFuture<?> startFut;
 
             try {
-                assertEquals(3, topVer);
+                assertEquals(3, topVer.topologyVersion());
 
                 final AtomicBoolean started = new AtomicBoolean();
 
@@ -129,7 +131,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        IgniteCache<Object, Object> c = g4.jcache(null);
+                        IgniteCache<Object, Object> c = g4.cache(null);
 
                         info(">>>> Checking tx in new grid.");
 
@@ -150,7 +152,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                IgniteCache<Object, Object> cache0 = g.jcache(null);
+                IgniteCache<Object, Object> cache0 = g.cache(null);
 
                 info(">>>> Checking tx commit.");
 

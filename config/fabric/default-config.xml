@@ -23,53 +23,7 @@
        http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
-        Configuration below demonstrates how to setup a Ignite node with three
-        preconfigured caches.
-
-        If you need to add streaming functionality, add your streamers
-        configuration in 'streamerConfiguration' property below.
-
-        If you need to enable IGFS, use separate configuration files located in 'config/hadoop'
-        folder. To start a IGFS data node use 'config/hadoop/default-config.xml' file. To start
-        a IGFS client node use 'config/hadoop/default-config-client.xml' file.
+        Alter configuration below as needed.
     -->
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Cache configurations. -->
-        <property name="cacheConfiguration">
-            <list>
-                <!--
-                    Local cache configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="partitioned"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                </bean>
-
-                <!--
-                    Replicated cache configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="replicated"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                </bean>
-
-                <!--
-                    Partitioned cache configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="local"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                </bean>
-            </list>
-        </property>
-
-        <!-- Streamer configurations. -->
-        <property name="streamerConfiguration">
-            <list>
-                <!--
-                    Specify list of streamer configurations here.
-                -->
-            </list>
-        </property>
-    </bean>
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"/>
 </beans>

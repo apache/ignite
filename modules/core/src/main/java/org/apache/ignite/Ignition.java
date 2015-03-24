@@ -34,7 +34,7 @@ import java.util.*;
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@ignitelink org.apache.ignite.startup.servlet.IgniteServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.ServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -129,6 +129,24 @@ public class Ignition {
      */
     public static boolean isDaemon() {
         return IgnitionEx.isDaemon();
+    }
+
+    /**
+     * Sets client mode flag.
+     *
+     * @param clientMode Client mode flag.
+     */
+    public static void setClientMode(boolean clientMode) {
+        IgnitionEx.setClientMode(clientMode);
+    }
+
+    /**
+     * Gets client mode flag.
+     *
+     * @return Client mode flag.
+     */
+    public static boolean isClientMode() {
+        return IgnitionEx.isClientMode();
     }
 
     /**
@@ -308,7 +326,7 @@ public class Ignition {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath) throws IgniteException {
+    public static Ignite start(String springCfgPath) throws IgniteException {
         try {
             return IgnitionEx.start(springCfgPath);
         }
@@ -336,6 +354,42 @@ public class Ignition {
     public static Ignite start(URL springCfgUrl) throws IgniteException {
         try {
             return IgnitionEx.start(springCfgUrl);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * Loads Spring bean by its name from given Spring XML configuration file. If bean
+     * with such name doesn't exist, exception is thrown.
+     *
+     * @param springXmlPath Spring XML configuration file path (cannot be {@code null}).
+     * @param beanName Bean name (cannot be {@code null}).
+     * @return Loaded bean instance.
+     * @throws IgniteException If bean with provided name was not found or in case any other error.
+     */
+    public static <T> T loadSpringBean(String springXmlPath, String beanName) throws IgniteException {
+        try {
+            return IgnitionEx.loadSpringBean(springXmlPath, beanName);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * Loads Spring bean by its name from given Spring XML configuration file. If bean
+     * with such name doesn't exist, exception is thrown.
+     *
+     * @param springXmlUrl Spring XML configuration file URL (cannot be {@code null}).
+     * @param beanName Bean name (cannot be {@code null}).
+     * @return Loaded bean instance.
+     * @throws IgniteException If bean with provided name was not found or in case any other error.
+     */
+    public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteException {
+        try {
+            return IgnitionEx.loadSpringBean(springXmlUrl, beanName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

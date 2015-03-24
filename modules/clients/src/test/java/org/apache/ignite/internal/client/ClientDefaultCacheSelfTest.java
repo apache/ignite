@@ -19,8 +19,6 @@ package org.apache.ignite.internal.client;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -31,7 +29,6 @@ import java.net.*;
 import java.nio.charset.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.client.GridClientProtocol.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
@@ -46,9 +43,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** Host. */
     private static final String HOST = "127.0.0.1";
-
-    /** Port. */
-    private static final int TCP_PORT = 11211;
 
     /** Cached local node id. */
     private UUID locNodeId;
@@ -116,28 +110,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Client.
-     * @throws GridClientException In case of error.
-     */
-    private GridClient clientTcp() throws GridClientException {
-        GridClientConfiguration cfg = new GridClientConfiguration();
-
-        cfg.setProtocol(TCP);
-        cfg.setServers(getServerList(TCP_PORT));
-        cfg.setDataConfigurations(Collections.singleton(new GridClientDataConfiguration()));
-
-        GridClient gridClient = GridClientFactory.start(cfg);
-
-        assert F.exist(gridClient.compute().nodes(), new IgnitePredicate<GridClientNode>() {
-            @Override public boolean apply(GridClientNode n) {
-                return n.nodeId().equals(locNodeId);
-            }
-        });
-
-        return gridClient;
-    }
-
-    /**
      * Builds list of connection strings with few different ports.
      * Used to avoid possible failures in case of port range active.
      *
@@ -179,26 +151,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         // Cut node id from response.
         return res.substring(res.indexOf("\"response\""));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTcp() throws Exception {
-        try {
-            jcache().put("key", 1);
-
-            GridClient client = clientTcp();
-
-            Integer val = client.data().<String, Integer>get("key");
-
-            assert val != null;
-
-            assert val == 1;
-        }
-        finally {
-            GridClientFactory.stopAll();
-        }
     }
 
     /**

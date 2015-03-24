@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests transaction consistency when originating node fails.
@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest
     extends GridCachePartitionedTxOriginatingNodeFailureSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

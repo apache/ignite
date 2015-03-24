@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#jcache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
@@ -91,7 +91,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
+     *      filter values loaded from storage before they are put into cache.
      * @param args Optional user arguments to be passed into
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
@@ -196,7 +196,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
     /**
-     * Queries cache. Accepts any subclass of {@link Query}.
+     * Queries cache. Accepts any subclass of {@link Query} interface.
      *
      * @param qry Query.
      * @return Cursor.
@@ -205,35 +205,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see TextQuery
      * @see SpiQuery
      */
-    public QueryCursor<Entry<K, V>> query(Query qry);
-
-    /**
-     * Queries separate entry fields.
-     *
-     * @param qry SQL Query.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry);
-
-    /**
-     * Queries cache locally. Accepts any subclass of {@link Query}.
-     *
-     * @param qry Query.
-     * @return Cursor.
-     * @see ScanQuery
-     * @see SqlQuery
-     * @see TextQuery
-     * @see SpiQuery
-     */
-    public QueryCursor<Entry<K, V>> localQuery(Query qry);
-
-    /**
-     * Queries separate entry fields locally.
-     *
-     * @param qry SQL Query.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry);
+    public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
      * Allows for iteration over local cache entries.

@@ -32,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -50,9 +49,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
     /** */
     private CacheEvictionPolicy<?, ?> plc;
-
-    /** */
-    private CacheEvictionPolicy<?, ?> nearPlc;
 
     /** */
     private int warmUpPutsCnt;
@@ -75,10 +71,9 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(nearPlc);
 
         c.setCacheConfiguration(cc);
 
@@ -96,7 +91,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         super.afterTest();
 
         plc = null;
-        nearPlc = null;
     }
 
     /**
@@ -105,7 +99,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     public void testConcurrentPutsFifoLocal() throws Exception {
         mode = LOCAL;
         plc = new CacheFifoEvictionPolicy<Object, Object>(1000);
-        nearPlc = null;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 
@@ -118,7 +111,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     public void testConcurrentPutsLruLocal() throws Exception {
         mode = LOCAL;
         plc = new CacheLruEvictionPolicy<Object, Object>(1000);
-        nearPlc = null;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 
@@ -132,7 +124,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             // Warm up.
             for (int i = 0; i < warmUpPutsCnt; i++) {

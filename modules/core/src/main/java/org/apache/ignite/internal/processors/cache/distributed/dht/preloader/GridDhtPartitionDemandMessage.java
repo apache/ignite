@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -57,13 +59,13 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     private int workerId = -1;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param updateSeq Update sequence for this node.
      * @param topVer Topology version.
      */
-    GridDhtPartitionDemandMessage(long updateSeq, long topVer, int cacheId) {
+    GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int cacheId) {
         assert updateSeq > 0;
 
         this.cacheId = cacheId;
@@ -168,7 +170,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /**
      * @return Topology version for which demand message is sent.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -217,7 +219,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -273,7 +275,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

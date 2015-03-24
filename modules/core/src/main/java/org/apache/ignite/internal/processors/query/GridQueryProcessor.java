@@ -36,8 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
@@ -98,9 +98,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             execSvc = ctx.getExecutorService();
 
             idx.start(ctx);
-
-            for (CacheConfiguration<?, ?> ccfg : ctx.config().getCacheConfiguration())
-                initializeCache(ccfg);
         }
     }
 
@@ -204,6 +201,58 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.stop();
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheStart(GridCacheContext cctx) throws IgniteCheckedException {
+        if (idx == null)
+            return;
+
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            initializeCache(cctx.config());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void onCacheStop(GridCacheContext cctx) {
+        if (idx == null)
+            return;
+
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            idx.unregisterCache(cctx.config());
+
+            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<TypeId, TypeDescriptor> entry = it.next();
+
+                if (F.eq(cctx.name(), entry.getKey().space)) {
+                    it.remove();
+
+                    typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**

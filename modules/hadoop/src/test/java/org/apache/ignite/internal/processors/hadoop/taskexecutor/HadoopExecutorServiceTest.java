@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -39,7 +39,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
             final int loops = 5000;
             int threads = 17;
 
-            final LongAdder sum = new LongAdder();
+            final LongAdder8 sum = new LongAdder8();
 
             multithreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -79,7 +79,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
         for (int i = 0; i < 5; i++) {
             final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 
-            final LongAdder sum = new LongAdder();
+            final LongAdder8 sum = new LongAdder8();
 
             final AtomicBoolean finish = new AtomicBoolean();
 

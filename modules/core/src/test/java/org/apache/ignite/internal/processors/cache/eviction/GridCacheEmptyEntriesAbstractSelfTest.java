@@ -32,8 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.configuration.*;
-
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -79,17 +77,14 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setSwapEnabled(false);
 
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(nearPlc);
         cc.setEvictSynchronizedKeyBufferSize(1);
 
-        cc.setEvictNearSynchronized(true);
         cc.setEvictSynchronized(true);
 
         if (testStore != null) {
-            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(testStore));
+            cc.setCacheStoreFactory(singletonFactory(testStore));
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
             cc.setLoadPreviousValue(true);
@@ -172,7 +167,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                IgniteCache<String, String> cache = g.jcache(null);
+                IgniteCache<String, String> cache = g.cache(null);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +

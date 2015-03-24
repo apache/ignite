@@ -93,7 +93,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
 
         Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
-            grid().jcache(null).put(key, value);
+            grid().cache(null).put(key, value);
 
             tx.commit();
         }
@@ -104,11 +104,11 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            assert value.equals(grid().jcache(null).get(key));
+            assert value.equals(grid().cache(null).get(key));
 
-            grid().jcache(null).put(key, newValue);
+            grid().cache(null).put(key, newValue);
 
-            grid().jcache(null).put(key2, wrongValue);
+            grid().cache(null).put(key2, wrongValue);
 
             tx.commit();
         }
@@ -119,7 +119,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            String locVal = (String)grid().jcache(null).get(key);
+            String locVal = (String)grid().cache(null).get(key);
 
             assert locVal != null;
 

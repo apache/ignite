@@ -17,28 +17,29 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.configuration.CacheConfiguration
-
 import java.util._
 
-import org.apache.ignite.{IgniteCache, Ignite}
 import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.affinity.CacheAffinityKey
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
+import org.apache.ignite.{Ignite, IgniteCache}
 
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
  * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
- * be started with or without cache.
+ * Remote nodes should be started using `ExampleNodeStartup` which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarCacheQueryExample {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-ignite.xml"
+
     /** Cache name. */
-    private val CACHE_NAME = "partitioned" // "replicated"
+    private val NAME = ScalarCacheQueryExample.getClass.getSimpleName
 
     /**
      * Example entry point. No arguments required.
@@ -46,8 +47,16 @@ object ScalarCacheQueryExample {
      * @param args Command line arguments. None required.
      */
     def main(args: Array[String]) {
-        scalar("examples/config/example-cache.xml") {
-            example(ignite$)
+        scalar(CONFIG) {
+            val cache = createCache$(NAME, indexedTypes = Seq(classOf[UUID], classOf[Organization],
+                classOf[CacheAffinityKey[_]], classOf[Person]))
+
+            try {
+                example(ignite$)
+            }
+            finally {
+                cache.close()
+            }
         }
     }
 
@@ -85,14 +94,14 @@ object ScalarCacheQueryExample {
      *
      * @return Cache to use.
      */
-    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](CACHE_NAME).get
+    private def mkCache[K, V]: IgniteCache[K, V] = cache$[K, V](NAME).get
 
     /**
      * Populates cache with test data.
      */
     private def initialize() {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.clear()
+        cache$(NAME).get.clear()
 
         // Organization cache projection.
         val orgCache = mkCache[UUID, Organization]

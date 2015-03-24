@@ -156,7 +156,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
+     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection.
      * This essentially
      * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
      * replacement for local thread pools.
@@ -186,13 +186,83 @@ public interface Ignite extends AutoCloseable {
     public IgniteScheduler scheduler();
 
     /**
+     * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a client cache on local node.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return Instance of started cache.
+     */
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
+
+    /**
+     * Gets existing cache with the given name or creates new one with the given configuration.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return Existing or newly created cache.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg);
+
+    /**
+     * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a near cache with the given configuration on local node.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @param nearCfg Near cache configuration to use on local node in case it is not an
+     *      affinity node.
+     * @return Instance of started cache.
+     */
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     *
+     * @param cacheCfg Cache configuration.
+     * @param nearCfg Near cache configuration for client.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Starts a near cache on local node if cache was previously started with one of the
+     * {@link #createCache(CacheConfiguration)} or {@link #createCache(CacheConfiguration, NearCacheConfiguration)}
+     * methods.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
+     * @return Cache instance.
+     */
+    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near configuration.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Stops dynamically started cache.
+     *
+     * @param cacheName Cache name to stop.
+     */
+    public void destroyCache(String cacheName);
+
+    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *
      * @param name Cache name.
      * @return Instance of the cache for the specified name.
      */
-    public <K, V> IgniteCache<K, V> jcache(@Nullable String name);
+    public <K, V> IgniteCache<K, V> cache(@Nullable String name);
 
     /**
      * Gets grid transactions facade.

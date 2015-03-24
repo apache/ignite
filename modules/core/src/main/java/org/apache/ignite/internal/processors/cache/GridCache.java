@@ -30,7 +30,7 @@ import javax.cache.*;
 import java.util.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.apache.ignite.Ignite#jcache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.apache.ignite.Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
@@ -218,4 +218,9 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteInternalFuture<?> forceRepartition();
+
+    /**
+     * @return {@code True} if local node is affinity node.
+     */
+    public boolean affinityNode();
 }

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -65,7 +66,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private Collection<KeyCacheObject> keys;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Reload flag. */
     private boolean reload;
@@ -120,7 +121,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<KeyCacheObject> keys,
-        long topVer,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
@@ -158,7 +159,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * Initializes future.
      */
     public void init() {
-        long topVer = this.topVer > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer : cctx.affinity().affinityTopologyVersion();
 
         map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
@@ -260,10 +261,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version on which keys should be mapped.
      */
-    private void map(Collection<KeyCacheObject> keys,
+    private void map(
+        Collection<KeyCacheObject> keys,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
-        long topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
             onDone(new ClusterTopologyCheckedException("Failed to map keys for cache " +
                 "(all partition nodes left the grid)."));
@@ -328,9 +330,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                             remapKeys.add(key);
                     }
 
-                    long updTopVer = cctx.discovery().topologyVersion();
+                    AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
-                    assert updTopVer > topVer : "Got invalid partitions for local node but topology version did " +
+                    assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
                         ", invalidParts=" + invalidParts + ']';
 
@@ -396,10 +398,13 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @return {@code True} if has remote nodes.
      */
     @SuppressWarnings("ConstantConditions")
-    private boolean map(KeyCacheObject key,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings, Map<K, V> locVals,
-        long topVer,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped) {
+    private boolean map(
+        KeyCacheObject key,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings, 
+        Map<K, V> locVals,
+        AffinityTopologyVersion topVer,
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped
+    ) {
         GridDhtCacheAdapter<K, V> colocated = cache();
 
         boolean remote = false;
@@ -548,14 +553,14 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         private LinkedHashMap<KeyCacheObject, Boolean> keys;
 
         /** Topology version on which this future was mapped. */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * @param node Node.
          * @param keys Keys.
          * @param topVer Topology version.
          */
-        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, long topVer) {
+        MiniFuture(ClusterNode node, LinkedHashMap<KeyCacheObject, Boolean> keys, AffinityTopologyVersion topVer) {
             this.node = node;
             this.keys = keys;
             this.topVer = topVer;
@@ -601,9 +606,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            long updTopVer = cctx.discovery().topologyVersion();
+            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
-            assert updTopVer > topVer : "Got topology exception but topology version did " +
+            assert updTopVer.compareTo(topVer) > 0 : "Got topology exception but topology version did " +
                 "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
                 ", nodeId=" + node.id() + ']';
 
@@ -629,11 +634,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
             // Remap invalid partitions.
             if (!F.isEmpty(invalidParts)) {
-                long rmtTopVer = res.topologyVersion();
+                AffinityTopologyVersion rmtTopVer = res.topologyVersion();
 
-                assert rmtTopVer != 0;
+                assert !rmtTopVer.equals(AffinityTopologyVersion.ZERO);
 
-                if (rmtTopVer <= topVer) {
+                if (rmtTopVer.compareTo(topVer) <= 0) {
                     // Fail the whole get future.
                     onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                         "invalid partitions but remote topology version does not differ from local) " +
@@ -647,12 +652,12 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
 
                 topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
                     @SuppressWarnings("unchecked")
                     @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
-                        long topVer = fut.get();
+                        AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
 
                         // This will append new futures to compound list.
                         map(F.view(keys.keySet(),  new P1<KeyCacheObject>() {

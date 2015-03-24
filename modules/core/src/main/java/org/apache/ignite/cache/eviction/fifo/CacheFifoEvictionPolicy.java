@@ -20,9 +20,10 @@ package org.apache.ignite.cache.eviction.fifo;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
-import org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import org.jsr166.*;
+import org.jsr166.ConcurrentLinkedDeque8.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -32,12 +33,15 @@ import java.util.*;
  * maintained by attaching ordering metadata to cache entries.
  */
 public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
-    CacheFifoEvictionPolicyMBean {
+    CacheFifoEvictionPolicyMBean, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
     /** FIFO queue. */
-    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
+    private final ConcurrentLinkedDeque8<CacheEvictableEntry<K, V>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /**
@@ -88,12 +92,12 @@ public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
      *
      * @return Read-only view ono internal {@code 'FIFO'} queue.
      */
-    public Collection<EvictableEntry<K, V>> queue() {
+    public Collection<CacheEvictableEntry<K, V>> queue() {
         return Collections.unmodifiableCollection(queue);
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -103,7 +107,7 @@ public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                 shrink();
         }
         else {
-            Node<EvictableEntry<K, V>> node = entry.removeMeta();
+            Node<CacheEvictableEntry<K, V>> node = entry.removeMeta();
 
             if (node != null)
                 queue.unlinkx(node);
@@ -114,8 +118,8 @@ public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
      * @param entry Entry to touch.
      * @return {@code True} if queue has been changed by this call.
      */
-    private boolean touch(EvictableEntry<K, V> entry) {
-        Node<EvictableEntry<K, V>> node = entry.meta();
+    private boolean touch(CacheEvictableEntry<K, V> entry) {
+        Node<CacheEvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -158,7 +162,7 @@ public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
         int startSize = queue.sizex();
 
         for (int i = 0; i < startSize && queue.sizex() > max; i++) {
-            EvictableEntry<K, V> entry = queue.poll();
+            CacheEvictableEntry<K, V> entry = queue.poll();
 
             if (entry == null)
                 break;
@@ -169,6 +173,16 @@ public class CacheFifoEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                 touch(entry);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(max);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        max = in.readInt();
     }
 
     /** {@inheritDoc} */

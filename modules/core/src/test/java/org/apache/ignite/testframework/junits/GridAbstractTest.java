@@ -30,20 +30,23 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.logger.*;
 import org.apache.log4j.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 
+import javax.cache.configuration.*;
+import java.io.*;
 import java.lang.reflect.*;
+import java.lang.reflect.Proxy;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -51,7 +54,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -91,6 +93,12 @@ public abstract class GridAbstractTest extends TestCase {
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
+    /** Starting grid name. */
+    protected static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+
+    /**
+     *
+     */
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
@@ -103,6 +111,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         timer.start();
     }
+
+    /** */
+    private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
 
     /** */
     protected GridAbstractTest() {
@@ -122,7 +133,7 @@ public abstract class GridAbstractTest extends TestCase {
         // Initialize properties. Logger initialized here.
         GridTestProperties.init();
 
-        log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
+        log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
     }
@@ -645,7 +656,14 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+        startingGrid.set(gridName);
+
+        try {
+            return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+        }
+        finally {
+            startingGrid.set(null);
+        }
     }
 
     /**
@@ -815,6 +833,14 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected IgniteEx grid() {
         return (IgniteEx)G.ignite(getTestGridName());
+    }
+
+    /**
+     * @param node Node.
+     * @return Ignite instance with given local node.
+     */
+    protected final Ignite grid(ClusterNode node) {
+        return G.ignite(node.id());
     }
 
     /**
@@ -1117,7 +1143,7 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setStartSize(1024);
         cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 
@@ -1156,6 +1182,8 @@ public abstract class GridAbstractTest extends TestCase {
             afterTest();
         }
         finally {
+            serializedObj.clear();
+
             if (isLastTest()) {
                 info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
 
@@ -1188,6 +1216,34 @@ public abstract class GridAbstractTest extends TestCase {
             Thread.currentThread().setContextClassLoader(clsLdr);
 
             clsLdr = null;
+
+            cleanReferences();
+        }
+    }
+
+    /**
+     *
+     */
+    protected void cleanReferences() {
+        Class cls = getClass();
+
+        while (cls != null) {
+            Field[] fields = getClass().getDeclaredFields();
+
+            for (Field f : fields) {
+                if (Modifier.isStatic(f.getModifiers()))
+                    continue;
+
+                f.setAccessible(true);
+
+                try {
+                    f.set(this, null);
+                }
+                catch (Exception ignored) {
+                }
+            }
+
+            cls = cls.getSuperclass();
         }
     }
 
@@ -1306,6 +1362,86 @@ public abstract class GridAbstractTest extends TestCase {
             return Long.parseLong(timeout);
 
         return DFLT_TEST_TIMEOUT;
+    }
+
+    /**
+     * @param store Store.
+     */
+    protected <T> Factory<T> singletonFactory(T store) {
+        return notSerializableProxy(new FactoryBuilder.SingletonFactory<T>(store), Factory.class);
+    }
+
+    /**
+     * @param obj Object that should be wrap proxy
+     * @param itfCls Interface that should be implemented by proxy
+     * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
+     * @return Created proxy.
+     */
+    protected <T> T notSerializableProxy(final T obj, Class<? super T> itfCls, Class<? super T> ... itfClses) {
+        Class<?>[] itfs = Arrays.copyOf(itfClses, itfClses.length + 3);
+
+        itfs[itfClses.length] = itfCls;
+        itfs[itfClses.length + 1] = Serializable.class;
+        itfs[itfClses.length + 2] = WriteReplaceOwner.class;
+
+        return (T)Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), itfs, new InvocationHandler() {
+            @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                if ("writeReplace".equals(mtd.getName()) && mtd.getParameterTypes().length == 0)
+                    return supressSerialization(proxy);
+
+                return mtd.invoke(obj, args);
+            }
+        });
+    }
+
+    /**
+     * Returns an object that should be returned from writeReplace() method.
+     *
+     * @param obj Object that must not be changed after serialization/deserialization.
+     * @return An object to return from writeReplace()
+     */
+    private Object supressSerialization(Object obj) {
+        SerializableProxy res = new SerializableProxy(UUID.randomUUID());
+
+        serializedObj.put(res.uuid, obj);
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private static interface WriteReplaceOwner {
+        /**
+         *
+         */
+        Object writeReplace();
+    }
+
+    /**
+     *
+     */
+    private static class SerializableProxy implements Serializable {
+        /** */
+        private final UUID uuid;
+
+        /**
+         * @param uuid Uuid.
+         */
+        private SerializableProxy(UUID uuid) {
+            this.uuid = uuid;
+        }
+
+        /**
+         *
+         */
+        protected Object readResolve() throws ObjectStreamException {
+            Object res = serializedObj.get(uuid);
+
+            assert res != null;
+
+            return res;
+        }
     }
 
     /**

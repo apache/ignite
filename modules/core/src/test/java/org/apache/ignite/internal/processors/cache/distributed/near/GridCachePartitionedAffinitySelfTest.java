@@ -37,7 +37,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -68,7 +67,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -152,7 +150,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.jcache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
@@ -167,7 +165,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        IgniteCache<Integer, String> mc = mg.jcache(null);
+        IgniteCache<Integer, String> mc = mg.cache(null);
 
         int keyCnt = 10;
 

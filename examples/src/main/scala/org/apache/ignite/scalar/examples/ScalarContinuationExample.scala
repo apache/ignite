@@ -39,11 +39,11 @@ import java.util
  * the more values it will be cached on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-compute.xml") {
+        scalar("examples/config/example-ignite.xml") {
             // Calculate fibonacci for N.
             val N: Long = 100
 

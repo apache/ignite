@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.*;
+
 import java.util.*;
 
 /**
@@ -31,7 +33,7 @@ public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return Future topology version.
      */
-    public long topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * @return Future keys.

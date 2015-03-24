@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -82,10 +83,10 @@ public class GridCacheConcurrentMap {
     protected final GridCacheContext ctx;
 
     /** */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** */
-    private final LongAdder mapSize = new LongAdder();
+    private final LongAdder8 mapSize = new LongAdder8();
 
     /** Filters cache internal entry. */
     private static final CacheEntryPredicate NON_INTERNAL =
@@ -465,7 +466,7 @@ public class GridCacheConcurrentMap {
      * @param ttl Time to live.
      * @return Cache entry for corresponding key-value pair.
      */
-    public GridCacheMapEntry putEntry(long topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
         assert key != null;
 
         checkWeakQueue();
@@ -484,7 +485,8 @@ public class GridCacheConcurrentMap {
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
      */
-    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(long topVer,
+    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
         long ttl,
@@ -510,7 +512,7 @@ public class GridCacheConcurrentMap {
      */
     public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
         for (Map.Entry<KeyCacheObject, CacheObject> e : m.entrySet())
-            putEntry(-1, e.getKey(), e.getValue(), ttl);
+            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue(), ttl);
     }
 
     /**
@@ -784,7 +786,7 @@ public class GridCacheConcurrentMap {
         private volatile SegmentHeader hdr;
 
         /** The number of public elements in this segment's region. */
-        private final LongAdder pubSize = new LongAdder();
+        private final LongAdder8 pubSize = new LongAdder8();
 
         /**
          * The load factor for the hash table. Even though this value
@@ -900,7 +902,7 @@ public class GridCacheConcurrentMap {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, long topVer, long ttl) {
+        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             lock();
 
             try {
@@ -920,7 +922,7 @@ public class GridCacheConcurrentMap {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked", "SynchronizationOnLocalVariableOrMethodParameter"})
-        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, long topVer, long ttl) {
+        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             try {
                 SegmentHeader hdr = this.hdr;
 
@@ -998,7 +1000,7 @@ public class GridCacheConcurrentMap {
         GridTriple<GridCacheMapEntry> putIfObsolete(KeyCacheObject key,
             int hash,
             @Nullable CacheObject val,
-            long topVer,
+            AffinityTopologyVersion topVer,
             long ttl,
             boolean create)
         {
@@ -1317,7 +1319,7 @@ public class GridCacheConcurrentMap {
         private final int id;
 
         /** Reads. */
-        private final LongAdder reads = new LongAdder();
+        private final LongAdder8 reads = new LongAdder8();
 
         /** */
         private volatile SegmentHeader prev;
@@ -1744,7 +1746,7 @@ public class GridCacheConcurrentMap {
             curVal = null;
 
             try {
-                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1885,9 +1887,6 @@ public class GridCacheConcurrentMap {
         boolean containsValue(V v) {
             A.notNull(v, "value");
 
-            if (v == null)
-                return false;
-
             for (Iterator<V> it = valueIterator(); it.hasNext(); ) {
                 V v0 = it.next();
 
@@ -1921,7 +1920,7 @@ public class GridCacheConcurrentMap {
          */
         boolean removeKey(K k) {
             try {
-                return ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(k, CU.<K, V>empty());
+                return ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(k, CU.<K, V>empty());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to remove cache entry for key: " + k, e);

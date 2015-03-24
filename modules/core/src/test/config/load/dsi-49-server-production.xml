@@ -60,11 +60,9 @@
                     <property name="indexFixedTyping" value="true"/>
                     <property name="atomicSequenceReserveSize" value="100000"/>
                     <property name="evictSynchronized" value="false"/>
-                    <property name="evictNearSynchronized" value="false"/>
                     <property name="swapEnabled" value="false"/>
                     <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
                     <property name="defaultTxIsolation" value="REPEATABLE_READ"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="dgcSuspectLockTimeout" value="60000"/>
                     <property name="indexAnalyzeSampleSize" value="100"/>
                 </bean>

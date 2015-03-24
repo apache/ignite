@@ -50,9 +50,6 @@ public abstract class GridWorker implements Runnable {
     /** Actual thread runner. */
     private volatile Thread runner;
 
-    /** Parent thread. */
-    private final Thread parent;
-
     /** */
     private final Object mux = new Object();
 
@@ -69,8 +66,6 @@ public abstract class GridWorker implements Runnable {
     protected GridWorker(String gridName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
         assert name != null;
         assert log != null;
-
-        parent = Thread.currentThread();
 
         this.gridName = gridName;
         this.name = name;
@@ -168,13 +163,6 @@ public abstract class GridWorker implements Runnable {
      */
     protected void cleanup() {
         /* No-op. */
-    }
-
-    /**
-     * @return Parent thread.
-     */
-    public Thread parent() {
-        return parent;
     }
 
     /**

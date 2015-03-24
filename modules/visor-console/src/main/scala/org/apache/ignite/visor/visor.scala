@@ -28,7 +28,6 @@ import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
-import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
@@ -53,6 +52,7 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 
 /**
  * Holder for command help information.
@@ -493,7 +493,7 @@ object visor extends VisorTag {
                 "If logging is already stopped - it's no-op."
             ),
             "-dl" -> Seq(
-                "Disables collecting of job and task fail events, licence violation events, cache preloading events" +
+                "Disables collecting of job and task fail events, licence violation events, cache rebalance events" +
                     " from remote nodes."
             )
         ),
@@ -1509,7 +1509,7 @@ object visor extends VisorTag {
                     else
                         null
 
-                val spring: IgniteSpringProcessor = SPRING.create(false)
+                val spring: IgniteSpringHelper = SPRING.create(false)
 
                 val cfgs =
                     try

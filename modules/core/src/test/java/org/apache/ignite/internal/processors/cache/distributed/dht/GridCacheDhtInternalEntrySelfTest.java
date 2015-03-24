@@ -68,8 +68,11 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-        cacheCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        nearCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+        cacheCfg.setNearConfiguration(nearCfg);
+
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -95,20 +98,20 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode other = nodes.get2();
 
         // Create on non-primary node.
-        grid(other).jcache(null).put(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), 1);
+        grid(other).cache(null).put(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), 1);
 
         check(primary, other, true);
 
         // Update on primary.
-        grid(primary).jcache(null).put(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), 2);
+        grid(primary).cache(null).put(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), 2);
 
         // Check on non-primary.
-        assertEquals(2, grid(other).jcache(null).get(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME)));
+        assertEquals(2, grid(other).cache(null).get(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME)));
 
         check(primary, other, true);
 
         // Remove.
-        assert grid(other).jcache(null).remove(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
+        assert grid(other).cache(null).remove(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
 
         check(primary, other, false);
     }
@@ -143,7 +146,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      */
     private Object peekGlobal(ClusterNode node) {
-        return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.ONHEAP);
+        return grid(node).cache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.ONHEAP);
     }
 
     /**
@@ -151,7 +154,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      */
     private Object peekNear(ClusterNode node) {
-        return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.NEAR);
+        return grid(node).cache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.NEAR);
     }
 
     /**
@@ -159,7 +162,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      */
     private Object peekDht(ClusterNode node) {
-        return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.BACKUP,
+        return grid(node).cache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.BACKUP,
             CachePeekMode.PRIMARY);
     }
 
@@ -168,7 +171,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return DHT entry.
      */
     private GridDhtCacheEntry peekDhtEntry(ClusterNode node) {
-        return (GridDhtCacheEntry)dht(grid(node).jcache(null)).peekEx(
+        return (GridDhtCacheEntry)dht(grid(node).cache(null)).peekEx(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
     }
 
@@ -194,13 +197,5 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         assert !F.eqNodes(primary, other);
 
         return F.t(primary, other);
-    }
-
-    /**
-     * @param node Node.
-     * @return Grid.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
     }
 }

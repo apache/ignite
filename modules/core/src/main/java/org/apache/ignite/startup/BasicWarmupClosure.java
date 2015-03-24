@@ -18,7 +18,6 @@
 package org.apache.ignite.startup;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -246,7 +245,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         try {
             for (CacheConfiguration cc : first.configuration().getCacheConfiguration()) {
-                GridCache<Object, Object> cache0 = ((IgniteKernal)first).cache(cc.getName());
+                GridCache<Object, Object> cache0 = ((IgniteKernal)first).getCache(cc.getName());
 
                 for (String warmupMethod : warmupMethods) {
                     Collection<Future> futs = new ArrayList<>(threadCnt);
@@ -352,11 +351,6 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
             if (!matches(reduced, ccfg)) {
                 CacheConfiguration ccfgCp = new CacheConfiguration(ccfg);
 
-                if (ccfgCp.getDistributionMode() == CacheDistributionMode.CLIENT_ONLY)
-                    ccfgCp.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
-                else if (ccfgCp.getDistributionMode() == CacheDistributionMode.NEAR_ONLY)
-                    ccfgCp.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-
                 ccfgCp.setCacheStoreFactory(null);
                 ccfgCp.setWriteBehindEnabled(false);
 
@@ -405,8 +399,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
             F.eq(ccfg0.getBackups(), ccfg1.getBackups()) &&
             F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode()) &&
             F.eq(ccfg0.getAtomicWriteOrderMode(), ccfg1.getAtomicWriteOrderMode()) &&
-            F.eq(ccfg0.getMemoryMode(), ccfg1.getMemoryMode()) &&
-            F.eq(ccfg0.getDistributionMode(), ccfg1.getDistributionMode());
+            F.eq(ccfg0.getMemoryMode(), ccfg1.getMemoryMode());
     }
 
     /**

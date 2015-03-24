@@ -19,18 +19,19 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.cache.version.*;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Atomic cache version comparator.
  */
-public class GridCacheAtomicVersionComparator implements Comparator<GridCacheVersion>, Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public int compare(GridCacheVersion one, GridCacheVersion other) {
+public class GridCacheAtomicVersionComparator {
+    /**
+     * Compares two cache versions.
+     *
+     * @param one First version.
+     * @param other Second version.
+     * @param ignoreTime {@code True} if global time should be ignored.
+     * @return Comparison value.
+     */
+    public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
         int topVer = one.topologyVersion();
         int otherTopVer = other.topologyVersion();
 
@@ -38,7 +39,7 @@ public class GridCacheAtomicVersionComparator implements Comparator<GridCacheVer
             long globalTime = one.globalTime();
             long otherGlobalTime = other.globalTime();
 
-            if (globalTime == otherGlobalTime) {
+            if (globalTime == otherGlobalTime || ignoreTime) {
                 long locOrder = one.order();
                 long otherLocOrder = other.order();
 

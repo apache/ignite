@@ -230,14 +230,17 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
-        if (topologyVersion() == other.topologyVersion()) {
-            if (order == other.order)
-                return nodeOrder() == other.nodeOrder() ? 0 : nodeOrder() < other.nodeOrder() ? -1 : 1;
-            else
-                return order < other.order ? -1 : 1;
-        }
-        else
-            return topologyVersion() < other.topologyVersion() ? -1 : 1;
+        int res = Integer.compare(topologyVersion(), other.topologyVersion());
+
+        if (res != 0)
+            return res;
+
+        res = Long.compare(order, other.order);
+
+        if (res != 0)
+            return res;
+
+        return Integer.compare(nodeOrder(), other.nodeOrder());
     }
 
     /** {@inheritDoc} */

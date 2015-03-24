@@ -37,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -86,15 +85,22 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cc.setEvictionPolicy(createPolicy(plcMax));
-        cc.setNearEvictionPolicy(createNearPolicy(nearMax));
         cc.setEvictSynchronized(evictSync);
-        cc.setEvictNearSynchronized(evictNearSync);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
         cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
+
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            nearCfg.setNearEvictionPolicy(createNearPolicy(nearMax));
+
+            cc.setNearConfiguration(nearCfg);
+        }
+        else
+            cc.setNearConfiguration(null);
 
         if (mode == PARTITIONED)
             cc.setBackups(1);
@@ -155,7 +161,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<EvictableEntry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<CacheEvictableEntry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
@@ -180,14 +186,18 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        return (T)internalCache(i).configuration().getNearEvictionPolicy();
+        CacheConfiguration cfg = internalCache(i).configuration();
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        return (T)(nearCfg == null ? null : nearCfg.getNearEvictionPolicy());
     }
 
     /**
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<EvictableEntry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<CacheEvictableEntry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
@@ -305,7 +315,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).jcache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -358,7 +368,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.jcache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);

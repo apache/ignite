@@ -294,7 +294,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Object, Object> cache = ignite.jcache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(null);
 
             int cnt = 500;
 
@@ -360,7 +360,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
     /** {@inheritDoc} */
     @Override protected void checkNearPolicies(int endNearPlcSize) {
         for (int i = 0; i < gridCnt; i++)
-            for (EvictableEntry<String, String> e : nearPolicy(i).queue())
+            for (CacheEvictableEntry<String, String> e : nearPolicy(i).queue())
                 assert !e.isCached() : "Invalid near policy size: " + nearPolicy(i).queue();
     }
 

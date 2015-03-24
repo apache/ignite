@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -84,7 +83,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -116,7 +115,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             final Random rnd = new Random();
 
@@ -168,7 +167,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -195,7 +194,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             Collection<Integer> keys = new ArrayList<>(100);
 
@@ -227,7 +226,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 10000; i++)
                 load(cache, i, true);

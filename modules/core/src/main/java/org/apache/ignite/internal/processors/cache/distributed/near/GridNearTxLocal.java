@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -34,8 +34,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.expiry.*;
 import java.io.*;
@@ -49,13 +49,10 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Replicated user transaction.
  */
+@SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Topology snapshot on which this tx was started. */
-    private final AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
-        new AtomicReference<>();
 
     /** DHT mappings. */
     private ConcurrentMap<UUID, GridDistributedTxMapping> mappings =
@@ -186,8 +183,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Boolean> addReader(long msgId, GridDhtCacheEntry cached,
-        IgniteTxEntry entry, long topVer) {
+    @Override protected IgniteInternalFuture<Boolean> addReader(
+        long msgId, 
+        GridDhtCacheEntry cached,
+        IgniteTxEntry entry,
+        AffinityTopologyVersion topVer
+    ) {
         // We are in near transaction, do not add local node as reader.
         return null;
     }
@@ -590,23 +591,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 }
             }
         }
-    }
-
-    /**
-     * @return Topology snapshot on which this tx was started.
-     */
-    public GridDiscoveryTopologySnapshot topologySnapshot() {
-        return topSnapshot.get();
-    }
-
-    /**
-     * Sets topology snapshot on which this tx was started.
-     *
-     * @param topSnapshot Topology snapshot.
-     * @return {@code True} if topology snapshot was set by this call.
-     */
-    public boolean topologySnapshot(GridDiscoveryTopologySnapshot topSnapshot) {
-        return this.topSnapshot.compareAndSet(null, topSnapshot);
     }
 
     /** {@inheritDoc} */
@@ -1151,7 +1135,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx entryEx(GridCacheContext cacheCtx, IgniteTxKey key, long topVer) {
+    @Override protected GridCacheEntryEx entryEx(
+        GridCacheContext cacheCtx, 
+        IgniteTxKey key, 
+        AffinityTopologyVersion topVer
+    ) {
         if (cacheCtx.isColocated()) {
             IgniteTxEntry txEntry = entry(key);
 

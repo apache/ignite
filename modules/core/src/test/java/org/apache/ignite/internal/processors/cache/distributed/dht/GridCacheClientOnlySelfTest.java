@@ -17,18 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Client only test.
  */
 public class GridCacheClientOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

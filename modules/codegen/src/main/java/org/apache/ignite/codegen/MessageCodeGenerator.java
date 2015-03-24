@@ -309,6 +309,9 @@ public class MessageCodeGenerator {
     private void generate(Class<? extends Message> cls) throws Exception {
         assert cls != null;
 
+        if (cls.isInterface())
+            return;
+
         if (cls.isAnnotationPresent(IgniteCodeGeneratingFail.class))
             throw new IllegalStateException("@IgniteCodeGeneratingFail is provided for class: " + cls.getName());
 

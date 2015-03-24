@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;

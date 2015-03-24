@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -29,13 +30,13 @@ import java.util.*;
  */
 public class DataStreamerCacheUpdaters {
     /** */
-    private static final IgniteDataStreamer.Updater INDIVIDUAL = new Individual();
+    private static final StreamReceiver INDIVIDUAL = new Individual();
 
     /** */
-    private static final IgniteDataStreamer.Updater BATCHED = new Batched();
+    private static final StreamReceiver BATCHED = new Batched();
 
     /** */
-    private static final IgniteDataStreamer.Updater BATCHED_SORTED = new BatchedSorted();
+    private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
     /**
      * Updates cache using independent {@link org.apache.ignite.internal.processors.cache.GridCache#put(Object, Object, CacheEntryPredicate[])} and
@@ -44,7 +45,7 @@ public class DataStreamerCacheUpdaters {
      *
      * @return Single updater.
      */
-    public static <K, V> IgniteDataStreamer.Updater<K, V> individual() {
+    public static <K, V> StreamReceiver<K, V> individual() {
         return INDIVIDUAL;
     }
 
@@ -55,7 +56,7 @@ public class DataStreamerCacheUpdaters {
      *
      * @return Batched updater.
      */
-    public static <K, V> IgniteDataStreamer.Updater<K, V> batched() {
+    public static <K, V> StreamReceiver<K, V> batched() {
         return BATCHED;
     }
 
@@ -66,7 +67,7 @@ public class DataStreamerCacheUpdaters {
      *
      * @return Batched sorted updater.
      */
-    public static <K extends Comparable<?>, V> IgniteDataStreamer.Updater<K, V> batchedSorted() {
+    public static <K extends Comparable<?>, V> StreamReceiver<K, V> batchedSorted() {
         return BATCHED_SORTED;
     }
 
@@ -93,12 +94,12 @@ public class DataStreamerCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Individual<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
+    private static class Individual<K, V> implements StreamReceiver<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -120,12 +121,12 @@ public class DataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class Batched<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
+    private static class Batched<K, V> implements StreamReceiver<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -160,12 +161,12 @@ public class DataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements IgniteDataStreamer.Updater<K, V>, InternalUpdater {
+    private static class BatchedSorted<K, V> implements StreamReceiver<K, V>, InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
+        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -43,7 +44,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -586,6 +587,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 110:
                 msg = new GridQueryRequest();
+
+                break;
+
+            case 111:
+                msg = new AffinityTopologyVersion();
 
                 break;
 

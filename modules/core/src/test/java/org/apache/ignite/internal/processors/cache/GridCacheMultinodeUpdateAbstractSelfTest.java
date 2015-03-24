@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -44,11 +43,6 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -58,11 +52,21 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
         return 3 * 60_000;
     }
 
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setCacheStoreFactory(null);
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
+
+        return ccfg;
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         final Integer key = primaryKey(cache);
 
@@ -82,7 +86,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 @Override public Void call() throws Exception {
                     int idx = gridIdx.incrementAndGet() - 1;
 
-                    final IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
+                    final IgniteCache<Integer, Integer> cache = grid(idx).cache(null);
 
                     for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++)
                         cache.invoke(key, new IncProcessor());
@@ -96,7 +100,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
             expVal += ITERATIONS_PER_THREAD * THREADS;
 
             for (int j = 0; j < gridCount(); j++) {
-                Integer val = (Integer)grid(j).jcache(null).get(key);
+                Integer val = (Integer)grid(j).cache(null).get(key);
 
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }

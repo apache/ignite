@@ -31,11 +31,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
+import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -46,7 +45,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private CacheDistributionMode distroMode;
+    private boolean near;
 
     /** */
     private boolean writeBehind;
@@ -118,10 +117,10 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
+    public static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
         /**
          */
-        TestAffinityFunction() {
+        public TestAffinityFunction() {
             super(CACHE_NAME);
         }
 
@@ -162,15 +161,15 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy {
+    public static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy, Serializable {
         /**
          */
-        TestEvictionPolicy() {
+        public TestEvictionPolicy() {
             super(CACHE_NAME);
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry entry) {
             // No-op.
         }
     }
@@ -256,8 +255,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         ccfg.setCacheMode(PARTITIONED);
 
-        ccfg.setDistributionMode(distroMode);
-
         ccfg.setWriteBehindEnabled(writeBehind);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -266,7 +263,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         TestStore store = new TestStore();
 
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
@@ -285,11 +282,17 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(evictionPlc);
 
-        TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
+        if (near) {
+            TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
 
-        ccfg.setNearEvictionPolicy(nearEvictionPlc);
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        lifecycleAwares.add(nearEvictionPlc);
+            nearCfg.setNearEvictionPolicy(nearEvictionPlc);
+
+            ccfg.setNearConfiguration(nearCfg);
+
+            lifecycleAwares.add(nearEvictionPlc);
+        }
 
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 
@@ -317,8 +320,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
     @Override public void testLifecycleAware() throws Exception {
-        for (CacheDistributionMode mode : new CacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
-            distroMode = mode;
+        for (boolean nearEnabled : new boolean[] {true, false}) {
+            near = nearEnabled;
 
             writeBehind = false;
 
@@ -326,7 +329,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
                 super.testLifecycleAware();
             }
             catch (AssertionError e) {
-                throw new AssertionError("Failed for [distroMode=" + distroMode + ", writeBehind=" + writeBehind + ']',
+                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
                     e);
             }
 
@@ -336,7 +339,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
                 super.testLifecycleAware();
             }
             catch (AssertionError e) {
-                throw new AssertionError("Failed for [distroMode=" + distroMode + ", writeBehind=" + writeBehind + ']',
+                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
                     e);
             }
         }

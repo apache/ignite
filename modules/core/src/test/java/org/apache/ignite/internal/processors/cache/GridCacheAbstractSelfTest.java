@@ -34,8 +34,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -43,7 +43,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -77,7 +76,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -104,6 +105,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < gridCount(); i++) {
+            info("Checking grid: " + i);
+
             while (true) {
                 try {
                     final int fi = i;
@@ -241,7 +244,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         CacheStore<?, ?> store = cacheStore();
 
         if (store != null) {
-            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cfg.setCacheStoreFactory(new TestStoreFactory());
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
@@ -251,7 +254,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
         cfg.setIndexedTypes(indexedTypes());
 
         if (cacheMode() == PARTITIONED)
@@ -284,8 +287,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Partitioned mode.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -298,7 +301,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Write through storage emulator.
      */
-    protected CacheStore<?, ?> cacheStore() {
+    protected static CacheStore<?, ?> cacheStore() {
         return new CacheStoreAdapter<Object, Object>() {
             @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
                 Object... args) {
@@ -331,7 +334,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return {@code true} if near cache should be enabled.
      */
     protected boolean nearEnabled() {
-        return distributionMode() == NEAR_ONLY || distributionMode() == NEAR_PARTITIONED;
+        return nearConfiguration() != null;
     }
 
     /**
@@ -361,7 +364,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected GridCache<String, Integer> cache(int idx) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).getCache(null);
     }
 
     /**
@@ -393,7 +396,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).jcache(null);
+        return ignite(idx).cache(null);
     }
 
     /**
@@ -602,6 +605,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer reduce() {
             return sum;
+        }
+    }
+
+    /**
+     * Serializable factory.
+     */
+    private static class TestStoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return cacheStore();
         }
     }
 }

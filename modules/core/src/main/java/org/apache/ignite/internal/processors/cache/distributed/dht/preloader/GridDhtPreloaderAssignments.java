@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -36,15 +37,15 @@ public class GridDhtPreloaderAssignments<K, V> extends
     private final GridDhtPartitionsExchangeFuture exchFut;
 
     /** Last join order. */
-    private final long topVer;
+    private final AffinityTopologyVersion topVer;
 
     /**
      * @param exchFut Exchange future.
      * @param topVer Last join order.
      */
-    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture exchFut, long topVer) {
+    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture exchFut, AffinityTopologyVersion topVer) {
         assert exchFut != null;
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         this.exchFut = exchFut;
         this.topVer = topVer;
@@ -60,7 +61,7 @@ public class GridDhtPreloaderAssignments<K, V> extends
     /**
      * @return Topology version.
      */
-    long topologyVersion() {
+    AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 

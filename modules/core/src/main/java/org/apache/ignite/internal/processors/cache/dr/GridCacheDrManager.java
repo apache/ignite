@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -62,7 +63,7 @@ public interface GridCacheDrManager extends GridCacheManager {
      * @param left {@code True} if exchange has been caused by node leave.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException;
+    public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

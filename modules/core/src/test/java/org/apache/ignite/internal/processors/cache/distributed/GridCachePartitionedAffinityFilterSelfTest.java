@@ -33,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
@@ -79,7 +78,6 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -127,7 +125,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
         CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
-        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < partCnt; i++) {
             assertEquals(i, aff.partition(i));

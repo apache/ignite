@@ -624,6 +624,30 @@ public interface EventType {
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
     /**
+     * Built-in event type: cache started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_STARTED = 98;
+
+    /**
+     * Built-in event type: cache started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_STOPPED = 99;
+
+    /**
+     * Built-in event type: cache nodes left.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     */
+    public static final int EVT_CACHE_NODES_LEFT = 100;
+
+    /**
      * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -928,6 +952,17 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
         EVT_CACHE_REBALANCE_OBJECT_UNLOADED
+    };
+
+    /**
+     * All cache lifecycle events. This array can be directly passed into
+     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * subscribe to all cache lifecycle events.
+     */
+    public static final int[] EVTS_CACHE_LIFECYCLE = {
+        EVT_CACHE_STARTED,
+        EVT_CACHE_STOPPED,
+        EVT_CACHE_NODES_LEFT
     };
 
     /**

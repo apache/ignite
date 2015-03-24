@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.integration.*;
 import java.util.*;
@@ -666,22 +666,32 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             storeMgr.initSession(null);
 
         try {
-            switch (operation) {
-                case PUT:
-                    store.writeAll(vals.values());
+            boolean threwEx = true;
 
-                    break;
+            try {
+                switch (operation) {
+                    case PUT:
+                        store.writeAll(vals.values());
 
-                case RMV:
-                    store.deleteAll(vals.keySet());
+                        break;
 
-                    break;
+                    case RMV:
+                        store.deleteAll(vals.keySet());
 
-                default:
-                    assert false : "Unexpected operation: " + operation;
+                        break;
+
+                    default:
+                        assert false : "Unexpected operation: " + operation;
+                }
+
+                threwEx = false;
+
+                return true;
             }
-
-            return true;
+            finally {
+                if (initSes && storeMgr != null)
+                    storeMgr.endSession(null, threwEx);
+            }
         }
         catch (Exception e) {
             LT.warn(log, e, "Unable to update underlying store: " + store);
@@ -699,10 +709,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
 
             return false;
-        }
-        finally {
-            if (initSes && storeMgr != null)
-                storeMgr.endSession(null);
         }
     }
 
