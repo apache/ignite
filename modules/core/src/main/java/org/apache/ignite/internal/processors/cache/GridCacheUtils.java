@@ -1533,7 +1533,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Cache ID
+     * @return Cache ID.
      */
     public static int cacheId(String cacheName) {
         if (cacheName != null) {
