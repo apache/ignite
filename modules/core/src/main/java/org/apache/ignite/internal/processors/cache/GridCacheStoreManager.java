@@ -786,11 +786,11 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      * Clears session holder.
      */
     void endSession(@Nullable IgniteInternalTx tx) {
-        if (sesHolder != null)
-            sesHolder.set(null);
-
         if (tx == null)
             store.sessionEnd(true);
+
+        if (sesHolder != null)
+            sesHolder.set(null);
     }
 
     /**
@@ -799,6 +799,8 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
     void initSession(@Nullable IgniteInternalTx tx) {
         if (sesHolder == null)
             return;
+
+        assert sesHolder.get() == null;
 
         SessionData ses;
 
