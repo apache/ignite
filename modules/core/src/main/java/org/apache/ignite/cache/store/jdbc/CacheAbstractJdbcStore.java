@@ -65,22 +65,19 @@ import static java.sql.Statement.*;
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * ...
- * CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
+ *    ...
+ *    CacheConfiguration ccfg = new CacheConfiguration&lt;&gt;();
  *
- * // Configure cache store.
- * ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
- * ccfg.setReadThrough(true);
- * ccfg.setWriteThrough(true);
+ *    // Configure cache store.
+ *    ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(ConfigurationSnippet.store()));
+ *    ccfg.setReadThrough(true);
+ *    ccfg.setWriteThrough(true);
  *
- * // Enable database batching.
- * ccfg.setWriteBehindEnabled(true);
+ *    // Configure cache types metadata.
+ *    ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
  *
- * // Configure cache types metadata.
- * ccfg.setTypeMetadata(ConfigurationSnippet.typeMetadata());
- *
- * cfg.setCacheConfiguration(ccfg);
- * ...
+ *    cfg.setCacheConfiguration(ccfg);
+ *    ...
  * </pre>
  */
 public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
