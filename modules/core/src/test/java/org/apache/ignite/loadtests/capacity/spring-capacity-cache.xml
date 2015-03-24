@@ -67,8 +67,6 @@
                     -->
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <!-- Get rid of value byte buffers once not needed. -->
                     <property name="storeValueBytes" value="false"/>
 
