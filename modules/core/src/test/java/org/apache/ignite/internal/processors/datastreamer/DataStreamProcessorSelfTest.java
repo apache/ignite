@@ -219,8 +219,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             f1.get();
 
-            int s2 = grid(2).jcache(null).localSize(CachePeekMode.PRIMARY);
-            int s3 = grid(3).jcache(null).localSize(CachePeekMode.PRIMARY);
+            int s2 = grid(2).cache(null).localSize(CachePeekMode.PRIMARY);
+            int s3 = grid(3).cache(null).localSize(CachePeekMode.PRIMARY);
             int total = threads * cnt;
 
             assertEquals(total, s2 + s3);
@@ -256,8 +256,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             f2.get();
 
-            s2 = grid(2).jcache(null).localSize(CachePeekMode.PRIMARY);
-            s3 = grid(3).jcache(null).localSize(CachePeekMode.PRIMARY);
+            s2 = grid(2).cache(null).localSize(CachePeekMode.PRIMARY);
+            s3 = grid(3).cache(null).localSize(CachePeekMode.PRIMARY);
 
             assert s2 == 0 && s3 == 0 : "Incorrect entries count [s2=" + s2 + ", s3=" + s3 + ']';
         }

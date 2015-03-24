@@ -161,8 +161,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             Ignite ignite2 = startGrid(2);
 
-            IgniteCache<Integer, Object> cache1 = ignite1.jcache(null);
-            IgniteCache<Integer, Object> cache2 = ignite2.jcache(null);
+            IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, Object> cache2 = ignite2.cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -288,7 +288,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED, EVT_SWAP_SPACE_DATA_EVICTED);
 
-            IgniteCache<Integer, CacheValue> cache = grid(0).jcache(null);
+            IgniteCache<Integer, CacheValue> cache = grid(0).cache(null);
 
             for (int i = 0; i< 20; i++) {
                 cache.put(i, new CacheValue(i));
@@ -346,7 +346,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
-            IgniteCache<Integer, CacheValue> cache = grid(0).jcache(null);
+            IgniteCache<Integer, CacheValue> cache = grid(0).cache(null);
 
             populate(grid(0));
             evictAll(cache);
@@ -392,7 +392,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);
@@ -436,9 +436,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         resetCounters();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
-            ignite.<Integer, CacheValue>jcache(null).put(i, new CacheValue(i));
+            ignite.<Integer, CacheValue>cache(null).put(i, new CacheValue(i));
 
-            CacheValue val = ignite.<Integer, CacheValue>jcache(null).localPeek(i);
+            CacheValue val = ignite.<Integer, CacheValue>cache(null).localPeek(i);
 
             assert val != null;
             assert val.value() == i;
