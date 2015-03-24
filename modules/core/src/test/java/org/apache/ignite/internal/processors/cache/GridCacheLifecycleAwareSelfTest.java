@@ -31,8 +31,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
+import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -117,10 +117,10 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
+    public static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
         /**
          */
-        TestAffinityFunction() {
+        public TestAffinityFunction() {
             super(CACHE_NAME);
         }
 
@@ -161,10 +161,10 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy {
+    public static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy, Serializable {
         /**
          */
-        TestEvictionPolicy() {
+        public TestEvictionPolicy() {
             super(CACHE_NAME);
         }
 
