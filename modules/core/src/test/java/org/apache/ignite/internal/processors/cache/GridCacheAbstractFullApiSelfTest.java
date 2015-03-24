@@ -3389,7 +3389,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         List<String> keys = primaryKeysForCache(jcache(), 3);
 

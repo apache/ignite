@@ -112,39 +112,24 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     final int fi = i;
 
                     assertTrue(
-                        "Cache is not empty: " + cache(i).entrySet(),
+                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize()
+                        + ", localEntries next = " + jcache(fi).localEntries().iterator().hasNext(),
                         GridTestUtils.waitForCondition(
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
-                                    IgniteCache<Object, Object> cache = grid(fi).cache(null);
-
-                                    // Fix for tests where mapping was removed at primary node
-                                    // but was not removed at others.
-                                    // removeAll() removes mapping only when it presents at a primary node.
-                                    // To remove all mappings used force remove by key.
-                                    if (cache.size() > 0) {
-                                        for (Cache.Entry<Object, Object> k : cache.localEntries())
-                                            cache.remove(k.getKey());
-                                    }
-
-                                    if (offheapTiered(cache)) {
-                                        for (Cache.Entry<Object, Object> e : cache.localEntries(CachePeekMode.OFFHEAP))
-                                            cache.remove(e.getKey());
-                                    }
-
-                                    return cache.localSize() == 0;
+                                    return jcache(fi).localSize() == 0;
                                 }
                             },
                             getTestTimeout()));
 
-                    int primaryKeySize = cache(i).primarySize();
-                    int keySize = cache(i).size();
-                    int size = cache(i).size();
-                    int globalSize = cache(i).globalSize();
-                    int globalPrimarySize = cache(i).globalPrimarySize();
+                    int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
+                    int keySize = jcache(i).localSize();
+                    int size = jcache(i).localSize();
+                    int globalSize = jcache(i).size();
+                    int globalPrimarySize = jcache(i).size(CachePeekMode.PRIMARY);
 
                     info("Size after [idx=" + i +
                         ", size=" + size +
@@ -152,10 +137,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         ", primarySize=" + primaryKeySize +
                         ", globalSize=" + globalSize +
                         ", globalPrimarySize=" + globalPrimarySize +
-                        ", keySet=" + cache(i).keySet() + ']');
+                        ", entrySet=" + jcache(i).localEntries() + ']');
 
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + cache(i).entrySet() + ']',
-                        0, cache(i).size());
+                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
+                        0, jcache(i).localSize());
 
                     break;
                 }
@@ -170,13 +155,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            Iterator<Map.Entry<String, Integer>> it = cache(i).swapIterator();
-
-            while (it.hasNext()) {
-                Map.Entry<String, Integer> entry = it.next();
-
-                cache(i).remove(entry.getKey());
-            }
+            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
+                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
