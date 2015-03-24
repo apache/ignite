@@ -564,6 +564,7 @@ public class CodeGenerator {
         add0(src, "");
 
         boolean first = true;
+        boolean firstGrp = true;
 
         for (PojoDescriptor pojo : pojos) {
             String tbl = pojo.table();
@@ -618,7 +619,7 @@ public class CodeGenerator {
                 add0(src, "");
 
                 for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
-                    add2(src, (first ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +
+                    add2(src, (firstGrp ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +
                             "grpItems = new LinkedHashMap<>();");
                     add0(src, "");
 
@@ -626,12 +627,14 @@ public class CodeGenerator {
                         IndexItem idxCol = grpItem.getValue();
 
                         add2(src, "grpItems.put(\"" + grpItem.getKey() + "\", " +
-                            "new IgniteBiTuple<>(" + javaTypeName(idxCol.type()) + ".class, " +
+                            "new IgniteBiTuple<Class<?>, Boolean>>(" + javaTypeName(idxCol.type()) + ".class, " +
                             idxCol.descending() + "));");
                     }
 
                     add0(src, "");
                     add2(src, "grps.put(\"" + group.getKey() + "\", grpItems);");
+
+                    firstGrp = false;
                 }
 
                 add2(src, "type.setGroups(grps);");
