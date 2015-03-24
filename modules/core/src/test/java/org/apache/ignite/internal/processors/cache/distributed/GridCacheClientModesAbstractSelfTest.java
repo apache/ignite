@@ -173,7 +173,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = ((IgniteKernal)g).cache(null);
+                    GridCache<Object, Object> cache = ((IgniteKernal)g).getCache(null);
 
                     String key = "key" + k;
 

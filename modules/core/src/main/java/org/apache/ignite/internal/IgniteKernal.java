@@ -2237,7 +2237,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {

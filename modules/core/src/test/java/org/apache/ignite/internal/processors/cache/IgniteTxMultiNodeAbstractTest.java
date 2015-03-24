@@ -29,17 +29,13 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -297,7 +293,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             while (true) {
                 CacheQuery<Map.Entry<String, Integer>> qry =
-                    ((IgniteKernal)ignite).<String, Integer>cache(null).queries()
+                    ((IgniteKernal)ignite).<String, Integer>getCache(null).queries()
                         .createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 
                 if (DEBUG)
@@ -619,7 +615,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -660,7 +656,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -711,7 +707,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             // Store counter.
             cache.put(RMVD_CNTR_KEY, 0);

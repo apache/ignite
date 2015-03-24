@@ -160,7 +160,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            final GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             assertNotNull(cache);
 

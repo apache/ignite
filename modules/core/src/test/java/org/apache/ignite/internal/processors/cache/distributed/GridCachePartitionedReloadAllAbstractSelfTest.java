@@ -157,7 +157,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
             @Override public void loadCache(IgniteBiInClosure<Integer, String> c,
                 Object... args) {
-                X.println("Loading all on: " + caches.indexOf(((IgniteKernal)g).<Integer, String>cache(null)));
+                X.println("Loading all on: " + caches.indexOf(((IgniteKernal)g).<Integer, String>getCache(null)));
 
                 for (Map.Entry<Integer, String> e : map.entrySet())
                     c.apply(e.getKey(), e.getValue());
@@ -165,7 +165,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
             @Override public String load(Integer key) {
                 X.println("Loading on: " + caches.indexOf(((IgniteKernal)g)
-                    .<Integer, String>cache(null)) + " key=" + key);
+                    .<Integer, String>getCache(null)) + " key=" + key);
 
                 return map.get(key);
             }

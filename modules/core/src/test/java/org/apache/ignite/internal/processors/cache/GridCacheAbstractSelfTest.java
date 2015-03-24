@@ -364,7 +364,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected GridCache<String, Integer> cache(int idx) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).getCache(null);
     }
 
     /**

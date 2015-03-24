@@ -115,9 +115,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        checkQuery(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
 
-        checkQuery(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -207,9 +207,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryPrimitives() throws Exception {
-        checkQueryPrimitives(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
 
-        checkQueryPrimitives(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -263,9 +263,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryValueByteArray() throws Exception {
-        checkQueryValueByteArray(((IgniteKernal)grid(0)).cache(ATOMIC_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
 
-        checkQueryValueByteArray(((IgniteKernal)grid(0)).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**

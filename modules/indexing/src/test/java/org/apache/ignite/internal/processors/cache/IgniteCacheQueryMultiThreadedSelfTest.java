@@ -146,7 +146,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).cache(null);
+            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).getCache(null);
 
             assertEquals(0, c.size());
         }
@@ -175,7 +175,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).cache(null);
+            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).getCache(null);
 
             c.removeAll();
 
@@ -226,7 +226,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         Set<UUID> nodes = new HashSet<>();
 
         for (Cache.Entry<Integer, Integer> entry : entries)
-            nodes.add(((IgniteKernal)g).cache(null).affinity().mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
+            nodes.add(((IgniteKernal)g).getCache(null).affinity().mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
 
         return nodes;
     }
@@ -248,7 +248,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, String> c = g.jcache(null);
         final IgniteCache<Integer, Long> cl = g.jcache(null);
 
-        assertEquals(0, ((IgniteKernal)g).cache(null).size());
+        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
         assertEquals(0, c.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
         assertEquals(0, cl.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
@@ -327,7 +327,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, Long> c = g.jcache(null);
         final IgniteCache<Integer, String> c1 = g.jcache(null);
 
-        assertEquals(0, ((IgniteKernal)g).cache(null).size());
+        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
         assertEquals(0, c1.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
         assertEquals(0, c.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
@@ -480,7 +480,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         // Put test values into cache.
         final IgniteCache<Integer, TestValue> c = g.jcache(null);
 
-        assertEquals(0, ((IgniteKernal)g).cache(null).size());
+        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
         assertEquals(0, c.query(new SqlQuery(TestValue.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();

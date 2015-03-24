@@ -186,7 +186,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private GridCache<Long, Long> populate() throws Exception {
-        GridCache<Long, Long> cache = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<Long, Long> cache = ((IgniteKernal)grid(0)).getCache(null);
 
         assertEquals(0, cache.size());
         assertEquals(0, cache.offHeapEntriesCount());

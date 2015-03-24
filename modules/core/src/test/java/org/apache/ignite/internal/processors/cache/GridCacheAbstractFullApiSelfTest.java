@@ -2970,7 +2970,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Ignite ignite = primaryIgnite(key);
 
-        GridCache<String, Integer> cache = ((IgniteKernal)ignite).cache(null);
+        GridCache<String, Integer> cache = ((IgniteKernal)ignite).getCache(null);
 
         cache.put(key, 1);
 

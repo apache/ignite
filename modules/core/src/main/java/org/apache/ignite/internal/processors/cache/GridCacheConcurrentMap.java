@@ -1746,7 +1746,7 @@ public class GridCacheConcurrentMap {
             curVal = null;
 
             try {
-                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1920,7 +1920,7 @@ public class GridCacheConcurrentMap {
          */
         boolean removeKey(K k) {
             try {
-                return ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(k, CU.<K, V>empty());
+                return ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(k, CU.<K, V>empty());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to remove cache entry for key: " + k, e);

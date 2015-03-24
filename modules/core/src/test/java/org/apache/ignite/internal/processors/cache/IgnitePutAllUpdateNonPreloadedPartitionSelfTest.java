@@ -78,7 +78,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
             startGrid(GRID_CNT - 1);
 
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             final int keyCnt = 100;
 

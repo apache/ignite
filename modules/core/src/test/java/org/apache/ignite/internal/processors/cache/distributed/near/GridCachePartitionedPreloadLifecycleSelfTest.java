@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -175,7 +174,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).cache("two");
+                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).getCache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 

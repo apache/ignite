@@ -198,7 +198,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Integer, Object> cache = ((IgniteKernal)ignite).cache(null);
+        GridCache<Integer, Object> cache = ((IgniteKernal)ignite).getCache(null);
 
         cache.putx(7, "value");
 
@@ -489,7 +489,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            GridCache<Integer, ObjectValue> c = ((IgniteKernal)g).cache(null);
+            GridCache<Integer, ObjectValue> c = ((IgniteKernal)g).getCache(null);
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
