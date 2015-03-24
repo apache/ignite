@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.h2.store.*;
 import org.h2.value.*;
@@ -213,6 +214,13 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
+    @Override public synchronized void unswapBeforeRemove(Object val) throws IgniteCheckedException {
+        assert val != null;
+
+        onUnswap(val);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override protected Value updateWeakValue(Value exp, Value upd) {
         setValue(VAL_COL, upd);
@@ -224,14 +232,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     @Override public synchronized void onUnswap(Object val) throws IgniteCheckedException {
         super.onUnswap(val);
 
-        Value v = getValue(VAL_COL);
-
-        byte[] bytes = new byte[SIZE_CALCULATOR.getValueLen(v)];
-
-        Data data = Data.create(null, bytes);
-
-        data.writeValue(v);
-
         long p = ptr;
 
         assert p > 0 : p;
@@ -240,6 +240,17 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
         try {
             GridUnsafeMemory mem = desc.memory();
+
+            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0)
+                return; // The offheap value is in its place, nothing to do here.
+
+            Value v = getValue(VAL_COL); // We just set the value above, so it will be returned right away.
+
+            byte[] bytes = new byte[SIZE_CALCULATOR.getValueLen(v)];
+
+            Data data = Data.create(null, bytes);
+
+            data.writeValue(v);
 
             long valPtr = mem.allocate(bytes.length + OFFSET_VALUE);
 
@@ -352,5 +363,10 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
             mem.release(valPtr, mem.readInt(valPtr) + OFFSET_VALUE);
 
         mem.release(p, mem.readInt(p + OFFSET_KEY_SIZE) + OFFSET_KEY);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void addOffheapRowId(SB sb) {
+        sb.a('-').a(ptr);
     }
 }

@@ -382,7 +382,7 @@ public class GridH2Table extends TableBase {
                     Value v = row.getValue(GridH2AbstractKeyValueRow.VAL_COL);
 
                     if (v != null)
-                        ((GridH2AbstractKeyValueRow)old).unswapBeforeRemove(v);
+                        ((GridH2AbstractKeyValueRow)old).unswapBeforeRemove(v.getObject());
                 }
 
                 if (old != null) {

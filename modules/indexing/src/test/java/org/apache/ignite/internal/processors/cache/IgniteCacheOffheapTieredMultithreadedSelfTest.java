@@ -88,11 +88,6 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -128,9 +123,9 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
 
                 return null;
             }
-        }, 5);
+        }, 64);
 
-        Thread.sleep(5 * 60 * 1000);
+        Thread.sleep(3 * 60 * 1000);
 
         end.set(true);
 

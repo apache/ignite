@@ -179,7 +179,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
         if (oldVal == null || oldVal instanceof WeakValue)
             onUnswap(val);
-        // Else we would assert that val.equals(oldVal) but value is not necessarily implements equals() correctly.
+        // Else we would assert that val.equals(oldVal.getObject()) but value is not necessarily implements equals() correctly.
     }
 
     /**
@@ -322,11 +322,20 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      */
     protected abstract Value getOffheapValue(int col);
 
+    /**
+     * Adds offheap row ID.
+     */
+    protected void addOffheapRowId(SB sb) {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
 
         sb.a(Integer.toHexString(System.identityHashCode(this)));
+
+        addOffheapRowId(sb);
 
         Value v = super.getValue(KEY_COL);
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
