@@ -633,6 +633,7 @@ public class CodeGenerator {
 
                     add0(src, "");
                     add2(src, "grps.put(\"" + group.getKey() + "\", grpItems);");
+                    add0(src, "");
 
                     firstGrp = false;
                 }
