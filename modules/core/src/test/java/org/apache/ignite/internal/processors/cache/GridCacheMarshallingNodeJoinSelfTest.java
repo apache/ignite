@@ -23,7 +23,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -141,8 +140,6 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
     private static class Store extends CacheStoreAdapter<Integer, TestObject> implements Serializable {
         /** {@inheritDoc} */
         @Override public TestObject load(Integer key) throws CacheLoaderException {
-            U.dumpStack("key=" + key);
-
             return key > 0 ? new TestObject() : null;
         }
 

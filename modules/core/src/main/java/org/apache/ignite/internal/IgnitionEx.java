@@ -1906,7 +1906,7 @@ public class IgnitionEx {
 
                 cache.setName(CU.MARSH_CACHE_NAME);
                 cache.setCacheMode(REPLICATED);
-                cache.setAtomicityMode(TRANSACTIONAL);
+                cache.setAtomicityMode(ATOMIC);
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
