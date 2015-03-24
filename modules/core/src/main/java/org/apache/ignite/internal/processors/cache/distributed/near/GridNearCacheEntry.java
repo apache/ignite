@@ -93,18 +93,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean valid(AffinityTopologyVersion topVer) {
         assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
-        long topVer0 = this.topVer;
-
-        if (topVer0 < 0)
-            return false;
-
-        if (topVer.topologyVersion() != topVer0) {
-            this.topVer = -1L;
-
-            return false;
-        }
-
-        return true;
+        return this.topVer == topVer.topologyVersion();
     }
 
     /**
@@ -593,6 +582,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param nodeId Primary node ID.
      */
     private void primaryNode(UUID nodeId) {
+        assert Thread.holdsLock(this);
         assert nodeId != null;
 
         AffinityTopologyVersion topVer = cctx.discovery().topologyVersionEx();
@@ -605,7 +595,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             return;
         }
 
-        this.topVer = topVer.topologyVersion();
+        if (topVer.topologyVersion() > this.topVer)
+            this.topVer = topVer.topologyVersion();
     }
 
     /** {@inheritDoc} */
