@@ -19,8 +19,8 @@ package org.apache.ignite.cache.eviction;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
- * cache entries based on {@link #onEntryAccessed(boolean, EvictableEntry)} notifications and
- * whenever an element needs to be evicted, {@link EvictableEntry#evict()}
+ * cache entries based on {@link #onEntryAccessed(boolean, CacheEvictableEntry)} notifications and
+ * whenever an element needs to be evicted, {@link CacheEvictableEntry#evict()}
  * method should be called.
  * <p>
  * Ignite comes with following eviction policies out-of-the-box:
@@ -46,5 +46,5 @@ public interface CacheEvictionPolicy<K, V> {
      * @param rmv {@code True} if entry has been removed, {@code false} otherwise.
      * @param entry Accessed entry.
      */
-    public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry);
+    public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry);
 }

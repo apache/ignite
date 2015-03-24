@@ -54,7 +54,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
     /** Policy. */
     private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry entry) {
             assert !(entry.getValue() instanceof Integer);
         }
     };

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -53,7 +54,7 @@ public enum CacheMode {
      * <p>
      * Note that partitioned cache is always fronted by local
      * {@code 'near'} cache which stores most recent data. You
-     * can configure the size of near cache via {@link org.apache.ignite.configuration.CacheConfiguration#getNearEvictionPolicy()}
+     * can configure the size of near cache via {@link NearCacheConfiguration#getNearEvictionPolicy()}
      * configuration property.
      */
     PARTITIONED;

@@ -169,7 +169,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry entry) {
             // No-op.
         }
     }

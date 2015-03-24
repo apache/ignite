@@ -28,7 +28,7 @@ import java.io.*;
  */
 public class GridCacheAlwaysEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>, Externalizable {
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
         if (!rmv && entry.isCached())
             entry.evict();
     }

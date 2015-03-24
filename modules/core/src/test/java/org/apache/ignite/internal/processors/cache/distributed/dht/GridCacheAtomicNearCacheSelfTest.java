@@ -698,12 +698,18 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheEntryEx nearEntry = near.peekEx(key);
 
+        boolean expectDht = near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
+
         if (expectNear) {
             assertNotNull("No near entry for: " + key + ", grid: " + ignite.name(), nearEntry);
 
             assertEquals("Unexpected value for grid: " + ignite.name(),
                 val,
                 CU.value(nearEntry.info().value(), near.context(), false));
+
+            assertEquals("Unexpected value for grid: " + ignite.name(),
+                val,
+                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
         }
         else
             assertNull("Unexpected near entry: " + nearEntry + ", grid: " + ignite.name(), nearEntry);
@@ -711,8 +717,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
         GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
-
-        boolean expectDht = near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
 
         if (expectDht) {
             assertNotNull("No dht entry for: " + key + ", grid: " + ignite.name(), dhtEntry);
@@ -727,9 +731,18 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             assertEquals("Unexpected value for grid: " + ignite.name(),
                 val,
                 CU.value(dhtEntry.info().value(), dht.context(), false));
+
+            assertEquals("Unexpected value for grid: " + ignite.name(),
+                val,
+                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
         }
         else
             assertNull("Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name(), dhtEntry);
+
+        if (!expectNear && !expectDht) {
+            assertNull("Unexpected peek value for grid: " + ignite.name(),
+                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
+        }
     }
 
     /**

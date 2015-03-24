@@ -20,7 +20,6 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 

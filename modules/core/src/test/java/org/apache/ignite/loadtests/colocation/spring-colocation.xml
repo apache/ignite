@@ -113,8 +113,6 @@
                     <!-- Set synchronous rebalancing (default is asynchronous). -->
                     <property name="rebalanceMode" value="SYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <property name="store">
                         <bean class="org.apache.ignite.loadtests.colocation.GridTestCacheStore"/>
                     </property>
