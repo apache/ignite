@@ -174,14 +174,14 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testEvict() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null).withExpiryPolicy(new CreatedExpiryPolicy(
+        IgniteCache<Object, Object> cache = ignite1.cache(null).withExpiryPolicy(new CreatedExpiryPolicy(
             new Duration(TimeUnit.MILLISECONDS, 100L)));
 
         // Putting entry.
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        // Wait when entry 
+        // Wait when entry
         U.sleep(200);
 
         // Check that entry is evicted from cache, but local store does contain it.
@@ -202,7 +202,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testPrimaryNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(null);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -249,7 +249,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testBackupNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(BACKUP_CACHE);
+        IgniteCache<Object, Object> cache = ignite1.cache(BACKUP_CACHE);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
@@ -289,7 +289,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testSwap() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(null);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -382,7 +382,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             // No-op.
         }
 

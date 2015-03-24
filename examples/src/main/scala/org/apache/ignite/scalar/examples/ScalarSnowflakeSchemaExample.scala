@@ -138,7 +138,7 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = ignite$.jcache[JavaInt, FactPurchase](PART_NAME)
+        val factCache = ignite$.cache[JavaInt, FactPurchase](PART_NAME)
 
         val storePurchases = factCache.sql(
             "from \"" + REPL_NAME + "\".DimStore, \"" + PART_NAME + "\".FactPurchase " +
@@ -154,7 +154,7 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val factCache = ignite$.jcache[JavaInt, FactPurchase](PART_NAME)
+        val factCache = ignite$.cache[JavaInt, FactPurchase](PART_NAME)
 
         // All purchases for certain product made at store2.
         // =================================================

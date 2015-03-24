@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -121,7 +120,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).jcache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

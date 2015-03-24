@@ -315,7 +315,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).jcache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -368,7 +368,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.jcache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);

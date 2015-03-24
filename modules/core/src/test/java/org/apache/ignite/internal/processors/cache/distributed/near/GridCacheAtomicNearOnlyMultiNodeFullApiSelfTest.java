@@ -69,7 +69,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            grid(i).jcache(null).removeAll();
+            grid(i).cache(null).removeAll();
 
         super.afterTest();
     }
@@ -124,7 +124,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         long ttl = 500;
 
-        grid(0).jcache(null).
+        grid(0).cache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);

@@ -39,9 +39,4 @@ public class IgniteJdbcStorePutTxBenchmark extends IgniteJdbcStoreAbstractBenchm
 
         return true;
     }
-
-    /** {@inheritDoc} */
-//    @Override protected IgniteCache<Object, Object> cache() {
-//        return ignite().jcache("tx");
-//    }
 }

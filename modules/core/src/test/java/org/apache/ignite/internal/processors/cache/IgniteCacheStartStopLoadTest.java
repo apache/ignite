@@ -100,12 +100,12 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
             }, CACHE_COUNT, "cache-starter");
 
             for (String cacheName : CACHE_NAMES)
-                assert ignite(0).jcache(cacheName) != null;
+                assert ignite(0).cache(cacheName) != null;
 
             if (weakMap == null) {
                 weakMap = new WeakHashMap<>();
 
-                IgniteCache<Object, Object> cache = ignite(0).jcache(CACHE_NAMES[0]);
+                IgniteCache<Object, Object> cache = ignite(0).cache(CACHE_NAMES[0]);
 
                 Object obj = new Date();
 

@@ -118,7 +118,7 @@ public class HibernateRegionFactory implements RegionFactory {
 
                 String cacheName = prop.getValue().toString();
 
-                if (((IgniteKernal)ignite).cache(cacheName) == null)
+                if (((IgniteKernal)ignite).getCache(cacheName) == null)
                     throw new CacheException("Cache '" + cacheName + "' specified for region '" + regionName + "' " +
                         "is not configured.");
 
@@ -129,7 +129,7 @@ public class HibernateRegionFactory implements RegionFactory {
         String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
 
         if (dfltCacheName != null) {
-            dfltCache = ((IgniteKernal)ignite).cache(dfltCacheName);
+            dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
 
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
@@ -214,7 +214,7 @@ public class HibernateRegionFactory implements RegionFactory {
             cacheName = regionName;
         }
 
-        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");

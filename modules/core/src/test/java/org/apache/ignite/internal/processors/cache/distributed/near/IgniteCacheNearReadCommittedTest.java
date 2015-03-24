@@ -51,7 +51,7 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
      * @throws Exception If failed.
      */
     public void testReadCommittedCacheCleanup() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
 
         Integer key = backupKey(cache);
 
@@ -65,7 +65,7 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
             tx.commit();
         }
 
-        ignite(1).jcache(null).remove(key); // Remove from primary node.
+        ignite(1).cache(null).remove(key); // Remove from primary node.
 
         assertEquals(0, cache.localSize());
     }

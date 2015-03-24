@@ -96,7 +96,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     public void testPerformance() throws Exception {
         Random rnd = new GridRandom();
 
-        final IgniteCache<Long,Person> c = ignite.jcache("offheap-cache");
+        final IgniteCache<Long,Person> c = ignite.cache("offheap-cache");
 
         X.println("___ PUT start");
 

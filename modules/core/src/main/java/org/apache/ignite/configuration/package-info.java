@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-
 /**
- * Ignite benchmark that performs put and query operations
- * with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED} memory mode.
+ * <!-- Package description. -->
+ * Contains configuration-related classes.
  */
-public class IgniteSqlQueryPutOffHeapBenchmark extends IgniteSqlQueryPutBenchmark {
-    /** {@inheritDoc} */
-//    @Override protected IgniteCache<Integer, Object> cache() {
-//        return ignite().jcache("query-offheap");
-//    }
-}
+package org.apache.ignite.configuration;

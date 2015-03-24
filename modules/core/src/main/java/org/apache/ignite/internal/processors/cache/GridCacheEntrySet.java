@@ -79,7 +79,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Cache.Entry<K, V>> {
 
         if (F.isAll(e, filter) && set.remove(e)) {
             try {
-                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.getKey(), e.getValue());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.getKey(), e.getValue());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);

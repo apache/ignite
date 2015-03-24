@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -77,8 +76,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> c0 = grid(0).jcache(null);
-        IgniteCache<Object, Object> c1 = grid(1).jcache(null);
+        IgniteCache<Object, Object> c0 = grid(0).cache(null);
+        IgniteCache<Object, Object> c1 = grid(1).cache(null);
 
         c0.putAll(putMap);
 
@@ -106,8 +105,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
-        IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).cache(null);
+        IgniteCache<Object, Object> prj1 = grid(1).cache(null);
 
         prj0.putAll(putMap);
 
@@ -140,7 +139,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         int size = 10;
 
-        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).cache(null);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
@@ -153,7 +152,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             assertEquals(0, context(i).tm().idMapSize());
 
-            IgniteCache<Object, Object> cache = grid(i).jcache(null);
+            IgniteCache<Object, Object> cache = grid(i).cache(null);
             ClusterNode node = grid(i).localNode();
 
             for (int k = 0; k < size; k++) {
@@ -391,7 +390,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("All affinity nodes: " + affinityNodes());
 
-        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(null);
 
         info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 

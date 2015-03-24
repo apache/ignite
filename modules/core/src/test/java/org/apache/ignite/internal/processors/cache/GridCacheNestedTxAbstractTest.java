@@ -85,9 +85,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         super.afterTest();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).jcache(null).removeAll();
+            grid(i).cache(null).removeAll();
 
-            assert grid(i).jcache(null).localSize() == 0;
+            assert grid(i).cache(null).localSize() == 0;
         }
     }
 
@@ -105,7 +105,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoTx() throws Exception {
-        final IgniteCache<String, Integer> c = grid(0).jcache(null);
+        final IgniteCache<String, Integer> c = grid(0).cache(null);
 
         GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
@@ -136,7 +136,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx() throws Exception {
-        final IgniteCache<String, Integer> c = grid(0).jcache(null);
+        final IgniteCache<String, Integer> c = grid(0).cache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 
@@ -212,9 +212,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx1() throws Exception {
-        final IgniteCache<String, Integer> c = grid(0).jcache(null);
+        final IgniteCache<String, Integer> c = grid(0).cache(null);
 
-        final IgniteCache<Integer, Integer> c1 = grid(0).jcache(null);
+        final IgniteCache<Integer, Integer> c1 = grid(0).cache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 

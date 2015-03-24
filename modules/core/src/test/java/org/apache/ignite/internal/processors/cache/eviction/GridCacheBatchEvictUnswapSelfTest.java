@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -117,7 +116,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();
 
-        final IgniteCache<Object, Object> cache = g.jcache(null);
+        final IgniteCache<Object, Object> cache = g.cache(null);
 
         cache.loadCache(null, 0);
 

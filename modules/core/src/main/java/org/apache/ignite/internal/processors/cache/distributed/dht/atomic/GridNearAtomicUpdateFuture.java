@@ -292,9 +292,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /**
      * Performs future mapping.
+     *
+     * @param waitTopFut Whether to wait for topology future.
      */
-    public void map() {
-        mapOnTopology(keys, false, null);
+    public void map(boolean waitTopFut) {
+        mapOnTopology(keys, false, null, waitTopFut);
     }
 
     /** {@inheritDoc} */
@@ -311,7 +313,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            cctx.mvcc().removeAtomicFuture(version());
+            if (futVer != null)
+                cctx.mvcc().removeAtomicFuture(version());
 
             return true;
         }
@@ -329,7 +332,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (res.remapKeys() != null) {
             assert cctx.config().getAtomicWriteOrderMode() == PRIMARY;
 
-            mapOnTopology(res.remapKeys(), true, nodeId);
+            mapOnTopology(res.remapKeys(), true, nodeId, true);
 
             return;
         }
@@ -407,16 +410,16 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param keys Keys to map.
      * @param remap Boolean flag indicating if this is partial future remap.
      * @param oldNodeId Old node ID if remap.
+     * @param waitTopFut Whether to wait for topology future.
      */
-    private void mapOnTopology(final Collection<?> keys, final boolean remap, final UUID oldNodeId) {
+    private void mapOnTopology(final Collection<?> keys, final boolean remap, final UUID oldNodeId,
+        final boolean waitTopFut) {
         cache.topology().readLock();
 
         AffinityTopologyVersion topVer = null;
 
         try {
             if (cache.topology().stopping()) {
-                futVer = cctx.versions().next(cctx.affinity().affinityTopologyVersion());
-
                 onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
                     cache.name()));
 
@@ -431,14 +434,17 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (futVer == null)
                     // Assign future version in topology read lock before first exception may be thrown.
                     futVer = cctx.versions().next(topVer);
-
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                        mapOnTopology(keys, remap, oldNodeId);
-                    }
-                });
+                if (waitTopFut) {
+                    fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                            mapOnTopology(keys, remap, oldNodeId, waitTopFut);
+                        }
+                    });
+                }
+                else
+                    onDone(new GridCacheTryPutFailedException());
 
                 return;
             }
@@ -747,7 +753,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      */
     private Collection<ClusterNode> mapKey(
         KeyCacheObject key,
-        AffinityTopologyVersion topVer, 
+        AffinityTopologyVersion topVer,
         boolean fastMap
     ) {
         GridCacheAffinityManager affMgr = cctx.affinity();

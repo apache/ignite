@@ -15,29 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.*;
-import org.apache.ignite.testframework.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import org.apache.ignite.*;
 
 /**
- * Examples test suite.
- * <p>
- * Contains only Spring ignite examples tests.
+ * Try put failed exception.
  */
-public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesJ8SelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        return suite;
-    }
+public class GridCacheTryPutFailedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 }

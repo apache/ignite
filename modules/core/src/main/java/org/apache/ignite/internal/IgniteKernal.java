@@ -1867,7 +1867,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         NL);
                 }
 
-            U.onGridStop();
+            try {
+                U.onGridStop();
+            }
+            catch (InterruptedException e) {
+                // Preserve interrupt status.
+                Thread.currentThread().interrupt();
+            }
         }
         else {
             // Proper notification.
@@ -2231,7 +2237,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {
@@ -2243,7 +2249,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {
@@ -2316,7 +2322,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg) {
         A.notNull(cacheCfg, "cacheCfg");
         A.notNull(nearCfg, "nearCfg");
 
@@ -2336,7 +2343,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2354,8 +2361,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    @Override
-    public <K, V> IgniteCache<K, V> getOrCreateCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
+        NearCacheConfiguration<K, V> nearCfg) {
         A.notNull(nearCfg, "nearCfg");
 
         guard();

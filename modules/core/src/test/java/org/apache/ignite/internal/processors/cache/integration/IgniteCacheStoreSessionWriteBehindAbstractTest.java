@@ -27,7 +27,6 @@ import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -110,7 +109,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
      * @throws Exception If failed.
      */
     private void testCache(String cacheName) throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite(0).jcache(cacheName);
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(cacheName);
 
         try {
             latch = new CountDownLatch(2);
@@ -159,7 +158,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             fail();
         }
 

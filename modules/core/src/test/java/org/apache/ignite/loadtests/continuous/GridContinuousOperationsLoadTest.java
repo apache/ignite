@@ -78,7 +78,7 @@ public class GridContinuousOperationsLoadTest {
         dumpProperties(System.out);
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
-            final IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
+            final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);
@@ -114,7 +114,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setRemoteFilter(new IgniteCacheEntryEventFilter<Object,Object>() {
+                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object,Object>() {
                         @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
                             if (filterSleepMs > 0) {
                                 try {

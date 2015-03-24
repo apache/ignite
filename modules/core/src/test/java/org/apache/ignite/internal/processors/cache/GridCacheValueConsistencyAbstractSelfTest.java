@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -248,7 +247,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     Ignite ignite = grid(g);
 
-                    IgniteCache<Object, Object> cache = ignite.jcache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -274,7 +273,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             Long firstVal = null;
 
             for (int g = 0; g < gridCount(); g++) {
-                Long val = (Long)grid(g).jcache(null).localPeek(i, CachePeekMode.ONHEAP);
+                Long val = (Long)grid(g).cache(null).localPeek(i, CachePeekMode.ONHEAP);
 
                 if (firstVal == null && val != null)
                     firstVal = val;

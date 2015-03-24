@@ -123,8 +123,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     return new CreateUpdateRemoveExpireListener();
                 }
             },
-            new Factory<IgniteCacheEntryEventFilter<? super Integer, ? super Integer>>() {
-                @Override public IgniteCacheEntryEventFilter<? super Integer, ? super Integer> create() {
+            new Factory<CacheEntryEventSerializableFilter<? super Integer, ? super Integer>>() {
+                @Override public CacheEntryEventSerializableFilter<? super Integer, ? super Integer> create() {
                     return new ExceptionFilter();
                 }
             },
@@ -299,7 +299,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             Map<Integer, Integer> vals = new HashMap<>();
 
-            for (Integer key : nearKeys(grid.jcache(null), 100, 1_000_000))
+            for (Integer key : nearKeys(grid.cache(null), 100, 1_000_000))
                 vals.put(key, 1);
 
             final AtomicBoolean done = new AtomicBoolean();
@@ -460,7 +460,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Integer, Integer> cache = grid.jcache(null);
+            IgniteCache<Integer, Integer> cache = grid.cache(null);
 
             Integer key = Integer.MAX_VALUE;
 
@@ -484,7 +484,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Integer, Integer> cache = grid.jcache(null);
+            IgniteCache<Integer, Integer> cache = grid.cache(null);
 
             log.info("Check filter for listener in configuration.");
 
@@ -952,9 +952,9 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    private static class TestFilterFactory implements Factory<IgniteCacheEntryEventFilter<Integer, Integer>> {
+    private static class TestFilterFactory implements Factory<CacheEntryEventSerializableFilter<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public IgniteCacheEntryEventFilter<Integer, Integer> create() {
+        @Override public CacheEntryEventSerializableFilter<Integer, Integer> create() {
             return new TestFilter();
         }
     }
@@ -1002,7 +1002,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    private static class TestFilter implements IgniteCacheEntryEventFilter<Integer, Integer> {
+    private static class TestFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             assert evt != null;
@@ -1079,7 +1079,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    private static class ExceptionFilter implements IgniteCacheEntryEventFilter<Integer, Integer> {
+    private static class ExceptionFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             throw new RuntimeException("Test filter error.");

@@ -23,8 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -106,7 +104,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).jcache(null).removeAll();
+            grid(i).cache(null).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -133,7 +131,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         final Person p3 = new Person("Mike", 1800, "Bachelor");
         final Person p4 = new Person("Bob", 1900, "Bachelor");
 
-        final IgniteCache<UUID, Person> cache0 = grid(0).jcache(null);
+        final IgniteCache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

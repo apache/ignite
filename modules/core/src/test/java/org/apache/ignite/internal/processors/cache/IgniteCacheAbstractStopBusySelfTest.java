@@ -314,7 +314,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @return Client cache.
      */
     private IgniteCache<Object, Object> clientCache() {
-        return grid(CLN_GRD).jcache(CACHE_NAME);
+        return grid(CLN_GRD).cache(CACHE_NAME);
     }
 
     /**

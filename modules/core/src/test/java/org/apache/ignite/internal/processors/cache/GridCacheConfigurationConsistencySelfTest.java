@@ -186,7 +186,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = null;
         depMode = SHARED;
 
-        assert startGrid(1).jcache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
+        assert startGrid(1).cache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -895,7 +895,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) {
+        @Override public void sessionEnd(boolean commit) {
             // No-op.
         }
     }

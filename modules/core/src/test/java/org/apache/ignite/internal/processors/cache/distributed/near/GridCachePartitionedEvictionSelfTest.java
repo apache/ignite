@@ -95,7 +95,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @return Cache.
      */
     private IgniteCache<String, Integer> cache(ClusterNode node) {
-        return G.ignite(node.id()).jcache(null);
+        return G.ignite(node.id()).cache(null);
     }
 
     /**

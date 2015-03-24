@@ -23,7 +23,7 @@ import org.apache.ignite.cache.*;
 /**
  * Extended continuous query filter.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends IgniteCacheEntryEventFilter<K, V> {
+public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
     /**
      * Callback for query unregister event.
      */

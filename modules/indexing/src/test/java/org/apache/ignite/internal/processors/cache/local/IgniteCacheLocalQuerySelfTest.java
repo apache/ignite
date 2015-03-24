@@ -45,7 +45,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
      * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
-        IgniteCache<Integer, String> cache = ignite.jcache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");

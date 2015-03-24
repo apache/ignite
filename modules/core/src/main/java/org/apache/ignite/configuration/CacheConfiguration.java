@@ -413,8 +413,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#jcache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#jcache(String)} method.
+     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */

@@ -468,7 +468,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 
@@ -661,7 +661,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     private boolean updateStore(StoreOperation operation,
         Map<K, Entry<? extends K, ? extends  V>> vals,
         boolean initSes) {
-        boolean ses = initSes && initSession();
+
+        if (initSes && storeMgr != null)
+            storeMgr.initSession(null);
 
         try {
             switch (operation) {
@@ -699,8 +701,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             return false;
         }
         finally {
-            if (ses)
-                storeMgr.endSession();
+            if (initSes && storeMgr != null)
+                storeMgr.endSession(null);
         }
     }
 
@@ -716,13 +718,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         finally {
             flushLock.unlock();
         }
-    }
-
-    /**
-     * @return {@code True} if session was initialized.
-     */
-    private boolean initSession() {
-        return storeMgr != null && storeMgr.initSession(null);
     }
 
     /**

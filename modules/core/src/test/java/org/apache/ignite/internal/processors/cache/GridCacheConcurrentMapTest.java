@@ -64,14 +64,14 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).jcache(null).removeAll();
+        grid(0).cache(null).removeAll();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRandomEntry() throws Exception {
-        IgniteCache<String, String> cache = grid(0).jcache(null);
+        IgniteCache<String, String> cache = grid(0).cache(null);
 
         for (int i = 0; i < 500; i++)
             cache.put("key" + i, "val" + i);
@@ -89,7 +89,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomEntryMultiThreaded() throws Exception {
-        final IgniteCache<String, String> cache = grid(0).jcache(null);
+        final IgniteCache<String, String> cache = grid(0).cache(null);
 
         final AtomicBoolean done = new AtomicBoolean();
 

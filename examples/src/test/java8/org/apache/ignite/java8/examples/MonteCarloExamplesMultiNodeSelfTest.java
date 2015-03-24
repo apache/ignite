@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
-
-import javax.cache.event.*;
-import java.io.*;
+package org.apache.ignite.java8.examples;
 
 /**
- * This filter adds {@link Serializable} interface to {@link javax.cache.event.CacheEntryEventFilter} object.
+ * PrimeExample multi-node self test.
  */
-public interface IgniteCacheEntryEventFilter<K, V> extends CacheEntryEventFilter<K, V>, Serializable {
-    // No-op.
+public class MonteCarloExamplesMultiNodeSelfTest extends MonteCarloExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
+    }
 }

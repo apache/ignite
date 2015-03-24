@@ -70,7 +70,7 @@ public class VisorCacheLoadTask extends
             ExpiryPolicy plc = null;
 
             for (String cacheName : cacheNames) {
-                IgniteCache cache = ignite.jcache(cacheName);
+                IgniteCache cache = ignite.cache(cacheName);
 
                 if (ttl > 0) {
                     if (plc == null)

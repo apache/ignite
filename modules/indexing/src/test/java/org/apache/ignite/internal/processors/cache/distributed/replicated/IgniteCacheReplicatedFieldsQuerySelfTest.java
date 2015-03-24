@@ -47,7 +47,7 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(null);
 
         QueryCursor<List<?>> qry = null;
 

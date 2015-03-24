@@ -108,7 +108,7 @@ public class GridCacheLoadingConcurrentGridStartTest extends GridCommonAbstractT
     public void testLoadCacheFromStore() throws Exception {
         loadCache(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
-                grid.jcache(null).loadCache(null);
+                grid.cache(null).loadCache(null);
             }
         });
     }
@@ -140,14 +140,14 @@ public class GridCacheLoadingConcurrentGridStartTest extends GridCommonAbstractT
 
     /** Asserts cache size. */
     private void assertCacheSize() {
-        IgniteCache<Integer, String> cache = grid(0).jcache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(null);
 
         assertEquals(KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 
         int total = 0;
 
         for (int i = 0; i < GRIDS_CNT; i++)
-            total += grid(i).jcache(null).localSize(CachePeekMode.PRIMARY);
+            total += grid(i).cache(null).localSize(CachePeekMode.PRIMARY);
 
         assertEquals(KEYS_CNT, total);
     }

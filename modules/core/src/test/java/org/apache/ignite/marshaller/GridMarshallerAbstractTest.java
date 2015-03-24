@@ -118,7 +118,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().jcache(null);
+        IgniteCache<String, String> cache = grid().cache(null);
 
         cache.put("key", "val");
 
@@ -148,7 +148,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testNamedCache() throws Exception {
-        IgniteCache<String, String> cache = grid().jcache(CACHE_NAME);
+        IgniteCache<String, String> cache = grid().cache(CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -667,7 +667,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().jcache(null).put(1, 1);
+            grid().cache(null).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 

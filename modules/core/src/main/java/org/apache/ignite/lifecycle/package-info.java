@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
-
 /**
- * Implementation of {@link IgniteSshProcessor}.
+ * <!-- Package description. -->
+ * Contains lifecycle-related classes.
  */
-public class IgniteSshProcessorImpl implements IgniteSshProcessor {
-    /** {@inheritDoc} */
-    @Override public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
-        return new IgniteNodeCallableImpl(spec, timeout);
-    }
-}
+package org.apache.ignite.lifecycle;

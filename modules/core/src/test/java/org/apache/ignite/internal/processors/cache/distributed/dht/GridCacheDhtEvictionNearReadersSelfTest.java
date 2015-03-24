@@ -270,7 +270,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         // Evict on primary node.
         // It will trigger dht eviction and eviction on backup node.
-        grid(primary).jcache(null).localEvict(Collections.<Object>singleton(key));
+        grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
 
         futOther.get(3000);
         futBackup.get(3000);

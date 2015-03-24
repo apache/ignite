@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
+package org.apache.ignite.java8.examples;
 
-import java.util.concurrent.*;
+//import org.apache.ignite.examples.java8.computegrid.cluster.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
+ *
  */
-public interface IgniteSshProcessor {
-    /**
-     * Creates {@link Callable} starting node using SSH.
-     *
-     * @param spec Specification.
-     * @param timeout Connection timeout.
-     * @return {@link Callable} starting node using SSH.
-     */
-    public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout);
+public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        // Start up a node.
+        startGrid("ignite-cluster-groups-example", DFLT_CFG);
+    }
+
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testComputeClusterGroupsExample() throws Exception {
+//        ClusterGroupExample.main(EMPTY_ARGS);
+//    }
 }

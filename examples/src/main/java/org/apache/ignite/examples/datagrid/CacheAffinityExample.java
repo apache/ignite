@@ -80,7 +80,7 @@ public final class CacheAffinityExample {
     private static void visitUsingAffinityRun() {
         Ignite ignite = Ignition.ignite();
 
-        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -123,7 +123,7 @@ public final class CacheAffinityExample {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
                 ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+                        IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.

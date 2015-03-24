@@ -99,7 +99,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Collection<Integer> keys = new HashSet<>();
 
-        IgniteCache<Integer, String> cache = g1.jcache(null);
+        IgniteCache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);
@@ -116,7 +116,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         for (Object key : g2Keys)
             // Need to force keys loading.
-            assertEquals("val", g2.jcache(null).getAndPut(key, "changed val"));
+            assertEquals("val", g2.cache(null).getAndPut(key, "changed val"));
 
         Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 

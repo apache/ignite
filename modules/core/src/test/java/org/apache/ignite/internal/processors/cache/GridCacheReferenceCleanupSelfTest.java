@@ -311,7 +311,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -352,7 +352,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
@@ -388,7 +388,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
@@ -431,7 +431,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -468,7 +468,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));

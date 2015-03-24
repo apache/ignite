@@ -68,7 +68,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         store.write(new CacheEntryImpl<>("k1", "v1"));
         store.write(new CacheEntryImpl<>("k2", "v2"));
 
-        store.txEnd(true);
+        store.sessionEnd(true);
 
         ses.newSession(null);
 
@@ -80,7 +80,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
 
         store.delete("k1");
 
-        store.txEnd(true);
+        store.sessionEnd(true);
 
         ses.newSession(null);
 
@@ -100,7 +100,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         // Put.
         store.write(new CacheEntryImpl<>("k1", "v1"));
 
-        store.txEnd(false); // Rollback.
+        store.sessionEnd(false); // Rollback.
 
         tx = new DummyTx();
 
@@ -117,7 +117,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
 
         store.writeAll(col);
 
-        store.txEnd(false); // Rollback.
+        store.sessionEnd(false); // Rollback.
 
         tx = new DummyTx();
 
@@ -131,7 +131,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
 
         store.writeAll(col);
 
-        store.txEnd(true); // Commit.
+        store.sessionEnd(true); // Commit.
 
         tx = new DummyTx();
 
@@ -141,7 +141,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
 
         store.write(new CacheEntryImpl<>("k4", "v4"));
 
-        store.txEnd(false); // Rollback.
+        store.sessionEnd(false); // Rollback.
 
         tx = new DummyTx();
 
@@ -154,7 +154,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         // Remove.
         store.delete("k3");
 
-        store.txEnd(false); // Rollback.
+        store.sessionEnd(false); // Rollback.
 
         tx = new DummyTx();
 
@@ -165,7 +165,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         // Remove all.
         store.deleteAll(Arrays.asList("k3"));
 
-        store.txEnd(false); // Rollback.
+        store.sessionEnd(false); // Rollback.
 
         tx = new DummyTx();
 
@@ -206,7 +206,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
             store.write(new CacheEntryImpl<>("key1", "val1"));
 
             if (tx != null && commit) {
-                store.txEnd(true);
+                store.sessionEnd(true);
 
                 tx = new DummyTx();
 
@@ -224,7 +224,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
             store.writeAll(col);
 
             if (tx != null && commit) {
-                store.txEnd(true);
+                store.sessionEnd(true);
 
                 tx = new DummyTx();
             }
@@ -255,7 +255,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
             store.deleteAll(Arrays.asList("key2", "key3"));
 
             if (tx != null && commit) {
-                store.txEnd(true);
+                store.sessionEnd(true);
 
                 tx = new DummyTx();
 
@@ -271,7 +271,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
             store.delete("key1");
 
             if (tx != null && commit) {
-                store.txEnd(true);
+                store.sessionEnd(true);
 
                 tx = new DummyTx();
 
@@ -283,7 +283,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
         finally {
             if (tx != null) {
-                store.txEnd(false);
+                store.sessionEnd(false);
 
                 ses.newSession(null);
             }
@@ -332,7 +332,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
                             }
 
                             if (tx != null)
-                                store.txEnd(true);
+                                store.sessionEnd(true);
 
                             queue.add(key);
                         }
@@ -349,7 +349,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
                                 store.deleteAll(Collections.singleton(key));
 
                             if (tx != null)
-                                store.txEnd(true);
+                                store.sessionEnd(true);
                         }
                     }
                     else { // Update.
@@ -371,7 +371,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
                             }
 
                             if (tx != null)
-                                store.txEnd(true);
+                                store.sessionEnd(true);
 
                             queue.add(key);
                         }
@@ -391,7 +391,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
                         }
 
                         if (tx != null)
-                            store.txEnd(true);
+                            store.sessionEnd(true);
 
                         queue.add(key);
                     }

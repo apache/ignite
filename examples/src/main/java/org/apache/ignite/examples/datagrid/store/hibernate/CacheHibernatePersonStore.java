@@ -174,7 +174,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      */
     private void rollback(Session ses, Transaction tx) {
         // Rollback only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -191,7 +191,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      */
     private void end(Session ses, @Nullable Transaction tx) {
         // Commit only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -203,7 +203,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         Transaction tx = ses.transaction();
 
         Map<String, Session> props = ses.properties();
