@@ -18,7 +18,6 @@
 package org.apache.ignite.startup;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -246,7 +245,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         try {
             for (CacheConfiguration cc : first.configuration().getCacheConfiguration()) {
-                GridCache<Object, Object> cache0 = ((IgniteKernal)first).cache(cc.getName());
+                GridCache<Object, Object> cache0 = ((IgniteKernal)first).getCache(cc.getName());
 
                 for (String warmupMethod : warmupMethods) {
                     Collection<Future> futs = new ArrayList<>(threadCnt);

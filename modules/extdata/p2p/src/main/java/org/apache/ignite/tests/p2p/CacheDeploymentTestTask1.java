@@ -45,7 +45,7 @@ public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Ob
                     X.println("Executing CacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
 
-                    IgniteCache<String, CacheDeploymentTestValue> cache = ignite.jcache(null);
+                    IgniteCache<String, CacheDeploymentTestValue> cache = ignite.cache(null);
 
                     for (int i = 0; i < PUT_CNT; i++)
                         cache.put("1" + i, new CacheDeploymentTestValue());

@@ -168,7 +168,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            IgniteCache<String, TestObject> cache = ignite.jcache(null);
+            IgniteCache<String, TestObject> cache = ignite.cache(null);
 
             assertNotNull(cache);
 

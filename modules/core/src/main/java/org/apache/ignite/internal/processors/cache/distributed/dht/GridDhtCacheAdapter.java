@@ -1041,7 +1041,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            ctx.grid().jcache(ctx.name()).remove(last.getKey(), last.getValue());
+            ctx.grid().cache(ctx.name()).remove(last.getKey(), last.getValue());
         }
 
         /**

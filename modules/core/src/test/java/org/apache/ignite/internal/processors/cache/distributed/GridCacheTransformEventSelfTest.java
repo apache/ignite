@@ -174,7 +174,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             ids[i] = ignites[i].cluster().localNode().id();
 
-            caches[i] = ignites[i].jcache(CACHE_NAME);
+            caches[i] = ignites[i].cache(CACHE_NAME);
 
             ignites[i].events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {

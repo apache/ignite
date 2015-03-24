@@ -67,7 +67,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
 
                 Ignite ignite = ignite(i);
 
-                IgniteCache<Object, Object> jcache = ignite.jcache(CACHE_NAME);
+                IgniteCache<Object, Object> jcache = ignite.cache(CACHE_NAME);
 
                 assertNotNull(jcache);
 
@@ -83,7 +83,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
 
                 Ignite ignite = ignite(i);
 
-                IgniteCache<Object, Object> jcache = ignite.jcache(CACHE_NAME);
+                IgniteCache<Object, Object> jcache = ignite.cache(CACHE_NAME);
 
                 assertNotNull(jcache);
 

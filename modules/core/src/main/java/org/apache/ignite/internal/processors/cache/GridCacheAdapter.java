@@ -3718,7 +3718,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-            
+
             GridCacheEntryEx e = entry0(cacheKey, new AffinityTopologyVersion(ctx.discovery().topologyVersion()),
                 false, false);
 
@@ -4254,10 +4254,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 try {
                     removex(item.getKey());
-                } 
+                }
                 catch (IgniteCheckedException e) {
                     throw CU.convertToCacheException(e);
-                } 
+                }
                 finally {
                     ctx.gate().leave();
                 }
@@ -6189,7 +6189,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            IgniteCache<K, V> cache = ignite.jcache(cacheName);
+            IgniteCache<K, V> cache = ignite.cache(cacheName);
 
             assert cache != null : cacheName;
 

@@ -32,8 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.configuration.*;
-
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -169,7 +167,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                IgniteCache<String, String> cache = g.jcache(null);
+                IgniteCache<String, String> cache = g.cache(null);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +

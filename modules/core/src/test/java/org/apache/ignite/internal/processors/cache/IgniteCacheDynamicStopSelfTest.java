@@ -120,7 +120,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        for (Cache.Entry<Object, Object> ignored : ignite(0).jcache(null))
+        for (Cache.Entry<Object, Object> ignored : ignite(0).cache(null))
             cnt++;
 
         info(">>> cnt=" + cnt);

@@ -294,7 +294,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Object, Object> cache = ignite.jcache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(null);
 
             int cnt = 500;
 

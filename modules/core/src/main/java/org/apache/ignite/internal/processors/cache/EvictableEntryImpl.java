@@ -162,7 +162,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(IgniteCache.class))
-            return (T)cached.context().grid().jcache(cached.context().name());
+            return (T)cached.context().grid().cache(cached.context().name());
 
         if(clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);

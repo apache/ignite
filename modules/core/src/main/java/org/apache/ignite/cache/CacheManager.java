@@ -225,7 +225,7 @@ public class CacheManager implements javax.cache.CacheManager {
             throw new NullPointerException();
 
         try {
-            return ignite.jcache(cacheName);
+            return ignite.cache(cacheName);
         }
         catch (IllegalArgumentException ignored) {
             return null;

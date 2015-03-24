@@ -75,7 +75,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                 @Override public Object execute() {
                     log.info("Going to put data: " + data);
 
-                    IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
+                    IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
                     assert cache != null;
 

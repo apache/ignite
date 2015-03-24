@@ -96,7 +96,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            IgniteCache<Object, Object> cache = grid(0).jcache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             List<Integer> keys = generateKeys(grid(0).localNode(), cache);
 
@@ -165,7 +165,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode node = grid.localNode();
 
-            IgniteCache<Object, Object> cache = grid.jcache(null);
+            IgniteCache<Object, Object> cache = grid.cache(null);
 
             boolean primary = grid.affinity(null).isPrimary(node, key);
             boolean backup = grid.affinity(null).isBackup(node, key);

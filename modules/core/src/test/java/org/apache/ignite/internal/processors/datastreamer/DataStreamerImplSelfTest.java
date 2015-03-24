@@ -138,7 +138,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            IgniteCache<Integer, String> c = g0.jcache(null);
+            IgniteCache<Integer, String> c = g0.cache(null);
 
             for (int i = 0; i < KEYS_COUNT; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

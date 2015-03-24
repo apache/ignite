@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -72,7 +71,7 @@ public class GridCacheBenchmark {
                 X.println("threadCnt=" + THREADS);
                 X.println("testWrite=" + testWrite);
 
-                final IgniteCache<Long, Long> cache = g.jcache(CACHE);
+                final IgniteCache<Long, Long> cache = g.cache(CACHE);
 
                 assert cache != null;
 

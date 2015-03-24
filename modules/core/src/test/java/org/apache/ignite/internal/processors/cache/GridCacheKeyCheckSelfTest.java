@@ -127,7 +127,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -147,7 +147,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -167,7 +167,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.remove(new IncorrectCacheKey(0));
 

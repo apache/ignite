@@ -115,7 +115,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(int i) {
-        return near(grid(i).jcache(null)).dht().topology();
+        return near(grid(i).cache(null)).dht().topology();
     }
 
     /** @throws Exception If failed. */
@@ -172,7 +172,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
 
             int keyCnt = 10;
 
@@ -193,7 +193,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.jcache(null);
+                IgniteCache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
                     assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
@@ -217,7 +217,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.jcache(null);
+                    IgniteCache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
                         assertNull(c.localPeek(i, CachePeekMode.ONHEAP));

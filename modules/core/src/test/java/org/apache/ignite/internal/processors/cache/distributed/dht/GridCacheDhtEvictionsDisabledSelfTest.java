@@ -99,7 +99,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNodes(Ignite g) throws Exception {
-        IgniteCache<String, String> cache = g.jcache("test");
+        IgniteCache<String, String> cache = g.cache("test");
 
         for (char c = 'a'; c <= 'z'; c++) {
             String key = Character.toString(c);
