@@ -250,7 +250,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             perf.add(msg, true);
 
         if (cfg.getCacheMode() == PARTITIONED) {
-            perf.add("Disable near cache (set 'nearEnabled' to false)", cfg.getNearConfiguration() != null);
+            perf.add("Disable near cache (set 'nearConfiguration' to null)", cfg.getNearConfiguration() == null);
 
             if (cfg.getAffinity() != null)
                 perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);

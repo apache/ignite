@@ -41,6 +41,9 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
 
         // Failure consistency tests.
+        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureTest.class);
+
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
         // TODO: IGNITE-80.
