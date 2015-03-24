@@ -357,7 +357,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert mapKeys.get(n.id()).get1().contains(key);
 
-            GridCache<Integer, String> dhtCache = dht(G.ignite(n.id()));
+            GridCacheAdapter<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
             String s = dhtCache.peek(key);
 

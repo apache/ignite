@@ -246,10 +246,10 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
                 for (int i = 0; i < NODE_CNT; i++) {
                     IgniteEx g = grid(i);
 
-                    GridCache<Object, Object> cache = g.cachex(DATA_CACHE_NAME);
+                    IgniteCache<Object, Object> cache = g.cache(DATA_CACHE_NAME);
 
-                    assertTrue("Data cache is not empty [keys=" + cache.keySet() +
-                        ", node=" + g.localNode().id() + ']', cache.isEmpty());
+                    assertTrue("Data cache is not empty [keys=" + keySet(cache) +
+                        ", node=" + g.localNode().id() + ']', cache.localSize() == 0);
                 }
             }
         });
