@@ -20,6 +20,7 @@ package org.apache.ignite.schema;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
 
@@ -55,37 +56,71 @@ public class Demo {
         try (Ignite ignite = Ignition.start(cfg)) {
             IgniteCache<PersonKey, Person> cache = ignite.jcache(CACHE_NAME);
 
-            // Demo for load cache with custom SQL.
-            cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
-                "select * from PERSON where ID <= 3");
+            // Preload cache from database.
+            preload(cache);
 
-            for (Cache.Entry<PersonKey, Person> person : cache)
-                System.out.println(">>> Loaded Person: " + person);
+            // Read-through from database
+            // and store in cache.
+            readThrough(cache);
+
+            // Perform transaction and
+            // write-through to database.
+            transaction(ignite, cache);
         }
     }
 
-    /** Demonstrates cache preload from database.  */
-    private static void preload() {
-        // TODO
+    /**
+     * Demonstrates cache preload from database.
+     */
+    private static void preload(IgniteCache<PersonKey, Person> cache) {
+        System.out.println();
+        System.out.println(">>> Loading entries from database.");
+
+        // Demo for load cache with custom SQL.
+        cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
+            "select * from PERSON where ID <= 3");
+
+        for (Cache.Entry<PersonKey, Person> person : cache)
+            System.out.println(">>> Loaded Person: " + person);
     }
 
-    /** Demonstrates cache wright through to database.  */
-    private static void writeThrough() {
-        // TODO
+    /**
+     * Demonstrates cache read through from database.
+     */
+    private static void readThrough(IgniteCache<PersonKey, Person> cache) {
+        PersonKey key = new PersonKey(4);
+
+        // Check that person with ID=4 is not in cache.
+        Person p = cache.localPeek(key);
+
+        assert p == null;
+
+        // Read-through form database.
+        p = cache.get(new PersonKey(4));
+
+        System.out.println("Loaded person from database: " + p);
     }
 
-    /** Demonstrates cache read through from database.  */
-    private static void readThrough() {
-        // TODO
-    }
+    /**
+     * Demonstrates cache transaction joining database transaction.
+     */
+    private static void transaction(Ignite ignite, IgniteCache<PersonKey, Person> cache) {
+        PersonKey key = new PersonKey(5);
 
-    /** Demonstrates cache remove from database.  */
-    private static void remove() {
-        // TODO
-    }
+        try (Transaction tx = ignite.transactions().txStart()) {
+            // Read-through from database.
+            Person p = cache.get(key);
 
-    /** Demonstrates cache transaction from database.  */
-    private static void transaction() {
-        // TODO
+            double salary = p.getSalary();
+
+            // Raise salary by 20%.
+            p.setSalary(salary * 1.2);
+
+            // Write-through to database
+            // and store in cache.
+            cache.put(key, p);
+
+            tx.commit();
+        }
     }
 }
