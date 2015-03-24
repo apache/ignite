@@ -413,6 +413,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
+        suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
+
         return suite;
     }
 }
