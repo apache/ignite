@@ -434,7 +434,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return updateSeq.get();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Last update sequence.
+     */
     public long lastUpdateSequence() {
         lock.writeLock().lock();
 
