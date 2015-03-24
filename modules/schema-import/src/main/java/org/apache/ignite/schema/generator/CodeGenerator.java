@@ -627,7 +627,7 @@ public class CodeGenerator {
                         IndexItem idxCol = grpItem.getValue();
 
                         add2(src, "grpItems.put(\"" + grpItem.getKey() + "\", " +
-                            "new IgniteBiTuple<Class<?>, Boolean>>(" + javaTypeName(idxCol.type()) + ".class, " +
+                            "new IgniteBiTuple<Class<?>, Boolean>(" + javaTypeName(idxCol.type()) + ".class, " +
                             idxCol.descending() + "));");
                     }
 
