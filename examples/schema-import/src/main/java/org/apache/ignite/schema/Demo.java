@@ -18,11 +18,14 @@
 package org.apache.ignite.schema;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
+import org.h2.jdbcx.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 
 /**
  * Demo for CacheJdbcPojoStore.
@@ -36,6 +39,20 @@ public class Demo {
     private static final String CACHE_NAME = "Person";
 
     /**
+     * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStore}.
+     */
+    private static class H2DemoStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            CacheJdbcPojoStore store = new CacheJdbcPojoStore<>();
+
+            store.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
+
+            return store;
+        }
+    }
+
+    /**
      * Executes demo.
      *
      * @param args Command line arguments, none required.
@@ -47,8 +64,7 @@ public class Demo {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         // Configure cache store.
-        CacheConfiguration ccfg = CacheConfig.cache(CACHE_NAME,
-            org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
+        CacheConfiguration ccfg = CacheConfig.cache(CACHE_NAME, new H2DemoStoreFactory());
 
         cfg.setCacheConfiguration(ccfg);
 
