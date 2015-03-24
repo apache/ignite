@@ -63,7 +63,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected IgniteFileSystem igfs;
 
     /** Meta cache. */
-    private GridCache<Object, Object> metaCache;
+    private IgniteCache<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -80,7 +80,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         metaCacheName = cfgs[0].getMetaCacheName();
 
-        metaCache = grid.cachex(metaCacheName);
+        metaCache = grid.cache(metaCacheName);
     }
 
     /** {@inheritDoc} */
@@ -337,8 +337,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
-        for (Object key : metaCache.keySet())
-            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
+        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
+            info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
         igfs.mkdirs(path("/A/B1/C2"));
         igfs.mkdirs(path("/A/B1/C3"));
@@ -351,8 +351,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         igfs.mkdirs(path("/A2/B2/C1"));
         igfs.mkdirs(path("/A2/B2/C2"));
 
-        for (Object key : metaCache.keySet())
-            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
+        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
+            info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
         // Check existence.
         assert igfs.exists(path("/A/B1/C1"));
@@ -471,8 +471,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
-        for (Object key : metaCache.keySet())
-            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
+        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
+            info("Entry in cache [key=" + e.getKey() + ", val=" + metaCache.get(e.getValue()) + ']');
 
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {

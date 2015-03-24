@@ -152,7 +152,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         try {
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             int keyCnt = 200;
 
@@ -167,7 +167,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
             info(">>> Starting test tx.");
 
-            try (Transaction tx = cache.txStart(concurrency, TransactionIsolation.REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(concurrency, TransactionIsolation.REPEATABLE_READ)) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
                 for (int i = 0; i < keyCnt; i++)
@@ -277,13 +277,13 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             Map<Integer, Integer> checkMap = new HashMap<>();
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 0; i < 10; i++) {
                     info("Put: " + i + ", " + r);
 
-                    Integer cachePrev = cache.put(i, r);
+                    Integer cachePrev = cache.getAndPut(i, r);
 
                     Integer mapPrev = checkMap.put(i, r);
 

@@ -300,7 +300,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        GridCache<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
+        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
 
         Set<Object> keys = cache.keySet();
 
