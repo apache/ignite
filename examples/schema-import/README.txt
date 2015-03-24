@@ -16,9 +16,12 @@ Schema Import Utility Demo
    H2 server will start and H2 Console will be opened in your default browser.
 
 2. Connect to H2 database with following settings:
-   Select "Generic H2 (Server)" settings.
-   Enter JDBC URL: "jdbc:h2:tcp://localhost/~/schema-import/demo".
-   Click "Connect".
+
+   a. Select "Generic H2 (Server)" settings.
+
+   b. IMPORTANT: enter JDBC URL "jdbc:h2:tcp://localhost/~/schema-import/demo"
+
+   c. Click "Connect".
 
 3. Paste content of "examples/schema-import/bin/db-init.sql" into H2 Console and execute.
 
