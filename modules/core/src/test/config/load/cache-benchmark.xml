@@ -36,8 +36,6 @@
 
                     <property name="cacheMode" value="PARTITIONED"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <property name="swapEnabled" value="false"/>
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>

@@ -198,12 +198,4 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
         return F.t(primary, other);
     }
-
-    /**
-     * @param node Node.
-     * @return Grid.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
-    }
 }

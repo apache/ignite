@@ -15,40 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.model;
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Index item descriptor.
+ *
  */
-public class IndexItem {
-    /** Column type. */
-    private final String type;
-
-    /** Sort direction. */
-    private final Boolean desc;
-
-    /**
-     * Constructor.
-     *
-     * @param type Column type.
-     * @param desc Sort direction.
-     */
-    public IndexItem(String type, Boolean desc) {
-        this.type = type;
-        this.desc = desc;
-    }
-
-    /**
-     * @return Column type.
-     */
-    public String type() {
-        return type;
-    }
-
-    /**
-     * @return Sort direction.
-     */
-    public Boolean descending() {
-        return desc;
+public class CacheTxNearUpdateTopologyChangeTest extends CacheNearUpdateTopologyChangeAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

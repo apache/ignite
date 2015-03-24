@@ -836,6 +836,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param node Node.
+     * @return Ignite instance with given local node.
+     */
+    protected final Ignite grid(ClusterNode node) {
+        return G.ignite(node.id());
+    }
+
+    /**
      * Starts grid using provided grid name and spring config location.
      * <p>
      * Note that grids started this way should be stopped with {@code G.stop(..)} methods.
