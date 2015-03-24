@@ -634,35 +634,15 @@ public class CodeGenerator {
                     add2(src, "grps.put(\"" + group.getKey() + "\", grpItems);");
                 }
 
-                add2(src, "ccfg.setTypeMetadata(meta);");
+                add2(src, "type.setGroups(grps);");
                 add0(src, "");
             }
 
-            first = false;
-        }
-
-        add2(src, "type.setGroups(grps);");
-        add0(src, "");
-
-        // Generate Indexed types.
-        StringBuilder indexedTypes = new StringBuilder(pojos.size() * 15);
-
-        first = true;
-
-        for (PojoDescriptor pojo : pojos) {
-            if (!first)
-                indexedTypes.append(", ");
-
-            indexedTypes
-                .append(pojo.keyClassName()).append(".class, ")
-                .append(pojo.valueClassName()).append(".class");
+            add2(src, "ccfg.setTypeMetadata(meta);");
+            add0(src, "");
 
             first = false;
         }
-
-        add2(src, "// Indexed types.");
-        add2(src, "ccfg.setIndexedTypes(" + indexedTypes + ");");
-        add0(src, "");
 
         add2(src, "return ccfg;");
         add1(src, "}");
