@@ -48,6 +48,9 @@ public interface IgfsEx extends IgniteFileSystem {
     /** Property name for URI of file system. */
     public static final String SECONDARY_FS_URI = "SECONDARY_FS_URI";
 
+    /** Property name for user name of file system. */
+    public static final String SECONDARY_FS_USER_NAME = "SECONDARY_FS_USER_NAME";
+
     /**
      * Stops IGFS cleaning all used resources.
      */
