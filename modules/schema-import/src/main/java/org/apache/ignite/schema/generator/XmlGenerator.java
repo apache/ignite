@@ -205,17 +205,17 @@ public class XmlGenerator {
 
                 Element val1 = addElement(doc, entry1, "map");
 
-                Map<String, IndexItem> fields = group.getValue();
+                Map<String, IndexItem> grpItems = group.getValue();
 
-                for (Map.Entry<String, IndexItem> field : fields.entrySet()) {
-                    Element entry2 = addElement(doc, val1, "entry", "key", field.getKey());
+                for (Map.Entry<String, IndexItem> grpItem : grpItems.entrySet()) {
+                    Element entry2 = addElement(doc, val1, "entry", "key", grpItem.getKey());
 
                     Element val2 = addBean(doc, entry2, IgniteBiTuple.class);
 
-                    IndexItem idx = field.getValue();
+                    IndexItem idxCol = grpItem.getValue();
 
-                    addElement(doc, val2, "constructor-arg", null, null, "value", idx.name());
-                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idx.descending()));
+                    addElement(doc, val2, "constructor-arg", null, null, "value", idxCol.type());
+                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idxCol.descending()));
                 }
             }
         }
