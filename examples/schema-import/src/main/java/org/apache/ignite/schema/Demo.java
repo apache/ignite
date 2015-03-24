@@ -32,7 +32,7 @@ import javax.cache.configuration.*;
  * together with automatic Ignite shema-import utility.
  * <p>
  * This Demo can work stand-alone. You can also choose to start
- * several {@link DemoNode} cluster nodes as well.
+ * several {@link DemoNode} instances as well to form a cluster.
  */
 public class Demo {
     /**
