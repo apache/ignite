@@ -53,7 +53,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @throws IgniteCheckedException In case of error.
      */
     public IgniteHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
-        this(uri, null);
+        this(uri, null, null);
     }
 
     /**
@@ -64,13 +64,30 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @throws IgniteCheckedException In case of error.
      */
     public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath)
+        throws IgniteCheckedException {
+        this(uri, cfgPath, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param uri URI of file system.
+     * @param cfgPath Additional path to Hadoop configuration.
+     * @param userName User name.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
+        @Nullable String userName)
             throws IgniteCheckedException {
-        // Treat empty uri argument as null to improve configuration usability:
+        // Treat empty uri and userName arguments as nulls to improve configuration usability:
         if (F.isEmpty(uri))
             uri = null;
 
+        if (F.isEmpty(userName))
+            userName = null;
+
         try {
-            SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
+            SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(uri, cfgPath, userName);
 
             fileSys = secProvider.createFileSystem();
 
@@ -81,6 +98,9 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
             if (cfgPath != null)
                 props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);
+
+            if (userName != null)
+                props.put(SECONDARY_FS_USER_NAME, userName);
 
             props.put(SECONDARY_FS_URI, uri);
         }

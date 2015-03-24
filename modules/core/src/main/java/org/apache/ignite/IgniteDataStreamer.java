@@ -71,8 +71,8 @@ import java.util.*;
  *      changing), but it won't be lost anyway. Disabled by default (default value is {@code 0}).
  *  </li>
  *  <li>
- *      {@link #allowOverwrite(boolean)} - defines if data streamer will assume that there are no other concurrent
- *      updates and allow data streamer choose most optimal concurrent implementation.
+ *      {@link #allowOverwrite(boolean)} - Sets flag enabling overwriting existing values in cache.
+ *      Data streamer will perform better if this flag is disabled, which is the default setting.
  *  </li>
  *  <li>
  *      {@link #receiver(StreamReceiver)} - defines how cache will be updated with added entries.
@@ -103,19 +103,25 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public String cacheName();
 
     /**
-     * Gets flag value indicating that this data streamer assumes that
-     * there are no other concurrent updates to the cache.
-     * Default is {@code false}.
+     * Gets flag enabling overwriting existing values in cache.
+     * Data streamer will perform better if this flag is disabled.
+     * <p>
+     * This flag is disabled by default (default is {@code false}).
      *
-     * @return Flag value.
+     * @return {@code True} if overwriting is allowed, {@code false} otherwise..
      */
     public boolean allowOverwrite();
 
     /**
-     * Sets flag indicating that this data streamer should assume
-     * that there are no other concurrent updates to the cache.
+     * Sets flag enabling overwriting existing values in cache.
+     * Data streamer will perform better if this flag is disabled.
+     * <p>
      * Should not be used when custom cache receiver set using {@link #receiver(StreamReceiver)} method.
-     * Default is {@code false}. When this flag is set, updates will not be propagated to the cache store.
+     * <p>
+     * Note that when this flag is {@code false}, updates will not be propagated to the cache store
+     * (i.e. {@link #skipStore()} flag will be set to {@code true} implicitly).
+     * <p>
+     * This flag is disabled by default (default is {@code false}).
      *
      * @param allowOverwrite Flag value.
      * @throws CacheException If failed.

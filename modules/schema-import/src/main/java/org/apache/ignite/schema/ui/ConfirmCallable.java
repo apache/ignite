@@ -51,7 +51,7 @@ public class ConfirmCallable implements Callable<MessageBox.Result> {
 
     /** {@inheritDoc} */
     @Override public MessageBox.Result call() throws Exception {
-        choice = MessageBox.confirmRememberChoiceDialog(owner, String.format(template, msg));
+        choice = MessageBox.applyToAllChoiceDialog(owner, String.format(template, msg));
 
         return choice;
     }

@@ -15,40 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.model;
-
 /**
- * Index item descriptor.
+ * <!-- Package description. -->
+ * Contains transaction-related classes.
  */
-public class IndexItem {
-    /** Column type. */
-    private final String type;
-
-    /** Sort direction. */
-    private final Boolean desc;
-
-    /**
-     * Constructor.
-     *
-     * @param type Column type.
-     * @param desc Sort direction.
-     */
-    public IndexItem(String type, Boolean desc) {
-        this.type = type;
-        this.desc = desc;
-    }
-
-    /**
-     * @return Column type.
-     */
-    public String type() {
-        return type;
-    }
-
-    /**
-     * @return Sort direction.
-     */
-    public Boolean descending() {
-        return desc;
-    }
-}
+package org.apache.ignite.transactions;
