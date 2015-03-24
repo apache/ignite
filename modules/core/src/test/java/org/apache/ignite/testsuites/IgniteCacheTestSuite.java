@@ -22,6 +22,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.context.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -409,6 +410,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
+
+        suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
         return suite;
     }

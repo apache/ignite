@@ -48,6 +48,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Base class for transactional DHT caches.
  */
+@SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -994,7 +995,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (ret)
                                         val = e.innerGet(tx,
                                             /*swap*/true,
-                                            /*read-through*/ctx.loadPreviousValue(),
+                                            /*read-through*/false,
                                             /*fail-fast.*/false,
                                             /*unmarshal*/false,
                                             /*update-metrics*/true,
