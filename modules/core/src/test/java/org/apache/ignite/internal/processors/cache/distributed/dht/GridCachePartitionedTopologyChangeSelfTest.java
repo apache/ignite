@@ -149,7 +149,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
                             try {
-                                Lock lock = node.jcache(null).lock(key);
+                                Lock lock = node.cache(null).lock(key);
 
                                 lock.lock();
 
@@ -161,7 +161,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    Lock lock10 = node.jcache(null).lock(key * 10);
+                                    Lock lock10 = node.cache(null).lock(key * 10);
 
                                     lock10.lock();
 
@@ -257,7 +257,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.jcache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -326,7 +326,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.jcache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -411,7 +411,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.jcache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -462,7 +462,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.jcache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 

@@ -29,7 +29,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -675,7 +674,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).cache(null).projection(Object.class, Request.class);
+            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).getCache(null).projection(Object.class, Request.class);
 
             CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
@@ -723,7 +722,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.jcache(null).get(key);
+            return (T) ignite.cache(null).get(key);
         }
     }
 

@@ -577,8 +577,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         continue;
 
                     // Notify replication manager.
-                    if (cacheCtx.isDrEnabled())
-                        cacheCtx.dr().beforeExchange(topVer, exchId.isLeft());
+                    GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
+
+                    if (drCacheCtx.isDrEnabled())
+                        drCacheCtx.dr().beforeExchange(topVer, exchId.isLeft());
 
                     // Partition release future is done so we can flush the write-behind store.
                     cacheCtx.store().forceFlush();

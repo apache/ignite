@@ -110,7 +110,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).jcache(null).get(nearKey());
+                    grid(0).cache(null).get(nearKey());
 
                     return null;
                 }

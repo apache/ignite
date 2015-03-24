@@ -28,7 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
@@ -77,7 +76,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodeCnt);
 
-        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
 
         int kv = 1;
 

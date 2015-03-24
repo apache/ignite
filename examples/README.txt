@@ -15,7 +15,7 @@ The examples folder contains he following subfolders:
   README.txt file for more information on how to build and run the demo.
 - `src/main/java` - contains Java examples for different Ignite modules and features.
 - `src/main/java8` - contains additional set of Java examples utilizing Java 8 lambdas. These examples
-  are excluded by default, enable `java8` Maven profile to include them (JDK8 is required).
+  are excluded by default, enable `java8-examples` Maven profile to include them (JDK8 is required).
 - `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
 
 Starting Remote Nodes

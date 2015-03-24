@@ -28,8 +28,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  * Tests rendezvous affinity function with CLIENT_ONLY node (GG-8768).
  */
@@ -72,7 +70,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             Map<Integer, Collection<UUID>> mapping = new HashMap<>();
 
             for (int i = 0; i < 4; i++) {
-                IgniteCache<Object, Object> cache = grid(i).jcache(null);
+                IgniteCache<Object, Object> cache = grid(i).cache(null);
 
                 CacheAffinity<Object> aff = affinity(cache);
 

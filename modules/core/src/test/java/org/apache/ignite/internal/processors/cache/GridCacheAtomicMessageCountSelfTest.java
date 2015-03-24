@@ -124,7 +124,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         startGrids(4);
 
-        ignite(0).jcache(null);
+        ignite(0).cache(null);
 
         try {
             awaitPartitionMapExchange();

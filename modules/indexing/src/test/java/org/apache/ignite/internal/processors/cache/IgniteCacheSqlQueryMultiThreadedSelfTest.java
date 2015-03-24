@@ -22,7 +22,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -92,7 +91,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
 
         cache.clear();
 
@@ -123,7 +122,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQueryPut() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
 
         cache.clear();
 

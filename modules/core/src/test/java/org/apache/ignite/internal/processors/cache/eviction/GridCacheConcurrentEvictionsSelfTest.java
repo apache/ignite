@@ -32,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -125,7 +124,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             // Warm up.
             for (int i = 0; i < warmUpPutsCnt; i++) {

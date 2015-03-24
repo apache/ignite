@@ -155,7 +155,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testLoadAllWithExpiry() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>jcache(null)
+        IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>cache(null)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         Set<Integer> keys = new HashSet<>();

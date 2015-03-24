@@ -49,6 +49,13 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         private final String expCacheName;
 
         /**
+         *
+         */
+        public TestLifecycleAware() {
+            expCacheName = null;
+        }
+
+        /**
          * @param expCacheName Expected injected cache name.
          */
         public TestLifecycleAware(String expCacheName) {

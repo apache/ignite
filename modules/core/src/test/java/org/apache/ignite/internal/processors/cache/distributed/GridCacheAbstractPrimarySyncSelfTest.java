@@ -89,7 +89,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).jcache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
                     try (Transaction tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

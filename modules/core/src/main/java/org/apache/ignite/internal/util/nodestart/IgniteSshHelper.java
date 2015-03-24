@@ -22,7 +22,7 @@ import java.util.concurrent.*;
 /**
  * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
  */
-public interface IgniteSshProcessor {
+public interface IgniteSshHelper {
     /**
      * Creates {@link Callable} starting node using SSH.
      *

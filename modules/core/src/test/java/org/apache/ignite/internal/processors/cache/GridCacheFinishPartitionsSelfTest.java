@@ -83,7 +83,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         String key = "key";
         String val = "value";
 
-        IgniteCache<String, String> cache = grid.jcache(null);
+        IgniteCache<String, String> cache = grid.cache(null);
 
         int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
 
@@ -126,7 +126,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                IgniteCache<String, String> cache = grid(0).jcache(null);
+                IgniteCache<String, String> cache = grid(0).cache(null);
 
                 Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -188,7 +188,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testMvccFinishKeys() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).jcache(null);
+        IgniteCache<String, Integer> cache = grid(0).cache(null);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
@@ -226,7 +226,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<Integer, String> cache = grid.jcache(null);
+        IgniteCache<Integer, String> cache = grid.cache(null);
 
         Lock lock = cache.lock(key);
 
@@ -284,7 +284,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<String, String> cache = grid.jcache(null);
+        IgniteCache<String, String> cache = grid.cache(null);
 
         Lock lock = cache.lock(key);
 

@@ -83,7 +83,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                IgniteCache<Object, Object> cache = g.jcache(null);
+                IgniteCache<Object, Object> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -152,7 +152,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        IgniteCache<Object, Object> cache = G.ignite().jcache(null);
+        IgniteCache<Object, Object> cache = G.ignite().cache(null);
 
         assert cache != null;
 

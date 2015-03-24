@@ -36,6 +36,8 @@ public class CodeGenerator {
     private static final String TAB2 = TAB + TAB;
     /** */
     private static final String TAB3 = TAB + TAB + TAB;
+    /** */
+    private static final String TAB4 = TAB + TAB + TAB + TAB;
 
     /**
      * Add line to source code without indent.
@@ -86,6 +88,16 @@ public class CodeGenerator {
      */
     private static void add3(Collection<String> src, String line) {
         src.add(TAB3 + line);
+    }
+
+    /**
+     * Add line to source code with four indents.
+     *
+     * @param src Source code.
+     * @param line Code line.
+     */
+    private static void add4(Collection<String> src, String line) {
+        src.add(TAB4 + line);
     }
 
     /**
@@ -479,10 +491,10 @@ public class CodeGenerator {
         String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
-        File cacheConfig = new File(pkgFolder, "CacheConfig.java");
+        File cacheCfg = new File(pkgFolder, "CacheConfig.java");
 
-        if (cacheConfig.exists()) {
-            MessageBox.Result choice = askOverwrite.confirm(cacheConfig.getName());
+        if (cacheCfg.exists()) {
+            MessageBox.Result choice = askOverwrite.confirm(cacheCfg.getName());
 
             if (CANCEL == choice)
                 throw new IllegalStateException("Java snippet generation was canceled!");
@@ -494,22 +506,25 @@ public class CodeGenerator {
         Collection<String> src = new ArrayList<>(256);
 
         header(src, pkg, "org.apache.ignite.cache.*;org.apache.ignite.cache.store.*;" +
-            "org.apache.ignite.cache.store.jdbc.*;;javax.sql.*;java.sql.Types;java.util.*;",
+                "org.apache.ignite.configuration.*;;javax.cache.configuration.*;java.sql.*;java.util.*",
             "CacheConfig", "CacheConfig");
 
-        add1(src, "/** Configure cache store. */");
-        add1(src, "public static CacheStore store() {");
-        add2(src, "DataSource dataSource = null; // TODO create data source.");
+        add1(src, "/**");
+        add1(src, "/* Configure cache.");
+        add1(src, "/*");
+        add1(src, "/* @param name Cache name.");
+        add1(src, "/* @param storeFactory Cache store factory.");
+        add1(src, "*/");
+        add1(src, " public static CacheConfiguration cache(String name, Factory<CacheStore> storeFactory) {");
+        add2(src, "if (storeFactory == null)");
+        add3(src, " throw new IllegalArgumentException(\"Cache store factory cannot be null.\");");
         add0(src, "");
-        add2(src, "CacheJdbcPojoStore store = new CacheJdbcPojoStore();");
-        add2(src, "store.setDataSource(dataSource);");
+        add2(src, "CacheConfiguration ccfg = new CacheConfiguration(name);");
         add0(src, "");
-        add2(src, "return store;");
-        add1(src, "}");
+        add2(src, "ccfg.setCacheStoreFactory(storeFactory);");
+        add2(src, "ccfg.setReadThrough(true);");
+        add2(src, "ccfg.setWriteThrough(true);");
         add0(src, "");
-
-        add1(src, "/** Configure cache types metadata. */");
-        add1(src, "public static Collection<CacheTypeMetadata> typeMetadata() {");
 
         add2(src, "// Configure cache types. ");
         add2(src, "Collection<CacheTypeMetadata> meta = new ArrayList<>();");
@@ -524,8 +539,8 @@ public class CodeGenerator {
             add2(src, (first ? "CacheTypeMetadata " : "") + "type = new CacheTypeMetadata();");
             add2(src, "type.setDatabaseSchema(\"" + pojo.schema() + "\");");
             add2(src, "type.setDatabaseTable(\"" + tbl + "\");");
-            add2(src, "type.setKeyType(\"" + pkg + "." + pojo.keyClassName() + "\");");
-            add2(src, "type.setValueType(\"" + pkg + "." + pojo.valueClassName() + "\");");
+            add2(src, "type.setKeyType(" + pojo.keyClassName() + ".class.getName());");
+            add2(src, "type.setValueType(" + pojo.valueClassName() + ".class.getName());");
             add0(src, "");
 
             add2(src, "meta.add(type);");
@@ -545,12 +560,14 @@ public class CodeGenerator {
 
             first = false;
         }
+
+        add2(src, "ccfg.setTypeMetadata(meta);");
         add0(src, "");
-        add2(src, "return meta;");
+        add2(src, "return ccfg;");
         add1(src, "}");
 
         add0(src, "}");
 
-        write(src, cacheConfig);
+        write(src, cacheCfg);
     }
 }

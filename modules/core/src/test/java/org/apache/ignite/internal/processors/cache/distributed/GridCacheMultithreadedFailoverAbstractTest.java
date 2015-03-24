@@ -263,7 +263,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     Ignite ignite = G.ignite(nodeName(0));
 
-                    IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     int startKey = keysPerThread * idx;
                     int endKey = keysPerThread * (idx + 1);
@@ -490,7 +490,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
-            IgniteCache<Integer, Integer> cache = G.ignite(nodeName(i)).jcache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;
 
@@ -498,7 +498,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
             GridCacheAdapter<Integer, Integer> cache0 =
                 (GridCacheAdapter<Integer, Integer>)((IgniteKernal)cache.unwrap(Ignite.class))
-                    .<Integer, Integer>cache(CACHE_NAME);
+                    .<Integer, Integer>getCache(CACHE_NAME);
 
             if (cache0.isNear()) {
                 if (dhtCaches == null)

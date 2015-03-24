@@ -38,7 +38,7 @@ public class XmlGeneratorTest extends AbstractSchemaImportTest {
             if (pojo.parent() != null)
                 all.add(pojo);
 
-        String fileName = "Ignite.xml";
+        String fileName = "ignite-type-metadata.xml";
 
         XmlGenerator.generate("org.apache.ignite.schema.test.model", all, true, new File(OUT_DIR_PATH, fileName),
             askOverwrite);
