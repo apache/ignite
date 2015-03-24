@@ -41,7 +41,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
+    private final ConcurrentLinkedDeque8<CacheEvictableEntry<K, V>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /**
@@ -92,12 +92,12 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
      *
      * @return Read-only view ono internal {@code 'FIFO'} queue.
      */
-    public Collection<EvictableEntry<K, V>> queue() {
+    public Collection<CacheEvictableEntry<K, V>> queue() {
         return Collections.unmodifiableCollection(queue);
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -106,7 +106,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                 shrink();
         }
         else {
-            Node<EvictableEntry<K, V>> node = entry.removeMeta();
+            Node<CacheEvictableEntry<K, V>> node = entry.removeMeta();
 
             if (node != null)
                 queue.unlinkx(node);
@@ -117,8 +117,8 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(EvictableEntry<K, V> entry) {
-        Node<EvictableEntry<K, V>> node = entry.meta();
+    private boolean touch(CacheEvictableEntry<K, V> entry) {
+        Node<CacheEvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -149,7 +149,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
         }
         else if (queue.unlinkx(node)) {
             // Move node to tail.
-            Node<EvictableEntry<K, V>> newNode = queue.offerLastx(entry);
+            Node<CacheEvictableEntry<K, V>> newNode = queue.offerLastx(entry);
 
             if (!entry.replaceMeta(node, newNode))
                 // Was concurrently added, need to clear it from queue.
@@ -169,7 +169,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
         int startSize = queue.sizex();
 
         for (int i = 0; i < startSize && queue.sizex() > max; i++) {
-            EvictableEntry<K, V> entry = queue.poll();
+            CacheEvictableEntry<K, V> entry = queue.poll();
 
             if (entry == null)
                 break;

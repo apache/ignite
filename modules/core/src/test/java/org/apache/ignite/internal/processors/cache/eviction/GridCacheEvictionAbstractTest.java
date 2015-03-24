@@ -161,7 +161,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<EvictableEntry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<CacheEvictableEntry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
@@ -197,7 +197,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<EvictableEntry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<CacheEvictableEntry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
