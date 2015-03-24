@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
-public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
+public class CacheEvictableEntryImpl<K, V> implements CacheEvictableEntry<K, V> {
     /** */
     private static final UUID META_KEY = UUID.randomUUID();
 
@@ -42,7 +42,7 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
      * @param cached Cached entry.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    protected EvictableEntryImpl(GridCacheEntryEx cached) {
+    protected CacheEvictableEntryImpl(GridCacheEntryEx cached) {
         this.cached = cached;
     }
 
@@ -181,8 +181,8 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         if (obj == this)
             return true;
 
-        if (obj instanceof EvictableEntryImpl) {
-            EvictableEntryImpl<K, V> other = (EvictableEntryImpl<K, V>)obj;
+        if (obj instanceof CacheEvictableEntryImpl) {
+            CacheEvictableEntryImpl<K, V> other = (CacheEvictableEntryImpl<K, V>)obj;
 
             return cached.key().equals(other.getKey());
         }
@@ -192,6 +192,6 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(EvictableEntryImpl.class, this);
+        return S.toString(CacheEvictableEntryImpl.class, this);
     }
 }

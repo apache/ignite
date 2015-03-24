@@ -27,7 +27,7 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
+public interface CacheEvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).

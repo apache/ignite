@@ -82,7 +82,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
         if (!entry.isCached())
             return;
 
@@ -94,7 +94,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
             Cache.Entry<K, V> e = cache.randomEntry();
 
             if (e != null)
-                e.unwrap(EvictableEntry.class).evict();
+                e.unwrap(CacheEvictableEntry.class).evict();
         }
     }
 

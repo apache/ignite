@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.schema;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
+import org.apache.ignite.*;
 
 /**
- * Tests for atomic cache with near cache enabled.
+ * Starts demo node. You can start as many demo nodes as you like for the demo.
  */
-public class IgniteCacheAtomicNearEnabledQuerySelfTest extends IgniteCachePartitionedQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+public class DemoNode {
+    /**
+     * Starts demo node.
+     *
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If example execution failed.
+     */
+    public static void main(String[] args) throws IgniteException {
+        System.out.println(">>> Start demo node...");
 
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+        Ignition.start();
     }
 }

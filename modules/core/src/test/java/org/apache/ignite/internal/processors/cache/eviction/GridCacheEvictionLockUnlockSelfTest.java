@@ -171,7 +171,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     /** Eviction policy. */
     private static class EvictionPolicy implements CacheEvictionPolicy<Object, Object>, Serializable {
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry<Object, Object> entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<Object, Object> entry) {
             touchCnt.incrementAndGet();
 
             entry.evict();

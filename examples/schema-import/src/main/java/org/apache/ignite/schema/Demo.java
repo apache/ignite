@@ -28,23 +28,20 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 
 /**
- * Demo for CacheJdbcPojoStore.
- *
- * This example demonstrates the use of cache with {@link CacheJdbcPojoStore}.
- *
- * Custom SQL will be executed to populate cache with data from database.
+ * This demo demonstrates the use of cache with {@link CacheJdbcPojoStore}
+ * together with automatic Ignite shema-import utility.
+ * <p>
+ * This Demo can work stand-alone. You can also choose to start
+ * several {@link DemoNode} instances as well to form a cluster.
  */
 public class Demo {
-    /** */
-    private static final String CACHE_NAME = "Person";
-
     /**
      * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStore}.
      */
-    private static class H2DemoStoreFactory implements Factory<CacheStore> {
+    private static class H2DemoStoreFactory<K, V> implements Factory<CacheStore<K, V>> {
         /** {@inheritDoc} */
-        @Override public CacheStore create() {
-            CacheJdbcPojoStore store = new CacheJdbcPojoStore<>();
+        @Override public CacheStore<K, V> create() {
+            CacheJdbcPojoStore<K, V> store = new CacheJdbcPojoStore<>();
 
             store.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
 
@@ -61,27 +58,24 @@ public class Demo {
     public static void main(String[] args) throws IgniteException {
         System.out.println(">>> Start demo...");
 
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        // Configure cache store.
-        CacheConfiguration ccfg = CacheConfig.cache(CACHE_NAME, new H2DemoStoreFactory());
-
-        cfg.setCacheConfiguration(ccfg);
-
         // Start Ignite node.
-        try (Ignite ignite = Ignition.start(cfg)) {
-            IgniteCache<PersonKey, Person> cache = ignite.cache(CACHE_NAME);
+        try (Ignite ignite = Ignition.start()) {
+            // Configure cache store.
+            CacheConfiguration<PersonKey, Person> cfg =
+                CacheConfig.cache("PersonCache", new H2DemoStoreFactory<PersonKey, Person>());
 
-            // Preload cache from database.
-            preload(cache);
+            try (IgniteCache<PersonKey, Person> cache = ignite.getOrCreateCache(cfg)) {
+                // Preload cache from database.
+                preload(cache);
 
-            // Read-through from database
-            // and store in cache.
-            readThrough(cache);
+                // Read-through from database
+                // and store in cache.
+                readThrough(cache);
 
-            // Perform transaction and
-            // write-through to database.
-            transaction(ignite, cache);
+                // Perform transaction and
+                // write-through to database.
+                transaction(ignite, cache);
+            }
         }
     }
 

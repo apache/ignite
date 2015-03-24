@@ -17,16 +17,14 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 import javax.cache.*;
 import java.io.*;
-import java.util.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
- * calling explicit evict via {@link EvictableEntry#evict()}.
+ * calling explicit evict via {@link CacheEvictableEntry#evict()}.
  * If {@link #evictAllowed(Cache.Entry)} method returns {@code false} then eviction
  * policy will not be notified and entry will never be evicted.
  * <p>
