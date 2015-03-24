@@ -128,7 +128,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     cache.put(key, val);
 
-                    if (i % 1_000 == 0 && i > 0)
+                    if (i % 20_000 == 0 && i > 0)
                         info("Done " + i + " out of " + iterations());
                 }
 
