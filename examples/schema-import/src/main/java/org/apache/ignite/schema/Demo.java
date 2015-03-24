@@ -105,6 +105,9 @@ public class Demo {
     private static void readThrough(IgniteCache<PersonKey, Person> cache) {
         PersonKey key = new PersonKey(4);
 
+        System.out.println();
+        System.out.println(">>> Read-through person from database for ID: " + key.getId());
+
         // Check that person with ID=4 is not in cache.
         Person p = cache.localPeek(key);
 
@@ -122,9 +125,14 @@ public class Demo {
     private static void transaction(Ignite ignite, IgniteCache<PersonKey, Person> cache) {
         PersonKey key = new PersonKey(5);
 
+        System.out.println();
+        System.out.println(">>> Update salary and write-through to database for person with ID: " + key.getId());
+
         try (Transaction tx = ignite.transactions().txStart()) {
             // Read-through from database.
             Person p = cache.get(key);
+
+            System.out.println(">>> Loaded person from database: " + p);
 
             double salary = p.getSalary();
 
@@ -137,5 +145,7 @@ public class Demo {
 
             tx.commit();
         }
+
+        System.out.println(">>> Updated person: " + cache.get(key));
     }
 }
