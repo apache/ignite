@@ -28,12 +28,7 @@ Schema Import Utility Demo
 
 5. Import "examples/schema-import/pom.xml" in your Java IDE.
 
-6. Set datasource in `CacheConfig.store()` method to:
-
-   DataSource dataSource =
-    org.h2.jdbcx.JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", "");
-
-7. Run "Demo.java" example.
+6. Run "Demo.java" example.
 
 For more information on how to get started with Apache Ignite Schema Import Utility please visit:
 
