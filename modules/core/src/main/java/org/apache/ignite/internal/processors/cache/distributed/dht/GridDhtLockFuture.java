@@ -945,6 +945,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     loadMap.keySet(),
                     new CI2<KeyCacheObject, Object>() {
                         @Override public void apply(KeyCacheObject key, Object val) {
+                            // No value loaded from store.
+                            if (val == null)
+                                return;
+
                             GridDhtCacheEntry entry0 = loadMap.get(key);
 
                             try {
