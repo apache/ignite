@@ -509,7 +509,12 @@ public class CodeGenerator {
                 "org.apache.ignite.configuration.*;;javax.cache.configuration.*;java.sql.*;java.util.*",
             "CacheConfig", "CacheConfig");
 
-        add1(src, "/** Configure cache. */");
+        add1(src, "/**");
+        add1(src, "/* Configure cache.");
+        add1(src, "/*");
+        add1(src, "/* @param name Cache name.");
+        add1(src, "/* @param factory Cache store factory.");
+        add1(src, "*/");
         add1(src, " public static CacheConfiguration cache(String name, Factory<CacheStore> factory) {");
         add2(src, "if (factory == null)");
         add3(src, " throw new IllegalArgumentException(\"Cache store factory cannot be null.\");");
