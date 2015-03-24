@@ -76,9 +76,8 @@ public class Demo {
         System.out.println();
         System.out.println(">>> Loading entries from database.");
 
-        // Demo for load cache with custom SQL.
-        cache.loadCache(null, "org.apache.ignite.schema.PersonKey",
-            "select * from PERSON where ID <= 3");
+        // Preload all person keys that are less than or equal to 3.
+        cache.loadCache(null, PersonKey.class.getName(), "select * from PERSON where ID <= 3");
 
         for (Cache.Entry<PersonKey, Person> person : cache)
             System.out.println(">>> Loaded Person: " + person);
