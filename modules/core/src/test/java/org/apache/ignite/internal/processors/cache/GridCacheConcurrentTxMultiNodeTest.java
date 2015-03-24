@@ -670,34 +670,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param msgId Message ID.
-         * @return Request.
-         */
-        private Request findRequestWithMessageId(Long msgId) {
-            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).getCache(null).projection(Object.class, Request.class);
-
-            CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
-                Request.class, "messageId = ?");
-
-            try {
-                // taking out localNode() doesn't change the eviction timeout future
-                // problem
-                Map.Entry<Object, Request> entry =
-                    F.first(qry.projection(ignite.cluster().forLocal()).execute(msgId).get());
-
-                if (entry == null)
-                    return null;
-
-                return entry.getValue();
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-
-                return null;
-            }
-        }
-
-        /**
          * @param o Object to put.
          * @param cacheKey Cache key.
          * @param terminalId Terminal ID.

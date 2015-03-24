@@ -268,7 +268,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             // Will actually delete entry from map.
-            CU.invalidate(cache(i), "key0");
+            CU.invalidate(jcache(i), "key0");
 
             assertNull("Failed check for grid: " + i, jcache(i).localPeek("key0", CachePeekMode.ONHEAP));
 
@@ -293,13 +293,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             Collection<String> keysCol = mapped.get(grid(i).localNode());
 
             assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
-                cache(i).primarySize());
+                jcache(i).localSize(CachePeekMode.PRIMARY));
         }
 
         int globalPrimarySize = map.size();
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalPrimarySize, cache(i).globalPrimarySize());
+            assertEquals(globalPrimarySize, jcache(i).size(CachePeekMode.PRIMARY));
 
         int times = 1;
 
@@ -311,7 +311,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         int globalSize = globalPrimarySize * times;
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalSize, cache(i).globalSize());
+            assertEquals(globalSize, jcache(i).size());
     }
 
     /**

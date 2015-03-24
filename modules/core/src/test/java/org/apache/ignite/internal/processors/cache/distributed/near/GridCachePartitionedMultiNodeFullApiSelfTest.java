@@ -297,7 +297,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Generating keys for test...");
 
-        GridCache<String, Integer> cache0 = cache(0);
+        IgniteCache<String, Integer> cache0 = jcache(0);
 
         for (int i = 0; i < 5; i++) {
             while (true) {
@@ -307,7 +307,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                     ignite(0).affinity(null).isBackup(grid(1).localNode(), key)) {
                     keys.add(key);
 
-                    assertTrue(cache0.putx(key, i));
+                    cache0.put(key, i);
 
                     break;
                 }
@@ -316,43 +316,21 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Finished generating keys for test.");
 
-        GridCache<String, Integer> cache2 = cache(2);
+        IgniteCache<String, Integer> cache2 = jcache(2);
 
         assertEquals(Integer.valueOf(0), cache2.get(keys.get(0)));
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
 
-        assertEquals(0, cache0.nearSize());
-        assertEquals(5, cache0.size() - cache0.nearSize());
+        assertEquals(0, cache0.localSize(NEAR));
+        assertEquals(5, cache0.size() - cache0.localSize(NEAR));
 
-        GridCache<String, Integer> cache1 = cache(1);
+        IgniteCache<String, Integer> cache1 = jcache(1);
 
-        assertEquals(0, cache1.nearSize());
-        assertEquals(5, cache1.size() - cache1.nearSize());
+        assertEquals(0, cache1.localSize(NEAR));
+        assertEquals(5, cache1.size() - cache1.localSize(NEAR));
 
-        assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
-        assertEquals(0, cache2.size() - cache2.nearSize());
-
-        CacheEntryPredicate prjFilter = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                try {
-                    Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);
-
-                    return val != null && val >= 1 && val <= 3;
-                }
-                catch (IgniteCheckedException err) {
-                    throw new IgniteException(err);
-                }
-            }
-        };
-
-        assertEquals(0, cache0.projection(prjFilter).nearSize());
-        assertEquals(3, cache0.projection(prjFilter).size() - cache0.projection(prjFilter).nearSize());
-
-        assertEquals(0, cache1.projection(prjFilter).nearSize());
-        assertEquals(3, cache1.projection(prjFilter).size() - cache1.projection(prjFilter).nearSize());
-
-        assertEquals(nearEnabled() ? 1 : 0, cache2.projection(prjFilter).nearSize());
-        assertEquals(0, cache2.projection(prjFilter).size() - cache2.projection(prjFilter).nearSize());
+        assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
+        assertEquals(0, cache2.size() - cache2.localSize(NEAR));
     }
 
     /**

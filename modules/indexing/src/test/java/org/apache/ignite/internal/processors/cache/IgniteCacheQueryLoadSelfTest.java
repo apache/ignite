@@ -89,9 +89,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().removeAll();
+        jcache().removeAll();
 
-        assert cache().isEmpty();
+        assert jcache().localSize() == 0;
         assert size(ValueObject.class) == 0;
 
         STORE_MAP.clear();

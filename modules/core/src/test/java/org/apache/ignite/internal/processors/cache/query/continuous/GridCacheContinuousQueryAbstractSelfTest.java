@@ -169,9 +169,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty [entrySet=" + ((IgniteKernal)grid(i)).getCache(null).entrySet() +
+            assertEquals("Cache is not empty [entrySet=" + grid(i).cache(null).localEntries() +
                 ", i=" + i + ']',
-                0, ((IgniteKernal)grid(i)).getCache(null).size());
+                0, grid(i).cache(null).localSize());
 
 
         for (int i = 0; i < gridCount(); i++) {
@@ -418,7 +418,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testLocalNodeOnly() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
-        if (((IgniteKernal)grid(0)).getCache(null).configuration().getCacheMode() != PARTITIONED)
+        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
@@ -488,7 +488,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testBuffering() throws Exception {
-        if (((IgniteKernal)grid(0)).getCache(null).configuration().getCacheMode() != PARTITIONED)
+        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);

@@ -118,42 +118,4 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
             stopGrid();
         }
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
-
-        CacheQueryFuture<List<?>> fut = null;
-
-        for (int i = 0; i < GridCacheQueryManager.MAX_ITERATORS + 1; i++) {
-            CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
-                "select _key from Integer where _key >= 0 order by _key").projection(grid(0).cluster());
-
-            q.pageSize(50);
-
-            CacheQueryFuture<List<?>> f = q.execute();
-
-            assertEquals(0, f.next().get(0));
-
-            if (fut == null)
-                fut = f;
-        }
-
-        final CacheQueryFuture<List<?>> fut0 = fut;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                int i = 0;
-
-                List<?> next;
-
-                while ((next = fut0.next()) != null)
-                    assertEquals(++i % 50, next.get(0));
-
-                return null;
-            }
-        }, IgniteException.class, null);
-    }
 }
