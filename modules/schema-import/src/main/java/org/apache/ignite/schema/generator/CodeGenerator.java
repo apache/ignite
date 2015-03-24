@@ -506,8 +506,7 @@ public class CodeGenerator {
         Collection<String> src = new ArrayList<>(256);
 
         header(src, pkg, "org.apache.ignite.cache.*;org.apache.ignite.cache.store.*;" +
-                "org.apache.ignite.cache.store.jdbc.*;org.apache.ignite.configuration.*;;" +
-                "javax.cache.configuration.*;javax.sql.*;java.sql.*;java.util.*",
+                "org.apache.ignite.configuration.*;;javax.cache.configuration.*;java.sql.*;java.util.*",
             "CacheConfig", "CacheConfig");
 
         add1(src, "/** Configure cache. */");
