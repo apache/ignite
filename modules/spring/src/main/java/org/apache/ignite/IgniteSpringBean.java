@@ -226,10 +226,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         assert g != null;
 
-        return g.jcache(name);
+        return g.cache(name);
     }
 
     /** {@inheritDoc} */

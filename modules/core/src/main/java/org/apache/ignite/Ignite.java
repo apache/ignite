@@ -262,7 +262,7 @@ public interface Ignite extends AutoCloseable {
      * @param name Cache name.
      * @return Instance of the cache for the specified name.
      */
-    public <K, V> IgniteCache<K, V> jcache(@Nullable String name);
+    public <K, V> IgniteCache<K, V> cache(@Nullable String name);
 
     /**
      * Gets grid transactions facade.

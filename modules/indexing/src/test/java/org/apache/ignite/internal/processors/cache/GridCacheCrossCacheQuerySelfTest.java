@@ -230,7 +230,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApiQueries() throws Exception {
-        IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+        IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
@@ -246,7 +246,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //    }
 
     public void _testLoop() throws Exception {
-        final IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+        final IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         X.println("___ GET READY");
 

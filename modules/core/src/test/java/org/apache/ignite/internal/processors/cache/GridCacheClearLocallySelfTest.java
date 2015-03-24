@@ -152,7 +152,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             }
 
             if (i == 2)
-                ignite.jcache(CACHE_PARTITIONED);
+                ignite.cache(CACHE_PARTITIONED);
 
             cachesLoc[i] = ((IgniteKernal)ignite).getCache(CACHE_LOCAL);
             cachesPartitioned[i] = ((IgniteKernal)ignite).getCache(CACHE_PARTITIONED);

@@ -111,7 +111,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
         }, 1);
 
         try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            IgniteCache<Integer, TestObject> cache = ignite(0).jcache(null);
+            IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
 
             cache.get(0);
 

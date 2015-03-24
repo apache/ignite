@@ -168,7 +168,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         grid(0).events().stopLocalListen(swapLsnr);
 
-        grid(0).jcache(null).removeAll();
+        grid(0).cache(null).removeAll();
     }
 
     /** Resets event counters. */

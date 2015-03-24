@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#jcache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link CacheProjection} API which contains vast majority of cache functionality

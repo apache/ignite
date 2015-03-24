@@ -901,7 +901,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     g.transactions().txStart();
 
 
-                    g.jcache(TRANSACTIONAL_CACHE_NAME).put(1, 1);
+                    g.cache(TRANSACTIONAL_CACHE_NAME).put(1, 1);
 
                     assert g.atomicLong(STRUCTURE_NAME, val, false).incrementAndGet() == val + 1;
                 }

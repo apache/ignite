@@ -2249,7 +2249,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {

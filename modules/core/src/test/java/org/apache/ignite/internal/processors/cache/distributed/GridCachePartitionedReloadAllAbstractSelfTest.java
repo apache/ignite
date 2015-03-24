@@ -131,7 +131,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
         caches = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
-            caches.add(startGrid(i).<Integer, String>jcache(null));
+            caches.add(startGrid(i).<Integer, String>cache(null));
 
         awaitPartitionMapExchange();
     }

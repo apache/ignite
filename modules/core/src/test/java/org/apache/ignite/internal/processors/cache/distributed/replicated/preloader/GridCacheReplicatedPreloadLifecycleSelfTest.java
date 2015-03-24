@@ -87,8 +87,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
                     case AFTER_NODE_START: {
-                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
-                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
+                        IgniteCache<Object, MyValue> c1 = ignite.cache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             if (!quiet) {
@@ -148,8 +148,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                IgniteCache<String, MyValue> c1 = grid(j).jcache("one");
-                IgniteCache<String, MyValue> c2 = grid(j).jcache("two");
+                IgniteCache<String, MyValue> c1 = grid(j).cache("one");
+                IgniteCache<String, MyValue> c2 = grid(j).cache("two");
 
                 int size1 = c1.localSize();
                 int size2 = c2.localSize();

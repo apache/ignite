@@ -84,7 +84,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 100L));
 
-        IgniteCache cache = grid(0).jcache(null).withExpiryPolicy(expiry);
+        IgniteCache cache = grid(0).cache(null).withExpiryPolicy(expiry);
 
         for (int i = 0; i < KEYS_NUM; i++)
             cache.put(String.valueOf(i), i);

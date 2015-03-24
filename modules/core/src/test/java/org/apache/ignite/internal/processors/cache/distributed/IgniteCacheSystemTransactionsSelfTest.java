@@ -67,7 +67,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     public void testSystemTxInsideUserTx() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
-        IgniteCache<Object, Object> jcache = ignite.jcache(null);
+        IgniteCache<Object, Object> jcache = ignite.cache(null);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             jcache.get("1");

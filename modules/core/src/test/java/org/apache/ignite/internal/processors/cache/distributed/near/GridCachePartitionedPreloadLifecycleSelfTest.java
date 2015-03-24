@@ -85,8 +85,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
                     case AFTER_NODE_START: {
-                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
-                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
+                        IgniteCache<Object, MyValue> c1 = ignite.cache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             info("Keys already in cache:");
@@ -144,8 +144,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                IgniteCache<Object, MyValue> c1 = grid(j).jcache("one");
-                IgniteCache<Object, MyValue> c2 = grid(j).jcache("two");
+                IgniteCache<Object, MyValue> c1 = grid(j).cache("one");
+                IgniteCache<Object, MyValue> c2 = grid(j).cache("two");
 
                 int k = 0;
 
@@ -191,7 +191,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = grid.jcache("one").get(key);
+                            Object v2 = grid.cache("one").get(key);
 
                             assertNotNull(v2);
                             assertEquals(v1, v2);

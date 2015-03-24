@@ -28,7 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -138,7 +137,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            IgniteCache<Object, Object> c = g.jcache(null);
+            IgniteCache<Object, Object> c = g.cache(null);
 
             int cnt = 1;
 
@@ -193,7 +192,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        IgniteCache<Object, Object> cache = g.jcache(null);
+        IgniteCache<Object, Object> cache = g.cache(null);
 
         try {
             int id = 1;

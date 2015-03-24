@@ -562,7 +562,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             if (entryMappings != null)
                 return entryMappings;
 
-            CacheConfiguration ccfg = ignite().jcache(cacheName).getConfiguration(CacheConfiguration.class);
+            CacheConfiguration ccfg = ignite().cache(cacheName).getConfiguration(CacheConfiguration.class);
 
             Collection<CacheTypeMetadata> types = ccfg.getTypeMetadata();
 

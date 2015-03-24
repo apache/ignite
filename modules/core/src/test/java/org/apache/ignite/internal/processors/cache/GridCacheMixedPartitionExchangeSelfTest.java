@@ -96,7 +96,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         int key = rnd.nextInt(keys);
 
-                        IgniteCache<Integer, Integer> prj = grid(g).jcache(null);
+                        IgniteCache<Integer, Integer> prj = grid(g).cache(null);
 
                         try {
                             try (Transaction tx = grid(g).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

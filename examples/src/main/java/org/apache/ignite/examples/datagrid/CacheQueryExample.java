@@ -114,7 +114,7 @@ public class CacheQueryExample {
      * Example for SQL queries based on salary ranges.
      */
     private static void sqlQuery() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // SQL clause which selects salaries based on range.
         String sql = "salary > ? and salary <= ?";
@@ -137,7 +137,7 @@ public class CacheQueryExample {
      * Example for SQL queries based on all employees working for a specific organization.
      */
     private static void sqlQueryWithJoin() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // SQL clause query which joins on 2 types to select people for a specific organization.
         String joinSql =
@@ -158,7 +158,7 @@ public class CacheQueryExample {
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      */
     private static void textQuery() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
         QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> masters =
@@ -176,7 +176,7 @@ public class CacheQueryExample {
      * Example for SQL queries to calculate average salary for a specific organization.
      */
     private static void sqlQueryWithAggregation() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select avg(salary) from Person, " +
@@ -192,7 +192,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQuery() {
-        IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select concat(firstName, ' ', " +
@@ -211,7 +211,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQueryWithJoin() {
-        IgniteCache<?, ?> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Execute query to get names of all employees.
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select concat(firstName, ' ', lastName), " +
@@ -228,7 +228,7 @@ public class CacheQueryExample {
      * Populate cache with test data.
      */
     private static void initialize() {
-        IgniteCache<Object, Object> cache = Ignition.ignite().jcache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Organizations.
         Organization org1 = new Organization("GridGain");

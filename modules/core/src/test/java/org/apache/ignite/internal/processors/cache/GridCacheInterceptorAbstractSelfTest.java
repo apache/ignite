@@ -45,7 +45,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    
+
     /** */
     private static Interceptor interceptor;
 
@@ -81,9 +81,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
-        
+
         spi.setIpFinder(IP_FINDER);
-        
+
         c.setDiscoverySpi(spi);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
@@ -1341,7 +1341,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).jcache(null).get(key));
+                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(null).get(key));
         }
         finally {
             interceptor.disabled = false;
@@ -1503,9 +1503,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             IgniteBiTuple t = beforePutMap.put(entry.getKey(), new IgniteBiTuple(entry.getValue(), newVal));
 
             if (t != null) {
-                assertEquals("Interceptor called with different old values for key " + entry.getKey(), t.get1(), 
+                assertEquals("Interceptor called with different old values for key " + entry.getKey(), t.get1(),
                     entry.getValue());
-                assertEquals("Interceptor called with different new values for key " + entry.getKey(), t.get2(), 
+                assertEquals("Interceptor called with different new values for key " + entry.getKey(), t.get2(),
                     newVal);
             }
 

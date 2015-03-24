@@ -107,7 +107,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         for (int i = 0; i < PERM_NODES_CNT + TMP_NODES_CNT; i++)
-            F.rand(alive).jcache(null).put(i, String.valueOf(i));
+            F.rand(alive).cache(null).put(i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */

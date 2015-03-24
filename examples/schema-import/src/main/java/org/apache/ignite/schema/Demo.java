@@ -53,7 +53,7 @@ public class Demo {
 
         // Start Ignite node.
         try (Ignite ignite = Ignition.start(cfg)) {
-            IgniteCache<PersonKey, Person> cache = ignite.jcache(CACHE_NAME);
+            IgniteCache<PersonKey, Person> cache = ignite.cache(CACHE_NAME);
 
             // Demo for load cache with custom SQL.
             cache.loadCache(null, "org.apache.ignite.schema.PersonKey",

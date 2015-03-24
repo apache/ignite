@@ -159,7 +159,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryStorePurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
@@ -182,7 +182,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteException If failed.
      */
     private static void queryProductPurchases() {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for certain product made at store2.
         // =================================================

@@ -76,7 +76,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).jcache(null);
+        return grid(idx).cache(null);
     }
 
     /**
@@ -130,7 +130,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().jcache(null);
+        return grid().cache(null);
     }
 
     /**
@@ -548,7 +548,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNotNull(node);
 
-        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
+        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).cache(cacheName);
     }
 
     /**

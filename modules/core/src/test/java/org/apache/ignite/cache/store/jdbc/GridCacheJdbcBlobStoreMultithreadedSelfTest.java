@@ -68,7 +68,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         grid = startGrid(GRID_CNT - 1);
 
-        grid.jcache(null);
+        grid.cache(null);
     }
 
     /** {@inheritDoc} */
@@ -184,7 +184,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteEx ignite = grid(rnd.nextInt(GRID_CNT));
 
-                    IgniteCache<Object, Object> cache = ignite.jcache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(null);
 
                     try (Transaction tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");

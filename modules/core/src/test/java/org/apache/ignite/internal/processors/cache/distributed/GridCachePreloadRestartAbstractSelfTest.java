@@ -250,7 +250,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         startGrids();
 
         try {
-            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -270,7 +270,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.jcache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 affinityAfterStart(c);
 

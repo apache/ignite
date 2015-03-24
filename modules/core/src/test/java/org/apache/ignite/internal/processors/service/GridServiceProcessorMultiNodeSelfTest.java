@@ -87,7 +87,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         final Integer affKey = 1;
 
         // Store a cache key.
-        g.jcache(CACHE_NAME).put(affKey, affKey.toString());
+        g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
         String name = "serviceAffinityUpdateTopology";
 

@@ -722,7 +722,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.jcache(null).get(key);
+            return (T) ignite.cache(null).get(key);
         }
     }
 

@@ -170,10 +170,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < 10; i++)
-                grid(1).jcache(null).put(i, i);
+                grid(1).cache(null).put(i, i);
 
             final Ignite igniteNearOnly = grid(0);
-            final IgniteCache<Object, Object> nearOnly = igniteNearOnly.jcache(null);
+            final IgniteCache<Object, Object> nearOnly = igniteNearOnly.cache(null);
 
             // Populate near cache.
             for (int i = 0; i < 10; i++) {

@@ -38,7 +38,7 @@ public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Ob
             @Override public Object execute() {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
 
-                ignite.jcache(null).put("key", new TestUserResource());
+                ignite.cache(null).put("key", new TestUserResource());
 
                 return null;
             }
