@@ -96,8 +96,11 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (sesHolder0 == null) {
                 ThreadLocalSession locSes = new ThreadLocalSession();
 
-                if (ctx.resource().injectStoreSession(cfgStore, locSes))
+                if (ctx.resource().injectStoreSession(cfgStore, locSes)) {
                     sesHolder0 = locSes.sesHolder;
+
+                    sesHolders.put(cfgStore, sesHolder0);
+                }
             }
         }
 
