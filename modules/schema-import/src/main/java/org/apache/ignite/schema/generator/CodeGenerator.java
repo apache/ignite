@@ -511,23 +511,13 @@ public class CodeGenerator {
             "CacheConfig", "CacheConfig");
 
         add1(src, "/** Configure cache. */");
-        add1(src, "public static CacheConfiguration cache(String name, final DataSource dataSource) {");
-        add2(src, "if (dataSource == null)");
-        add3(src, "throw new NullPointerException(\"Datasource cannot be null.\");");
+        add1(src, " public static CacheConfiguration cache(String name, Factory<CacheStore> factory) {");
+        add2(src, "if (factory == null)");
+        add3(src, " throw new IllegalArgumentException(\"Cache store factory cannot be null.\");");
         add0(src, "");
         add2(src, "CacheConfiguration ccfg = new CacheConfiguration(name);");
         add0(src, "");
-        add2(src, "ccfg.setCacheStoreFactory(new Factory<CacheStore>() {");
-        add3(src, "@Override public CacheStore create () {");
-        add4(src, "final CacheJdbcPojoStore store = new CacheJdbcPojoStore();");
-        add0(src, "");
-        add4(src, "store.setDataSource(dataSource);");
-        add0(src, "");
-        add4(src, "return store;");
-        add3(src, "}");
-        add2(src, "});");
-        add0(src, "");
-
+        add2(src, "ccfg.setCacheStoreFactory(factory);");
         add2(src, "ccfg.setReadThrough(true);");
         add2(src, "ccfg.setWriteThrough(true);");
         add0(src, "");
@@ -545,8 +535,8 @@ public class CodeGenerator {
             add2(src, (first ? "CacheTypeMetadata " : "") + "type = new CacheTypeMetadata();");
             add2(src, "type.setDatabaseSchema(\"" + pojo.schema() + "\");");
             add2(src, "type.setDatabaseTable(\"" + tbl + "\");");
-            add2(src, "type.setKeyType(\"" + pkg + "." + pojo.keyClassName() + "\");");
-            add2(src, "type.setValueType(\"" + pkg + "." + pojo.valueClassName() + "\");");
+            add2(src, "type.setKeyType(" + pojo.keyClassName() + ".class.getName());");
+            add2(src, "type.setValueType(" + pojo.valueClassName() + ".class.getName());");
             add0(src, "");
 
             add2(src, "meta.add(type);");
