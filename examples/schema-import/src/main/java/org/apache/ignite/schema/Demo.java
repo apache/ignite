@@ -113,7 +113,7 @@ public class Demo {
         // Read-through form database.
         p = cache.get(new PersonKey(4));
 
-        System.out.println("Loaded person from database: " + p);
+        System.out.println(">>> Loaded person from database: " + p);
     }
 
     /**
