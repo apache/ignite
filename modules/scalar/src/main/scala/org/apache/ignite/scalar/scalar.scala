@@ -264,7 +264,7 @@ object scalar extends ScalarConversions {
      * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
      * typed instance that cannot be used.
      */
-    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.jcache[K, V](null))
+    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.cache[K, V](null))
 
     /**
      * Gets named cache from default grid.
@@ -272,7 +272,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable cacheName: String): Option[IgniteCache[K, V]] =
-        Option(Ignition.ignite.jcache(cacheName))
+        Option(Ignition.ignite.cache(cacheName))
 
     /**
      * Creates cache cache with specified parameters in default grid.
@@ -298,7 +298,7 @@ object scalar extends ScalarConversions {
      */
     @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
         ignite$(gridName) match {
-            case Some(g) => Option(g.jcache(cacheName))
+            case Some(g) => Option(g.cache(cacheName))
             case None => None
         }
 

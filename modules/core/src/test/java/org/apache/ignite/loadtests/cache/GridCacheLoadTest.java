@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
@@ -100,7 +99,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private void memoryTest() {
         Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, byte[]> cache = ignite.jcache(null);
+        final IgniteCache<Integer, byte[]> cache = ignite.cache(null);
 
         assert cache != null;
 
@@ -150,7 +149,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
             if (LOAD)
                 test.loadTest(test.writeClos, test.readClos);
 
-            G.ignite().jcache(null).clear();
+            G.ignite().cache(null).clear();
 
             System.gc();
 

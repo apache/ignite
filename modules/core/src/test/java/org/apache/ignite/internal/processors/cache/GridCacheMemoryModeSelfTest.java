@@ -176,7 +176,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        CacheConfiguration cfg = g.jcache(null).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cfg = g.cache(null).getConfiguration(CacheConfiguration.class);
 
         assertEquals(memoryMode, cfg.getMemoryMode());
         assertEquals(0, cfg.getOffHeapMaxMemory());

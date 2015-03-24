@@ -112,7 +112,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             for (int i = 1; i < gridCount(); i++) {
                 if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals(key, grid(i).cache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             if (nearEnabled())
@@ -158,7 +158,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             if (F.eq(g.name(), nearOnlyGridName)) {
                 for (int k = 0; k < 10000; k++) {
-                    IgniteCache<Object, Object> cache = g.jcache(null);
+                    IgniteCache<Object, Object> cache = g.cache(null);
 
                     String key = "key" + k;
 
@@ -173,7 +173,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = ((IgniteKernal)g).cache(null);
+                    GridCache<Object, Object> cache = ((IgniteKernal)g).getCache(null);
 
                     String key = "key" + k;
 
@@ -196,7 +196,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> nearOnlyCache() {
         assert nearOnlyGridName != null;
 
-        return G.ignite(nearOnlyGridName).jcache(null);
+        return G.ignite(nearOnlyGridName).cache(null);
     }
 
     /**
@@ -205,7 +205,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
             if (!nearOnlyGridName.equals(grid(i).name()))
-                return grid(i).jcache(null);
+                return grid(i).cache(null);
         }
 
         assert false : "Cannot find DHT cache for this test.";

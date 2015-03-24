@@ -28,8 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.configuration.*;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -148,6 +146,6 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @return Cache.
      */
     private IgniteCache cacheForIndex(int idx) {
-        return grid(idx).jcache(CACHE_NAME);
+        return grid(idx).cache(CACHE_NAME);
     }
 }

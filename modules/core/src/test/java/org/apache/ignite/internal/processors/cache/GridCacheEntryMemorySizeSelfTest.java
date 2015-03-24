@@ -138,7 +138,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
@@ -162,7 +162,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));

@@ -54,7 +54,7 @@ public class Demo {
 
         // Start Ignite node.
         try (Ignite ignite = Ignition.start(cfg)) {
-            IgniteCache<PersonKey, Person> cache = ignite.jcache(CACHE_NAME);
+            IgniteCache<PersonKey, Person> cache = ignite.cache(CACHE_NAME);
 
             // Preload cache from database.
             preload(cache);

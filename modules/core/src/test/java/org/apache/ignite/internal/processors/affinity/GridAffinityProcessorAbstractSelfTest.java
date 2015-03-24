@@ -117,7 +117,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         assertEquals(NODES_CNT * 2, grid1.cluster().nodes().size());
         assertEquals(NODES_CNT * 2, grid2.cluster().nodes().size());
 
-        IgniteCache<Integer, Integer> cache = grid2.jcache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
 
         assertNotNull(cache);
 

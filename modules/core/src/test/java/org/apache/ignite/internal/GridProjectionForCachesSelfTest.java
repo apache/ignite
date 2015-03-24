@@ -101,8 +101,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         grid(1).createNearCache(CACHE_NAME, new NearCacheConfiguration());
 
-        grid(2).jcache(null);
-        grid(3).jcache(null);
+        grid(2).cache(null);
+        grid(3).cache(null);
     }
 
     /** {@inheritDoc} */

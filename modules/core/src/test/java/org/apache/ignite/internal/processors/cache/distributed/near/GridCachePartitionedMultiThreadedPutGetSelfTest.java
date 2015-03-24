@@ -103,7 +103,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).jcache(null).removeAll();
+            grid(0).cache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
             internalCache(i).clearLocally();
@@ -179,7 +179,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> c = grid(0).jcache(null);
+                IgniteCache<Integer, Integer> c = grid(0).cache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();

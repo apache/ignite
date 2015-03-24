@@ -50,7 +50,7 @@ public class GridBenchmarkCacheGetLoadTest {
     public static void main(String[] args) throws Exception {
         Ignition.start("modules/core/src/test/config/load/dsi-49-server-production.xml");
 
-        IgniteCache<Long, Long> cache = Ignition.ignite("dsi").jcache("PARTITIONED_CACHE");
+        IgniteCache<Long, Long> cache = Ignition.ignite("dsi").cache("PARTITIONED_CACHE");
 
         stats();
 

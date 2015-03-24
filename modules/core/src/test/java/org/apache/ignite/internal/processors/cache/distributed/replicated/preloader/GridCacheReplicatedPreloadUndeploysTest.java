@@ -49,7 +49,7 @@ public class GridCacheReplicatedPreloadUndeploysTest {
             for (int i = 0; i < cnt; i++) {
                 if (i % 200 == 0) {
                     if (map != null && !map.isEmpty()) {
-                        g.jcache("replicated").putAll(map);
+                        g.cache("replicated").putAll(map);
 
                         X.println(">>> Put entries count: " + i);
                     }
@@ -61,7 +61,7 @@ public class GridCacheReplicatedPreloadUndeploysTest {
             }
 
             if (map != null && !map.isEmpty()) {
-                g.jcache("replicated").putAll(map);
+                g.cache("replicated").putAll(map);
 
                 X.println(">>> Put entries count: " + cnt);
             }

@@ -60,7 +60,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     public void testStoreSessionTx() throws Exception {
         testTxPut(jcache(0), null, null);
 
-        testTxPut(ignite(0).jcache(CACHE_NAME1), null, null);
+        testTxPut(ignite(0).cache(CACHE_NAME1), null, null);
 
         testTxRemove(null, null);
 
@@ -249,9 +249,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @throws Exception If failed.
      */
     public void testSessionCrossCacheTx() throws Exception {
-        IgniteCache<Object, Object> cache0 = ignite(0).jcache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
 
-        IgniteCache<Object, Object> cache1 = ignite(0).jcache(CACHE_NAME1);
+        IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE_NAME1);
 
         Integer key1 = primaryKey(cache0);
         Integer key2 = primaryKeys(cache1, 1, key1 + 1).get(0);

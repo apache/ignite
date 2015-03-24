@@ -37,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -100,7 +99,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         final long nodeLifeTime = 2 * 1000;
         final int logFreq = 20;
 
-        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         assert cache != null;
 

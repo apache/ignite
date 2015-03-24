@@ -126,7 +126,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            IgniteCache<Object, Object> cache = g.jcache("first");
+            IgniteCache<Object, Object> cache = g.cache("first");
 
             // Put some data into cache.
             for (int i = 0; i < 1000; i++)

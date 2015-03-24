@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -202,7 +201,7 @@ public class GridCacheSwapLoadTest {
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> cache = g.jcache(null);
+                IgniteCache<Integer, Integer> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -234,7 +233,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    IgniteCache<Integer, Integer> cache = g.jcache(null);
+                    IgniteCache<Integer, Integer> cache = g.cache(null);
 
                     assert cache != null;
 
@@ -268,7 +267,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    IgniteCache<Integer, Integer> cache = g.jcache(null);
+                    IgniteCache<Integer, Integer> cache = g.cache(null);
 
                     assert cache != null;
 

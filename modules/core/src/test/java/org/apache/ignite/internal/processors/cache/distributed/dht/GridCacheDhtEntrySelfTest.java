@@ -36,7 +36,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -121,7 +120,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     private IgniteCache<Integer, String> near(Ignite g) {
-        return g.jcache(null);
+        return g.cache(null);
     }
 
     /**

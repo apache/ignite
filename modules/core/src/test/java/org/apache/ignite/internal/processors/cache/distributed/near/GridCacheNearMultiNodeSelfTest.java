@@ -319,11 +319,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             backup = grid(0);
         }
 
-        assertEquals(String.valueOf(key), backup.jcache(null).get(key));
+        assertEquals(String.valueOf(key), backup.cache(null).get(key));
 
-        primary.jcache(null).put(key, "a");
+        primary.cache(null).put(key, "a");
 
-        assertEquals("a", backup.jcache(null).get(key));
+        assertEquals("a", backup.cache(null).get(key));
     }
 
     /** @throws Exception If failed. */

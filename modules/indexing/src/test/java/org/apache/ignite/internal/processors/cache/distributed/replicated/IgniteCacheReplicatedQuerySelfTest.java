@@ -99,9 +99,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         ignite2 = grid(1);
         ignite3 = grid(2);
 
-        cache1 = ignite1.jcache(null);
-        cache2 = ignite2.jcache(null);
-        cache3 = ignite3.jcache(null);
+        cache1 = ignite1.cache(null);
+        cache2 = ignite2.cache(null);
+        cache3 = ignite3.cache(null);
     }
 
     /**
@@ -111,7 +111,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         try {
             Ignite g = startGrid("client");
 
-            IgniteCache<Integer, Integer> c = g.jcache(null);
+            IgniteCache<Integer, Integer> c = g.cache(null);
 
             for (int i = 0; i < 10; i++)
                 c.put(i, i);
@@ -304,7 +304,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If failed.
      */
     public void _testLostIterator() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+        IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
@@ -346,7 +346,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         try {
             Ignite g = startGrid();
 
-            IgniteCache<Integer, Integer> cache = g.jcache(null);
+            IgniteCache<Integer, Integer> cache = g.cache(null);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);

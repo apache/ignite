@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.*;
 
 /**
- * Implementation of {@link IgniteSshProcessor}.
+ * Try put failed exception.
  */
-public class IgniteSshProcessorImpl implements IgniteSshProcessor {
-    /** {@inheritDoc} */
-    @Override public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
-        return new IgniteNodeCallableImpl(spec, timeout);
-    }
+public class GridCacheTryPutFailedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 }
