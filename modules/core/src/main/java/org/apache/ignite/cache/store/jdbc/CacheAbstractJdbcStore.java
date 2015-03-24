@@ -317,10 +317,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         Transaction tx = ses.transaction();
 
-        Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
+        if (tx != null) {
+            Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN_PROP);
 
-        if (conn != null) {
-            assert tx != null;
+            assert conn != null;
 
             try {
                 if (commit)
