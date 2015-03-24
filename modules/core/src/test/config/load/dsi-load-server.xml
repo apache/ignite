@@ -57,7 +57,6 @@
                     <!--Eviction settings-->
                     <property name="evictSynchronizedConcurrencyLevel" value="4"/>
                     <property name="evictSynchronized" value="false"/>
-                    <property name="evictNearSynchronized" value="false"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
