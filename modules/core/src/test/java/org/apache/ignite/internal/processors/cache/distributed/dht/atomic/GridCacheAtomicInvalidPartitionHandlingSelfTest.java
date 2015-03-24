@@ -159,6 +159,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
         startGrids(gridCnt);
 
+        awaitPartitionMapExchange();
+
         try {
             final IgniteCache<Object, Object> cache = grid(0).cache(null);
 
