@@ -66,6 +66,9 @@ public class VisorIgfsConfiguration implements Serializable {
     /** Path for the secondary hadoop file system config. */
     private String secondaryHadoopFileSysCfgPath;
 
+    /** User name for the secondary hadoop file system config. */
+    private String secondaryHadoopFileSysUserName;
+
     /** IGFS instance mode. */
     private IgfsMode dfltMode;
 
@@ -140,6 +143,7 @@ public class VisorIgfsConfiguration implements Serializable {
 
             cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
             cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
+            cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
         }
 
         cfg.dfltMode = igfs.getDefaultMode();
@@ -246,6 +250,13 @@ public class VisorIgfsConfiguration implements Serializable {
      */
     @Nullable public String secondaryHadoopFileSystemUri() {
         return secondaryHadoopFileSysUri;
+    }
+
+    /**
+     * @return User name of the secondary Hadoop file system.
+     */
+    @Nullable public String secondaryHadoopFileSystemUserName() {
+        return secondaryHadoopFileSysUserName;
     }
 
     /**

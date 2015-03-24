@@ -731,4 +731,57 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         return null;
     }
+
+    /**
+     * @param key Key.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> nearCache(Integer key) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        CacheAffinity<Integer> aff = allGrids.get(0).affinity(null);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        for (Ignite ignite : allGrids) {
+            if (!nodes.contains(ignite.cluster().localNode()))
+                return ignite.cache(null);
+        }
+
+        fail();
+
+        return null;
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
+        return primaryNode(key, null).cache(null);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instance which has primary cache for given key.
+     */
+    protected Ignite primaryNode(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        CacheAffinity<Object> aff = ignite.affinity(cacheName);
+
+        ClusterNode node = aff.mapKeyToNode(key);
+
+        assertNotNull("There are no cache affinity nodes", node);
+
+        return grid(node);
+    }
 }
