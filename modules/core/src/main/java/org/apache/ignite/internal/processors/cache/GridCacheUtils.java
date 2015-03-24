@@ -1532,7 +1532,9 @@ public class GridCacheUtils {
         return cacheId(UTILITY_CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Cache ID
+     */
     public static int cacheId(String cacheName) {
         if (cacheName != null) {
             int hash = cacheName.hashCode();
