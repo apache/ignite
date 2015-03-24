@@ -381,40 +381,7 @@
                                     <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
-        <profile>
-            <id>benchmarks</id>
-            <modules>
-                <module>modules/yardstick</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>scala</id>
-
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <modules>
-                <module>modules/scalar</module>
-                <module>modules/visor-console</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-                        <executions>
                             <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>prepare-package</phase>
@@ -452,6 +419,27 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>benchmarks</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>scala</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <modules>
+                <module>modules/scalar</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
         </profile>
     </profiles>
 </project>
