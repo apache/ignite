@@ -415,7 +415,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param keys Keys to clear.
      */
-    public void localClearAll(Set<K> keys);
+    public void localClearAll(Set<? extends K> keys);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported

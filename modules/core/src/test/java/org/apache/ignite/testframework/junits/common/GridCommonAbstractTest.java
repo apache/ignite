@@ -104,22 +104,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param idx Grid index.
-     * @param cacheName Cache name.
-     * @return Cache.
-     */
-    protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).getCache(cacheName);
-    }
-
-    /**
-     * @return Cache.
-     */
-    protected <K, V> GridCache<K, V> internalCache() {
-        return ((IgniteKernal)grid()).getCache(null);
-    }
-
-    /**
      * @param cache Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
@@ -544,7 +528,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> primaryCache(Object key, @Nullable String cacheName) {
-        ClusterNode node = internalCache(0, cacheName).affinity().mapKeyToNode(key);
+        ClusterNode node = grid(0).affinity(cacheName).mapKeyToNode(key);
 
         assertNotNull(node);
 

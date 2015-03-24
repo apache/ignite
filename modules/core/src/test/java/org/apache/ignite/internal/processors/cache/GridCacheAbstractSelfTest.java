@@ -119,31 +119,23 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
-                                    GridCache<Object, Object> cache = internalCache(fi);
+                                    IgniteCache<Object, Object> cache = grid(fi).cache(null);
 
                                     // Fix for tests where mapping was removed at primary node
                                     // but was not removed at others.
                                     // removeAll() removes mapping only when it presents at a primary node.
                                     // To remove all mappings used force remove by key.
                                     if (cache.size() > 0) {
-                                        for (Object k : cache.keySet())
-                                            cache.remove(k);
+                                        for (Cache.Entry<Object, Object> k : cache.localEntries())
+                                            cache.remove(k.getKey());
                                     }
 
                                     if (offheapTiered(cache)) {
-                                        Iterator it = cache.offHeapIterator();
-
-                                        while (it.hasNext()) {
-                                            it.next();
-
-                                            it.remove();
-                                        }
-
-                                        if (cache.offHeapIterator().hasNext())
-                                            return false;
+                                        for (Cache.Entry<Object, Object> e : cache.localEntries(CachePeekMode.OFFHEAP))
+                                            cache.remove(e.getKey());
                                     }
 
-                                    return cache.isEmpty();
+                                    return cache.localSize() == 0;
                                 }
                             },
                             getTestTimeout()));
