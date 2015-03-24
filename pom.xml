@@ -284,6 +284,11 @@
                                             </fileset>
                                         </replaceregexp>
 
+                                        <replaceregexp file="${basedir}/target/release-package/examples/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
+
                                         <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}" filemode="755">
                                                 <include name="**/*.sh" />
