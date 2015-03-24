@@ -120,6 +120,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
         // suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class); TODO Ignite-257.
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
+        suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
+        suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
