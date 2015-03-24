@@ -613,8 +613,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
         throws CacheLoaderException {
+        ExecutorService pool = null;
+
         try {
-            ExecutorService pool = Executors.newFixedThreadPool(maxPoolSz);
+            pool = Executors.newFixedThreadPool(maxPoolSz);
 
             Collection<Future<?>> futs = new ArrayList<>();
 
@@ -699,6 +701,9 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         }
         catch (IgniteCheckedException e) {
             throw new CacheLoaderException("Failed to load cache", e.getCause());
+        }
+        finally {
+            U.shutdownNow(getClass(), pool, log);
         }
     }
 
