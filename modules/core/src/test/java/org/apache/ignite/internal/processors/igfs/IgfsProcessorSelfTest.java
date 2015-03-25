@@ -683,8 +683,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        GridCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
-        IgniteCache<IgfsBlockKey, byte[]> dataCache = grid(0).cache(DATA_CACHE_NAME);
+        GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
+        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(DATA_CACHE_NAME);
 
         IgfsFileInfo info = metaCache.get(fileId);
 
