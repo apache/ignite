@@ -3157,12 +3157,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             return val0;
         }
 
-        GridCacheSwapEntry swapEntry = cctx.swap().read(key, true, true);
-
-        if (swapEntry == null)
-            return null;
-
-        return swapEntry.value();
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -3721,8 +3716,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /**
-     * This method will return current value only if clearIndex(V) will require previous value (this is the case
-     * for Mongo caches). If previous value is not required, this method will return {@code null}.
+     * This method will return current value only if clearIndex(V) will require previous value.
+     * If previous value is not required, this method will return {@code null}.
      *
      * @return Previous value or {@code null}.
      * @throws IgniteCheckedException If failed to retrieve previous value.
@@ -3733,7 +3728,18 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (cctx.queries() == null)
             return null;
 
-        return rawGetOrUnmarshalUnlocked(false);
+        CacheObject val = rawGetOrUnmarshalUnlocked(false);
+
+        if (val == null) {
+            GridCacheSwapEntry swapEntry = cctx.swap().read(key, true, true);
+
+            if (swapEntry == null)
+                return null;
+
+            return swapEntry.value();
+        }
+
+        return val;
     }
 
     /** {@inheritDoc} */
