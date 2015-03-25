@@ -120,6 +120,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
+                                    if (jcache(fi).size() > 0) {
+                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
+                                            jcache(fi).remove(k.getKey());
+                                    }
+
                                     return jcache(fi).localSize() == 0;
                                 }
                             },
