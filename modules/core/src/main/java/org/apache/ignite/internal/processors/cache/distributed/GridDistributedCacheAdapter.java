@@ -291,7 +291,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
                     for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
-                        if (!locPart.isEmpty() && locPart.primary(topVer)) {
+                        if (!locPart.isEmpty()) {
                             for (GridDhtCacheEntry o : locPart.entries())
                                 dataLdr.removeDataInternal(o.key());
                         }
