@@ -261,7 +261,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                             v = syncValue();
                         }
 
-                        if (++loops == 1000)
+                        if (++loops == 1000_000)
                             throw new IllegalStateException("Failed to get value for key: " + k);
                     }
                     catch (IgniteCheckedException e) {
