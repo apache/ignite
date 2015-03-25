@@ -436,17 +436,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @param cache Cache.
      * @param val Value.
-     * @return {@code True} if cache contains given value.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsValue(GridCache cache, Object val) throws Exception {
-        return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param val Value.
      * @return {@code True} if offheap contains given value.
      * @throws Exception If failed.
      */
