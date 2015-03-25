@@ -1108,7 +1108,7 @@ public class IgniteTxHandler {
                         boolean prepared = f.get();
 
                         sendCheckPrepareTxResponse(nodeId,
-                            new GridCacheOptimisticCheckPreparedTxResponse<K, V>(
+                            new GridCacheOptimisticCheckPreparedTxResponse(
                                 req.version(),
                                 req.futureId(),
                                 req.miniId(),
@@ -1121,7 +1121,7 @@ public class IgniteTxHandler {
                             "(will send rolled back response): " + req.nearXidVersion(), e);
 
                         sendCheckPrepareTxResponse(nodeId,
-                            new GridCacheOptimisticCheckPreparedTxResponse<K, V>(
+                            new GridCacheOptimisticCheckPreparedTxResponse(
                                 req.version(),
                                 req.futureId(),
                                 req.miniId(),

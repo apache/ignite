@@ -1711,10 +1711,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Future.
      */
     public IgniteInternalFuture<Boolean> nearTxCommitted(GridCacheVersion nearVer) {
-        for (final IgniteInternalTx<K, V> tx : txs()) {
+        for (final IgniteInternalTx tx : txs()) {
             if (tx.near() && tx.xidVersion().equals(nearVer)) {
                 return tx.done() ?
-                    new GridFinishedFutureEx<>(tx.state() == COMMITTED) :
+                    new GridFinishedFuture<>(tx.state() == COMMITTED) :
                     tx.finishFuture().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, Boolean>() {
                         @Override public Boolean apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             return tx.state() == COMMITTED;
@@ -1726,7 +1726,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         // Transaction was not found. Check committed versions buffer.
         Boolean res = completedVers.get(nearVer);
 
-        return new GridFinishedFutureEx<>(res != null && res);
+        return new GridFinishedFuture<>(res != null && res);
     }
 
     /**

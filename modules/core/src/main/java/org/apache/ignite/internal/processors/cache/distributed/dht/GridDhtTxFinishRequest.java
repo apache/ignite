@@ -224,13 +224,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.checkCommitted = checkCommitted;
     }
 
-    /**
-     * @return Topology version.
-     */
-    @Override public long topologyVersion() {
-        return topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishRequest.class, this, super.toString());

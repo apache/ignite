@@ -635,8 +635,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     return ret;
                 }
-            },
-            cctx.kernalContext());
+            });
     }
 
     /** {@inheritDoc} */

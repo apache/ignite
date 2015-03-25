@@ -341,7 +341,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 24:
+            case 20:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
@@ -367,12 +367,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
             case 24:
                 if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();

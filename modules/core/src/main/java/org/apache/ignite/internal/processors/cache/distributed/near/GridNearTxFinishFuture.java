@@ -211,7 +211,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
         if (!isDone())
             for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
@@ -363,7 +363,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 UUID backupId = F.first(backups);
 
-                ClusterNode backup = ctx.discovery().node(backupId);
+                ClusterNode backup = cctx.discovery().node(backupId);
 
                 // Nothing to do if backup has left the grid.
                 if (backup == null)
@@ -373,7 +373,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 add(mini);
 
-                GridDhtTxFinishRequest<K, V> finishReq = new GridDhtTxFinishRequest<>(
+                GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
                     cctx.localNodeId(),
                     futureId(),
                     mini.futureId(),
@@ -385,6 +385,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     true,
                     false,
                     tx.system(),
+                    tx.ioPolicy(),
                     false,
                     true,
                     true,
@@ -547,8 +548,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param backup Backup to check.
          */
         MiniFuture(ClusterNode backup) {
-            super(cctx.kernalContext());
-
             this.backup = backup;
         }
 
@@ -612,7 +611,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param res Response.
          */
-        void onResult(GridDhtTxFinishResponse<K, V> res) {
+        void onResult(GridDhtTxFinishResponse res) {
             assert backup != null;
 
             if (res.checkCommittedError() != null)

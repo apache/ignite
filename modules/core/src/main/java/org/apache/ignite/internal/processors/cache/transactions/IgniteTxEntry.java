@@ -79,7 +79,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transient field for calculated entry processor value. */
-    private V entryProcessorCalcVal;
+    private CacheObject entryProcessorCalcVal;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -881,13 +881,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 6:
-                grpLock = reader.readBoolean("grpLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 7:
                 key = reader.readMessage("key");
 
