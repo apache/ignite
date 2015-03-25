@@ -140,7 +140,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
-            lostParts.add(((CacheEvent)evt).partition());
+            lostParts.add(((CacheRebalancingEvent)evt).partition());
 
             return true;
         }

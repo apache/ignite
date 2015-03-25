@@ -1042,9 +1042,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                     top.own(part);
 
                     if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                        cctx.events().addEvent(p, null, cctx.localNodeId(), (IgniteUuid)null,
-                            null, EVT_CACHE_REBALANCE_PART_DATA_LOST, null, false, null,
-                            false, null, null, null);
+                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                        cctx.events().addPreloadEvent(p, EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                            discoEvt.type(), discoEvt.timestamp());
                     }
 
                     if (log.isDebugEnabled())

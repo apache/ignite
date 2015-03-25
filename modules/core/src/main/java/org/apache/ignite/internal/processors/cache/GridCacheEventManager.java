@@ -240,8 +240,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         @Nullable String cloClsName,
         @Nullable String taskName
     ) {
-        assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED
-            || type == EVT_CACHE_REBALANCE_PART_DATA_LOST;
+        assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
