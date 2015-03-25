@@ -207,7 +207,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
                 jcache(i).localEvict(Collections.singleton("key"));
 
-                assert jcache(i).localPeek("key") == null;
+                assert jcache(i).localPeek("key", ONHEAP) == null;
 
                 assert jcache(i).get("key") == 1;
 
