@@ -80,7 +80,7 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        cache = grid(0).jcache(null);
+        cache = grid(0).cache(null);
     }
 
     /** {@inheritDoc} */
