@@ -73,16 +73,14 @@ public class CacheQueryExample {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
-            CacheConfiguration<?, ?> orgCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<?, ?> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            orgCacheCfg.setName(ORG_CACHE);
             orgCacheCfg.setIndexedTypes(UUID.class, Organization.class);
 
-            CacheConfiguration<?, ?> personCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<?, ?> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            personCacheCfg.setName(PERSON_CACHE);
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
