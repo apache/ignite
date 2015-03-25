@@ -131,7 +131,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                assertEquals(cnt, grid(i).cache(null).size());
+                assertEquals(cnt, internalCache(i).size());
                 assertEquals(0, near(i).nearSize());
             }
         }
@@ -164,7 +164,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                final IgniteCache cache = grid(i).cache(null);
+                final GridCache cache = internalCache(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {

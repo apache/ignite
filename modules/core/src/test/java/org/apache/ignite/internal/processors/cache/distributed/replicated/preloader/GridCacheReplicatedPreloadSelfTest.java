@@ -449,7 +449,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 grid(0).cache(null).putAll(map);
 
             for (int gridIdx = 0; gridIdx < gridCnt; gridIdx++) {
-                assert grid(gridIdx).cache(null).size() == cnt : "Actual size: " + grid(gridIdx).cache(null).size();
+                assert grid(gridIdx).cache(null).localSize() == cnt : "Actual size: " + grid(gridIdx).cache(null).localSize();
 
                 info("Cache size is OK for grid index: " + gridIdx);
             }

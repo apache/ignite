@@ -336,23 +336,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index of grid.
-     * @return Cache instance casted to work with string and integer types for convenience.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Override protected GridCache<String, Integer> cache(int idx) {
-        return ((IgniteKernal)grid(idx)).getCache(null);
-    }
-
-    /**
-     * @return Default cache instance casted to work with string and integer types for convenience.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Override protected GridCache<String, Integer> cache() {
-        return cache(0);
-    }
-
-    /**
      * @return Default cache instance.
      */
     @SuppressWarnings({"unchecked"})
@@ -397,14 +380,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
      */
-    protected boolean offheapTiered(GridCache cache) {
-        return cache.configuration().getMemoryMode() == OFFHEAP_TIERED;
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
-     */
     protected <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
         return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
     }
@@ -431,24 +406,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected boolean containsKey(IgniteCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param val Value.
-     * @return {@code True} if offheap contains given value.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsOffheapValue(GridCache cache, Object val) throws Exception {
-        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
-            Map.Entry e = it.next();
-
-            if (val.equals(e.getValue()))
-                return true;
-        }
-
-        return false;
     }
 
     /**

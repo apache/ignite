@@ -80,7 +80,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
 
         for (int i = 0; i < gridCount(); i++)
-            cache(i, null).clearLocally();
+            jcache(i, null).localClearAll(keySet(jcache(i, null)));
     }
 
     /** {@inheritDoc} */

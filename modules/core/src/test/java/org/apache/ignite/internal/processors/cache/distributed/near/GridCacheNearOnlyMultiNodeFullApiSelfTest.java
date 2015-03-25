@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -125,13 +126,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 return !F.eq(G.ignite(n.id()).name(), grid(nearIdx).name());
             }
         });
-    }
-
-    /**
-     * @return For the purpose of this test returns the near-only instance.
-     */
-    @Override protected GridCache<String, Integer> cache() {
-        return cache(nearIdx);
     }
 
     /**

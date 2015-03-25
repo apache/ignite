@@ -153,9 +153,9 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
      * @throws Exception if failed.
      */
     public void testRebuildIndexes() throws Exception {
-        cache().queries().rebuildIndexes(ArrayList.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(ArrayList.class).get();
 
-        cache().queries().rebuildAllIndexes().get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildAllIndexes().get();
 
         IgniteCache<Integer, TestValue1> cache1 = grid(0).cache(null);
         IgniteCache<Integer, TestValue2> cache2 = grid(0).cache(null);
@@ -186,8 +186,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
             cache2.remove(ENTRY_CNT * 2 + i);
         }
 
-        cache().queries().rebuildIndexes(TestValue1.class).get();
-        cache().queries().rebuildIndexes(TestValue2.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue1.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue2.class).get();
 
         assertEquals(1, cache1.query(qry1).getAll().size());
         assertEquals(1, cache1.query(qry2).getAll().size());
@@ -195,7 +195,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         assertEquals(1, cache2.query(qry4).getAll().size());
         assertEquals(1, cache2.query(qry5).getAll().size());
 
-        cache().queries().rebuildAllIndexes().get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildAllIndexes().get();
 
         assertEquals(1, cache1.query(qry1).getAll().size());
         assertEquals(1, cache1.query(qry2).getAll().size());
