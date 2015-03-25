@@ -33,7 +33,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
@@ -54,7 +53,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     private EvictionFilter filter;
 
     /** Policy. */
-    private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
+    private EvictionPolicy<Object, Object> plc = new EvictionPolicy<Object, Object>() {
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             assert !(entry.getValue() instanceof Integer);
         }
@@ -67,16 +66,22 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-        cc.setEvictionPolicy(plc);
-        cc.setNearEvictionPolicy(plc);
+        cc.setEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
         cc.setEvictSynchronized(false);
-        cc.setEvictNearSynchronized(false);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionFilter(filter);
+        cc.setEvictionFilter(notSerializableProxy(filter, org.apache.ignite.cache.eviction.EvictionFilter.class));
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
+
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
+
+            cc.setNearConfiguration(nearCfg);
+        }
+        else
+            cc.setNearConfiguration(null);
 
         if (mode == PARTITIONED)
             cc.setBackups(1);
@@ -132,7 +137,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            IgniteCache<Object, Object> c = g.jcache(null);
+            IgniteCache<Object, Object> c = g.cache(null);
 
             int cnt = 1;
 
@@ -187,7 +192,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        IgniteCache<Object, Object> cache = g.jcache(null);
+        IgniteCache<Object, Object> cache = g.cache(null);
 
         try {
             int id = 1;
@@ -213,7 +218,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final class EvictionFilter implements CacheEvictionFilter<Object, Object> {
+    private final class EvictionFilter implements org.apache.ignite.cache.eviction.EvictionFilter<Object, Object> {
         /** */
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 

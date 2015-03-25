@@ -117,7 +117,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(BACKUP_CNT);
@@ -175,7 +174,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             ids[i] = ignites[i].cluster().localNode().id();
 
-            caches[i] = ignites[i].jcache(CACHE_NAME);
+            caches[i] = ignites[i].cache(CACHE_NAME);
 
             ignites[i].events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -242,7 +241,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean primary(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
+        Affinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isPrimary(grid(gridIdx).cluster().localNode(), key);
     }
@@ -253,7 +252,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if grid is primary for given key.
      */
     private boolean backup(int gridIdx, Object key) {
-        CacheAffinity<Object> aff = grid(0).affinity(CACHE_NAME);
+        Affinity<Object> aff = grid(0).affinity(CACHE_NAME);
 
         return aff.isBackup(grid(gridIdx).cluster().localNode(), key);
     }

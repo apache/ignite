@@ -22,24 +22,24 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link org.apache.ignite.cache.jta.CacheTmLookup}.
+ * Test for {@link LifecycleAware} support for {@link CacheTmLookup}.
  */
 public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private CacheDistributionMode distroMode;
+    private boolean near;
 
     /**
      */
@@ -68,7 +68,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         ccfg.setCacheMode(PARTITIONED);
 
-        ccfg.setDistributionMode(distroMode);
+        ccfg.setNearConfiguration(near ? new NearCacheConfiguration() : null);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -93,8 +93,8 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /** {@inheritDoc} */
     @Override public void testLifecycleAware() throws Exception {
-        for (CacheDistributionMode mode : new CacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
-            distroMode = mode;
+        for (boolean nearEnabled : new boolean[] {true, false}) {
+            near = nearEnabled;
 
             super.testLifecycleAware();
         }

@@ -27,7 +27,6 @@ import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -58,7 +57,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg0.setCacheStoreFactory(singletonFactory(store));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
@@ -67,7 +66,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg1.setCacheStoreFactory(singletonFactory(store));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
@@ -104,11 +103,11 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     public void testStoreSession() throws Exception {
         assertNull(jcache(0).getName());
 
-        assertEquals(CACHE_NAME1, ignite(0).jcache(CACHE_NAME1).getName());
+        assertEquals(CACHE_NAME1, ignite(0).cache(CACHE_NAME1).getName());
 
         testStoreSession(jcache(0));
 
-        testStoreSession(ignite(0).jcache(CACHE_NAME1));
+        testStoreSession(ignite(0).cache(CACHE_NAME1));
     }
 
     /**
@@ -254,9 +253,11 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-            log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
+            if (session().isWithinTransaction()) {
+                log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
 
-            checkSession("sessionEnd");
+                checkSession("sessionEnd");
+            }
         }
 
         /** {@inheritDoc} */

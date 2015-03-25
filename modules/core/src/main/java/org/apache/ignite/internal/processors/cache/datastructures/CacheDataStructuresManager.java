@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -28,8 +29,8 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import java.io.*;
@@ -359,7 +360,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
+    private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -410,7 +411,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         if (!cctx.isLocal()) {
             while (true) {
-                long topVer = cctx.topologyVersionFuture().get();
+                AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
                 Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
 
@@ -448,14 +449,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         throw e;
                 }
 
-                if (cctx.topologyVersionFuture().get() == topVer)
+                if (topVer.equals(cctx.topologyVersionFuture().get()))
                     break;
             }
         }
         else {
             blockSet(id);
 
-            cctx.dataStructures().removeSetData(id, 0);
+            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
         }
     }
 
@@ -531,7 +532,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * Predicate for queue continuous query.
      */
-    private static class QueueHeaderPredicate<K, V> implements CacheEntryEventFilter<K, V>,
+    private static class QueueHeaderPredicate<K, V> implements CacheEntryEventSerializableFilter<K, V>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -643,7 +644,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         private IgniteUuid setId;
 
         /** */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * Required by {@link Externalizable}.
@@ -657,7 +658,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, long topVer) {
+        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;
@@ -689,14 +690,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             U.writeGridUuid(out, setId);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             setId = U.readGridUuid(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
 
         /** {@inheritDoc} */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -32,8 +33,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -143,7 +144,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @Nullable protected abstract IgniteInternalFuture<Boolean> addReader(long msgId,
         GridDhtCacheEntry cached,
         IgniteTxEntry entry,
-        long topVer);
+        AffinityTopologyVersion topVer);
 
     /**
      * @param commit Commit flag.
@@ -507,6 +508,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean onePhaseCommit,
         long msgId,
         final boolean read,
+        final boolean needRetVal,
         long accessTtl
     ) {
         try {
@@ -528,7 +530,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         try {
             Set<KeyCacheObject> skipped = null;
 
-            long topVer = topologyVersion();
+            AffinityTopologyVersion topVer = topologyVersion();
 
             GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
@@ -588,7 +590,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
 
-            return obtainLockAsync(cacheCtx, ret, passedKeys, read, skipped, accessTtl, null);
+            return obtainLockAsync(cacheCtx, ret, passedKeys, read, needRetVal, skipped, accessTtl, null);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -612,6 +614,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         GridCacheReturn ret,
         final Collection<KeyCacheObject> passedKeys,
         final boolean read,
+        final boolean needRetVal,
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter) {
@@ -629,7 +632,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             this,
             isInvalidate(),
             read,
-            /*retval*/false,
+            needRetVal,
             isolation,
             accessTtl,
             CU.empty0());

@@ -101,6 +101,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).jcache(null);
+        return grid(0).cache(null);
     }
 }

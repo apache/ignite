@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -57,10 +56,9 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(REPLICATED);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
-        ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 100));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -80,9 +78,9 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     public void testTxNoWrite() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.jcache(null);
+        IgniteCache<Integer, Object> cache0 = ignite0.cache(null);
 
         for (int i = 0; i < 1000; i++)
             cache0.put(i + 10000, new byte[1024]);

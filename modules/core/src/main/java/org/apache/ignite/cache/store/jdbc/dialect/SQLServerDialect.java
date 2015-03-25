@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 /**
- * A dialect compatible with the MsSQL database.
+ * A dialect compatible with the Microsoft SQL Server database.
  */
 public class SQLServerDialect extends BasicJdbcDialect {
     /** {@inheritDoc} */

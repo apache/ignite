@@ -18,7 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -29,14 +32,14 @@ import java.util.*;
  * example is to provide the simplest code example of this logic.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public final class CacheAffinityExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheAffinityExample.class.getSimpleName();
 
     /** Number of keys. */
     private static final int KEY_CNT = 20;
@@ -48,23 +51,25 @@ public final class CacheAffinityExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
-            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            // Clean up caches on all nodes before run.
-            cache.clear();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
 
-            for (int i = 0; i < KEY_CNT; i++)
-                cache.put(i, Integer.toString(i));
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+                for (int i = 0; i < KEY_CNT; i++)
+                    cache.put(i, Integer.toString(i));
 
-            // Co-locates jobs with data using IgniteCompute.affinityRun(...) method.
-            visitUsingAffinityRun();
+                // Co-locates jobs with data using IgniteCompute.affinityRun(...) method.
+                visitUsingAffinityRun();
 
-            // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
-            visitUsingMapKeysToNodes();
+                // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
+                visitUsingMapKeysToNodes();
+            }
         }
     }
 
@@ -75,7 +80,7 @@ public final class CacheAffinityExample {
     private static void visitUsingAffinityRun() {
         Ignite ignite = Ignition.ignite();
 
-        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -118,7 +123,7 @@ public final class CacheAffinityExample {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
                 ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+                        IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.

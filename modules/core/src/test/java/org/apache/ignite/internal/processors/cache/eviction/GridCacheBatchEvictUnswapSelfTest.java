@@ -27,11 +27,8 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Swap benchmark.
@@ -88,15 +85,15 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
             }
         };
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(singletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
 
-        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
+        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(EVICT_PLC_SIZE));
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setEvictSynchronized(false);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
 
         return cacheCfg;
     }
@@ -119,7 +116,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();
 
-        final IgniteCache<Object, Object> cache = g.jcache(null);
+        final IgniteCache<Object, Object> cache = g.cache(null);
 
         cache.loadCache(null, 0);
 

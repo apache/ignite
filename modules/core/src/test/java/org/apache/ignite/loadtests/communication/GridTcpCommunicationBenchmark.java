@@ -151,7 +151,7 @@ package org.apache.ignite.loadtests.communication;
 //        info("Messages: " + CONCUR_MSGS);
 //
 //        final Semaphore sem = new Semaphore(CONCUR_MSGS);
-//        final LongAdder msgCntr = new LongAdder();
+//        final LongAdder8 msgCntr = new LongAdder8();
 //
 //        rcvComm.setListener(new GridCommunicationListener() {
 //            @Override public void onMessage(UUID nodeId, byte[] msg, GridAbsClosure msgC) {
@@ -262,7 +262,7 @@ package org.apache.ignite.loadtests.communication;
 //
 //        info("Test string length: " + testStr.length());
 //
-//        final LongAdder msgCntr = new LongAdder();
+//        final LongAdder8 msgCntr = new LongAdder8();
 //
 //        final Map<GridUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
 //
@@ -392,7 +392,7 @@ package org.apache.ignite.loadtests.communication;
 //        info("Messages: " + CONCUR_MSGS);
 //
 //        final Semaphore sem = new Semaphore(CONCUR_MSGS);
-//        final LongAdder msgCntr = new LongAdder();
+//        final LongAdder8 msgCntr = new LongAdder8();
 //
 //        final Map<GridUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
 //

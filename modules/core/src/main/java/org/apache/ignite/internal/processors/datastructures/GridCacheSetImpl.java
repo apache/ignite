@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
@@ -421,7 +422,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @throws IgniteCheckedException If all cache nodes left grid.
      */
     @SuppressWarnings("unchecked")
-    private Collection<ClusterNode> dataNodes(long topVer) throws IgniteCheckedException {
+    private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (ctx.isLocal() || ctx.isReplicated())
             return Collections.singleton(ctx.localNode());
 
@@ -570,7 +571,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         /**
          * @return Item affinity key.
          */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         public Object affinityKey() {
             return setName;
         }

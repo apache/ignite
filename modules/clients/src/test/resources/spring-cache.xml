@@ -66,7 +66,9 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>

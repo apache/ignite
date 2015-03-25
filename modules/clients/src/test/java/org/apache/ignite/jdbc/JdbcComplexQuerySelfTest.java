@@ -31,7 +31,6 @@ import java.io.*;
 import java.sql.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -57,12 +56,8 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setDistributionMode(NEAR_PARTITIONED);
         cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setIndexedTypes(
-            String.class, Organization.class,
-            CacheAffinityKey.class, Person.class
-        );
+        cache.setIndexedTypes(String.class, Organization.class, AffinityKey.class, Person.class);
 
         cfg.setCacheConfiguration(cache);
 
@@ -81,20 +76,20 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(3);
 
-        IgniteCache<String, Organization> orgCache = grid(0).jcache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).jcache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        personCache.put(new CacheAffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
-        personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
-        personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }

@@ -32,7 +32,6 @@ import org.apache.ignite.transactions.*;
 import org.apache.log4j.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -66,7 +65,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -103,7 +101,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            IgniteCache<Integer, String> c = g.jcache(null);
+            IgniteCache<Integer, String> c = g.cache(null);
 
             c.removeAll();
 
@@ -222,7 +220,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
         IgniteEx ignite = grid(0);
-        IgniteCache<Integer, String> cache = ignite.jcache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(null);
 
         Integer key = 1;
 
@@ -237,7 +235,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug()) {
                 info("Started transaction.");
 
-                CacheAffinity<Integer> aff = affinity(cache);
+                Affinity<Integer> aff = affinity(cache);
 
                 int part = aff.partition(key);
 

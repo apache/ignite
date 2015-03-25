@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.*;
@@ -31,8 +32,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -71,7 +72,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
     /** Pending affinity assignment futures. */
-    private ConcurrentMap<Long, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
+    private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
         new ConcurrentHashMap8<>();
 
     /** Discovery listener. */
@@ -277,7 +278,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to add.
      */
-    public void addDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture fut) {
+    public void addDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
         GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
 
         assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
@@ -287,7 +288,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param topVer Requested topology version.
      * @param fut Future to remove.
      */
-    public void removeDhtAssignmentFetchFuture(long topVer, GridDhtAssignmentFetchFuture fut) {
+    public void removeDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
         boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
 
         assert rmv : "Failed to remove assignment fetch future: " + topVer;
@@ -349,7 +350,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             for (KeyCacheObject k : msg.keys()) {
                 int p = cctx.affinity().partition(k);
 
-                GridDhtLocalPartition locPart = top.localPartition(p, -1, false);
+                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 // If this node is no longer an owner.
                 if (locPart == null && !top.owners(p).contains(loc))
@@ -424,13 +425,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      */
     private void processAffinityAssignmentRequest(final ClusterNode node,
         final GridDhtAffinityAssignmentRequest req) {
-        final long topVer = req.topologyVersion();
+        final AffinityTopologyVersion topVer = req.topologyVersion();
 
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<Long>>() {
-            @Override public void apply(IgniteInternalFuture<Long> fut) {
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
@@ -489,7 +490,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @return Future for request.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, long topVer) {
+    @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);

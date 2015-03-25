@@ -73,7 +73,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
 
             for (GridCache c : ignite.cachesx()) {
                 String cacheName = c.name();
-                CacheAffinity<Object> aff = g.affinity(c.name());
+                Affinity<Object> aff = g.affinity(c.name());
 
                 if (names.contains(cacheName)) {
                     Set<Cache.Entry> entries = c.entrySet();

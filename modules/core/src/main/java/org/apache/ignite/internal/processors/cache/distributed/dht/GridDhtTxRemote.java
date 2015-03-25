@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -27,8 +28,8 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -86,7 +87,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         IgniteUuid rmtFutId,
         UUID nodeId,
         long rmtThreadId,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
@@ -147,7 +148,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         UUID nodeId,
         GridCacheVersion nearXidVer,
         long rmtThreadId,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
@@ -222,7 +223,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateNearCache(GridCacheContext cacheCtx, KeyCacheObject key, long topVer) {
+    @Override protected boolean updateNearCache(GridCacheContext cacheCtx, KeyCacheObject key, AffinityTopologyVersion topVer) {
         if (!cacheCtx.isDht() || !isNearEnabled(cacheCtx) || cctx.localNodeId().equals(nearNodeId))
             return false;
 

@@ -31,7 +31,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**
@@ -111,9 +110,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         ccfg.setInterceptor(interceptor);
 
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setDistributionMode(distributionMode());
         ccfg.setCacheMode(cacheMode());
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
 
         return ccfg;
     }
@@ -125,7 +123,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testInterceptor() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
+        IgniteCache<TestKey, TestValue> cache = grid(0).cache(null);
 
         for (int i = 0; i < ITER_CNT; i++) {
             final TestValue val = new TestValue(i);
@@ -210,7 +208,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testInvokeAndInterceptor() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
+        IgniteCache<TestKey, TestValue> cache = grid(0).cache(null);
 
         for (int i = 0; i < ITER_CNT; i++)
             cache.put(new TestKey(i, i), new TestValue(i));
@@ -266,7 +264,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     public void testPutGet() throws Exception {
         noInterceptor = true;
 
-        IgniteCache<TestKey, TestValue> cache = grid(0).jcache(null);
+        IgniteCache<TestKey, TestValue> cache = grid(0).cache(null);
 
         Map<TestKey, TestValue> map = new HashMap<>();
 
@@ -312,7 +310,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     public void testPutGetByteArray() throws Exception {
         noInterceptor = true;
 
-        IgniteCache<TestKey, byte[]> cache = grid(0).jcache(null);
+        IgniteCache<TestKey, byte[]> cache = grid(0).cache(null);
 
         Map<TestKey, byte[]> map = new HashMap<>();
 
@@ -358,7 +356,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     public void testPutGetImmutable() throws Exception {
         noInterceptor = true;
 
-        IgniteCache<TestImmutableKey, TestImmutableValue> cache = grid(0).jcache(null);
+        IgniteCache<TestImmutableKey, TestImmutableValue> cache = grid(0).cache(null);
 
         Map<TestImmutableKey, TestImmutableValue> map = new HashMap<>();
 
@@ -406,7 +404,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     public void testPutGetKnownImmutable() throws Exception {
         noInterceptor = true;
 
-        IgniteCache<String, Long> cache = grid(0).jcache(null);
+        IgniteCache<String, Long> cache = grid(0).cache(null);
 
         Map<String, Long> map = new HashMap<>();
 
@@ -601,7 +599,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor<Object, Object> {
+    private static class Interceptor implements CacheInterceptor<Object, Object> {
         /** */
         CacheInterceptor<TestKey, TestValue> delegate = new CacheInterceptorAdapter<>();
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -25,8 +26,8 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import java.util.*;
@@ -77,7 +78,7 @@ public class GridContinuousOperationsLoadTest {
         dumpProperties(System.out);
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
-            final IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
+            final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);
@@ -113,7 +114,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setRemoteFilter(new CacheEntryEventFilter<Object,Object>() {
+                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object,Object>() {
                         @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
                             if (filterSleepMs > 0) {
                                 try {
@@ -128,7 +129,7 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.setBufferSize(bufSize);
+                    qry.setPageSize(bufSize);
                     qry.setTimeInterval(timeInterval);
 
                     cache.query(qry);

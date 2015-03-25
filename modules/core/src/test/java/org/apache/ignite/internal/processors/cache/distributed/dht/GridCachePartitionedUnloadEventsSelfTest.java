@@ -61,7 +61,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setRebalanceMode(SYNC);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         return cacheCfg;
     }
@@ -74,7 +74,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Collection<Integer> allKeys = new ArrayList<>(100);
 
-        IgniteCache<Integer, String> cache = g1.jcache(null);
+        IgniteCache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             cache.put(i, "val");
@@ -99,7 +99,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Collection <Event> partEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
 
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.jcache(null)).topology().localPartitions());
+        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
     }
 
     /**
@@ -114,7 +114,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             CacheEvent cacheEvt = ((CacheEvent)evt);
 
             assertEquals(EVT_CACHE_REBALANCE_OBJECT_UNLOADED, cacheEvt.type());
-            assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
+            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
@@ -143,7 +143,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                     }
                 }));
 
-            assertEquals(g.jcache(null).getName(), unloadEvt.cacheName());
+            assertEquals(g.cache(null).getName(), unloadEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());
         }
     }

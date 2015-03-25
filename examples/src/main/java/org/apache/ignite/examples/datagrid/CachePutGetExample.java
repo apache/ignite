@@ -18,6 +18,9 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 
 import java.util.*;
 
@@ -25,14 +28,14 @@ import java.util.*;
  * This example demonstrates very basic operations on cache, such as 'put' and 'get'.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CachePutGetExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CachePutGetExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -41,15 +44,20 @@ public class CachePutGetExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
 
-            // Individual puts and gets.
-            putGet();
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            // Bulk puts and gets.
-            putAllGetAll();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+                // Individual puts and gets.
+                putGet(cache);
+
+                // Bulk puts and gets.
+                putAllGetAll(cache);
+            }
         }
     }
 
@@ -58,13 +66,9 @@ public class CachePutGetExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void putGet() throws IgniteException {
+    private static void putGet(IgniteCache<Integer, String> cache) throws IgniteException {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
-
-        Ignite ignite = Ignition.ignite();
-
-        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 
@@ -83,13 +87,9 @@ public class CachePutGetExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void putAllGetAll() throws IgniteException {
+    private static void putAllGetAll(IgniteCache<Integer, String> cache) throws IgniteException {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
-
-        Ignite ignite = Ignition.ignite();
-
-        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 

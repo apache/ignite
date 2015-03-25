@@ -311,18 +311,20 @@ public class PojoDescriptor {
         Map<String, Map<String, IndexItem>> groups = new LinkedHashMap<>(idxs.size());
 
         for (Map.Entry<String, Map<String, Boolean>> idx : idxs.entrySet()) {
-            String idxName = idx.getKey();
-
             Map<String, Boolean> idxCols = idx.getValue();
 
-            Map<String, IndexItem> grp = new LinkedHashMap<>();
+            if (idxCols.size() > 1) {
+                String idxName = idx.getKey();
 
-            groups.put(idxName, grp);
+                Map<String, IndexItem> grp = new LinkedHashMap<>();
 
-            for (Map.Entry<String, Boolean> idxCol : idxCols.entrySet()) {
-                PojoField fld = fieldsMap.get(idxCol.getKey());
+                groups.put(idxName, grp);
 
-                grp.put(fld.javaName(), new IndexItem(fld.javaTypeName(), idxCol.getValue()));
+                for (Map.Entry<String, Boolean> idxCol : idxCols.entrySet()) {
+                    PojoField fld = fieldsMap.get(idxCol.getKey());
+
+                    grp.put(fld.javaName(), new IndexItem(fld.javaTypeName(), idxCol.getValue()));
+                }
             }
         }
 

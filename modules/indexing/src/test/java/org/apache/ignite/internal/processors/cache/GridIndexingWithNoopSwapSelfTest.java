@@ -64,9 +64,8 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
-        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-        cc.setEvictNearSynchronized(false);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
+        cc.setNearConfiguration(new NearCacheConfiguration());
+        cc.setEvictionPolicy(new FifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(
@@ -92,7 +91,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).cache(null);
+        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).getCache(null);
 
         int cnt = 10;
 

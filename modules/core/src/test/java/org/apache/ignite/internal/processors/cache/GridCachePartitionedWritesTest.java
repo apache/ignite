@@ -30,10 +30,9 @@ import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Test that in {@link org.apache.ignite.cache.CacheMode#PARTITIONED} mode cache writes values only to the near cache store. <p/> This check
+ * Test that in {@link CacheMode#PARTITIONED} mode cache writes values only to the near cache store. <p/> This check
  * is needed because in current implementation if {@link GridCacheWriteBehindStore} assumes that and user store is
  * wrapped only in near cache (see {@link GridCacheProcessor} init logic).
  */
@@ -58,11 +57,10 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         assert store != null;
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

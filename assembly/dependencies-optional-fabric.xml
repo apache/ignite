@@ -46,6 +46,7 @@
                 <exclude>org.apache.ignite:ignite-visor-trial</exclude>
                 <exclude>org.apache.ignite:ignite-hadoop</exclude>
                 <exclude>org.apache.ignite:ignite-schema-import</exclude>
+                <exclude>org.apache.ignite:ignite-codegen</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -54,7 +55,7 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>readme.txt</include>
+                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>

@@ -22,8 +22,8 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -33,15 +33,15 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Manages lock order within a thread.
@@ -557,9 +557,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public Collection<GridCacheMvccCandidate> remoteCandidates() {
         Collection<GridCacheMvccCandidate> rmtCands = new LinkedList<>();
 
-        for (GridDistributedCacheEntry entry : locked()) {
+        for (GridDistributedCacheEntry entry : locked())
             rmtCands.addAll(entry.remoteMvccSnapshot());
-        }
 
         return rmtCands;
     }
@@ -736,14 +735,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param threadId Thread ID.
      * @param cand Candidate to add.
-     * @param snapshot Topology snapshot.
+     * @param topVer Topology version.
      */
-    public void addExplicitLock(long threadId, GridCacheMvccCandidate cand, GridDiscoveryTopologySnapshot snapshot) {
+    public void addExplicitLock(long threadId, GridCacheMvccCandidate cand, AffinityTopologyVersion topVer) {
         while (true) {
             GridCacheExplicitLockSpan span = pendingExplicit.get(cand.threadId());
 
             if (span == null) {
-                span = new GridCacheExplicitLockSpan(snapshot, cand);
+                span = new GridCacheExplicitLockSpan(topVer, cand);
 
                 GridCacheExplicitLockSpan old = pendingExplicit.putIfAbsent(threadId, span);
 
@@ -754,7 +753,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             }
 
             // Either span was not empty, or concurrent put did not succeed.
-            if (span.addCandidate(snapshot, cand))
+            if (span.addCandidate(topVer, cand))
                 break;
             else
                 pendingExplicit.remove(threadId, span);
@@ -887,10 +886,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param threadId Thread ID.
      * @return Topology snapshot for last acquired and not released lock.
      */
-    @Nullable public GridDiscoveryTopologySnapshot lastExplicitLockTopologySnapshot(long threadId) {
+    @Nullable public AffinityTopologyVersion lastExplicitLockTopologyVersion(long threadId) {
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
-        return span != null ? span.topologySnapshot() : null;
+        return span != null ? span.topologyVersion() : null;
     }
 
     /** {@inheritDoc} */
@@ -928,8 +927,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future that signals when all locks for given partitions are released.
      */
     @SuppressWarnings({"unchecked"})
-    public IgniteInternalFuture<?> finishLocks(long topVer) {
-        assert topVer > 0;
+    public IgniteInternalFuture<?> finishLocks(AffinityTopologyVersion topVer) {
+        assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
         return finishLocks(null, topVer);
     }
 
@@ -940,13 +939,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version to wait for.
      * @return Explicit locks release future.
      */
-    public IgniteInternalFuture<?> finishExplicitLocks(long topVer) {
+    public IgniteInternalFuture<?> finishExplicitLocks(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
-            GridDiscoveryTopologySnapshot snapshot = span.topologySnapshot();
+            AffinityTopologyVersion snapshot = span.topologyVersion();
 
-            if (snapshot != null && snapshot.topologyVersion() < topVer)
+            if (snapshot != null && snapshot.compareTo(topVer) < 0)
                 res.add(span.releaseFuture());
         }
 
@@ -960,13 +959,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @return Finish update future.
      */
-    public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
+    public IgniteInternalFuture<?> finishAtomicUpdates(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
         for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
-            if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)
+            if (fut.waitForPartitionExchange() && fut.topologyVersion().compareTo(topVer) < 0)
                 res.add((IgniteInternalFuture<Object>)fut);
         }
 
@@ -981,7 +980,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future that signals when all locks for given keys are released.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> finishKeys(Collection<KeyCacheObject> keys, long topVer) {
+    public IgniteInternalFuture<?> finishKeys(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         if (!(keys instanceof Set))
             keys = new HashSet<>(keys);
 
@@ -999,10 +998,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions will be released.
      */
-    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<KeyCacheObject> keyFilter, long topVer) {
-        assert topVer != 0;
+    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<KeyCacheObject> keyFilter, AffinityTopologyVersion topVer) {
+        assert topVer.topologyVersion() != 0;
 
-        if (topVer < 0)
+        if (topVer.equals(AffinityTopologyVersion.NONE))
             return new GridFinishedFuture();
 
         final FinishLockFuture finishFut = new FinishLockFuture(
@@ -1055,7 +1054,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
-        private final long topVer;
+        private final AffinityTopologyVersion topVer;
 
         /** */
         @GridToStringInclude
@@ -1066,8 +1065,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
          * @param topVer Topology version.
          * @param entries Entries.
          */
-        FinishLockFuture(Iterable<GridDistributedCacheEntry> entries, long topVer) {
-            assert topVer > 0;
+        FinishLockFuture(Iterable<GridDistributedCacheEntry> entries, AffinityTopologyVersion topVer) {
+            assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
             this.topVer = topVer;
 
@@ -1077,11 +1076,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     Collection<GridCacheMvccCandidate> locs = entry.localCandidates();
 
                     if (!F.isEmpty(locs)) {
-                        Collection<GridCacheMvccCandidate> cands =
-                            new ConcurrentLinkedQueue<>();
+                        Collection<GridCacheMvccCandidate> cands = new ConcurrentLinkedQueue<>();
 
-                        if (locs != null)
-                            cands.addAll(F.view(locs, versionFilter()));
+                        cands.addAll(F.view(locs, versionFilter()));
 
                         if (!F.isEmpty(cands))
                             pendingLocks.put(entry.txKey(), cands);
@@ -1101,14 +1098,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
          * @return Filter.
          */
         private IgnitePredicate<GridCacheMvccCandidate> versionFilter() {
-            assert topVer > 0;
+            assert topVer.topologyVersion() > 0;
 
             return new P1<GridCacheMvccCandidate>() {
                 @Override public boolean apply(GridCacheMvccCandidate c) {
                     assert c.nearLocal() || c.dhtLocal();
 
                     // Wait for explicit locks.
-                    return c.topologyVersion() == 0 || c.topologyVersion() < topVer;
+                    return c.topologyVersion().equals(AffinityTopologyVersion.ZERO) || c.topologyVersion().compareTo(topVer) < 0;
                 }
             };
         }

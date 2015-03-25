@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -29,7 +30,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -61,7 +61,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setAtomicityMode(atomicityMode());
         cCfg.setAtomicWriteOrderMode(writeOrderMode());
-        cCfg.setDistributionMode(distributionMode());
+        cCfg.setNearConfiguration(nearConfiguration());
         cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
         cCfg.setBackups(1);
@@ -89,8 +89,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @return Distribution mode.
      */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /**
@@ -134,7 +134,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                    if (nearEnabled() && cache == cache0)
                         assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
                         assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
@@ -194,7 +194,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
+                    if (nearEnabled() && cache == cache0)
                         assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
                         assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
@@ -248,7 +248,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     Ignite ignite = grid(g);
 
-                    IgniteCache<Object, Object> cache = ignite.jcache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -270,17 +270,35 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         int present = 0;
         int absent = 0;
 
+        Affinity<Integer> aff = ignite(0).affinity(null);
+
+        boolean invalidVal = false;
+
         for (int i = 0; i < range; i++) {
             Long firstVal = null;
 
             for (int g = 0; g < gridCount(); g++) {
-                Long val = (Long)grid(g).jcache(null).localPeek(i, CachePeekMode.ONHEAP);
+                Ignite ignite = grid(g);
+
+                Long val = (Long)ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP);
 
                 if (firstVal == null && val != null)
                     firstVal = val;
 
-                assert val == null || firstVal.equals(val) : "Invalid value detected [val=" + val +
-                    ", firstVal=" + firstVal + ']';
+                if (val != null) {
+                    if (!firstVal.equals(val)) {
+                        invalidVal = true;
+
+                        boolean primary = aff.isPrimary(ignite.cluster().localNode(), i);
+                        boolean backup = aff.isBackup(ignite.cluster().localNode(), i);
+
+                        log.error("Invalid value detected [val=" + val +
+                            ", firstVal=" + firstVal +
+                            ", node=" + g +
+                            ", primary=" + primary +
+                            ", backup=" + backup + ']');
+                    }
+                }
             }
 
             if (firstVal == null)
@@ -288,6 +306,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             else
                 present++;
         }
+
+        assertFalse("Inconsistent value found.", invalidVal);
 
         info("Finished check [present=" + present + ", absent=" + absent + ']');
 

@@ -22,7 +22,6 @@ import net.sf.json.processors.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -347,7 +346,9 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_PREPEND: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                String cacheName = (String)params.get("cacheName");
+
+                restReq0.cacheName(F.isEmpty(cacheName) ? null : cacheName);
                 restReq0.key(params.get("key"));
                 restReq0.value(params.get("val"));
                 restReq0.value2(params.get("val2"));

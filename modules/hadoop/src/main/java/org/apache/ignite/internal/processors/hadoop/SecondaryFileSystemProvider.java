@@ -36,6 +36,9 @@ public class SecondaryFileSystemProvider {
     /** The secondary filesystem URI, never null. */
     private final URI uri;
 
+    /** Optional user name to log into secondary filesystem with. */
+    private @Nullable final String userName;
+
     /**
      * Creates new provider with given config parameters. The configuration URL is optional. The filesystem URI must be
      * specified either explicitly or in the configuration provided.
@@ -44,10 +47,13 @@ public class SecondaryFileSystemProvider {
      * property in the provided configuration.
      * @param secConfPath the secondary Fs path (file path on the local file system, optional).
      * See {@link IgniteUtils#resolveIgniteUrl(String)} on how the path resolved.
+     * @param userName User name.
      * @throws IOException
      */
     public SecondaryFileSystemProvider(final @Nullable String secUri,
-        final @Nullable String secConfPath) throws IOException {
+        final @Nullable String secConfPath, @Nullable String userName) throws IOException {
+        this.userName = userName;
+
         if (secConfPath != null) {
             URL url = U.resolveIgniteUrl(secConfPath);
 
@@ -72,10 +78,6 @@ public class SecondaryFileSystemProvider {
             }
         }
 
-        if (uri == null)
-            throw new IllegalArgumentException("Failed to get secondary file system URI (it is neither given " +
-                "explicitly nor specified in the configuration): " + secConfPath);
-
         // Disable caching:
         String prop = String.format("fs.%s.impl.disable.cache", uri.getScheme());
 
@@ -87,7 +89,20 @@ public class SecondaryFileSystemProvider {
      * @throws IOException
      */
     public FileSystem createFileSystem() throws IOException {
-        FileSystem fileSys = FileSystem.get(uri, cfg);
+        final FileSystem fileSys;
+
+        if (userName == null)
+            fileSys = FileSystem.get(uri, cfg);
+        else {
+            try {
+                fileSys = FileSystem.get(uri, cfg, userName);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IOException("Failed to create file system due to interrupt.", e);
+            }
+        }
 
         return fileSys;
     }
@@ -97,9 +112,7 @@ public class SecondaryFileSystemProvider {
      * @throws IOException
      */
     public AbstractFileSystem createAbstractFileSystem() throws IOException {
-        AbstractFileSystem secondaryFs = AbstractFileSystem.get(uri, cfg);
-
-        return secondaryFs;
+        return AbstractFileSystem.get(uri, cfg);
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,14 +37,14 @@ public class GridDhtColocatedCacheEntry extends GridDhtCacheEntry {
      * @param hdrId Header id.
      */
     public GridDhtColocatedCacheEntry(GridCacheContext ctx,
-        long topVer,
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
         long ttl,
-        int hdrId)
-    {
+        int hdrId
+    ) {
         super(ctx, topVer, key, hash, val, next, ttl, hdrId);
     }
 

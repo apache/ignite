@@ -44,7 +44,7 @@ import org.h2.table.*;
 import org.h2.tools.*;
 import org.h2.util.*;
 import org.h2.value.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;

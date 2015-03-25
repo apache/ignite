@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -82,7 +83,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(GridCacheContext ctx,
-                long topVer,
+                AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
                 CacheObject val,
@@ -124,10 +125,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @throws GridDhtInvalidPartitionException If {@code allowDetached} is false and node is not primary
      *      for given key.
      */
-    public GridDistributedCacheEntry entryExx(KeyCacheObject key,
-        long topVer,
-        boolean allowDetached)
-    {
+    public GridDistributedCacheEntry entryExx(
+        KeyCacheObject key,
+        AffinityTopologyVersion topVer,
+        boolean allowDetached
+    ) {
         return allowDetached && !ctx.affinity().primary(ctx.localNode(), key, topVer) ?
             new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0) : entryExx(key, topVer);
     }
@@ -200,7 +202,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             });
         }
 
-        long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -220,7 +222,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx entryExSafe(KeyCacheObject key, long topVer) {
+    @Override protected GridCacheEntryEx entryExSafe(
+        KeyCacheObject key,
+        AffinityTopologyVersion topVer
+    ) {
         try {
             return ctx.affinity().localNode(key, topVer) ? entryEx(key) : null;
         }
@@ -246,7 +251,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -437,9 +442,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
 
                 if (lock != null) {
-                    final long topVer = lock.topologyVersion();
+                    final AffinityTopologyVersion topVer = lock.topologyVersion();
 
-                    assert topVer > 0;
+                    assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
                     if (map == null) {
                         Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
@@ -531,7 +536,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
 
                 if (lock != null) {
-                    long topVer = lock.topologyVersion();
+                    AffinityTopologyVersion topVer = lock.topologyVersion();
 
                     if (map == null) {
                         Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
@@ -609,9 +614,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final GridNearTxLocal tx,
         final long threadId,
         final GridCacheVersion ver,
-        final long topVer,
+        final AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
+        final boolean retval,
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter
@@ -633,6 +639,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     topVer,
                     keys,
                     txRead,
+                    retval,
                     timeout,
                     accessTtl,
                     filter);
@@ -655,6 +662,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             topVer,
                             keys,
                             txRead,
+                            retval,
                             timeout,
                             accessTtl,
                             filter);
@@ -682,9 +690,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable final GridNearTxLocal tx,
         long threadId,
         final GridCacheVersion ver,
-        final long topVer,
+        AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
+        boolean retval,
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter) {
@@ -697,6 +706,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 topVer,
                 cnt,
                 txRead,
+                retval,
                 timeout,
                 tx,
                 threadId,

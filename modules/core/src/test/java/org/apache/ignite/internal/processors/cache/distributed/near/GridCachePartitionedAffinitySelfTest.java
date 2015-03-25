@@ -37,7 +37,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -68,7 +67,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -96,7 +94,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param ignite Grid.
      * @return Affinity.
      */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
+    static Affinity<Object> affinity(Ignite ignite) {
         return ignite.affinity(null);
     }
 
@@ -105,7 +103,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -137,7 +135,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         X.println(">>>");
         X.println(">>> Printing affinity for node: " + g.name());
 
-        CacheAffinity<Object> aff = affinity(g);
+        Affinity<Object> aff = affinity(g);
 
         for (int i = 0; i < keyCnt; i++) {
             Collection<? extends ClusterNode> affNodes = nodes(aff, i);
@@ -152,7 +150,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.jcache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
@@ -167,7 +165,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        IgniteCache<Integer, String> mc = mg.jcache(null);
+        IgniteCache<Integer, String> mc = mg.cache(null);
 
         int keyCnt = 10;
 

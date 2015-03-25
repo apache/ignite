@@ -18,6 +18,7 @@
 package org.apache.ignite.schema.test;
 
 import junit.framework.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.parser.DatabaseMetadataParser;
 import org.apache.ignite.schema.ui.*;
@@ -47,20 +48,6 @@ public abstract class AbstractSchemaImportTest extends TestCase {
 
     /** List of generated for test database POJO objects. */
     protected List<PojoDescriptor> pojos;
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close.
-     */
-    private void closeQuiet(AutoCloseable rsrc) {
-        try {
-            rsrc.close();
-        }
-        catch (Exception ignored) {
-            // No-op.
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -104,11 +91,11 @@ public abstract class AbstractSchemaImportTest extends TestCase {
 
         conn.commit();
 
-        closeQuiet(stmt);
+        U.closeQuiet(stmt);
 
         pojos = DatabaseMetadataParser.parse(conn, false);
 
-        closeQuiet(conn);
+        U.closeQuiet(conn);
     }
 
     /**

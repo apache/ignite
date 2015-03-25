@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
@@ -35,7 +36,6 @@ import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.CacheManager;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
@@ -72,6 +72,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** Projection. */
     private GridCacheProjectionImpl<K, V> prj;
 
+    /** */
+    @GridToStringExclude
+    private GridCacheProxyImpl<K, V> legacyProxy;
+
+    /** */
+    @GridToStringExclude
+    private CacheManager cacheMgr;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -101,6 +109,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.prj = prj;
 
         gate = ctx.gate();
+
+        legacyProxy = new GridCacheProxyImpl<>(ctx, delegate, prj);
     }
 
     /**
@@ -108,6 +118,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     public GridCacheContext<K, V> context() {
         return ctx;
+    }
+
+    /**
+     * @return Gateway.
+     */
+    public GridCacheGateway<K, V> gate() {
+        return gate;
     }
 
     /** {@inheritDoc} */
@@ -271,7 +288,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
         if (filter instanceof ScanQuery) {
-            IgniteBiPredicate<K,V> p = ((ScanQuery)filter).getFilter();
+            IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
             qry = delegate.queries().createScanQuery(p != null ? p : ACCEPT_ALL);
 
@@ -308,7 +325,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
             /** */
-            Map.Entry<K,V> cur;
+            private Map.Entry<K,V> cur;
 
             @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
@@ -352,7 +369,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param loc Local flag.
      * @return Initial iteration cursor.
      */
-    private QueryCursor<Entry<K,V>> queryContinuous(ContinuousQuery<K, V> qry, boolean loc) {
+    @SuppressWarnings("unchecked")
+    private QueryCursor<Entry<K, V>> queryContinuous(ContinuousQuery qry, boolean loc) {
         if (qry.getInitialQuery() instanceof ContinuousQuery)
             throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
                 "continuous query. Use SCAN or SQL query for initial iteration.");
@@ -364,17 +382,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             final UUID routineId = ctx.continuousQueries().executeQuery(
                 qry.getLocalListener(),
                 qry.getRemoteFilter(),
-                qry.getBufferSize(),
+                qry.getPageSize(),
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
                 loc ? ctx.grid().cluster().forLocal() : null);
 
-            final QueryCursor<Cache.Entry<K, V>> cur;
-
-            if (qry.getInitialQuery() != null)
-                cur = loc ? localQuery(qry.getInitialQuery()) : query(qry.getInitialQuery());
-            else
-                cur = null;
+            final QueryCursor<Cache.Entry<K, V>> cur =
+                qry.getInitialQuery() != null ? query(qry.getInitialQuery()) : null;
 
             return new QueryCursor<Cache.Entry<K, V>>() {
                 @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -405,7 +419,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public QueryCursor<Entry<K,V>> query(Query qry) {
+    @Override public <R> QueryCursor<R> query(Query<R> qry) {
         A.notNull(qry, "qry");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -414,18 +428,27 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             validate(qry);
 
             if (qry instanceof ContinuousQuery)
-                return queryContinuous((ContinuousQuery<K,V>)qry, false);
+                return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal());
 
             if (qry instanceof SqlQuery) {
                 SqlQuery p = (SqlQuery)qry;
 
-                if (isReplicatedDataNode() || ctx.isLocal())
-                    return doLocalQuery(p);
+                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                    return (QueryCursor<R>)new QueryCursorImpl<>(ctx.kernalContext().query().<K, V>queryLocal(ctx, p));
 
-                return ctx.kernalContext().query().queryTwoStep(ctx, p);
+                return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
 
-            return query(qry, projection(false));
+            if (qry instanceof SqlFieldsQuery) {
+                SqlFieldsQuery p = (SqlFieldsQuery)qry;
+
+                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                    return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
+
+                return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
+            }
+
+            return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -442,53 +465,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return {@code true} If this is a replicated cache and we are on a data node.
      */
     private boolean isReplicatedDataNode() {
-        if (!ctx.isReplicated())
-            return false;
-
-        ClusterGroup grp = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name());
-
-        return grp.node(ctx.localNodeId()) != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry) {
-        A.notNull(qry, "qry");
-
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            validate(qry);
-
-            if (isReplicatedDataNode() || ctx.isLocal())
-                return doLocalFieldsQuery(qry);
-
-            return ctx.kernalContext().query().queryTwoStep(ctx, qry);
-        }
-        catch (Exception e) {
-            if (e instanceof CacheException)
-                throw e;
-
-            throw new CacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /**
-     * @param p Query.
-     * @return Cursor.
-     */
-    private QueryCursor<Entry<K,V>> doLocalQuery(SqlQuery p) {
-        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(ctx, p));
-    }
-
-    /**
-     * @param q Query.
-     * @return Cursor.
-     */
-    private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
-        return ctx.kernalContext().query().queryLocalFields(ctx, q);
+        return ctx.isReplicated() && ctx.affinityNode();
     }
 
     /**
@@ -501,57 +478,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (!GridQueryProcessor.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public QueryCursor<Entry<K,V>> localQuery(Query qry) {
-        A.notNull(qry, "qry");
-
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            validate(qry);
-
-            if (qry instanceof ContinuousQuery)
-                return queryContinuous((ContinuousQuery<K,V>)qry, true);
-
-            if (qry instanceof SqlQuery)
-                return doLocalQuery((SqlQuery)qry);
-
-            return query(qry, projection(true));
-        }
-        catch (Exception e) {
-            if (e instanceof CacheException)
-                throw e;
-
-            throw new CacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry) {
-        A.notNull(qry, "qry");
-
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            validate(qry);
-
-            return doLocalFieldsQuery(qry);
-        }
-        catch (Exception e) {
-            if (e instanceof CacheException)
-                throw e;
-
-            throw new CacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
     }
 
     /** {@inheritDoc} */
@@ -1236,8 +1162,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) {
+                                                                   EntryProcessor<K, V, T> entryProcessor,
+                                                                   Object... args) {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1315,40 +1241,68 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public javax.cache.CacheManager getCacheManager() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        CachingProvider provider = (CachingProvider)Caching.getCachingProvider(
-            CachingProvider.class.getName(),
-            CachingProvider.class.getClassLoader());
+    @Override public CacheManager getCacheManager() {
+        return cacheMgr;
+    }
 
-        if (provider == null)
-            return null;
-
-        return provider.findManager(this);
+    /**
+     * @param cacheMgr Cache manager.
+     */
+    public void setCacheManager(CacheManager cacheMgr) {
+        this.cacheMgr = cacheMgr;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        CacheManager cacheMgr = getCacheManager();
+        if (!gate.enterIfNotClosed())
+            return;
 
-        if (cacheMgr != null) // cacheMgr == null means cache is closed.
-            cacheMgr.destroyCache(getName());
+        IgniteInternalFuture<?> fut;
+
+        try {
+            fut = ctx.kernalContext().cache().dynamicStopCache(ctx.name());
+        }
+        finally {
+            gate.leave();
+        }
+
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        return getCacheManager() == null;
+        if (!gate.enterIfNotClosed())
+            return true;
+
+        try {
+            return ctx.kernalContext().cache().context().closed(ctx);
+        }
+        finally {
+            gate.leave();
+        }
+    }
+
+    /**
+     *
+     */
+    public GridCacheProjectionEx delegate() {
+        return delegate;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.isAssignableFrom(IgniteCache.class))
+        if (clazz.isAssignableFrom(getClass()))
             return (T)this;
-        else if (clazz.isAssignableFrom(Ignite.class))
+        else if (clazz.isAssignableFrom(IgniteEx.class))
             return (T)ctx.grid();
+        else if (clazz.isAssignableFrom(legacyProxy.getClass()))
+            return (T)legacyProxy;
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
     }
@@ -1401,39 +1355,25 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * Creates projection that will operate with portable objects.
-     * <p>
-     * Projection returned by this method will force cache not to deserialize portable objects,
-     * so keys and values will be returned from cache API methods without changes. Therefore,
-     * signature of the projection can contain only following types:
-     * <ul>
-     *     <li>{@code PortableObject} for portable classes</li>
-     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     *     <li>Arrays of primitives (byte[], int[], ...)</li>
-     *     <li>{@link String} and array of {@link String}s</li>
-     *     <li>{@link UUID} and array of {@link UUID}s</li>
-     *     <li>{@link Date} and array of {@link Date}s</li>
-     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
-     *     <li>Enums and array of enums</li>
-     *     <li>
-     *         Maps, collections and array of objects (but objects inside
-     *         them will still be converted if they are portable)
-     *     </li>
-     * </ul>
-     * <p>
-     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
-     * (which will be stored in portable format), you should acquire following projection
-     * to avoid deserialization:
+     * Creates projection that will operate with portable objects. <p> Projection returned by this method will force
+     * cache not to deserialize portable objects, so keys and values will be returned from cache API methods without
+     * changes. Therefore, signature of the projection can contain only following types: <ul> <li>{@code PortableObject}
+     * for portable classes</li> <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     * <li>Arrays of primitives (byte[], int[], ...)</li> <li>{@link String} and array of {@link String}s</li>
+     * <li>{@link UUID} and array of {@link UUID}s</li> <li>{@link Date} and array of {@link Date}s</li> <li>{@link
+     * java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li> <li>Enums and array of enums</li> <li> Maps,
+     * collections and array of objects (but objects inside them will still be converted if they are portable) </li>
+     * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
+     * stored in portable format), you should acquire following projection to avoid deserialization:
      * <pre>
      * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
      * </pre>
-     * <p>
-     * Note that this method makes sense only if cache is working in portable mode
-     * ({@code CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
-     * this method is no-op and will return current projection.
+     * <p> Note that this method makes sense only if cache is working in portable mode ({@code
+     * CacheConfiguration#isPortableEnabled()} returns {@code true}. If not, this method is no-op and will return
+     * current projection.
      *
      * @return Projection for portable objects.
      */
@@ -1506,7 +1446,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param e Checked exception.
      * @return Cache exception.
      */
-    private CacheException cacheException(IgniteCheckedException e) {
+    private RuntimeException cacheException(IgniteCheckedException e) {
         return CU.convertToCacheException(e);
     }
 
@@ -1515,6 +1455,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private <R> void setFuture(IgniteInternalFuture<R> fut) {
         curFut.set(new IgniteFutureImpl<>(fut));
+    }
+
+    /**
+     * @return Legacy proxy.
+     */
+    @NotNull
+    public GridCacheProxyImpl<K, V> legacyProxy() {
+        return legacyProxy;
     }
 
     /** {@inheritDoc} */
@@ -1553,10 +1501,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      * Closeable iterator.
      */
-    private static abstract class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
+    private abstract static class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
         /** */
         private X cur;
 
+        /** */
         private CacheQueryFuture<X> fut;
 
         /**
@@ -1566,6 +1515,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             this.fut = fut;
         }
 
+        /** {@inheritDoc} */
         @Override protected Y onNext() throws IgniteCheckedException {
             if (!onHasNext())
                 throw new NoSuchElementException();
@@ -1577,12 +1527,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return convert(e);
         }
 
+        /**
+         * @param x X.
+         */
         protected abstract Y convert(X x);
 
+        /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
             return cur != null || (cur = fut.next()) != null;
         }
 
+        /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
             fut.cancel();
         }

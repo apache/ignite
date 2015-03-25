@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -107,7 +107,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             long locTopVer = cctx.discovery().topologyVersion();
-            long rmtTopVer = cacheMsg.topologyVersion();
+            long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 
             if (locTopVer < rmtTopVer) {
                 if (log.isDebugEnabled())
@@ -604,10 +604,33 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheId Cache ID to remove handlers for.
+     */
+    public void removeHandlers(int cacheId) {
+        assert cacheId != 0;
+
+        idxClsHandlers.remove(cacheId);
+
+        for (Iterator<ListenerKey> iterator = clsHandlers.keySet().iterator(); iterator.hasNext(); ) {
+            ListenerKey key = iterator.next();
+
+            if (key.cacheId == cacheId)
+                iterator.remove();
+        }
+    }
+
+    /**
      * @param lsnr Listener to add.
      */
     public void addDisconnectListener(GridDisconnectListener lsnr) {
         cctx.kernalContext().io().addDisconnectListener(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to remove.
+     */
+    public void removeDisconnectListener(GridDisconnectListener lsnr) {
+        cctx.kernalContext().io().removeDisconnectListener(lsnr);
     }
 
     /**

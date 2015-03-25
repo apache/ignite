@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -38,10 +37,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  *
@@ -58,17 +55,41 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         cnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (ignite(i).configuration().isClientMode()) {
+                if (clientHasNearCache())
+                    ignite(i).createNearCache(null, new NearCacheConfiguration<>());
+                else
+                    ignite(i).cache(null);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return If client node has near cache.
+     */
+    protected boolean clientHasNearCache() {
+        return true;
+    }
+
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (cnt.getAndIncrement() == 0) {
+            info("Use grid '" + gridName + "' as near-only.");
+
+            cfg.setClientMode(true);
+        }
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        if (cnt.getAndIncrement() == 0) {
-            info("Use grid '" + gridName + "' as near-only.");
-
-            cfg.setDistributionMode(NEAR_ONLY);
-        }
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicWriteOrderMode(PRIMARY);
@@ -79,7 +100,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            if (!isAffinityNode(cacheConfiguration(grid(i).configuration(), null))) {
+            if (ignite(i).configuration().isClientMode()) {
                 nearIdx = i;
 
                 break;
@@ -90,21 +111,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         dfltIgnite = grid(nearIdx);
 
+        info("Near-only node: " + dfltIgnite.cluster().localNode().id());
+
         super.beforeTest(); // Doing initial asserts.
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> affinityNodes() {
         info("Near node ID: " + grid(nearIdx).localNode().id());
-
-        for (int i = 0; i < gridCount(); i++) {
-            ClusterNode node = grid(i).localNode();
-
-            GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
-
-            info("Cache attributes for node [nodeId=" + node.id() + ", attrs=" +
-                Arrays.asList(nodeAttrs) + ']');
-        }
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {

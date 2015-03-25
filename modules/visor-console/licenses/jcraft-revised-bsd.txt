@@ -1,6 +1,4 @@
-JSch 0.0.* was released under the GNU LGPL license.  Later, we have switched
-over to a BSD-style license.
-
+3-clause BSD license
 ------------------------------------------------------------------------------
 Copyright (c) 2002-2014 Atsuhiko Yamanaka, JCraft,Inc.
 All rights reserved.

@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests atomic cache with near cache enabled.
  */
 public class GridCacheAtomicNearEnabledFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 }

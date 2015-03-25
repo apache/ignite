@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -63,7 +62,6 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);
         cc1.setEvictionPolicy(null);
-        cc1.setNearEvictionPolicy(null);
 
         // Identical configuration.
         CacheConfiguration cc2 = new CacheConfiguration(cc1);
@@ -87,8 +85,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
                     case AFTER_NODE_START: {
-                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
-                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
+                        IgniteCache<Object, MyValue> c1 = ignite.cache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             info("Keys already in cache:");
@@ -146,8 +144,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                IgniteCache<Object, MyValue> c1 = grid(j).jcache("one");
-                IgniteCache<Object, MyValue> c2 = grid(j).jcache("two");
+                IgniteCache<Object, MyValue> c1 = grid(j).cache("one");
+                IgniteCache<Object, MyValue> c2 = grid(j).cache("two");
 
                 int k = 0;
 
@@ -176,7 +174,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).cache("two");
+                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).getCache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
@@ -193,7 +191,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = grid.jcache("one").get(key);
+                            Object v2 = grid.cache("one").get(key);
 
                             assertNotNull(v2);
                             assertEquals(v1, v2);

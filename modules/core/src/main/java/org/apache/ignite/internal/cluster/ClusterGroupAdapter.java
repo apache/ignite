@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -182,7 +182,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteCompute} for this cluster group.
+     * @return {@link IgniteCompute} for this cluster group.
      */
     public final IgniteCompute compute() {
         if (compute == null) {
@@ -195,7 +195,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteMessaging} for this cluster group.
+     * @return {@link IgniteMessaging} for this cluster group.
      */
     public final IgniteMessaging message() {
         if (messaging == null) {
@@ -208,7 +208,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteEvents} for this cluster group.
+     * @return {@link IgniteEvents} for this cluster group.
      */
     public final IgniteEvents events() {
         if (evts == null) {
@@ -221,7 +221,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteServices} for this cluster group.
+     * @return {@link IgniteServices} for this cluster group.
      */
     public IgniteServices services() {
         if (svcs == null) {
@@ -331,7 +331,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         guard();
 
         try {
+            if (p != null)
+                ctx.resource().injectGeneric(p);
+
             return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -343,6 +349,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         A.notNull(name, "n");
 
         return forPredicate(new AttributeFilter(name, val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forServers() {
+        return forPredicate(new AttributeFilter(IgniteNodeAttributes.ATTR_CLIENT_MODE, false));
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forClients() {
+        return forPredicate(new AttributeFilter(IgniteNodeAttributes.ATTR_CLIENT_MODE, true));
     }
 
     /** {@inheritDoc} */
@@ -514,23 +530,23 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
-        return forPredicate(new CachesFilter(cacheName, null));
+        return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
-        return forPredicate(new CachesFilter(cacheName, CachesFilter.DATA_MODES));
+        return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
-        return forPredicate(new CachesFilter(cacheName, CachesFilter.CLIENT_MODES));
+        return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName,
-        Set<CacheDistributionMode> distributionModes) {
-        return forPredicate(new CachesFilter(cacheName, distributionModes));
+    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
+        boolean clientNodes) {
+        return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
 
     /** {@inheritDoc} */
@@ -652,42 +668,50 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     private static class CachesFilter implements IgnitePredicate<ClusterNode> {
         /** */
-        private static final Set<CacheDistributionMode> DATA_MODES = EnumSet.of(CacheDistributionMode.NEAR_PARTITIONED,
-            CacheDistributionMode.PARTITIONED_ONLY);
-
-        /** */
-        private static final Set<CacheDistributionMode> CLIENT_MODES = EnumSet.of(CacheDistributionMode.CLIENT_ONLY,
-            CacheDistributionMode.NEAR_ONLY);
-
-        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
         private final String cacheName;
 
-        /** */
-        private final Set<CacheDistributionMode> distributionMode;
+        /** Affinity nodes. */
+        private boolean affNodes;
+
+        /** Near nodes. */
+        private boolean nearNodes;
+
+        /** Client nodes. */
+        private boolean clients;
+
+        /** Injected Ignite instance. */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
 
         /**
          * @param cacheName Cache name.
-         * @param distributionMode Filter by {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()}.
          */
-        private CachesFilter(@Nullable String cacheName, @Nullable Set<CacheDistributionMode> distributionMode) {
+        private CachesFilter(@Nullable String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
             this.cacheName = cacheName;
-            this.distributionMode = distributionMode;
+            this.affNodes = affNodes;
+            this.nearNodes = nearNodes;
+            this.clients = clients;
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("RedundantIfStatement")
         @Override public boolean apply(ClusterNode n) {
-            GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
+            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
 
-            if (caches != null) {
-                for (GridCacheAttributes attrs : caches) {
-                    if (Objects.equals(cacheName, attrs.cacheName())
-                        && (distributionMode == null || distributionMode.contains(attrs.partitionedTaxonomy())))
-                        return true;
-                }
-            }
+            if (affNodes && disco.cacheAffinityNode(n, cacheName))
+                return true;
+
+            if (!affNodes && disco.cacheAffinityNode(n, cacheName))
+                return false;
+
+            if (nearNodes && disco.cacheNearNode(n, cacheName))
+                return true;
+
+            if (clients && disco.cacheClientNode(n, cacheName))
+                return true;
 
             return false;
         }
@@ -703,13 +727,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         private final String name;
 
         /** Value. */
-        private final String val;
+        private final Object val;
 
         /**
          * @param name Name.
          * @param val Value.
          */
-        private AttributeFilter(String name, String val) {
+        private AttributeFilter(String name, Object val) {
             this.name = name;
             this.val = val;
         }

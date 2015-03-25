@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -53,7 +54,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private CacheEntryEventFilter<K, V> rmtFilter;
+    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Deployable object for filter. */
     private DeployableObject rmtFilterDep;
@@ -105,7 +106,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         String cacheName,
         Object topic,
         CacheEntryUpdatedListener<K, V> locLsnr,
-        CacheEntryEventFilter<K, V> rmtFilter,
+        CacheEntryEventSerializableFilter<K, V> rmtFilter,
         boolean internal,
         boolean notifyExisting,
         boolean oldValRequired,
@@ -145,14 +146,16 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
+    @Override public String cacheName() {
+        return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RegisterStatus register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert ctx != null;
-
-        if (ctx.cache().internalCache(cacheName) == null)
-            return false;
 
         if (locLsnr != null)
             ctx.resource().injectGeneric(locLsnr);
@@ -215,8 +218,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         try {
                             ClusterNode node = ctx.discovery().node(nodeId);
 
-                            if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
-                                U.hasCache(node, cacheName)) {
+                            if (ctx.config().isPeerClassLoadingEnabled() && node != null) {
                                 evt.entry().prepareMarshal(cctx);
 
                                 GridCacheDeploymentManager depMgr =
@@ -275,7 +277,12 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         };
 
-        return manager(ctx).registerListener(routineId, lsnr, internal);
+        CacheContinuousQueryManager mgr = manager(ctx);
+
+        if (mgr == null)
+            return RegisterStatus.DELAYED;
+
+        return mgr.registerListener(routineId, lsnr, internal);
     }
 
     /** {@inheritDoc} */
@@ -288,7 +295,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        manager(ctx).unregisterListener(internal, routineId);
+        GridCacheAdapter<K, V> cache = ctx.cache().<K, V>internalCache(cacheName);
+
+        if (cache != null)
+            cache.context().continuousQueries().unregisterListener(internal, routineId);
     }
 
     /**
@@ -296,7 +306,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @return Continuous query manager.
      */
     private CacheContinuousQueryManager manager(GridKernalContext ctx) {
-        return cacheContext(ctx).continuousQueries();
+        GridCacheContext<K, V> cacheCtx = cacheContext(ctx);
+
+        return cacheCtx == null ? null : cacheCtx.continuousQueries();
     }
 
     /** {@inheritDoc} */
@@ -413,7 +425,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             rmtFilterDep = (DeployableObject)in.readObject();
         else
-            rmtFilter = (CacheEntryEventFilter<K, V>)in.readObject();
+            rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();
@@ -430,7 +442,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private GridCacheContext<K, V> cacheContext(GridKernalContext ctx) {
         assert ctx != null;
 
-        return ctx.cache().<K, V>internalCache(cacheName).context();
+        GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
+
+        return cache == null ? null : cache.context();
     }
 
     /**

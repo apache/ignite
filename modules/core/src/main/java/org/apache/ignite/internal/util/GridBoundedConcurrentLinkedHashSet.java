@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 
-import static org.jdk8.backport.ConcurrentLinkedHashMap.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Concurrent set with an upper bound. Once set reaches its maximum capacity,

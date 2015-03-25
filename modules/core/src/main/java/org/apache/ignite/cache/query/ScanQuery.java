@@ -22,18 +22,19 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+
 /**
  * Scan query over cache entries. Will accept all the entries if no predicate was set.
  *
  * @see IgniteCache#query(Query)
- * @see IgniteCache#localQuery(Query)
  */
-public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
+public class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private IgniteBiPredicate<K,V> filter;
+    private IgniteBiPredicate<K, V> filter;
 
     /**
      * Create scan query returning all entries.
@@ -47,7 +48,7 @@ public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
      *
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
-    public ScanQuery(@Nullable IgniteBiPredicate<K,V> filter) {
+    public ScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
         setFilter(filter);
     }
 
@@ -56,7 +57,7 @@ public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
      *
      * @return Filter.
      */
-    public IgniteBiPredicate<K,V> getFilter() {
+    public IgniteBiPredicate<K, V> getFilter() {
         return filter;
     }
 
@@ -64,9 +65,22 @@ public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
      * Sets filter.
      *
      * @param filter Filter. If {@code null} then all entries will be returned.
+     * @return {@code this} for chaining.
      */
-    public void setFilter(@Nullable IgniteBiPredicate<K,V> filter) {
+    public ScanQuery<K, V> setFilter(@Nullable IgniteBiPredicate<K, V> filter) {
         this.filter = filter;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ScanQuery<K, V> setPageSize(int pageSize) {
+        return (ScanQuery<K, V>)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ScanQuery<K, V> setLocal(boolean loc) {
+        return (ScanQuery<K, V>)super.setLocal(loc);
     }
 
     /** {@inheritDoc} */

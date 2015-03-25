@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -88,8 +87,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
                     case AFTER_NODE_START: {
-                        IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
-                        IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
+                        IgniteCache<Object, MyValue> c1 = ignite.cache("one");
+                        IgniteCache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             if (!quiet) {
@@ -149,8 +148,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                IgniteCache<String, MyValue> c1 = grid(j).jcache("one");
-                IgniteCache<String, MyValue> c2 = grid(j).jcache("two");
+                IgniteCache<String, MyValue> c1 = grid(j).cache("one");
+                IgniteCache<String, MyValue> c2 = grid(j).cache("two");
 
                 int size1 = c1.localSize();
                 int size2 = c2.localSize();
@@ -177,7 +176,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).cache("two");
+                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).getCache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
@@ -205,10 +204,10 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = ((IgniteKernal)grid).cache("one").get(key);
+                            Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
 
                             assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 +
-                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).cache("one").values() + ']', v2);
+                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
                         catch (IgniteCheckedException e1) {

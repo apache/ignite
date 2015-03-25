@@ -27,6 +27,6 @@ import org.apache.ignite.cache.*;
 public class IgnitePutOffHeapBenchmark extends IgnitePutBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("atomic-offheap");
+        return ignite().cache("atomic-offheap");
     }
 }

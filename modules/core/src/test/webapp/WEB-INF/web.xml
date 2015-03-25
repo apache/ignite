@@ -25,13 +25,13 @@
 
     <!-- Declare listener for web sessions caching. -->
     <listener>
-        <listener-class>org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup</listener-class>
+        <listener-class>org.apache.ignite.startup.servlet.ServletContextListenerStartup</listener-class>
     </listener>
 
     <!-- Declare filter for web sessions caching. -->
     <filter>
         <filter-name>IgniteWebSessionsFilter</filter-name>
-        <filter-class>org.apache.ignite.cache.websession.IgniteWebSessionFilter</filter-class>
+        <filter-class>org.apache.ignite.cache.websession.WebSessionFilter</filter-class>
     </filter>
 
     <filter-mapping>

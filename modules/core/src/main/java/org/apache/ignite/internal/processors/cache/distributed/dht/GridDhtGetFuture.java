@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -75,7 +76,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private GridCacheVersion ver;
 
     /** Topology version .*/
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Transaction. */
     private IgniteTxLocalEx tx;
@@ -117,7 +118,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean readThrough,
         boolean reload,
         @Nullable IgniteTxLocalEx tx,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -239,7 +240,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key, Collection<GridDhtLocalPartition> parts) {
-        GridDhtLocalPartition part = topVer > 0 ?
+        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
             cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
             cache().topology().localPartition(key, false);
 

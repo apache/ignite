@@ -38,7 +38,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -72,7 +71,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setCacheMode(PARTITIONED);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(1, 1));
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        partCacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        partCacheCfg.setNearConfiguration(null);
         partCacheCfg.setEvictSynchronized(true);
         partCacheCfg.setSwapEnabled(false);
         partCacheCfg.setEvictionPolicy(null);
@@ -101,7 +100,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            IgniteCache<Integer, Object> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -125,7 +124,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                             Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
-                                ignite1.jcache(null).localEvict(Collections.<Object>singleton(entry.getKey()));
+                                ignite1.cache(null).localEvict(Collections.<Object>singleton(entry.getKey()));
                             else
                                 info("Entry is null.");
                         }
@@ -185,7 +184,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param ignite1 Grid 1.
      * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
         throws IgniteInterruptedCheckedException {
@@ -193,8 +192,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.jcache(null).localSize();
-                return size1 != oldSize && size1 == ignite2.jcache(null).localSize();
+                int size1 = ignite1.cache(null).localSize();
+                return size1 != oldSize && size1 == ignite2.cache(null).localSize();
             }
         }, getTestTimeout()));
 

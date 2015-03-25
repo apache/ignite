@@ -26,8 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -72,7 +72,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             final int duration = args.length > 2 ? Integer.parseInt(args[2]) : 0;
             final String outputFileName = args.length > 3 ? args[3] : null;
 
-            final LongAdder execCnt = new LongAdder();
+            final LongAdder8 execCnt = new LongAdder8();
 
             try {
                 final Ignite g = G.start("modules/tests/config/grid-job-load.xml");
@@ -161,7 +161,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
      * @param iterCntr Iteration counter.
      */
     private static void runTest(final Ignite g, int threadCnt, int taskCnt, long dur,
-        final LongAdder iterCntr) {
+        final LongAdder8 iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 
         final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {

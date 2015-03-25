@@ -79,8 +79,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
-            cache.clear();
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+            cache.legacyProxy().clear();
     }
 
     /** {@inheritDoc} */
@@ -235,11 +235,11 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 ses.close();
             }
 
-            IgniteCache<Object, Object> cache1 = grid(0).jcache("cache1");
-            IgniteCache<Object, Object> cache2 = grid(0).jcache("cache2");
-            IgniteCache<Object, Object> cache3 = grid(0).jcache("cache3");
-            IgniteCache<Object, Object> cacheE3 = grid(0).jcache(ENTITY3_NAME);
-            IgniteCache<Object, Object> cacheE4 = grid(0).jcache(ENTITY4_NAME);
+            IgniteCache<Object, Object> cache1 = grid(0).cache("cache1");
+            IgniteCache<Object, Object> cache2 = grid(0).cache("cache2");
+            IgniteCache<Object, Object> cache3 = grid(0).cache("cache3");
+            IgniteCache<Object, Object> cacheE3 = grid(0).cache(ENTITY3_NAME);
+            IgniteCache<Object, Object> cacheE4 = grid(0).cache(ENTITY4_NAME);
 
             assertEquals("Unexpected entries: " + toSet(cache1.iterator()), expCache1, cache1.size());
             assertEquals("Unexpected entries: " + toSet(cache2.iterator()), expCache2, cache2.size());

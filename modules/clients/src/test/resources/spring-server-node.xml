@@ -111,12 +111,14 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>

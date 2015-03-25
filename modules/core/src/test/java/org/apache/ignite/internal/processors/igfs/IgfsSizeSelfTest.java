@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -40,10 +40,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -127,7 +125,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         dataCfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED) {
-            dataCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+            if (nearEnabled)
+                dataCfg.setNearConfiguration(new NearCacheConfiguration());
+
             dataCfg.setBackups(0);
         }
 

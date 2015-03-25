@@ -139,9 +139,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         for (int i = 0; i < gridCnt; i++) {
             ignites[i] = startGrid(i);
 
-            caches[i] = ignites[i].jcache(CACHE_REGULAR);
-            cachesOffheap[i] = ignites[i].jcache(CACHE_OFFHEAP);
-            cachesOffheapTiered[i] = ignites[i].jcache(CACHE_OFFHEAP_TIERED);
+            caches[i] = ignites[i].cache(CACHE_REGULAR);
+            cachesOffheap[i] = ignites[i].cache(CACHE_OFFHEAP);
+            cachesOffheapTiered[i] = ignites[i].cache(CACHE_OFFHEAP_TIERED);
         }
     }
 
