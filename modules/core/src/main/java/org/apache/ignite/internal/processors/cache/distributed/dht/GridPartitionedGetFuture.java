@@ -400,7 +400,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     @SuppressWarnings("ConstantConditions")
     private boolean map(
         KeyCacheObject key,
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings, 
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,
         Map<K, V> locVals,
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped
@@ -607,10 +607,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
             AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
-
-            assert updTopVer.compareTo(topVer) > 0 : "Got topology exception but topology version did " +
-                "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
-                ", nodeId=" + node.id() + ']';
 
             // Remap.
             map(keys.keySet(), F.t(node, keys), updTopVer);
