@@ -23,9 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -35,7 +33,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -322,15 +319,15 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
 
         assertEquals(0, cache0.localSize(NEAR));
-        assertEquals(5, cache0.size() - cache0.localSize(NEAR));
+        assertEquals(5, cache0.localSize() - cache0.localSize(NEAR));
 
         IgniteCache<String, Integer> cache1 = jcache(1);
 
         assertEquals(0, cache1.localSize(NEAR));
-        assertEquals(5, cache1.size() - cache1.localSize(NEAR));
+        assertEquals(5, cache1.localSize() - cache1.localSize(NEAR));
 
         assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
-        assertEquals(0, cache2.size() - cache2.localSize(NEAR));
+        assertEquals(0, cache2.localSize() - cache2.localSize(NEAR));
     }
 
     /**
