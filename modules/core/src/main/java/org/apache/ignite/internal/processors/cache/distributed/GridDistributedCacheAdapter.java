@@ -278,9 +278,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     return null; // Ignore this remove request because remove request will be sent again.
 
                 GridDhtCacheAdapter<K, V> dht;
+                GridNearCacheAdapter<K, V> near = null;
 
-                if (cacheAdapter instanceof GridNearCacheAdapter)
-                    dht = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+                if (cacheAdapter instanceof GridNearCacheAdapter) {
+                    near = ((GridNearCacheAdapter<K, V>)cacheAdapter);
+                    dht = near.dht();
+                }
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
@@ -308,6 +311,15 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                     while (it.hasNext())
                         dataLdr.removeDataInternal(it.next());
+                }
+
+                if (near != null) {
+                    GridCacheVersion obsoleteVer = ctx.versions().next();
+
+                    for (GridCacheEntryEx e : near.map().allEntries0()) {
+                        if (!e.valid(topVer) && e.markObsolete(obsoleteVer))
+                            near.removeEntry(e);
+                    }
                 }
             }
             finally {

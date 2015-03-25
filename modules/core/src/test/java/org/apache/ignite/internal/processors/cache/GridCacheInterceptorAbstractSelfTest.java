@@ -800,6 +800,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         // Put from grid 1 to be sure grid 0 does not have value for near key.
         jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
 
+        atomicClockModeDelay(jcache(1));
+
         interceptor.disabled = false;
 
         log.info("Update [op=" + op + ", key1=" + key1 + ", key2=" + key2 + ", key3=" + key3 +

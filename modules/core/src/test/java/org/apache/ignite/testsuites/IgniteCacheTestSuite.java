@@ -322,7 +322,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Transform.
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         suite.addTestSuite(GridCacheEntryVersionSelfTest.class);
         suite.addTestSuite(GridCacheVersionSelfTest.class);

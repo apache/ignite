@@ -4144,19 +4144,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @param cache Cache.
-     * @throws Exception If failed.
-     */
-    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
-        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
-
-        if (ccfg.getCacheMode() != LOCAL &&
-            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
-            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(100);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testLocalClearKey() throws Exception {
