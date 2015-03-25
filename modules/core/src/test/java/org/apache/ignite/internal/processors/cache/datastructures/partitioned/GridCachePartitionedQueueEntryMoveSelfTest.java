@@ -104,7 +104,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
             IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws IgniteCheckedException {
+                @Override public Void call() {
                     Ignite ignite = grid(0);
 
                     IgniteQueue<Integer> queue = ignite.queue(queueName,
@@ -203,7 +203,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
         int part = aff.partition(mapper.affinityKey(queueName));
 
-        Collection<ClusterNode> nodes = grid(0).nodes();
+        Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
         Collection<ClusterNode> aff0 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
         Collection<ClusterNode> aff1 = nodes(aff, part, nodes);

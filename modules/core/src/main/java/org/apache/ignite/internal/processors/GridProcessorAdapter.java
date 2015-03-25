@@ -71,7 +71,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         // No-op.
     }
 
@@ -109,11 +109,6 @@ public abstract class GridProcessorAdapter implements GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
         // No-op.
     }
 

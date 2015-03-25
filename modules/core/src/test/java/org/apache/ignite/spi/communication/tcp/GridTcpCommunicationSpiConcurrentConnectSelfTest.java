@@ -54,7 +54,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
-    protected static final List<CommunicationSpi<MessageAdapter>> spis = new ArrayList<>();
+    protected static final List<CommunicationSpi<Message>> spis = new ArrayList<>();
 
     /** */
     protected static final List<ClusterNode> nodes = new ArrayList<>();
@@ -66,8 +66,8 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new GridTestMessage();
             }
         });
@@ -83,7 +83,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      *
      */
-    private static class MessageListener implements CommunicationListener<MessageAdapter> {
+    private static class MessageListener implements CommunicationListener<Message> {
         /** */
         private final CountDownLatch latch;
 
@@ -101,7 +101,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             msgC.run();
 
             assertTrue(msg instanceof GridTestMessage);
@@ -230,7 +230,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                             Thread.currentThread().setName("Test thread [idx=" + idx0 + ", grid=" + (idx0 % 2) + ']');
 
-                            CommunicationSpi<MessageAdapter> spi = spis.get(idx0 % 2);
+                            CommunicationSpi<Message> spi = spis.get(idx0 % 2);
 
                             ClusterNode srcNode = nodes.get(idx0 % 2);
 
@@ -316,7 +316,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < SPI_CNT; i++) {
-            CommunicationSpi<MessageAdapter> spi = createSpi();
+            CommunicationSpi<Message> spi = createSpi();
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
@@ -393,7 +393,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
-        for (CommunicationSpi<MessageAdapter> spi : spis) {
+        for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

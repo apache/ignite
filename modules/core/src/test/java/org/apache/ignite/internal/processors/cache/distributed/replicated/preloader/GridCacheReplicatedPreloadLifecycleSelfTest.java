@@ -32,7 +32,7 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -60,7 +60,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setName("one");
         cc1.setCacheMode(REPLICATED);
         cc1.setWriteSynchronizationMode(FULL_SYNC);
-        cc1.setPreloadMode(preloadMode);
+        cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
         cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);
@@ -86,7 +86,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) {
                 switch (evt) {
-                    case AFTER_GRID_START: {
+                    case AFTER_NODE_START: {
                         IgniteCache<Object, MyValue> c1 = ignite.jcache("one");
                         IgniteCache<Object, MyValue> c2 = ignite.jcache("two");
 
@@ -121,9 +121,9 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                         break;
                     }
 
-                    case BEFORE_GRID_START:
-                    case BEFORE_GRID_STOP:
-                    case AFTER_GRID_STOP: {
+                    case BEFORE_NODE_START:
+                    case BEFORE_NODE_STOP:
+                    case AFTER_NODE_STOP: {
                         info("Lifecycle event: " + evt);
 
                         break;
@@ -183,7 +183,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 final int i0 = j;
                 final int j0 = i;
 
-                qry = qry.projection(grid(j));
+                qry = qry.projection(grid(j).cluster());
 
                 int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
                     @IgniteInstanceResource

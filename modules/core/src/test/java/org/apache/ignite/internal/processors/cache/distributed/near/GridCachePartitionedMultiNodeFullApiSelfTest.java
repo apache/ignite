@@ -23,7 +23,9 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -31,7 +33,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
@@ -48,7 +50,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         return cc;
     }
@@ -57,7 +59,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @return Affinity nodes for this cache.
      */
     public Collection<ClusterNode> affinityNodes() {
-        return grid(0).nodes();
+        return grid(0).cluster().nodes();
     }
 
     /**
@@ -321,9 +323,16 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
         assertEquals(0, cache2.size() - cache2.nearSize());
 
-        IgniteBiPredicate<String, Integer> prjFilter = new P2<String, Integer>() {
-            @Override public boolean apply(String key, Integer val) {
-                return val >= 1 && val <= 3;
+        CacheEntryPredicateAdapter prjFilter = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                try {
+                    Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);
+
+                    return val != null && val >= 1 && val <= 3;
+                }
+                catch (IgniteCheckedException err) {
+                    throw new IgniteException(err);
+                }
             }
         };
 

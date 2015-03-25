@@ -30,10 +30,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -41,13 +37,16 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
-import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -60,7 +59,6 @@ import java.math.*;
 import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
-import java.nio.channels.spi.*;
 import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
@@ -241,7 +239,7 @@ public abstract class IgniteUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = U.intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = intToBytes(0x00004747);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -299,6 +297,13 @@ public abstract class IgniteUtils {
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
+
+    /** */
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap8<>();
 
     /**
      * Initializes enterprise check.
@@ -515,8 +520,20 @@ public abstract class IgniteUtils {
         }
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+
+        // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
+        System.setProperty("http.strictPostRedirect", "true");
     }
 
+    /**
+     * Gets IgniteClosure for an IgniteCheckedException class.
+     *
+     * @param clazz Class.
+     * @return The IgniteClosure mapped to this exception class, or null if none.
+     */
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+        return exceptionConverters.get(clazz);
+    }
 
     /**
      * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
@@ -603,6 +620,25 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
+    }
+
+    /**
      * @param e Ignite checked exception.
      * @return Ignite runtime exception.
      */
@@ -616,24 +652,6 @@ public abstract class IgniteUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
-        if (e instanceof CachePartialUpdateCheckedException)
-            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
-            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
-
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
@@ -657,15 +675,7 @@ public abstract class IgniteUtils {
      * @return Nearest power of 2.
      */
     public static int ceilPow2(int v) {
-        v--;
-
-        v |= v >> 1;
-        v |= v >> 2;
-        v |= v >> 4;
-        v |= v >> 8;
-        v |= v >> 16;
-
-        return ++v;
+        return Integer.highestOneBit(v - 1) << 1;
     }
 
     /**
@@ -759,7 +769,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debug(Object msg) {
-        X.println(debugPrefix() + msg);
+        X.error(debugPrefix() + msg);
     }
 
     /**
@@ -1301,45 +1311,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes collection of byte arrays to data output.
-     *
-     * @param out Output to write to.
-     * @param bytes Collection with byte arrays.
-     * @throws IOException If write failed.
-     */
-    public static void writeBytesCollection(DataOutput out, Collection<byte[]> bytes) throws IOException {
-        if (bytes != null) {
-            out.writeInt(bytes.size());
-
-            for (byte[] b : bytes)
-                writeByteArray(out, b);
-        }
-        else
-            out.writeInt(-1);
-    }
-
-    /**
-     * Reads collection of byte arrays from data input.
-     *
-     * @param in Data input to read from.
-     * @return List of byte arrays.
-     * @throws IOException If read failed.
-     */
-    public static List<byte[]> readBytesList(DataInput in) throws IOException {
-        int size = in.readInt();
-
-        if (size < 0)
-            return null;
-
-        List<byte[]> res = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++)
-            res.add(readByteArray(in));
-
-        return res;
-    }
-
-    /**
      *
      * @param out Output.
      * @param col Set to write.
@@ -1490,6 +1461,58 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param addrs Addresses.
+     */
+    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
+        final int reachTimeout = 2000;
+
+        if (addrs.isEmpty())
+            return Collections.emptyList();
+
+        if (addrs.size() == 1) {
+            if (reachable(addrs.get(1), reachTimeout))
+                return Collections.singletonList(addrs.get(1));
+
+            return Collections.emptyList();
+        }
+
+        final List<InetAddress> res = new ArrayList<>(addrs.size());
+
+        Collection<Future<?>> futs = new ArrayList<>(addrs.size());
+
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
+
+        for (final InetAddress addr : addrs) {
+            futs.add(executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    if (reachable(addr, reachTimeout)) {
+                        synchronized (res) {
+                            res.add(addr);
+                        }
+                    }
+                }
+            }));
+        }
+
+        for (Future<?> fut : futs) {
+            try {
+                fut.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException("Thread has been interrupted.", e);
+            } catch (ExecutionException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        executor.shutdown();
+
+        return res;
+    }
+
+    /**
      * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
      * a common address this method returns single host name, and when a wildcard address passed
      * this method tries to collect addresses of all available interfaces.
@@ -1507,22 +1530,35 @@ public abstract class IgniteUtils {
         Collection<String> hostNames = new ArrayList<>();
 
         if (locAddr.isAnyLocalAddress()) {
-            // It should not take longer than 2 seconds to reach
-            // local address on any network.
-            int reachTimeout = 2000;
+            IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
 
-            for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
-                for (InetAddress addr : asIterable(itf.getInetAddresses())) {
-                    if (!addr.isLinkLocalAddress() && reachable(itf, addr, reachTimeout))
-                        addresses(addr, addrs, hostNames);
+            if (res == null) {
+                List<InetAddress> localAddrs = new ArrayList<>();
+
+                for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
+                    for (InetAddress addr : asIterable(itf.getInetAddresses())) {
+                        if (!addr.isLinkLocalAddress())
+                            localAddrs.add(addr);
+                    }
                 }
+
+                localAddrs = filterReachable(localAddrs);
+
+                for (InetAddress addr : localAddrs)
+                    addresses(addr, addrs, hostNames);
+
+                if (F.isEmpty(addrs))
+                    throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+
+                res = F.t(addrs, hostNames);
+
+                cachedLocalAddr = res;
             }
 
-            if (F.isEmpty(addrs))
-                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
+            return res;
         }
-        else
-            addresses(locAddr, addrs, hostNames);
+
+        addresses(locAddr, addrs, hostNames);
 
         return F.t(addrs, hostNames);
     }
@@ -1682,13 +1718,11 @@ public abstract class IgniteUtils {
                     if (!itf.isLoopback()) {
                         Enumeration<InetAddress> addrs = itf.getInetAddresses();
 
-                        if (addrs != null) {
-                            for (InetAddress addr : asIterable(addrs)) {
-                                String hostAddr = addr.getHostAddress();
+                        for (InetAddress addr : asIterable(addrs)) {
+                            String hostAddr = addr.getHostAddress();
 
-                                if (!addr.isLoopbackAddress() && !ips.contains(hostAddr))
-                                    ips.add(hostAddr);
-                            }
+                            if (!addr.isLoopbackAddress() && !ips.contains(hostAddr))
+                                ips.add(hostAddr);
                         }
                     }
                 }
@@ -1894,690 +1928,171 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Verifier always returns successful result for any host.
-     */
-    private static class DeploymentHostnameVerifier implements HostnameVerifier {
-        /** {@inheritDoc} */
-        @Override public boolean verify(String hostname, SSLSession ses) {
-            // Remote host trusted by default.
-            return true;
-        }
-    }
-
-    /**
-     * Makes a {@code '+---+'} dash line.
+     * Writes collection of byte arrays to data output.
      *
-     * @param len Length of the dash line to make.
-     * @return Dash line.
+     * @param out Output to write to.
+     * @param bytes Collection with byte arrays.
+     * @throws java.io.IOException If write failed.
      */
-    public static String dash(int len) {
-        char[] dash = new char[len];
-
-        Arrays.fill(dash, '-');
-
-        dash[0] = dash[len - 1] = '+';
-
-        return new String(dash);
-    }
-
-    /**
-     * Creates space filled string of given length.
-     *
-     * @param len Number of spaces.
-     * @return Space filled string of given length.
-     */
-    public static String pad(int len) {
-        char[] dash = new char[len];
-
-        Arrays.fill(dash, ' ');
-
-        return new String(dash);
-    }
-
-    /**
-     * Formats system time in milliseconds for printing in logs.
-     *
-     * @param sysTime System time.
-     * @return Formatted time string.
-     */
-    public static String format(long sysTime) {
-        return LONG_DATE_FMT.format(new java.util.Date(sysTime));
-    }
-
-    /**
-     * Takes given collection, shuffles it and returns iterable instance.
-     *
-     * @param <T> Type of elements to create iterator for.
-     * @param col Collection to shuffle.
-     * @return Iterable instance over randomly shuffled collection.
-     */
-    public static <T> Iterable<T> randomIterable(Collection<T> col) {
-        List<T> list = new ArrayList<>(col);
-
-        Collections.shuffle(list);
-
-        return list;
-    }
-
-    /**
-     * Converts enumeration to iterable so it can be used in {@code foreach} construct.
-     *
-     * @param <T> Types of instances for iteration.
-     * @param e Enumeration to convert.
-     * @return Iterable over the given enumeration.
-     */
-    public static <T> Iterable<T> asIterable(final Enumeration<T> e) {
-        return new Iterable<T>() {
-            @Override public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    @Override public boolean hasNext() {
-                        return e.hasMoreElements();
-                    }
-
-                    @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
-                    @Override public T next() {
-                        return e.nextElement();
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        };
-    }
-
-    /**
-     * Copy source file (or folder) to destination file (or folder). Supported source & destination:
-     * <ul>
-     * <li>File to File</li>
-     * <li>File to Folder</li>
-     * <li>Folder to Folder (Copy the content of the directory and not the directory itself)</li>
-     * </ul>
-     *
-     * @param src Source file or folder.
-     * @param dest Destination file or folder.
-     * @param overwrite Whether or not overwrite existing files and folders.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static void copy(File src, File dest, boolean overwrite) throws IOException {
-        assert src != null;
-        assert dest != null;
-
-        /*
-         * Supported source & destination:
-         * ===============================
-         * 1. File -> File
-         * 2. File -> Directory
-         * 3. Directory -> Directory
-         */
-
-        // Source must exist.
-        if (!src.exists())
-            throw new FileNotFoundException("Source can't be found: " + src);
-
-        // Check that source and destination are not the same.
-        if (src.getAbsoluteFile().equals(dest.getAbsoluteFile()))
-            throw new IOException("Source and destination are the same [src=" + src + ", dest=" + dest + ']');
-
-        if (dest.exists()) {
-            if (!dest.isDirectory() && !overwrite)
-                throw new IOException("Destination already exists: " + dest);
-
-            if (!dest.canWrite())
-                throw new IOException("Destination is not writable:" + dest);
-        }
-        else {
-            File parent = dest.getParentFile();
-
-            if (parent != null && !parent.exists())
-                // Ignore any errors here.
-                // We will get errors when we'll try to open the file stream.
-                //noinspection ResultOfMethodCallIgnored
-                parent.mkdirs();
-
-            // If source is a directory, we should create destination directory.
-            if (src.isDirectory())
-                //noinspection ResultOfMethodCallIgnored
-                dest.mkdir();
-        }
-
-        if (src.isDirectory()) {
-            // In this case we have Directory -> Directory.
-            // Note that we copy the content of the directory and not the directory itself.
-
-            File[] files = src.listFiles();
-
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    File dir = new File(dest, file.getName());
-
-                    if (!dir.exists() && !dir.mkdirs())
-                        throw new IOException("Can't create directory: " + dir);
-
-                    copy(file, dir, overwrite);
-                }
-                else
-                    copy(file, dest, overwrite);
-            }
-        }
-        else {
-            // In this case we have File -> File or File -> Directory.
-            File file = dest.exists() && dest.isDirectory() ? new File(dest, src.getName()) : dest;
-
-            if (!overwrite && file.exists())
-                throw new IOException("Destination already exists: " + file);
-
-            FileInputStream in = null;
-            FileOutputStream out = null;
-
-            try {
-                in = new FileInputStream(src);
-                out = new FileOutputStream(file);
-
-                copy(in, out);
-            }
-            finally {
-                if (in != null)
-                    in.close();
-
-                if (out != null) {
-                    out.getFD().sync();
-
-                    out.close();
-                }
-            }
-        }
-    }
-
-    /**
-     * Starts clock timer if grid is first.
-     */
-    public static void onGridStart() {
-        synchronized (mux) {
-            if (gridCnt == 0) {
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
-
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
-                        }
-                    }
-                }, "ignite-clock");
-
-                timer.setDaemon(true);
-
-                timer.setPriority(10);
-
-                timer.start();
-            }
-
-            ++gridCnt;
-        }
-    }
-
-    /**
-     * Stops clock timer if all nodes into JVM were stopped.
-     */
-    public static void onGridStop(){
-        synchronized (mux) {
-            assert gridCnt > 0 : gridCnt;
-
-            --gridCnt;
-
-            if (gridCnt == 0 && timer != null) {
-                timer.interrupt();
-
-                timer = null;
-            }
-        }
-    }
-
-    /**
-     * Copies input byte stream to output byte stream.
-     *
-     * @param in Input byte stream.
-     * @param out Output byte stream.
-     * @return Number of the copied bytes.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static int copy(InputStream in, OutputStream out) throws IOException {
-        assert in != null;
-        assert out != null;
-
-        byte[] buf = new byte[BUF_SIZE];
-
-        int cnt = 0;
-
-        for (int n; (n = in.read(buf)) > 0;) {
-            out.write(buf, 0, n);
-
-            cnt += n;
-        }
-
-        return cnt;
-    }
-
-    /**
-     * Copies input character stream to output character stream.
-     *
-     * @param in Input character stream.
-     * @param out Output character stream.
-     * @return Number of the copied characters.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static int copy(Reader in, Writer out) throws IOException {
-        assert in != null;
-        assert out != null;
-
-        char[] buf = new char[BUF_SIZE];
-
-        int cnt = 0;
-
-        for (int n; (n = in.read(buf)) > 0;) {
-            out.write(buf, 0, n);
-
-            cnt += n;
-        }
-
-        return cnt;
-    }
-
-    /**
-     * Writes string to file.
-     *
-     * @param file File.
-     * @param s String to write.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static void writeStringToFile(File file, String s) throws IOException {
-        writeStringToFile(file, s, Charset.defaultCharset().toString(), false);
-    }
-
-    /**
-     * Writes string to file.
-     *
-     * @param file File.
-     * @param s String to write.
-     * @param charset Encoding.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static void writeStringToFile(File file, String s, String charset) throws IOException {
-        writeStringToFile(file, s, charset, false);
-    }
-
-    /**
-     * Reads file to string using specified charset.
-     *
-     * @param fileName File name.
-     * @param charset File charset.
-     * @return File content.
-     * @throws IOException If error occurred.
-     */
-    public static String readFileToString(String fileName, String charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
-
-        StringWriter output = new StringWriter();
-
-        char[] buf = new char[4096];
-
-        int n;
-
-        while ((n = input.read(buf)) != -1)
-            output.write(buf, 0, n);
-
-        return output.toString();
-    }
-
-    /**
-     * Writes string to file.
-     *
-     * @param file File.
-     * @param s String to write.
-     * @param charset Encoding.
-     * @param append If {@code true}, then specified string will be added to the end of the file.
-     * @throws IOException Thrown if an I/O error occurs.
-     */
-    public static void writeStringToFile(File file, String s, String charset, boolean append) throws IOException {
-        if (s == null)
-            return;
-
-        OutputStream out = null;
-
-        try {
-            out = new FileOutputStream(file, append);
-
-            if (s != null)
-                out.write(s.getBytes(charset));
-        } finally {
-            closeQuiet(out);
-        }
-    }
-
-    /**
-     * Utility method that sets cause into exception and returns it.
-     *
-     * @param e Exception to set cause to and return.
-     * @param cause Optional cause to set (if not {@code null}).
-     * @param <E> Type of the exception.
-     * @return Passed in exception with optionally set cause.
-     */
-    public static <E extends Throwable> E withCause(E e, @Nullable Throwable cause) {
-        assert e != null;
-
-        if (cause != null)
-            e.initCause(cause);
-
-        return e;
-    }
-
-    /**
-     * Deletes file or directory with all sub-directories and files.
-     *
-     * @param file File or directory to delete.
-     * @return {@code true} if and only if the file or directory is successfully deleted,
-     *      {@code false} otherwise
-     */
-    public static boolean delete(File file) {
-        assert file != null;
-
-        boolean res = true;
-
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-
-            if (files != null && files.length > 0)
-                for (File file1 : files)
-                    if (file1.isDirectory())
-                        res &= delete(file1);
-                    else if (file1.getName().endsWith("jar"))
-                        try {
-                            // Why do we do this?
-                            new JarFile(file1, false).close();
-
-                            res &= file1.delete();
-                        }
-                        catch (IOException ignore) {
-                            // Ignore it here...
-                        }
-                    else
-                        res &= file1.delete();
-
-            res &= file.delete();
+    public static void writeBytesCollection(DataOutput out, Collection<byte[]> bytes) throws IOException {
+        if (bytes != null) {
+            out.writeInt(bytes.size());
+
+            for (byte[] b : bytes)
+                writeByteArray(out, b);
         }
         else
-            res = file.delete();
+            out.writeInt(-1);
+    }
+
+    /**
+     * Reads collection of byte arrays from data input.
+     *
+     * @param in Data input to read from.
+     * @return List of byte arrays.
+     * @throws java.io.IOException If read failed.
+     */
+    public static List<byte[]> readBytesList(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size < 0)
+            return null;
+
+        List<byte[]> res = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            res.add(readByteArray(in));
 
         return res;
     }
 
     /**
-     * @param dir Directory to create along with all non-existent parent directories.
-     * @return {@code True} if directory exists (has been created or already existed),
-     *      {@code false} if has not been created and does not exist.
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
      */
-    public static boolean mkdirs(File dir) {
-        assert dir != null;
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
 
-        return dir.mkdirs() || dir.exists();
+            out.write(arr);
+        }
     }
 
     /**
-     * Resolve project home directory based on source code base.
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
      *
-     * @return Project home directory (or {@code null} if it cannot be resolved).
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
      */
-    @Nullable private static String resolveProjectHome() {
-        assert Thread.holdsLock(IgniteUtils.class);
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr, int maxLen) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            int len = Math.min(arr.length, maxLen);
 
-        // Resolve Ignite home via environment variables.
-        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
+            out.writeInt(len);
 
-        if (!F.isEmpty(ggHome0))
-            return ggHome0;
-
-        String appWorkDir = System.getProperty("user.dir");
-
-        if (appWorkDir != null) {
-            ggHome0 = findProjectHome(new File(appWorkDir));
-
-            if (ggHome0 != null)
-                return ggHome0;
+            out.write(arr, 0, len);
         }
+    }
 
-        URI uri;
+    /**
+     * Reads byte array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws java.io.IOException If read failed.
+     */
+    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+        int len = in.readInt();
 
-        Class<IgniteUtils> cls = IgniteUtils.class;
+        if (len == -1)
+            return null; // Value "-1" indicates null.
 
-        try {
-            ProtectionDomain domain = cls.getProtectionDomain();
+        byte[] res = new byte[len];
 
-            // Should not happen, but to make sure our code is not broken.
-            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                logResolveFailed(cls, null);
+        in.readFully(res);
 
-                return null;
+        return res;
+    }
+
+    /**
+     * Reads byte array from given buffers (changing buffer positions).
+     *
+     * @param bufs Byte buffers.
+     * @return Byte array.
+     */
+    public static byte[] readByteArray(ByteBuffer... bufs) {
+        assert !F.isEmpty(bufs);
+
+        int size = 0;
+
+        for (ByteBuffer buf : bufs)
+            size += buf.remaining();
+
+        byte[] res = new byte[size];
+
+        int off = 0;
+
+        for (ByteBuffer buf : bufs) {
+            int len = buf.remaining();
+
+            if (len != 0) {
+                buf.get(res, off, len);
+
+                off += len;
             }
-
-            // Resolve path to class-file.
-            uri = domain.getCodeSource().getLocation().toURI();
-
-            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && uri.getAuthority() != null)
-                uri = new URI(uri.toString().replace("file://", "file:/"));
         }
-        catch (URISyntaxException | SecurityException e) {
-            logResolveFailed(cls, e);
 
+        assert off == res.length;
+
+        return res;
+    }
+
+    /**
+     * // FIXME: added for DR dataCenterIds, review if it is needed after GG-6879.
+     *
+     * @param out Output.
+     * @param col Set to write.
+     * @throws java.io.IOException If write failed.
+     */
+    public static void writeByteCollection(DataOutput out, Collection<Byte> col) throws IOException {
+        if (col != null) {
+            out.writeInt(col.size());
+
+            for (Byte i : col)
+                out.writeByte(i);
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * // FIXME: added for DR dataCenterIds, review if it is needed after GG-6879.
+     *
+     * @param in Input.
+     * @return Deserialized list.
+     * @throws java.io.IOException If deserialization failed.
+     */
+    @Nullable public static List<Byte> readByteList(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
             return null;
-        }
 
-        return findProjectHome(new File(uri));
-    }
+        List<Byte> col = new ArrayList<>(size);
 
-    /**
-     * Tries to find project home starting from specified directory and moving to root.
-     *
-     * @param startDir First directory in search hierarchy.
-     * @return Project home path or {@code null} if it wasn't found.
-     */
-    private static String findProjectHome(File startDir) {
-        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-            // Check 'cur' is project home directory.
-            if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "libs").isDirectory() ||
-                !new File(cur, "config").isDirectory())
-                continue;
+        for (int i = 0; i < size; i++)
+            col.add(in.readByte());
 
-            return cur.getPath();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cls Class.
-     * @param e Exception.
-     */
-    private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
-            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
-    }
-
-    /**
-     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
-     * properties or from environment in that order.
-     *
-     * @return {@code IGNITE_HOME} property.
-     */
-    @Nullable public static String getIgniteHome() {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    // Resolve Ignite installation home directory.
-                    ggHome = F.t(ggHome0 = resolveProjectHome());
-
-                    if (ggHome0 != null)
-                        System.setProperty(IGNITE_HOME, ggHome0);
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        return ggHome0;
-    }
-
-    /**
-     * @param path Ignite home. May be {@code null}.
-     */
-    public static void setIgniteHome(@Nullable String path) {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    if (F.isEmpty(path))
-                        System.clearProperty(IGNITE_HOME);
-                    else
-                        System.setProperty(IGNITE_HOME, path);
-
-                    ggHome = F.t(path);
-
-                    return;
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
-    }
-
-    /**
-     * Gets file associated with path.
-     * <p>
-     * First check if path is relative to {@code IGNITE_HOME}.
-     * If not, check if path is absolute.
-     * If all checks fail, then {@code null} is returned.
-     * <p>
-     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
-     *
-     * @param path Path to resolve.
-     * @return Resolved path as file, or {@code null} if path cannot be resolved.
-     */
-    @Nullable public static File resolveIgnitePath(String path) {
-        assert path != null;
-
-        /*
-         * 1. Check relative to IGNITE_HOME specified in configuration, if any.
-         */
-
-        String home = getIgniteHome();
-
-        if (home != null) {
-            File file = new File(home, path);
-
-            if (file.exists())
-                return file;
-        }
-
-        /*
-         * 2. Check given path as absolute.
-         */
-
-        File file = new File(path);
-
-        if (file.exists())
-            return file;
-
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
-    }
-
-    /**
-     * Gets URL representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
-     * If all checks fail,
-     * then {@code null} is returned, otherwise URL representing path is returned.
-     * <p>
-     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
-     *
-     * @param path Path to resolve.
-     * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getIgniteHome()
-     */
-    @Nullable public static URL resolveIgniteUrl(String path) {
-        return resolveIgniteUrl(path, true);
-    }
-
-    /**
-     * Gets URL representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
-     * If all checks fail,
-     * then {@code null} is returned, otherwise URL representing path is returned.
-     * <p>
-     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
-     *
-     * @param path Path to resolve.
-     * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
-     * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getIgniteHome()
-     */
-    @SuppressWarnings({"UnusedCatchParameter"})
-    @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
-        File f = resolveIgnitePath(path);
-
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
-
-        if (f != null) {
-            try {
-                // Note: we use that method's chain instead of File.getURL() with due
-                // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
-                return f.toURI().toURL();
-            }
-            catch (MalformedURLException e) {
-                // No-op.
-            }
-        }
-
-        String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
-
-        return Thread.currentThread().getContextClassLoader().getResource(locPath);
+        return col;
     }
 
     /**
@@ -2646,21 +2161,6 @@ public abstract class IgniteUtils {
         sb.a('}');
 
         return sb.toString();
-    }
-
-    /**
-     * Converts byte array to hex string.
-     *
-     * @param arr Array of bytes.
-     * @return Hex string.
-     */
-    public static String byteArray2HexString(byte[] arr) {
-        SB sb = new SB(arr.length << 1);
-
-        for (byte b : arr)
-            sb.a(Integer.toHexString(MASK & b >>> 4)).a(Integer.toHexString(MASK & b));
-
-        return sb.toString().toUpperCase();
     }
 
     /**
@@ -2967,7 +2467,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Reads an {@link UUID} form byte array.
+     * Reads an {@link java.util.UUID} form byte array.
      * If given array contains all 0s then {@code null} will be returned.
      *
      * @param bytes array of bytes.
@@ -3020,6 +2520,736 @@ public abstract class IgniteUtils {
 
             return true;
         }
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws org.apache.ignite.IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
+
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new IgniteCheckedException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // Two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Verifier always returns successful result for any host.
+     */
+    private static class DeploymentHostnameVerifier implements HostnameVerifier {
+        /** {@inheritDoc} */
+        @Override public boolean verify(String hostname, SSLSession ses) {
+            // Remote host trusted by default.
+            return true;
+        }
+    }
+
+    /**
+     * Makes a {@code '+---+'} dash line.
+     *
+     * @param len Length of the dash line to make.
+     * @return Dash line.
+     */
+    public static String dash(int len) {
+        char[] dash = new char[len];
+
+        Arrays.fill(dash, '-');
+
+        dash[0] = dash[len - 1] = '+';
+
+        return new String(dash);
+    }
+
+    /**
+     * Creates space filled string of given length.
+     *
+     * @param len Number of spaces.
+     * @return Space filled string of given length.
+     */
+    public static String pad(int len) {
+        char[] dash = new char[len];
+
+        Arrays.fill(dash, ' ');
+
+        return new String(dash);
+    }
+
+    /**
+     * Formats system time in milliseconds for printing in logs.
+     *
+     * @param sysTime System time.
+     * @return Formatted time string.
+     */
+    public static String format(long sysTime) {
+        return LONG_DATE_FMT.format(new java.util.Date(sysTime));
+    }
+
+    /**
+     * Takes given collection, shuffles it and returns iterable instance.
+     *
+     * @param <T> Type of elements to create iterator for.
+     * @param col Collection to shuffle.
+     * @return Iterable instance over randomly shuffled collection.
+     */
+    public static <T> Iterable<T> randomIterable(Collection<T> col) {
+        List<T> list = new ArrayList<>(col);
+
+        Collections.shuffle(list);
+
+        return list;
+    }
+
+    /**
+     * Converts enumeration to iterable so it can be used in {@code foreach} construct.
+     *
+     * @param <T> Types of instances for iteration.
+     * @param e Enumeration to convert.
+     * @return Iterable over the given enumeration.
+     */
+    public static <T> Iterable<T> asIterable(final Enumeration<T> e) {
+        return new Iterable<T>() {
+            @Override public Iterator<T> iterator() {
+                return new Iterator<T>() {
+                    @Override public boolean hasNext() {
+                        return e.hasMoreElements();
+                    }
+
+                    @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
+                    @Override public T next() {
+                        return e.nextElement();
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        };
+    }
+
+    /**
+     * Copy source file (or folder) to destination file (or folder). Supported source & destination:
+     * <ul>
+     * <li>File to File</li>
+     * <li>File to Folder</li>
+     * <li>Folder to Folder (Copy the content of the directory and not the directory itself)</li>
+     * </ul>
+     *
+     * @param src Source file or folder.
+     * @param dest Destination file or folder.
+     * @param overwrite Whether or not overwrite existing files and folders.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void copy(File src, File dest, boolean overwrite) throws IOException {
+        assert src != null;
+        assert dest != null;
+
+        /*
+         * Supported source & destination:
+         * ===============================
+         * 1. File -> File
+         * 2. File -> Directory
+         * 3. Directory -> Directory
+         */
+
+        // Source must exist.
+        if (!src.exists())
+            throw new FileNotFoundException("Source can't be found: " + src);
+
+        // Check that source and destination are not the same.
+        if (src.getAbsoluteFile().equals(dest.getAbsoluteFile()))
+            throw new IOException("Source and destination are the same [src=" + src + ", dest=" + dest + ']');
+
+        if (dest.exists()) {
+            if (!dest.isDirectory() && !overwrite)
+                throw new IOException("Destination already exists: " + dest);
+
+            if (!dest.canWrite())
+                throw new IOException("Destination is not writable:" + dest);
+        }
+        else {
+            File parent = dest.getParentFile();
+
+            if (parent != null && !parent.exists())
+                // Ignore any errors here.
+                // We will get errors when we'll try to open the file stream.
+                //noinspection ResultOfMethodCallIgnored
+                parent.mkdirs();
+
+            // If source is a directory, we should create destination directory.
+            if (src.isDirectory())
+                //noinspection ResultOfMethodCallIgnored
+                dest.mkdir();
+        }
+
+        if (src.isDirectory()) {
+            // In this case we have Directory -> Directory.
+            // Note that we copy the content of the directory and not the directory itself.
+
+            File[] files = src.listFiles();
+
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    File dir = new File(dest, file.getName());
+
+                    if (!dir.exists() && !dir.mkdirs())
+                        throw new IOException("Can't create directory: " + dir);
+
+                    copy(file, dir, overwrite);
+                }
+                else
+                    copy(file, dest, overwrite);
+            }
+        }
+        else {
+            // In this case we have File -> File or File -> Directory.
+            File file = dest.exists() && dest.isDirectory() ? new File(dest, src.getName()) : dest;
+
+            if (!overwrite && file.exists())
+                throw new IOException("Destination already exists: " + file);
+
+            FileInputStream in = null;
+            FileOutputStream out = null;
+
+            try {
+                in = new FileInputStream(src);
+                out = new FileOutputStream(file);
+
+                copy(in, out);
+            }
+            finally {
+                if (in != null)
+                    in.close();
+
+                if (out != null) {
+                    out.getFD().sync();
+
+                    out.close();
+                }
+            }
+        }
+    }
+
+    /**
+     * Starts clock timer if grid is first.
+     */
+    public static void onGridStart() {
+        synchronized (mux) {
+            if (gridCnt == 0) {
+                timer = new Thread(new Runnable() {
+                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @Override public void run() {
+                        while (true) {
+                            curTimeMillis = System.currentTimeMillis();
+
+                            try {
+                                Thread.sleep(10);
+                            }
+                            catch (InterruptedException ignored) {
+                                break;
+                            }
+                        }
+                    }
+                }, "ignite-clock");
+
+                timer.setDaemon(true);
+
+                timer.setPriority(10);
+
+                timer.start();
+            }
+
+            ++gridCnt;
+        }
+    }
+
+    /**
+     * Stops clock timer if all nodes into JVM were stopped.
+     */
+    public static void onGridStop(){
+        synchronized (mux) {
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
+
+            --gridCnt;
+
+            if (gridCnt == 0 && timer != null) {
+                timer.interrupt();
+
+                timer = null;
+            }
+        }
+    }
+
+    /**
+     * Copies input byte stream to output byte stream.
+     *
+     * @param in Input byte stream.
+     * @param out Output byte stream.
+     * @return Number of the copied bytes.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static int copy(InputStream in, OutputStream out) throws IOException {
+        assert in != null;
+        assert out != null;
+
+        byte[] buf = new byte[BUF_SIZE];
+
+        int cnt = 0;
+
+        for (int n; (n = in.read(buf)) > 0;) {
+            out.write(buf, 0, n);
+
+            cnt += n;
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Copies input character stream to output character stream.
+     *
+     * @param in Input character stream.
+     * @param out Output character stream.
+     * @return Number of the copied characters.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static int copy(Reader in, Writer out) throws IOException {
+        assert in != null;
+        assert out != null;
+
+        char[] buf = new char[BUF_SIZE];
+
+        int cnt = 0;
+
+        for (int n; (n = in.read(buf)) > 0;) {
+            out.write(buf, 0, n);
+
+            cnt += n;
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s) throws IOException {
+        writeStringToFile(file, s, Charset.defaultCharset().toString(), false);
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset) throws IOException {
+        writeStringToFile(file, s, charset, false);
+    }
+
+    /**
+     * Reads file to string using specified charset.
+     *
+     * @param fileName File name.
+     * @param charset File charset.
+     * @return File content.
+     * @throws IOException If error occurred.
+     */
+    public static String readFileToString(String fileName, String charset) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+
+        StringWriter output = new StringWriter();
+
+        char[] buf = new char[4096];
+
+        int n;
+
+        while ((n = input.read(buf)) != -1)
+            output.write(buf, 0, n);
+
+        return output.toString();
+    }
+
+    /**
+     * Writes string to file.
+     *
+     * @param file File.
+     * @param s String to write.
+     * @param charset Encoding.
+     * @param append If {@code true}, then specified string will be added to the end of the file.
+     * @throws IOException Thrown if an I/O error occurs.
+     */
+    public static void writeStringToFile(File file, String s, String charset, boolean append) throws IOException {
+        if (s == null)
+            return;
+
+        try (OutputStream out = new FileOutputStream(file, append)) {
+            out.write(s.getBytes(charset));
+        }
+    }
+
+    /**
+     * Utility method that sets cause into exception and returns it.
+     *
+     * @param e Exception to set cause to and return.
+     * @param cause Optional cause to set (if not {@code null}).
+     * @param <E> Type of the exception.
+     * @return Passed in exception with optionally set cause.
+     */
+    public static <E extends Throwable> E withCause(E e, @Nullable Throwable cause) {
+        assert e != null;
+
+        if (cause != null)
+            e.initCause(cause);
+
+        return e;
+    }
+
+    /**
+     * Deletes file or directory with all sub-directories and files.
+     *
+     * @param file File or directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted,
+     *      {@code false} otherwise
+     */
+    public static boolean delete(File file) {
+        assert file != null;
+
+        boolean res = true;
+
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+
+            if (files != null && files.length > 0)
+                for (File file1 : files)
+                    if (file1.isDirectory())
+                        res &= delete(file1);
+                    else if (file1.getName().endsWith("jar"))
+                        try {
+                            // Why do we do this?
+                            new JarFile(file1, false).close();
+
+                            res &= file1.delete();
+                        }
+                        catch (IOException ignore) {
+                            // Ignore it here...
+                        }
+                    else
+                        res &= file1.delete();
+
+            res &= file.delete();
+        }
+        else
+            res = file.delete();
+
+        return res;
+    }
+
+    /**
+     * @param dir Directory to create along with all non-existent parent directories.
+     * @return {@code True} if directory exists (has been created or already existed),
+     *      {@code false} if has not been created and does not exist.
+     */
+    public static boolean mkdirs(File dir) {
+        assert dir != null;
+
+        return dir.mkdirs() || dir.exists();
+    }
+
+    /**
+     * Resolve project home directory based on source code base.
+     *
+     * @return Project home directory (or {@code null} if it cannot be resolved).
+     */
+    @Nullable private static String resolveProjectHome() {
+        assert Thread.holdsLock(IgniteUtils.class);
+
+        // Resolve Ignite home via environment variables.
+        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
+
+        if (!F.isEmpty(ggHome0))
+            return ggHome0;
+
+        String appWorkDir = System.getProperty("user.dir");
+
+        if (appWorkDir != null) {
+            ggHome0 = findProjectHome(new File(appWorkDir));
+
+            if (ggHome0 != null)
+                return ggHome0;
+        }
+
+        URI uri;
+
+        Class<IgniteUtils> cls = IgniteUtils.class;
+
+        try {
+            ProtectionDomain domain = cls.getProtectionDomain();
+
+            // Should not happen, but to make sure our code is not broken.
+            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
+                logResolveFailed(cls, null);
+
+                return null;
+            }
+
+            // Resolve path to class-file.
+            uri = domain.getCodeSource().getLocation().toURI();
+
+            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+            if (isWindows() && uri.getAuthority() != null)
+                uri = new URI(uri.toString().replace("file://", "file:/"));
+        }
+        catch (URISyntaxException | SecurityException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(new File(uri));
+    }
+
+    /**
+     * Tries to find project home starting from specified directory and moving to root.
+     *
+     * @param startDir First directory in search hierarchy.
+     * @return Project home path or {@code null} if it wasn't found.
+     */
+    private static String findProjectHome(File startDir) {
+        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
+            // Check 'cur' is project home directory.
+            if (!new File(cur, "bin").isDirectory() ||
+                !new File(cur, "docs").isDirectory() ||
+                !new File(cur, "config").isDirectory())
+                continue;
+
+            return cur.getPath();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cls Class.
+     * @param e Exception.
+     */
+    private static void logResolveFailed(Class cls, Exception e) {
+        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
+            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
+    }
+
+    /**
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
+     * properties or from environment in that order.
+     *
+     * @return {@code IGNITE_HOME} property.
+     */
+    @Nullable public static String getIgniteHome() {
+        GridTuple<String> ggHomeTup = ggHome;
+
+        String ggHome0;
+
+        if (ggHomeTup == null) {
+            synchronized (IgniteUtils.class) {
+                // Double check.
+                ggHomeTup = ggHome;
+
+                if (ggHomeTup == null) {
+                    // Resolve Ignite installation home directory.
+                    ggHome = F.t(ggHome0 = resolveProjectHome());
+
+                    if (ggHome0 != null)
+                        System.setProperty(IGNITE_HOME, ggHome0);
+                }
+                else
+                    ggHome0 = ggHomeTup.get();
+            }
+        }
+        else
+            ggHome0 = ggHomeTup.get();
+
+        return ggHome0;
+    }
+
+    /**
+     * @param path Ignite home. May be {@code null}.
+     */
+    public static void setIgniteHome(@Nullable String path) {
+        GridTuple<String> ggHomeTup = ggHome;
+
+        String ggHome0;
+
+        if (ggHomeTup == null) {
+            synchronized (IgniteUtils.class) {
+                // Double check.
+                ggHomeTup = ggHome;
+
+                if (ggHomeTup == null) {
+                    if (F.isEmpty(path))
+                        System.clearProperty(IGNITE_HOME);
+                    else
+                        System.setProperty(IGNITE_HOME, path);
+
+                    ggHome = F.t(path);
+
+                    return;
+                }
+                else
+                    ggHome0 = ggHomeTup.get();
+            }
+        }
+        else
+            ggHome0 = ggHomeTup.get();
+
+        if (ggHome0 != null && !ggHome0.equals(path))
+            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+    }
+
+    /**
+     * Gets file associated with path.
+     * <p>
+     * First check if path is relative to {@code IGNITE_HOME}.
+     * If not, check if path is absolute.
+     * If all checks fail, then {@code null} is returned.
+     * <p>
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     *
+     * @param path Path to resolve.
+     * @return Resolved path as file, or {@code null} if path cannot be resolved.
+     */
+    @Nullable public static File resolveIgnitePath(String path) {
+        assert path != null;
+
+        /*
+         * 1. Check relative to IGNITE_HOME specified in configuration, if any.
+         */
+
+        String home = getIgniteHome();
+
+        if (home != null) {
+            File file = new File(home, path);
+
+            if (file.exists())
+                return file;
+        }
+
+        /*
+         * 2. Check given path as absolute.
+         */
+
+        File file = new File(path);
+
+        if (file.exists())
+            return file;
+
+        return null;
+    }
+
+    /**
+     * Gets URL representing the path passed in. First the check is made if path is absolute.
+     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
+     * If all checks fail,
+     * then {@code null} is returned, otherwise URL representing path is returned.
+     * <p>
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     *
+     * @param path Path to resolve.
+     * @return Resolved path as URL, or {@code null} if path cannot be resolved.
+     * @see #getIgniteHome()
+     */
+    @Nullable public static URL resolveIgniteUrl(String path) {
+        return resolveIgniteUrl(path, true);
+    }
+
+    /**
+     * Gets URL representing the path passed in. First the check is made if path is absolute.
+     * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
+     * If all checks fail,
+     * then {@code null} is returned, otherwise URL representing path is returned.
+     * <p>
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     *
+     * @param path Path to resolve.
+     * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
+     * @return Resolved path as URL, or {@code null} if path cannot be resolved.
+     * @see #getIgniteHome()
+     */
+    @SuppressWarnings({"UnusedCatchParameter"})
+    @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
+        File f = resolveIgnitePath(path);
+
+        if (f != null) {
+            try {
+                // Note: we use that method's chain instead of File.getURL() with due
+                // Sun bug http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6179468
+                return f.toURI().toURL();
+            }
+            catch (MalformedURLException e) {
+                // No-op.
+            }
+        }
+
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+
+        if (clsLdr != null) {
+            String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+
+            return clsLdr.getResource(locPath);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr) {
+        SB sb = new SB(arr.length << 1);
+
+        for (byte b : arr)
+            sb.a(Integer.toHexString(MASK & b >>> 4)).a(Integer.toHexString(MASK & b));
+
+        return sb.toString().toUpperCase();
     }
 
     /**
@@ -3155,35 +3385,17 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Checks for containment of value matching given regular expression in the provided array.
-     *
-     * @param arr Array of strings.
-     * @param regex Regular expression.
-     * @return {@code true} if string matching given regular expression found, {@code false} otherwise.
-     */
-    public static boolean containsRegexArray(String[] arr, String regex) {
-        assert arr != null;
-        assert regex != null;
-
-        for (String s : arr)
-            if (s != null && s.matches(regex))
-                return true;
-
-        return false;
-    }
-
-    /**
      * Closes given resource logging possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
-    public static void close(@Nullable Closeable rsrc, @Nullable IgniteLogger log) {
+    public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
         if (rsrc != null)
             try {
                 rsrc.close();
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
     }
@@ -3199,114 +3411,6 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Closeable rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Socket rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Socket rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable ServerSocket rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable ServerSocket rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable AbstractInterruptibleChannel rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable AbstractInterruptibleChannel rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
                 // No-op.
             }
     }
@@ -3332,83 +3436,6 @@ public abstract class IgniteUtils {
         if (rsrc != null)
             // This apply will automatically deregister the selection key as well.
             closeQuiet(rsrc.channel());
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Reader rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Reader rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable Writer rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable ZipFile rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable ZipFile rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
     }
 
     /**
@@ -3481,99 +3508,6 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (NamingException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes JDBC connection logging possible checked exception.
-     *
-     * @param rsrc JDBC connection to close. If connection is {@code null}, it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Connection rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes JDBC connection ignoring possible checked exception.
-     *
-     * @param rsrc JDBC connection to close. If connection is {@code null}, it's no-op.
-     */
-    public static void closeQuiet(@Nullable Connection rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes JDBC statement logging possible checked exception.
-     *
-     * @param rsrc JDBC statement to close. If statement is {@code null}, it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Statement rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes JDBC statement ignoring possible checked exception.
-     *
-     * @param rsrc JDBC statement to close. If statement is {@code null}, it's no-op.
-     */
-    public static void closeQuiet(@Nullable Statement rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException ignored) {
-                // No-op.
-            }
-    }
-
-    /**
-     * Closes JDBC result set logging possible checked exception.
-     *
-     * @param rsrc JDBC result set to close. If result set is {@code null}, it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable ResultSet rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Quietly closes JDBC result set ignoring possible checked exception.
-     *
-     * @param rsrc JDBC result set to close. If result set is {@code null}, it's no-op.
-     */
-    public static void closeQuiet(@Nullable ResultSet rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (SQLException ignored) {
                 // No-op.
             }
     }
@@ -4242,8 +4176,7 @@ public abstract class IgniteUtils {
      * @return Empty projection exception.
      */
     public static ClusterGroupEmptyCheckedException emptyTopologyException() {
-        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
-            "cluster group can be empty from call to call.");
+        return new ClusterGroupEmptyCheckedException("Cluster group is empty.");
     }
 
     /**
@@ -4441,9 +4374,9 @@ public abstract class IgniteUtils {
     public static void igniteUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
         assert uuid != null;
 
-        U.longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
-        U.longToBytes(uuid.globalId().getLeastSignificantBits(), out, off + 8);
-        U.longToBytes(uuid.localId(), out, off + 16);
+        longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
+        longToBytes(uuid.globalId().getLeastSignificantBits(), out, off + 8);
+        longToBytes(uuid.localId(), out, off + 16);
     }
 
     /**
@@ -4454,67 +4387,11 @@ public abstract class IgniteUtils {
      * @return GridUuid instance.
      */
     public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
-        long most = U.bytesToLong(in, off);
-        long least = U.bytesToLong(in, off + 8);
-        long locId = U.bytesToLong(in, off + 16);
+        long most = bytesToLong(in, off);
+        long least = bytesToLong(in, off + 8);
+        long locId = bytesToLong(in, off + 16);
 
         return new IgniteUuid(IgniteUuidCache.onIgniteUuidRead(new UUID(most, least)), locId);
-    }
-
-    /**
-     * Writes byte array to output stream accounting for <tt>null</tt> values.
-     *
-     * @param out Output stream to write to.
-     * @param arr Array to write, possibly <tt>null</tt>.
-     * @throws IOException If write failed.
-     */
-    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
-        if (arr == null)
-            out.writeInt(-1);
-        else {
-            out.writeInt(arr.length);
-
-            out.write(arr);
-        }
-    }
-
-    /**
-     * Writes byte array to output stream accounting for <tt>null</tt> values.
-     *
-     * @param out Output stream to write to.
-     * @param arr Array to write, possibly <tt>null</tt>.
-     * @throws IOException If write failed.
-     */
-    public static void writeByteArray(DataOutput out, @Nullable byte[] arr, int maxLen) throws IOException {
-        if (arr == null)
-            out.writeInt(-1);
-        else {
-            int len = Math.min(arr.length, maxLen);
-
-            out.writeInt(len);
-
-            out.write(arr, 0, len);
-        }
-    }
-
-    /**
-     * Reads byte array from input stream accounting for <tt>null</tt> values.
-     *
-     * @param in Stream to read from.
-     * @return Read byte array, possibly <tt>null</tt>.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
-        int len = in.readInt();
-
-        if (len == -1)
-            return null; // Value "-1" indicates null.
-
-        byte[] res = new byte[len];
-
-        in.readFully(res);
-
-        return res;
     }
 
     /**
@@ -4591,39 +4468,6 @@ public abstract class IgniteUtils {
 
         for (int i = 0; i < len; i++)
             res[i] = in.readInt();
-
-        return res;
-    }
-
-    /**
-     * Reads byte array from given buffers (changing buffer positions).
-     *
-     * @param bufs Byte buffers.
-     * @return Byte array.
-     */
-    public static byte[] readByteArray(ByteBuffer... bufs) {
-        assert !F.isEmpty(bufs);
-
-        int size = 0;
-
-        for (ByteBuffer buf : bufs)
-            size += buf.remaining();
-
-        byte[] res = new byte[size];
-
-        int off = 0;
-
-        for (ByteBuffer buf : bufs) {
-            int len = buf.remaining();
-
-            if (len != 0) {
-                buf.get(res, off, len);
-
-                off += len;
-            }
-        }
-
-        assert off == res.length;
 
         return res;
     }
@@ -4723,8 +4567,8 @@ public abstract class IgniteUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                out.writeUTF(e.getKey());
-                out.writeUTF(e.getValue());
+                writeUTFStringNullable(out, e.getKey());
+                writeUTFStringNullable(out, e.getValue());
             }
         }
         else
@@ -4747,10 +4591,38 @@ public abstract class IgniteUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(in.readUTF(), in.readUTF());
+                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
 
             return map;
         }
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeUTF(val);
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTFStringNullable(DataInput in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
     }
 
     /**
@@ -4898,46 +4770,6 @@ public abstract class IgniteUtils {
 
         for (int i = 0; i < size; i++)
             col.add(in.readInt());
-
-        return col;
-    }
-
-    /**
-     * // FIXME: added for DR dataCenterIds, review if it is needed after GG-6879.
-     *
-     * @param out Output.
-     * @param col Set to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeByteCollection(DataOutput out, Collection<Byte> col) throws IOException {
-        if (col != null) {
-            out.writeInt(col.size());
-
-            for (Byte i : col)
-                out.writeByte(i);
-        }
-        else
-            out.writeInt(-1);
-    }
-
-    /**
-     * // FIXME: added for DR dataCenterIds, review if it is needed after GG-6879.
-     *
-     * @param in Input.
-     * @return Deserialized list.
-     * @throws IOException If deserialization failed.
-     */
-    @Nullable public static List<Byte> readByteList(DataInput in) throws IOException {
-        int size = in.readInt();
-
-        // Check null flag.
-        if (size == -1)
-            return null;
-
-        List<Byte> col = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++)
-            col.add(in.readByte());
 
         return col;
     }
@@ -5536,7 +5368,7 @@ public abstract class IgniteUtils {
      * @return Top level user class.
      */
     public static GridPeerDeployAware detectPeerDeployAware(GridPeerDeployAware obj) {
-        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridIdentityHashSet<>(3));
+        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridLeanIdentitySet<>());
 
         // Pass in obj.getClass() to avoid infinite recursion.
         return p != null ? p : peerDeployAware(obj.getClass());
@@ -6289,6 +6121,10 @@ public abstract class IgniteUtils {
         return arr;
     }
 
+    /**
+     * @param arr1 Array 1.
+     * @param arr2 Array 2.
+     */
     public static int[] addAll(int[] arr1, int[] arr2) {
         int[] all = new int[arr1.length + arr2.length];
 
@@ -6893,15 +6729,7 @@ public abstract class IgniteUtils {
     public static boolean isPrimitiveArray(Object obj) {
         Class<?> cls = obj.getClass();
 
-        return cls.isArray() && (
-            cls.equals(byte[].class) ||
-                cls.equals(short[].class) ||
-                cls.equals(char[].class) ||
-                cls.equals(int[].class) ||
-                cls.equals(long[].class) ||
-                cls.equals(float[].class) ||
-                cls.equals(double[].class) ||
-                cls.equals(boolean[].class));
+        return cls.isArray() && cls.getComponentType().isPrimitive();
     }
 
     /**
@@ -7331,7 +7159,7 @@ public abstract class IgniteUtils {
      */
     public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            f.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();
@@ -7654,6 +7482,66 @@ public abstract class IgniteUtils {
      * @param cls Object.
      * @param obj Object.
      * @param mtdName Field name.
+     * @param params Parameters.
+     * @return Field value.
+     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     */
+    public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
+        Object... params) throws IgniteCheckedException {
+        assert cls != null || obj != null;
+        assert mtdName != null;
+
+        try {
+            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+                Method[] mtds = c.getDeclaredMethods();
+
+                Method mtd = null;
+
+                for (Method declaredMtd : c.getDeclaredMethods()) {
+                    if (declaredMtd.getName().equals(mtdName)) {
+                        if (mtd == null)
+                            mtd = declaredMtd;
+                        else
+                            throw new IgniteCheckedException("Failed to invoke (ambigous method name) [mtdName=" +
+                                mtdName + ", cls=" + cls + ']');
+                    }
+                }
+
+                if (mtd == null)
+                    continue;
+
+                boolean accessible = mtd.isAccessible();
+
+                T res;
+
+                try {
+                    mtd.setAccessible(true);
+
+                    res = (T)mtd.invoke(obj, params);
+                }
+                finally {
+                    if (!accessible)
+                        mtd.setAccessible(false);
+                }
+
+                return res;
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to invoke [mtdName=" + mtdName + ", cls=" + cls + ']',
+                e);
+        }
+
+        throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
+            ", cls=" + cls + ']');
+    }
+
+    /**
+     * Invokes method.
+     *
+     * @param cls Object.
+     * @param obj Object.
+     * @param mtdName Field name.
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
@@ -7700,7 +7588,6 @@ public abstract class IgniteUtils {
         throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
             ", cls=" + cls + ']');
     }
-
 
     /**
      * Gets property value.
@@ -8014,14 +7901,49 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
-        throws ClassNotFoundException {
-        if (clsName == null)
-            return null;
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
 
-        return cls != null ? cls : Class.forName(clsName, true, ldr);
+        if (cls != null)
+            return cls;
+
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        cls = ldrMap.get(clsName);
+
+        if (cls == null) {
+            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
+    }
+
+    /**
+     * Clears class cache for provided loader.
+     *
+     * @param ldr Class loader.
+     */
+    public static void clearClassCache(ClassLoader ldr) {
+        classCache.remove(ldr);
+    }
+
+    /**
+     * Completely clears class cache.
+     */
+    public static void clearClassCache() {
+        classCache.clear();
     }
 
     /**
@@ -8064,45 +7986,6 @@ public abstract class IgniteUtils {
      */
     public static int hash(Object key) {
         return hash(key.hashCode());
-    }
-
-    /**
-     * Zips byte array.
-     *
-     * @param input Input bytes.
-     * @return Zipped byte array.
-     * @throws IOException If failed.
-     */
-    public static byte[] zipBytes(byte[] input) throws IOException {
-        return zipBytes(input, 4096);
-    }
-
-    /**
-     * Zips byte array.
-     *
-     * @param input Input bytes.
-     * @param initBufSize Initial buffer size.
-     * @return Zipped byte array.
-     * @throws IOException If failed.
-     */
-    public static byte[] zipBytes(byte[] input, int initBufSize) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
-
-        try (ZipOutputStream zos = new ZipOutputStream(bos)) {
-            ZipEntry entry = new ZipEntry("");
-
-            try {
-                entry.setSize(input.length);
-
-                zos.putNextEntry(entry);
-
-                zos.write(input);
-            } finally {
-                zos.closeEntry();
-            }
-        }
-
-        return bos.toByteArray();
     }
 
     /**
@@ -8418,13 +8301,13 @@ public abstract class IgniteUtils {
      * @param addrs Addresses.
      * @param port Port.
      * @return Resolved socket addresses.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteSpiException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
         AddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
-    ) throws IgniteCheckedException {
+    ) throws IgniteSpiException {
         assert addrRslvr != null;
 
         Collection<InetSocketAddress> extAddrs = new HashSet<>();
@@ -8629,55 +8512,18 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts an array of characters representing hexidecimal values into an
-     * array of bytes of those same values. The returned array will be half the
-     * length of the passed array, as it takes two characters to represent any
-     * given byte. An exception is thrown if the passed char array has an odd
-     * number of elements.
-     *
-     * @param data An array of characters containing hexidecimal digits
-     * @return A byte array containing binary data decoded from
-     *         the supplied char array.
-     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
-     */
-    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
-
-        int len = data.length;
-
-        if ((len & 0x01) != 0)
-            throw new IgniteCheckedException("Odd number of characters.");
-
-        byte[] out = new byte[len >> 1];
-
-        // Two characters form the hex value.
-        for (int i = 0, j = 0; j < len; i++) {
-            int f = toDigit(data[j], j) << 4;
-
-            j++;
-
-            f |= toDigit(data[j], j);
-
-            j++;
-
-            out[i] = (byte)(f & 0xFF);
-        }
-
-        return out;
-    }
-
-    /**
      * Converts a hexadecimal character to an integer.
      *
      * @param ch A character to convert to an integer digit
-     * @param index The index of the character in the source
+     * @param idx The index of the character in the source
      * @return An integer
      * @throws IgniteCheckedException Thrown if ch is an illegal hex character
      */
-    public static int toDigit(char ch, int index) throws IgniteCheckedException {
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
-            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + index);
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
 
         return digit;
     }
@@ -8813,7 +8659,7 @@ public abstract class IgniteUtils {
         UNSAFE.putBoolean(arr, off++, verEx);
 
         if (verEx) {
-            GridCacheVersion drVer = ver.drVersion();
+            GridCacheVersion drVer = ver.conflictVersion();
 
             assert drVer != null;
 
@@ -9072,7 +8918,17 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.arrayList(c, c.size(), p);
+    }
+
+    /**
+     * @param c Collection.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> List<R> arrayList(Collection<T> c) {
+        assert c != null;
+
+        return new ArrayList<R>(c);
     }
 
     /**
@@ -9086,7 +8942,7 @@ public abstract class IgniteUtils {
         assert c != null;
         assert cap >= 0;
 
-        ArrayList<R> list = new ArrayList<>(cap);
+        List<R> list = new ArrayList<>(cap);
 
         for (T t : c) {
             if (F.isAll(t, p))
@@ -9142,12 +8998,12 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer, MessageWriter)} method.
+     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
      * @param writer Message writer.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf,
+    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
         MessageWriter writer) throws IOException {
         assert msg != null;
         assert out != null;

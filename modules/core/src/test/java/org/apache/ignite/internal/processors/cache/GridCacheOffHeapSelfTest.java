@@ -63,6 +63,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** PeerClassLoadingLocalClassPathExclude enable. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -88,8 +91,10 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         return cfg;
     }
@@ -108,6 +113,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     public void testOffHeapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
             GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
@@ -561,15 +569,15 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = entry.rawGet();
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), (Integer)val.value());
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
 
             assertEquals(entry.version(), versions.get(i));
         }

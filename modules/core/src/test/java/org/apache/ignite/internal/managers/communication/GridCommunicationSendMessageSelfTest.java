@@ -44,14 +44,14 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private static final int SAMPLE_CNT = 1;
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)202;
+    private static final byte DIRECT_TYPE = (byte)210;
 
     /** */
     private int bufSize;
 
     static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new TestMessage();
             }
         });
@@ -142,7 +142,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static class TestMessage extends MessageAdapter {
+    private static class TestMessage implements Message {
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
@@ -151,13 +151,18 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf) {
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public byte directType() {
             return DIRECT_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
         }
     }
 }

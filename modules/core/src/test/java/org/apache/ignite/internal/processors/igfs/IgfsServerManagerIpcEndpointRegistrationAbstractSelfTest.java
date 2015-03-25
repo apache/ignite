@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.IgfsConfiguration.*;
+import static org.apache.ignite.configuration.FileSystemConfiguration.*;
 
 /**
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
@@ -58,8 +58,8 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setIgfsConfiguration(
-            igfsConfiguration("tcp", DFLT_IPC_PORT, null)
+        cfg.setFileSystemConfiguration(
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, null)
         );
 
         G.start(cfg);
@@ -77,9 +77,10 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
-        cfg.setIgfsConfiguration(
-            igfsConfiguration("tcp", DFLT_IPC_PORT, "127.0.0.1"),
-            igfsConfiguration("tcp", DFLT_IPC_PORT + 1, U.getLocalHost().getHostName()));
+        cfg.setFileSystemConfiguration(
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT, "127.0.0.1"),
+            igfsConfiguration(IgfsIpcEndpointType.TCP, IgfsIpcEndpointConfiguration.DFLT_PORT + 1,
+                U.getLocalHost().getHostName()));
 
         G.start(cfg);
 
@@ -154,23 +155,23 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @param endPntHost End point host.
      * @return test-purposed IgfsConfiguration.
      */
-    protected IgfsConfiguration igfsConfiguration(@Nullable String endPntType, @Nullable Integer endPntPort,
-        @Nullable String endPntHost) throws IgniteCheckedException {
-        HashMap<String, String> endPntCfg = null;
+    protected FileSystemConfiguration igfsConfiguration(@Nullable IgfsIpcEndpointType endPntType,
+        @Nullable Integer endPntPort, @Nullable String endPntHost) throws IgniteCheckedException {
+        IgfsIpcEndpointConfiguration endPntCfg = null;
 
         if (endPntType != null) {
-            endPntCfg = new HashMap<>();
+            endPntCfg = new IgfsIpcEndpointConfiguration();
 
-            endPntCfg.put("type", endPntType);
+            endPntCfg.setType(endPntType);
 
             if (endPntPort != null)
-                endPntCfg.put("port", String.valueOf(endPntPort));
+                endPntCfg.setPort(endPntPort);
 
             if (endPntHost != null)
-                endPntCfg.put("host", endPntHost);
+                endPntCfg.setHost(endPntHost);
         }
 
-        IgfsConfiguration igfsConfiguration = new IgfsConfiguration();
+        FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
         igfsConfiguration.setDataCacheName("partitioned");
         igfsConfiguration.setMetaCacheName("replicated");

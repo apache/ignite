@@ -28,13 +28,12 @@ public class GridContinuousMapperLoadTest1 {
      * Main method.
      *
      * @param args Parameters.
-     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) {
         try (Ignite g = G.start("examples/config/example-cache.xml")) {
             int max = 30000;
 
-            IgniteDataLoader<Integer, TestObject> ldr = g.dataLoader("replicated");
+            IgniteDataStreamer<Integer, TestObject> ldr = g.dataStreamer("replicated");
 
             for (int i = 0; i < max; i++)
                 ldr.addData(i, new TestObject(i, "Test object: " + i));

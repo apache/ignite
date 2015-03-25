@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -99,7 +99,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         // Default cache configuration.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -266,11 +266,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        final GridCacheEntryEx<String, Integer> dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        final GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
 
-        assertEquals(Integer.valueOf(0), dhtEntry.rawGet());
+        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
         final AtomicInteger globalCntr = new AtomicInteger(0);
 
@@ -310,7 +310,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                 Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
-                                GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
+                                GridCacheEntryEx dhtNear = near(pri).peekEx(CNTR_KEY);
 
                                 try (Transaction tx = pri.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     if (DEBUG)
@@ -385,7 +385,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                             UUID nearId = near.cluster().localNode().id();
 
-                            GridCacheEntryEx<String, Integer> nearEntry = near(near).peekEx(CNTR_KEY);
+                            GridCacheEntryEx nearEntry = near(near).peekEx(CNTR_KEY);
 
                             try {
                                 startLatch.countDown();
@@ -504,7 +504,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         for (Map.Entry<String, Integer> e : cntrs.entrySet())
             assertEquals("Counter check failed on grid [grid=" + e.getKey() +
                 ", dhtEntry=" + dht(G.ignite(e.getKey())).peekEx(CNTR_KEY) +
-                ", nearEntry=" + near(G.ignite(e.getKey())).peekExx(CNTR_KEY) + ']',
+                ", nearEntry=" + near(G.ignite(e.getKey())).peekEx(CNTR_KEY) + ']',
                 exp, e.getValue().intValue());
 
         X.println("*** ");
@@ -556,11 +556,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        GridCacheEntryEx<String, Integer> dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
 
-        assertEquals(Integer.valueOf(0), dhtEntry.rawGet());
+        assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
         startLatchMultiNode = new CountDownLatch(gridCnt);
 
@@ -627,7 +627,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             UUID nearId = ignite.cluster().localNode().id();
 
-            GridCacheEntryEx<String, Integer> nearEntry = near(near).peekEx(CNTR_KEY);
+            GridCacheEntryEx nearEntry = near(near).peekEx(CNTR_KEY);
 
             try {
                 for (int i = 0; i < RETRIES; i++) {
@@ -713,7 +713,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
-                    GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
+                    GridCacheEntryEx dhtNear = near(pri).peekEx(CNTR_KEY);
 
                     try (Transaction tx = pri.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)

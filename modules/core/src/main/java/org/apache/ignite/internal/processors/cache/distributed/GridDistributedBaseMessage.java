@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Base for all messages in replicated cache.
  */
-public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
+public abstract class GridDistributedBaseMessage extends GridCacheMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -49,7 +49,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
      */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheMvccCandidate<K>>[] candsByIdx;
+    private Collection<GridCacheMvccCandidate>[] candsByIdx;
 
     /** */
     @GridToStringExclude
@@ -58,7 +58,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     /** Collections of local lock candidates. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, Collection<GridCacheMvccCandidate<K>>> candsByKey;
+    private Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> candsByKey;
 
     /** Collections of local lock candidates in serialized form. */
     @GridToStringExclude
@@ -109,7 +109,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (candsByIdx != null)
@@ -117,7 +117,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         if (candsByKey != null) {
             if (ctx.deploymentEnabled()) {
-                for (K key : candsByKey.keySet())
+                for (KeyCacheObject key : candsByKey.keySet())
                     prepareObject(key, ctx);
             }
 
@@ -126,7 +126,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (candsByIdxBytes != null)
@@ -179,7 +179,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
      * @param candsByIdx List of candidates for that key.
      */
     @SuppressWarnings({"unchecked"})
-    public void candidatesByIndex(int idx, Collection<GridCacheMvccCandidate<K>> candsByIdx) {
+    public void candidatesByIndex(int idx, Collection<GridCacheMvccCandidate> candsByIdx) {
         assert idx < cnt;
 
         // If nothing to add.
@@ -196,15 +196,16 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
      * @param idx Key index.
      * @return Candidates for given key.
      */
-    public Collection<GridCacheMvccCandidate<K>> candidatesByIndex(int idx) {
-        return candsByIdx == null || candsByIdx[idx] == null ? Collections.<GridCacheMvccCandidate<K>>emptyList() : candsByIdx[idx];
+    public Collection<GridCacheMvccCandidate> candidatesByIndex(int idx) {
+        return candsByIdx == null ||
+            candsByIdx[idx] == null ? Collections.<GridCacheMvccCandidate>emptyList() : candsByIdx[idx];
     }
 
     /**
      * @param key Candidates key.
      * @param candsByKey Collection of local candidates.
      */
-    public void candidatesByKey(K key, Collection<GridCacheMvccCandidate<K>> candsByKey) {
+    public void candidatesByKey(KeyCacheObject key, Collection<GridCacheMvccCandidate> candsByKey) {
         if (this.candsByKey == null)
             this.candsByKey = new HashMap<>(1, 1.0f);
 
@@ -216,7 +217,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
      * @param key Candidates key.
      * @return Collection of lock candidates at given index.
      */
-    @Nullable public Collection<GridCacheMvccCandidate<K>> candidatesByKey(K key) {
+    @Nullable public Collection<GridCacheMvccCandidate> candidatesByKey(KeyCacheObject key) {
         assert key != null;
 
         if (candsByKey == null)
@@ -228,8 +229,9 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     /**
      * @return Map of candidates.
      */
-    public Map<K, Collection<GridCacheMvccCandidate<K>>> candidatesByKey() {
-        return candsByKey == null ? Collections.<K, Collection<GridCacheMvccCandidate<K>>>emptyMap() : candsByKey;
+    public Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> candidatesByKey() {
+        return candsByKey == null ?
+            Collections.<KeyCacheObject, Collection<GridCacheMvccCandidate>>emptyMap() : candsByKey;
     }
 
     /**
@@ -246,11 +248,11 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -267,13 +269,13 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("committedVers", committedVers, Type.MSG))
+                if (!writer.writeCollection("committedVers", committedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("rolledbackVers", rolledbackVers, Type.MSG))
+                if (!writer.writeCollection("rolledbackVers", rolledbackVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -290,20 +292,23 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 3:
                 candsByIdxBytes = reader.readByteArray("candsByIdxBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
                 candsByKeyBytes = reader.readByteArray("candsByKeyBytes");
@@ -311,23 +316,23 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
-                committedVers = reader.readCollection("committedVers", Type.MSG);
+                committedVers = reader.readCollection("committedVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                rolledbackVers = reader.readCollection("rolledbackVers", Type.MSG);
+                rolledbackVers = reader.readCollection("rolledbackVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 7:
                 ver = reader.readMessage("ver");
@@ -335,7 +340,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 

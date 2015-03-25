@@ -48,9 +48,9 @@ public class VisorAtomicConfiguration implements Serializable {
     public static VisorAtomicConfiguration from(AtomicConfiguration src) {
         VisorAtomicConfiguration cfg = new VisorAtomicConfiguration();
 
-        cfg.atomicSequenceReserveSize(src.getAtomicSequenceReserveSize());
-        cfg.cacheMode(src.getCacheMode());
-        cfg.backups(src.getBackups());
+        cfg.seqReserveSize = src.getAtomicSequenceReserveSize();
+        cfg.cacheMode = src.getCacheMode();
+        cfg.backups = src.getBackups();
 
         return cfg;
     }
@@ -63,13 +63,6 @@ public class VisorAtomicConfiguration implements Serializable {
     }
 
     /**
-     * @param seqReserveSize Atomic sequence reservation size.
-     */
-    public void atomicSequenceReserveSize(int seqReserveSize) {
-        this.seqReserveSize = seqReserveSize;
-    }
-
-    /**
      * @return Cache mode.
      */
     public CacheMode cacheMode() {
@@ -77,24 +70,10 @@ public class VisorAtomicConfiguration implements Serializable {
     }
 
     /**
-     * @param cacheMode Cache mode.
-     */
-    public void cacheMode(CacheMode cacheMode) {
-        this.cacheMode = cacheMode;
-    }
-
-    /**
      * @return Number of backup nodes.
      */
     public int backups() {
         return backups;
-    }
-
-    /**
-     * @param backups Number of backup nodes.
-     */
-    public void backups(int backups) {
-        this.backups = backups;
     }
 
     /** {@inheritDoc} */

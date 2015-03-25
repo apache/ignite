@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -44,9 +45,9 @@ public class VisorMetricsConfiguration implements Serializable {
     public static VisorMetricsConfiguration from(IgniteConfiguration c) {
         VisorMetricsConfiguration cfg = new VisorMetricsConfiguration();
 
-        cfg.expireTime(c.getMetricsExpireTime());
-        cfg.historySize(c.getMetricsHistorySize());
-        cfg.loggerFrequency(c.getMetricsLogFrequency());
+        cfg.expTime = c.getMetricsExpireTime();
+        cfg.histSize = c.getMetricsHistorySize();
+        cfg.logFreq = c.getMetricsLogFrequency();
 
         return cfg;
     }
@@ -59,24 +60,10 @@ public class VisorMetricsConfiguration implements Serializable {
     }
 
     /**
-     * @param expTime New metrics expire time.
-     */
-    public void expireTime(long expTime) {
-        this.expTime = expTime;
-    }
-
-    /**
      * @return Number of node metrics stored in memory.
      */
     public int historySize() {
         return histSize;
-    }
-
-    /**
-     * @param histSize New number of node metrics stored in memory.
-     */
-    public void historySize(int histSize) {
-        this.histSize = histSize;
     }
 
     /**
@@ -86,10 +73,8 @@ public class VisorMetricsConfiguration implements Serializable {
         return logFreq;
     }
 
-    /**
-     * @param logFreq New frequency of metrics log printout.
-     */
-    public void loggerFrequency(long logFreq) {
-        this.logFreq = logFreq;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorMetricsConfiguration.class, this);
     }
 }

@@ -35,6 +35,9 @@ public class DirectMessageWriterState {
     /** Current position. */
     private int pos;
 
+    /**
+     *
+     */
     public DirectMessageWriterState() {
         stack = new int[INIT_SIZE];
 
@@ -45,16 +48,16 @@ public class DirectMessageWriterState {
      * @return Whether type is written.
      */
     public boolean isTypeWritten() {
-        return state() >= 0;
+        return stack[pos] >= 0;
     }
 
     /**
      * Callback called after type is written.
      */
     public void onTypeWritten() {
-        assert state() == -1;
+        assert stack[pos] == -1;
 
-        incrementState();
+        stack[pos] = 0;
     }
 
     /**
@@ -69,6 +72,13 @@ public class DirectMessageWriterState {
      */
     public void incrementState() {
         stack[pos]++;
+    }
+
+    /**
+     * @param val New state value.
+     */
+    protected void setState(int val) {
+        stack[pos] = val;
     }
 
     /**

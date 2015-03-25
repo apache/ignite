@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Partitioned affinity test.
@@ -53,6 +53,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
@@ -78,7 +79,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
         cc.setAffinity(affinityFunction());
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
 
         c.setCacheConfiguration(cc);
 

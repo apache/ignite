@@ -75,7 +75,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         // Query should be executed without ongoing transactions.
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(0);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
@@ -138,7 +138,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         assertEquals(4, cache0.size());
 
-        assert grid(0).nodes().size() == GRID_CNT;
+        assert grid(0).cluster().nodes().size() == GRID_CNT;
 
         final AtomicBoolean done = new AtomicBoolean();
 

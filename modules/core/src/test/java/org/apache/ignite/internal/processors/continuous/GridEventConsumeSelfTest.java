@@ -30,6 +30,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 /**
  * Event consume test.
  */
-public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
+public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String PRJ_PRED_CLS_NAME = "org.apache.ignite.tests.p2p.GridEventConsumeProjectionPredicate";
 
@@ -98,7 +99,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertEquals(GRID_CNT, grid(0).nodes().size());
+        assertEquals(GRID_CNT, grid(0).cluster().nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
@@ -390,7 +391,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
-        UUID consumeId = events(grid(0).forRemotes()).remoteListen(
+        UUID consumeId = events(grid(0).cluster().forRemotes()).remoteListen(
             new P2<UUID, Event>() {
                 @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -431,7 +432,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
-        UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
+        UUID consumeId = events(grid(0).cluster().forAttribute("include", null)).remoteListen(
             new P2<UUID, Event>() {
                 @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -472,7 +473,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        UUID consumeId = events(grid(0).forLocal()).remoteListen(
+        UUID consumeId = events(grid(0).cluster().forLocal()).remoteListen(
             new P2<UUID, Event>() {
                 @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -512,7 +513,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyProjection() throws Exception {
         try {
-            events(grid(0).forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
+            events(grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
                 new P2<UUID, Event>() {
                     @Override public boolean apply(UUID nodeId, Event evt) {
                         return true;
@@ -642,13 +643,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             },
             EVT_JOB_STARTED);
 
-        compute(grid(0).forLocal()).run(F.noop());
+        compute(grid(0).cluster().forLocal()).run(F.noop());
 
         assert latch.await(2, SECONDS);
 
         assertEquals(1, cnt.get());
 
-        compute(grid(0).forLocal()).run(F.noop());
+        compute(grid(0).cluster().forLocal()).run(F.noop());
 
         U.sleep(500);
 
@@ -714,7 +715,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
-        UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
+        UUID consumeId = events(grid(0).cluster().forAttribute("include", null)).remoteListen(
             new P2<UUID, Event>() {
                 @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
@@ -772,7 +773,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         IgnitePredicate<ClusterNode> prjPred = (IgnitePredicate<ClusterNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
         IgnitePredicate<Event> filter = (IgnitePredicate<Event>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
 
-        UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, Event>() {
+        UUID consumeId = events(grid(0).cluster().forPredicate(prjPred)).remoteListen(new P2<UUID, Event>() {
             @Override public boolean apply(UUID nodeId, Event evt) {
                 info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 

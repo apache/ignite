@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -67,7 +67,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         ccfg.setMemoryMode(colCfg.getMemoryMode());
         ccfg.setDistributionMode(colCfg.getDistributionMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setPreloadMode(SYNC);
+        ccfg.setRebalanceMode(SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 

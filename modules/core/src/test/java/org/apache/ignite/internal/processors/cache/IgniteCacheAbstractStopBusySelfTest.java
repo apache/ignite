@@ -25,7 +25,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -101,7 +100,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         if (gridName.endsWith(String.valueOf(CLN_GRD)))
             cacheCfg.setDistributionMode(CacheDistributionMode.CLIENT_ONLY);
 
-        cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
+        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -349,7 +348,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      */
     private class TestTpcCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (suspended.get()) {
                 assert bannedMessage.get() != null;
 

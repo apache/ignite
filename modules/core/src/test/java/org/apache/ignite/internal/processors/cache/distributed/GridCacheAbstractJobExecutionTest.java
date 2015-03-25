@@ -35,7 +35,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -79,10 +78,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        CacheProjection<String, int[]> cache = ((IgniteKernal)grid(0)).cache(null).flagsOn(SYNC_COMMIT).
-            projection(String.class, int[].class);
-
-        cache.removeAll();
+        grid(0).jcache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
@@ -132,10 +128,10 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Void applyx(final Integer i) throws IgniteCheckedException {
-                    GridCache<String, int[]> cache = ((IgniteKernal)this.ignite).cache(null);
+                @Override public Void applyx(final Integer i) {
+                    IgniteCache<String, int[]> cache = ignite.jcache(null);
 
-                    try (Transaction tx = cache.txStart(concur, isolation)) {
+                    try (Transaction tx = ignite.transactions().txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");
 
                         if (arr == null)
@@ -169,7 +165,8 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             for (int g = 0; g < GRID_CNT; g++) {
                 info("Will check grid: " + g);
 
-                GridCacheEntryEx<Object, Object> testEntry = ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
+                GridCacheEntryEx testEntry =
+                    ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
 
                 info("Entry: " + testEntry);
             }

@@ -29,10 +29,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.streamer.*;
@@ -50,38 +52,37 @@ import java.util.*;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<MessageAdapter>> CUSTOM = new ConcurrentHashMap8<>();
-
-    /** Message reader factory. */
-    private final MessageFormatter formatter;
+    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
 
     /**
-     * @param formatter Message formatter.
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFormatter formatter, MessageFactory[] ext) {
-        assert formatter != null;
-
-        this.formatter = formatter;
+    public GridIoMessageFactory(MessageFactory[] ext) {
         this.ext = ext;
     }
 
     /** {@inheritDoc} */
-    @Override public MessageAdapter create(byte type) {
-        MessageAdapter msg = null;
+    @Override public Message create(byte type) {
+        Message msg = null;
 
         switch (type) {
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.NodeIdMessage();
+                msg = new TcpCommunicationSpi.NodeIdMessage();
+
+                break;
 
             case TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE:
-                return new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+                msg = new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+
+                break;
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
-                return new TcpCommunicationSpi.HandshakeMessage();
+                msg = new TcpCommunicationSpi.HandshakeMessage();
+
+                break;
 
             case 0:
                 msg = new GridJobCancelRequest();
@@ -384,12 +385,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 62:
-                msg = new GridDataLoadRequest();
+                msg = new DataStreamerRequest();
 
                 break;
 
             case 63:
-                msg = new GridDataLoadResponse();
+                msg = new DataStreamerResponse();
 
                 break;
 
@@ -489,7 +490,92 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 88:
-                msg = new GridCacheValueBytes();
+                msg = new GridCacheReturn();
+
+                break;
+
+            case 89:
+                msg = new CacheObjectImpl();
+
+                break;
+
+            case 90:
+                msg = new KeyCacheObjectImpl();
+
+                break;
+
+            case 91:
+                msg = new GridCacheEntryInfo();
+
+                break;
+
+            case 92:
+                msg = new CacheEntryInfoCollection();
+
+                break;
+
+            case 93:
+                msg = new CacheInvokeDirectResult();
+
+                break;
+
+            case 94:
+                msg = new IgniteTxKey();
+
+                break;
+
+            case 95:
+                msg = new DataStreamerEntry();
+
+                break;
+
+            case 96:
+                msg = new CacheContinuousQueryEntry();
+
+                break;
+
+            case 97:
+                msg = new CacheEvictionEntry();
+
+                break;
+
+            case 98:
+                msg = new CacheEntryPredicateContainsValue();
+
+                break;
+
+            case 99:
+                msg = new CacheEntrySerializablePredicate();
+
+                break;
+
+            case 100:
+                msg = new IgniteTxEntry();
+
+                break;
+
+            case 101:
+                msg = new TxEntryValueHolder();
+
+                break;
+
+            case 102:
+                msg = new CacheVersionedValue();
+
+                break;
+
+            case 103:
+                msg = new GridCacheRawVersionedEntry<>();
+
+                break;
+
+            case 104:
+                msg = new GridCacheVersionEx();
+
+                break;
+
+            case 105:
+                msg = new CacheObjectByteArrayImpl();
 
                 break;
 
@@ -504,7 +590,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 }
 
                 if (msg == null) {
-                    IgniteOutClosure<MessageAdapter> c = CUSTOM.get(type);
+                    IgniteOutClosure<Message> c = CUSTOM.get(type);
 
                     if (c != null)
                         msg = c.apply();
@@ -513,8 +599,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
         if (msg == null)
             throw new IgniteException("Invalid message type: " + type);
-
-        msg.setReader(formatter.reader());
 
         return msg;
     }
@@ -525,7 +609,7 @@ public class GridIoMessageFactory implements MessageFactory {
      * @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<MessageAdapter> c) {
+    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);

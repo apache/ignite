@@ -21,6 +21,7 @@ import org.apache.ignite.internal.visor.query.VisorQueryTask.VisorQueryArg
 import org.apache.ignite.internal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
 
 import org.apache.ignite.visor.commands._
@@ -139,8 +140,8 @@ class VisorCacheScanCommand {
         }
 
         val cachePrj = node match {
-            case Some(n) => ignite.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.forCacheNodes(cacheName)
+            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
+            case _ => ignite.cluster.forCacheNodes(cacheName)
         }
 
         if (cachePrj.nodes().isEmpty) {
@@ -177,18 +178,16 @@ class VisorCacheScanCommand {
                     return
             }
 
-        def escapeCacheName(name: String) = if (name == null) "<default>" else name
-
         var res: VisorQueryResult = fullRes
 
         if (res.rows.isEmpty) {
-            println("Cache: " + escapeCacheName(cacheName) + " is empty")
+            println("Cache: " + escapeName(cacheName) + " is empty")
 
             return
         }
 
         def render() {
-            println("Entries in cache: " + escapeCacheName(cacheName))
+            println("Entries in cache: " + escapeName(cacheName))
 
             val t = VisorTextTable()
 

@@ -35,18 +35,14 @@ import java.util.*;
 /**
  * DHT transaction prepare response.
  */
-public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResponse<K, V> {
+public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxKey<K>> nearEvicted;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearEvictedBytes;
+    @GridDirectCollection(IgniteTxKey.class)
+    private Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
     private IgniteUuid futId;
@@ -59,13 +55,9 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     @GridDirectCollection(int.class)
     private Collection<Integer> invalidParts;
 
-    @GridDirectTransient
     /** Preload entries. */
-    private List<GridCacheEntryInfo<K, V>> preloadEntries;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> preloadEntriesBytes;
+    @GridDirectCollection(GridCacheEntryInfo.class)
+    private List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -108,22 +100,15 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey<K>> nearEvicted() {
+    public Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<IgniteTxKey<K>> nearEvicted) {
+    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
-    }
-
-    /**
-     * @param nearEvictedBytes Near evicted bytes.
-     */
-    public void nearEvictedBytes(Collection<byte[]> nearEvictedBytes) {
-        this.nearEvictedBytes = nearEvictedBytes;
     }
 
     /**
@@ -159,8 +144,8 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      *
      * @return Collection of entry infos need to be preloaded.
      */
-    public Collection<GridCacheEntryInfo<K, V>> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo<K, V>>emptyList() : preloadEntries;
+    public Collection<GridCacheEntryInfo> preloadEntries() {
+        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
     }
 
     /**
@@ -168,7 +153,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
      *
      * @param info Info to add.
      */
-    public void addPreloadEntry(GridCacheEntryInfo<K, V> info) {
+    public void addPreloadEntry(GridCacheEntryInfo info) {
         assert info.cacheId() != 0;
 
         if (preloadEntries == null)
@@ -179,26 +164,45 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (nearEvictedBytes == null)
-            nearEvictedBytes = marshalCollection(nearEvicted, ctx);
+        if (nearEvicted != null) {
+            for (IgniteTxKey key : nearEvicted) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-        if (preloadEntriesBytes == null && preloadEntries != null)
-            preloadEntriesBytes = marshalCollection(preloadEntries, ctx);
+                key.prepareMarshal(cctx);
+            }
+        }
+
+        if (preloadEntries != null) {
+            for (GridCacheEntryInfo info : preloadEntries) {
+                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+
+                info.marshal(cctx);
+            }
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        // Unmarshal even if deployment is disabled, since we could get bytes initially.
-        if (nearEvicted == null && nearEvictedBytes != null)
-            nearEvicted = unmarshalCollection(nearEvictedBytes, ctx, ldr);
+        if (nearEvicted != null) {
+            for (IgniteTxKey key : nearEvicted) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-        if (preloadEntries == null && preloadEntriesBytes != null)
-            preloadEntries = unmarshalCollection(preloadEntriesBytes, ctx, ldr);
+                key.finishUnmarshal(cctx, ldr);
+            }
+        }
+
+        if (preloadEntries != null) {
+            for (GridCacheEntryInfo info : preloadEntries) {
+                GridCacheContext cctx = ctx.cacheContext(info.cacheId());
+
+                info.unmarshal(cctx, ldr);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -213,11 +217,11 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -228,7 +232,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, Type.INT))
+                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -240,13 +244,13 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -257,28 +261,31 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 10:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
-                invalidParts = reader.readCollection("invalidParts", Type.INT);
+                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
                 miniId = reader.readIgniteUuid("miniId");
@@ -286,23 +293,23 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
-                nearEvictedBytes = reader.readCollection("nearEvictedBytes", Type.BYTE_ARR);
+                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
-                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", Type.BYTE_ARR);
+                preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -312,5 +319,10 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 35;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 15;
     }
 }

@@ -57,7 +57,6 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(GridReleaseTypeSelfTest.class);
         suite.addTestSuite(GridProductVersionSelfTest.class);
-        suite.addTestSuite(GridAffinityProcessorConsistentHashSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);

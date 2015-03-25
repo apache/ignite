@@ -97,7 +97,7 @@ public class GridTestMain {
 
             q.put(f);
 
-            f.listenAsync(new CI1<IgniteFuture<?>>() {
+            f.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> o) {
                     q.poll();
                 }
@@ -162,14 +162,13 @@ public class GridTestMain {
      * {@link GridTestCacheStore#loadAll} method.
      *
      * @param cache Cache to load.
-     * @throws IgniteCheckedException If failed.
      */
-    private static void loadFromStore(IgniteCache<GridTestKey, Long> cache) throws IgniteCheckedException {
+    private static void loadFromStore(IgniteCache<GridTestKey, Long> cache) {
         cache.loadCache(null, 0, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
     }
 
     /**
-     * Generates and loads data directly through cache API using data loader.
+     * Generates and loads data directly through cache API using data streamer.
      * This method is provided as example and is not called directly because
      * data is loaded through {@link GridTestCacheStore} store.
      *
@@ -181,7 +180,7 @@ public class GridTestMain {
         ExecutorCompletionService<Object> execSvc =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(numThreads));
 
-        try (IgniteDataLoader<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
+        try (IgniteDataStreamer<GridTestKey, Long> ldr = G.ignite().dataStreamer("partitioned")) {
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
 

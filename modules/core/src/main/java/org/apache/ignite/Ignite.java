@@ -37,13 +37,13 @@ import java.util.concurrent.*;
  * each instance a different name.
  * <p>
  * Note that {@code Grid} extends {@link ClusterGroup} which means that it provides grid projection
- * functionality over the whole grid (instead os a subgroup of nodes).
+ * functionality over the whole grid (instead of a subgroup of nodes).
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
- * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
+ * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
+ * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
@@ -159,7 +159,7 @@ public interface Ignite extends AutoCloseable {
      * Creates new {@link ExecutorService} which will execute all submitted
      * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
      * This essentially
-     * creates a <b><i>Distributed Thread Pool</i</b> that can be used as a
+     * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
      * replacement for local thread pools.
      *
      * @return Grid-enabled {@code ExecutorService}.
@@ -203,17 +203,17 @@ public interface Ignite extends AutoCloseable {
     public IgniteTransactions transactions();
 
     /**
-     * Gets a new instance of data loader associated with given cache name. Data loader
+     * Gets a new instance of data streamer associated with given cache name. Data streamer
      * is responsible for loading external data into in-memory data grid. For more information
-     * refer to {@link IgniteDataLoader} documentation.
+     * refer to {@link IgniteDataStreamer} documentation.
      *
      * @param cacheName Cache name ({@code null} for default cache).
-     * @return Data loader.
+     * @return Data streamer.
      */
-    public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName);
 
     /**
-     * Gets an instance of IGFS - Ignite In-Memory File System, if one is not
+     * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
      * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
@@ -222,15 +222,16 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name IGFS name.
      * @return IGFS instance.
+     * @throws IllegalArgumentException If IGFS with such name is not configured.
      */
-    public IgniteFs fileSystem(String name);
+    public IgniteFileSystem fileSystem(String name);
 
     /**
-     * Gets all instances of the grid file systems.
+     * Gets all instances of IGFS (Ignite In-Memory File System).
      *
-     * @return Collection of grid file systems instances.
+     * @return Collection of IGFS instances.
      */
-    public Collection<IgniteFs> fileSystems();
+    public Collection<IgniteFileSystem> fileSystems();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then

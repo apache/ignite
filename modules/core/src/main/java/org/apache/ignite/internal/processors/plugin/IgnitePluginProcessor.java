@@ -30,7 +30,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * TODO 9447: move to internal package.
+ *
  */
 public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** */
@@ -51,7 +51,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) {
         super(ctx);
 
-        ExtensionRegistry registry = new ExtensionRegistry();
+        ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
         if (cfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
@@ -109,24 +109,10 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param extensionItf Extension interface class.
      * @return Returns implementation for provided extension from all plugins.
      */
-    public <T> T[] extensions(Class<T> extensionItf) {
+    @Nullable public <T extends Extension> T[] extensions(Class<T> extensionItf) {
         Map<Class<?>, Object[]> extensions = this.extensions;
 
-        T[] res = (T[])extensions.get(extensionItf);
-
-        if (res != null)
-            return res;
-
-        res = (T[])Array.newInstance(extensionItf, 0);
-
-        // Store empty array to map to avoid array creation on the next access.
-        Map<Class<?>, Object[]> extensionsCp = new HashMap<>((extensions.size() + 1) * 2, 2.0f);
-
-        extensionsCp.put(extensionItf, res);
-
-        this.extensions = extensionsCp;
-
-        return res;
+        return (T[])extensions.get(extensionItf);
     }
 
     /**
@@ -173,6 +159,11 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        ackPluginsInfo();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.PLUGIN;
     }
@@ -196,7 +187,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object data) {
         Map<String, Object> discData = (Map<String, Object>)data;
 
         if (discData != null) {
@@ -204,7 +195,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                 PluginProvider provider = plugins.get(e.getKey());
 
                 if (provider != null)
-                    provider.receiveDiscoveryData(e.getValue());
+                    provider.receiveDiscoveryData(nodeId, e.getValue());
                 else
                     U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
             }
@@ -212,14 +203,33 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Print plugin information.
+     */
+    private void ackPluginsInfo() {
+        U.quietAndInfo(log, "Configured plugins:");
+
+        if (plugins.isEmpty()) {
+            U.quietAndInfo(log, "  ^-- None");
+            U.quietAndInfo(log, "");
+        }
+        else {
+            for (PluginProvider plugin : plugins.values()) {
+                U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version());
+                U.quietAndInfo(log, "  ^-- " + plugin.copyright());
+                U.quietAndInfo(log, "");
+            }
+        }
+    }
+
+    /**
      *
      */
-    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
+    private static class ExtensionRegistryImpl implements ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public <T> void registerExtension(Class<T> extensionItf, T extensionImpl) {
+        @Override public <T extends Extension> void registerExtension(Class<T> extensionItf, T extensionImpl) {
             List<Object> list = extensionsCollector.get(extensionItf);
 
             if (list == null) {

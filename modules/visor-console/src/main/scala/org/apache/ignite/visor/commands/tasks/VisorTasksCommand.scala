@@ -619,7 +619,7 @@ class VisorTasksCommand {
     private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(prj.nodes.map(_.id()), VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null)))
@@ -638,14 +638,10 @@ class VisorTasksCommand {
                     execsT.maxCellWidth = 35
 
                     execsT #=(
-                        (
-                            "ID8(@ID), Start/End,",
-                            "State & Duration"
-                            ),
+                        ("ID8(@ID), Start/End,", "State & Duration"),
                         "Task Name(@)",
                         "Nodes IP, ID8(@)",
-                        "Jobs"
-                        )
+                        "Jobs")
 
                     var sortedExecs = if (!reverse) eLst.sortBy(_.startTs).reverse else eLst.sortBy(_.startTs)
 
@@ -827,7 +823,7 @@ class VisorTasksCommand {
             assert(taskName != null)
 
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null)))
@@ -900,14 +896,10 @@ class VisorTasksCommand {
                     execsT.maxCellWidth = 35
 
                     execsT #= (
-                        (
-                            "ID8(@ID), Start/End,",
-                            "State & Duration"
-                            ),
+                        ("ID8(@ID), Start/End,", "State & Duration"),
                         "Task Name(@)",
                         "Nodes IP, ID8(@)",
-                        "Jobs"
-                        )
+                        "Jobs")
 
                     var sorted = if (!reverse) eLst.sortBy(_.startTs).reverse else eLst.sortBy(_.startTs)
 
@@ -1004,7 +996,7 @@ class VisorTasksCommand {
             }
 
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid)))
@@ -1025,14 +1017,10 @@ class VisorTasksCommand {
                 execT.maxCellWidth = 35
 
                 execT #= (
-                    (
-                        "ID8(@ID), Start/End,",
-                        "State & Duration"
-                        ),
+                    ("ID8(@ID), Start/End,", "State & Duration"),
                     "Task Name(@)",
                     "Nodes IP, ID8(@)",
-                    "Jobs"
-                    )
+                    "Jobs")
 
                 val e = eLst.head
 
@@ -1122,7 +1110,7 @@ class VisorTasksCommand {
     private def nodes(f: Long) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
@@ -1234,7 +1222,7 @@ class VisorTasksCommand {
     private def hosts(f: Long) {
         breakable {
             try {
-                val prj = ignite.forRemotes()
+                val prj = ignite.cluster.forRemotes()
 
                 val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
@@ -1251,7 +1239,7 @@ class VisorTasksCommand {
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        val host = ignite.node(id).addresses.headOption
+                        val host = ignite.cluster.node(id).addresses.headOption
 
                         if (host.isDefined) {
                             var eSet = hMap.getOrElse(host.get, Set.empty[VisorExecution])
@@ -1480,5 +1468,5 @@ object VisorTasksCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromTrace2Visor(vs: VisorTag) = cmd
+    implicit def fromTrace2Visor(vs: VisorTag): VisorTasksCommand = cmd
 }

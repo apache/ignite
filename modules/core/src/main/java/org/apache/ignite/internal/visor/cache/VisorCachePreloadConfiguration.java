@@ -31,7 +31,7 @@ public class VisorCachePreloadConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache preload mode. */
-    private CachePreloadMode mode;
+    private CacheRebalanceMode mode;
 
     /** Preload thread pool size. */
     private int threadPoolSize;
@@ -55,12 +55,12 @@ public class VisorCachePreloadConfiguration implements Serializable {
     public static VisorCachePreloadConfiguration from(CacheConfiguration ccfg) {
         VisorCachePreloadConfiguration cfg = new VisorCachePreloadConfiguration();
 
-        cfg.mode(ccfg.getPreloadMode());
-        cfg.batchSize(ccfg.getPreloadBatchSize());
-        cfg.threadPoolSize(ccfg.getPreloadThreadPoolSize());
-        cfg.partitionedDelay(ccfg.getPreloadPartitionedDelay());
-        cfg.throttle(ccfg.getPreloadThrottle());
-        cfg.timeout(ccfg.getPreloadTimeout());
+        cfg.mode = ccfg.getRebalanceMode();
+        cfg.batchSize = ccfg.getRebalanceBatchSize();
+        cfg.threadPoolSize = ccfg.getRebalanceThreadPoolSize();
+        cfg.partitionedDelay = ccfg.getRebalanceDelay();
+        cfg.throttle = ccfg.getRebalanceThrottle();
+        cfg.timeout = ccfg.getRebalanceTimeout();
 
         return cfg;
     }
@@ -68,15 +68,8 @@ public class VisorCachePreloadConfiguration implements Serializable {
     /**
      * @return Cache preload mode.
      */
-    public CachePreloadMode mode() {
+    public CacheRebalanceMode mode() {
         return mode;
-    }
-
-    /**
-     * @param mode New cache preload mode.
-     */
-    public void mode(CachePreloadMode mode) {
-        this.mode = mode;
     }
 
     /**
@@ -87,24 +80,10 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param threadPoolSize New preload thread pool size.
-     */
-    public void threadPoolSize(int threadPoolSize) {
-        this.threadPoolSize = threadPoolSize;
-    }
-
-    /**
      * @return Cache preload batch size.
      */
     public int batchSize() {
         return batchSize;
-    }
-
-    /**
-     * @param batchSize New cache preload batch size.
-     */
-    public void batchSize(int batchSize) {
-        this.batchSize = batchSize;
     }
 
     /**
@@ -115,13 +94,6 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param partitionedDelay New preloading partitioned delay.
-     */
-    public void partitionedDelay(long partitionedDelay) {
-        this.partitionedDelay = partitionedDelay;
-    }
-
-    /**
      * @return Time in milliseconds to wait between preload messages.
      */
     public long throttle() {
@@ -129,24 +101,10 @@ public class VisorCachePreloadConfiguration implements Serializable {
     }
 
     /**
-     * @param throttle New time in milliseconds to wait between preload messages.
-     */
-    public void throttle(long throttle) {
-        this.throttle = throttle;
-    }
-
-    /**
      * @return Preload timeout.
      */
     public long timeout() {
         return timeout;
-    }
-
-    /**
-     * @param timeout New preload timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */

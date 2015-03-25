@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -99,7 +98,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
-                Collection<Object> evts) throws IgniteCheckedException {
+                Collection<Object> evts) {
                 assert evts.size() == 1;
 
                 if (ctx.nextStageName() == null) {

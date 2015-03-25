@@ -60,11 +60,18 @@ import java.io.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public interface Marshaller {
+    /**
+     * Sets marshaller context.
+     *
+     * @param ctx Marshaller context.
+     */
+    public void setContext(MarshallerContext ctx);
+
     /**
      * Marshals object to the output stream. This method should not close
      * given output stream.

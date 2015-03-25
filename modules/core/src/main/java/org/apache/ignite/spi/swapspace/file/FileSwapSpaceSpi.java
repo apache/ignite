@@ -94,7 +94,7 @@ import static org.apache.ignite.events.EventType.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.swapspace.SwapSpaceSpi
@@ -529,7 +529,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         final Iterator<Map.Entry<SwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
-            @Override protected Map.Entry<byte[], byte[]> onNext() throws IgniteCheckedException {
+            @Override protected Map.Entry<byte[], byte[]> onNext() {
                 Map.Entry<SwapKey, byte[]> x = iter.next();
 
                 return new T2<>(keyBytes(x.getKey()), x.getValue());

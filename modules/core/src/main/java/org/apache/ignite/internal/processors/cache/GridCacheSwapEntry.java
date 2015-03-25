@@ -24,11 +24,16 @@ import org.jetbrains.annotations.*;
 /**
  * Swap entry.
  */
-public interface GridCacheSwapEntry<V> {
+public interface GridCacheSwapEntry {
     /**
      * @return Value bytes.
      */
     public byte[] valueBytes();
+
+    /**
+     * @return Object type.
+     */
+    public byte type();
 
     /**
      * @param valBytes Value bytes.
@@ -38,17 +43,12 @@ public interface GridCacheSwapEntry<V> {
     /**
      * @return Value.
      */
-    public V value();
+    public CacheObject value();
 
     /**
      * @param val Value.
      */
-    void value(V val);
-
-    /**
-     * @return Whether value is byte array.
-     */
-    public boolean valueIsByteArray();
+    public void value(CacheObject val);
 
     /**
      * @return Version.

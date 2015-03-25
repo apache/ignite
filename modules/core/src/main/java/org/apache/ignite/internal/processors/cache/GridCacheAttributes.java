@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -27,9 +27,9 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache attributes.
@@ -67,17 +67,14 @@ public class GridCacheAttributes implements Externalizable {
     /** Default lock timeout. */
     private long dfltLockTimeout;
 
-    /** Flag indicating if cached values should be additionally stored in serialized form. */
-    private boolean storeValBytes;
-
-    /** Cache preload mode. */
-    private CachePreloadMode preloadMode;
+    /** Cache rebalance mode. */
+    private CacheRebalanceMode rebalanceMode;
 
     /** Partitioned cache mode. */
     private CacheDistributionMode partDistro;
 
-    /** Preload batch size. */
-    private int preloadBatchSize;
+    /** Rebalance batch size. */
+    private int rebalanceBatchSize;
 
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
@@ -117,12 +114,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** */
     private int affKeyBackups = -1;
-
-    /** */
-    private int affReplicas = -1;
-
-    /** */
-    private String affReplicaCntAttrName;
 
     /** */
     private String affHashIdRslvrClsName;
@@ -170,11 +161,10 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
-        preloadBatchSize = cfg.getPreloadBatchSize();
-        preloadMode = cfg.getPreloadMode();
+        rebalanceBatchSize = cfg.getRebalanceBatchSize();
+        rebalanceMode = cfg.getRebalanceMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
-        storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
         writeBehindBatchSize = cfg.getWriteBehindBatchSize();
@@ -192,12 +182,10 @@ public class GridCacheAttributes implements Externalizable {
         CacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof CacheConsistentHashAffinityFunction) {
-                CacheConsistentHashAffinityFunction aff0 = (CacheConsistentHashAffinityFunction) aff;
+            if (aff instanceof CacheRendezvousAffinityFunction) {
+                CacheRendezvousAffinityFunction aff0 = (CacheRendezvousAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
-                affReplicas = aff0.getDefaultReplicas();
-                affReplicaCntAttrName = aff0.getReplicaCountAttributeName();
                 affHashIdRslvrClsName = className(aff0.getHashIdResolver());
             }
 
@@ -261,10 +249,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Preload mode.
+     * @return Rebalance mode.
      */
-    public CachePreloadMode cachePreloadMode() {
-        return preloadMode;
+    public CacheRebalanceMode cacheRebalanceMode() {
+        return rebalanceMode;
     }
 
     /**
@@ -296,24 +284,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Affinity replicas.
-     */
-    public int affinityReplicas() {
-        return affReplicas;
-    }
-
-    /**
      * @return Affinity partitions count.
      */
     public int affinityPartitionsCount() {
         return affPartsCnt;
-    }
-
-    /**
-     * @return Aff replicas count attr name.
-     */
-    public String affinityReplicaCountAttrName() {
-        return affReplicaCntAttrName;
     }
 
     /**
@@ -416,17 +390,10 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating if cached values should be additionally stored in serialized form.
+     * @return Rebalance batch size.
      */
-    public boolean storeValueBytes() {
-        return storeValBytes;
-    }
-
-    /**
-     * @return Preload batch size.
-     */
-    public int preloadBatchSize() {
-        return preloadBatchSize;
+    public int rebalanceBatchSize() {
+        return rebalanceBatchSize;
     }
 
     /**
@@ -519,11 +486,10 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum(out, partDistro);
-        out.writeInt(preloadBatchSize);
-        U.writeEnum(out, preloadMode);
+        out.writeInt(rebalanceBatchSize);
+        U.writeEnum(out, rebalanceMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
-        out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
         out.writeInt(writeBehindBatchSize);
@@ -539,8 +505,6 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(affInclNeighbors);
         out.writeInt(affKeyBackups);
         out.writeInt(affPartsCnt);
-        out.writeInt(affReplicas);
-        U.writeString(out, affReplicaCntAttrName);
         U.writeString(out, affHashIdRslvrClsName);
 
         U.writeString(out, evictFilterClsName);
@@ -563,11 +527,10 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
-        preloadBatchSize = in.readInt();
-        preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
+        rebalanceBatchSize = in.readInt();
+        rebalanceMode = CacheRebalanceMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
-        storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
         writeBehindBatchSize = in.readInt();
@@ -583,8 +546,6 @@ public class GridCacheAttributes implements Externalizable {
         affInclNeighbors = in.readBoolean();
         affKeyBackups = in.readInt();
         affPartsCnt = in.readInt();
-        affReplicas = in.readInt();
-        affReplicaCntAttrName = U.readString(in);
         affHashIdRslvrClsName = U.readString(in);
 
         evictFilterClsName = U.readString(in);

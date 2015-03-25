@@ -113,12 +113,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return set != null ? set.size() : 0;
             }
 
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-            qry.projection(ctx.grid().forNodes(nodes));
+            qry.projection(ctx.grid().cluster().forNodes(nodes));
 
             Iterable<Integer> col = (Iterable<Integer>)qry.execute(new SumReducer()).get();
 
@@ -344,12 +344,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iterator0() {
         try {
-            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-            qry.projection(ctx.grid().forNodes(nodes));
+            qry.projection(ctx.grid().cluster().forNodes(nodes));
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 

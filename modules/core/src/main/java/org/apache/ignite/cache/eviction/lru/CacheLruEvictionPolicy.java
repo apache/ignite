@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.eviction.lru;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

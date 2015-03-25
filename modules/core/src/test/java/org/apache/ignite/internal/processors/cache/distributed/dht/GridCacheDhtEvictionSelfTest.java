@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -39,7 +38,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -70,7 +69,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
@@ -158,21 +157,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index.
-     * @return Affinity.
-     */
-    private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
-    }
-
-    /**
      * @param key Key.
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheConsistentHashAffinityFunction aff = affinity(0);
-
-        return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
+        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
@@ -234,8 +223,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertEquals(val, nearBackup.peek(key));
         assertEquals(val, dhtBackup.peek(key));
 
-        GridDhtCacheEntry<Integer, String> entryPrimary = dhtPrimary.peekExx(key);
-        GridDhtCacheEntry<Integer, String> entryBackup = dhtBackup.peekExx(key);
+        GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
+        GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
 
         assert entryPrimary != null;
         assert entryBackup != null;
@@ -259,11 +248,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, nearPrimary.size());
 
-        assertNull(nearPrimary.peekExx(key));
-        assertNull(dhtPrimary.peekExx(key));
+        assertNull(nearPrimary.peekEx(key));
+        assertNull(dhtPrimary.peekEx(key));
 
-        assertNull(nearBackup.peekExx(key));
-        assertNull(dhtBackup.peekExx(key));
+        assertNull(nearBackup.peekEx(key));
+        assertNull(dhtBackup.peekEx(key));
     }
 
     /**
@@ -344,8 +333,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
             assertNull(msg, nearBackup.peek(key));
             assertNull(msg, dhtBackup.peek(key));
-            assertNull(msg, nearBackup.peekExx(key));
-            assertNull(msg, dhtBackup.peekExx(key));
+            assertNull(msg, nearBackup.peekEx(key));
+            assertNull(msg, dhtBackup.peekEx(key));
         }
 
         for (Integer key : keys) {
@@ -353,8 +342,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
             assertNull(msg, nearPrimary.peek(key));
             assertNull(msg, dhtPrimary.peek(key));
-            assertNull(msg, nearPrimary.peekExx(key));
-            assertNull(dhtPrimary.peekExx(key));
+            assertNull(msg, nearPrimary.peekEx(key));
+            assertNull(dhtPrimary.peekEx(key));
         }
     }
 }

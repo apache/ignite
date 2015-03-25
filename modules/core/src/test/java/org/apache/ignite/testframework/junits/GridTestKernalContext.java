@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
@@ -31,13 +32,15 @@ import java.util.concurrent.*;
  */
 public class GridTestKernalContext extends GridKernalContextImpl {
     /**
-     *
+     * @param log Logger to use in context config.
      */
-    public GridTestKernalContext() {
-        super(null,
+    public GridTestKernalContext(IgniteLogger log) {
+        super(new GridLoggerProxy(log, null, null, null),
             new IgniteKernal(null),
             new IgniteConfiguration(),
             new GridKernalGatewayImpl(null),
+            IgniteExceptionRegistry.DUMMY_REGISTRY,
+            null,
             null,
             null,
             null,
@@ -47,13 +50,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             null);
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
-    }
-
-    /**
-     * @param log Logger to use in context config.
-     */
-    public GridTestKernalContext(IgniteLogger log) {
-        this();
 
         config().setGridLogger(log);
     }

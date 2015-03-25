@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -31,17 +31,14 @@ import java.util.*;
 /**
  * Lock request message.
  */
-public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Keys to unlock. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keyBytes;
-
     /** Keys. */
-    @GridDirectTransient
-    private List<K> keys;
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> keys;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -61,57 +58,37 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /**
-     * @return Key to lock.
-     */
-    public List<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
     /**
      * @param key Key.
-     * @param bytes Key bytes.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addKey(K key, byte[] bytes, GridCacheContext<K, V> ctx) throws IgniteCheckedException {
-        boolean depEnabled = ctx.deploymentEnabled();
-
-        if (depEnabled)
-            prepareObject(key, ctx.shared());
-
+    public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
         keys.add(key);
-
-        if (keyBytes == null)
-            keyBytes = new ArrayList<>(keysCount());
-
-        keyBytes.add(bytes);
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
-            keyBytes = marshalCollection(keys, ctx);
+        prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null && !F.isEmpty(keyBytes))
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -121,16 +98,16 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -141,20 +118,23 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
-                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -167,8 +147,12 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 9;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedUnlockRequest.class, this, "keyBytesSize",
-            keyBytes == null ? 0 : keyBytes.size(), "super", super.toString());
+        return S.toString(GridDistributedUnlockRequest.class, this, "super", super.toString());
     }
 }

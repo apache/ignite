@@ -105,13 +105,13 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
                             <property name="keyBackups" value="0"/> <!-- Disable backups. -->
                         </bean>
                     </property>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
 
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
 

@@ -77,6 +77,9 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
         if (info.isFile()) {
             blockSize = info.blockSize();
+
+            assert blockSize > 0; // By contract file must have blockSize > 0, while directory's blockSize == 0.
+
             len = info.length();
 
             grpBlockSize = info.affinityKey() == null ? globalGrpBlockSize :
@@ -106,6 +109,10 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
         fileId = entry.fileId();
 
         blockSize = entry.blockSize();
+
+        // By contract file must have blockSize > 0, while directory's blockSize == 0:
+        assert entry.isFile() == (blockSize > 0);
+        assert entry.isDirectory() == (blockSize == 0);
 
         grpBlockSize = entry.affinityKey() == null ? globalGrpSize :
             entry.length() == 0 ? globalGrpSize : entry.length();

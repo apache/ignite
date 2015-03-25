@@ -31,17 +31,6 @@
     <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.loadtests.job.GridJobExecutionLoadTestJob</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
-
         <!--
             Uncomment this to provide TCP discovery SPI (predefined addresses).
             Use the addresses list to provide IP addresses of initial nodes in the grid

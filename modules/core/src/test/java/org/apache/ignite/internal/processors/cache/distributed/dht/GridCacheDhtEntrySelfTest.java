@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -62,7 +62,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
@@ -164,8 +164,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();
@@ -209,8 +209,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();
@@ -255,8 +255,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         near0.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> e0 = (GridDhtCacheEntry<Integer, String>)dht0.peekEx(key);
-        GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht1.peekEx(key);
+        GridDhtCacheEntry e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 == null || e0.readers().isEmpty();
         assert e1 == null || e1.readers().isEmpty();
@@ -299,7 +299,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert primary != null;
 
-        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).nodes());
+        Collection<ClusterNode> nodes = new ArrayList<>(grid(0).cluster().nodes());
 
         nodes.remove(primary);
 

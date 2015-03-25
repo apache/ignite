@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -347,7 +348,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object obj) {
+    @Override public void onDiscoveryDataReceived(UUID nodeId, Object obj) {
         DiscoveryData data = (DiscoveryData)obj;
 
         if (!ctx.isDaemon() && data != null) {
@@ -355,9 +356,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Register handler only if local node passes projection predicate.
                 if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
                     try {
-                        if (ctx.config().isPeerClassLoadingEnabled())
-                            item.hnd.p2pUnmarshal(data.nodeId, ctx);
-
                         if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
@@ -394,7 +392,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        StartRequestData reqData = new StartRequestData(prjPred, hnd, bufSize, interval, autoUnsubscribe);
+        StartRequestData reqData = new StartRequestData(prjPred, hnd.clone(), bufSize, interval, autoUnsubscribe);
 
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
@@ -416,11 +414,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 // Handle peer deployment for other handler-specific objects.
-                hnd.p2pMarshal(ctx);
+                reqData.hnd.p2pMarshal(ctx);
             }
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
 
         // Register per-routine notifications listener if ordered messaging is used.
@@ -459,7 +457,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             // Stop with exception if projection is empty.
             if (nodes.isEmpty() && !locIncluded) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new ClusterTopologyCheckedException("Failed to register remote continuous listener (projection is empty)."));
             }
 
@@ -471,7 +469,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // these nodes.
             for (Map.Entry<UUID, Collection<GridContinuousMessage>> e : pending.entrySet()) {
                 if (nodeIds.add(e.getKey()))
-                    e.getValue().add(new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData));
+                    e.getValue().add(new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData, false));
             }
 
             // Register routine locally.
@@ -520,10 +518,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (!nodes.isEmpty()) {
             // Do not send projection predicate (nodes already filtered).
             reqData.prjPred = null;
+            reqData.prjPredBytes = null;
 
             // Send start requests.
             try {
-                GridContinuousMessage req = new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData);
+                GridContinuousMessage req = new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData, false);
 
                 sendWithRetries(nodes, req, null);
             }
@@ -553,7 +552,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     hnd.onListenerRegistered(routineId, ctx);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx,
+                return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to register handler locally: " + hnd, e));
             }
         }
@@ -629,14 +628,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Register acknowledge timeout (timeout object will be removed when
                 // future is completed).
                 fut.addTimeoutObject(new StopTimeoutObject(ackTimeout, routineId,
-                    new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null)));
+                    new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null, false)));
 
                 // Send stop requests.
                 try {
                     for (ClusterNode node : nodes) {
                         try {
                             sendWithRetries(node.id(),
-                                new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null),
+                                new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null, false),
                                 null);
                         }
                         catch (ClusterTopologyCheckedException ignored) {
@@ -673,10 +672,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         UUID routineId,
         @Nullable Object obj,
         @Nullable Object orderedTopic,
-        boolean sync)
+        boolean sync,
+        boolean msg)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
+        assert !msg || obj instanceof Message : obj;
 
         assert !nodeId.equals(ctx.localNodeId());
 
@@ -693,7 +694,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 syncMsgFuts.put(futId, fut);
 
                 try {
-                    sendNotification(nodeId, routineId, futId, F.asList(obj), orderedTopic);
+                    sendNotification(nodeId, routineId, futId, F.asList(obj), orderedTopic, msg);
                 }
                 catch (IgniteCheckedException e) {
                     syncMsgFuts.remove(futId);
@@ -707,7 +708,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Collection<Object> toSnd = info.add(obj);
 
                 if (toSnd != null)
-                    sendNotification(nodeId, routineId, null, toSnd, orderedTopic);
+                    sendNotification(nodeId, routineId, null, toSnd, orderedTopic, msg);
             }
         }
     }
@@ -725,13 +726,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         UUID routineId,
         @Nullable IgniteUuid futId,
         Collection<Object> toSnd,
-        @Nullable Object orderedTopic) throws IgniteCheckedException {
+        @Nullable Object orderedTopic,
+        boolean msg) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert toSnd != null;
         assert !toSnd.isEmpty();
 
-        sendWithRetries(nodeId, new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd), orderedTopic);
+        sendWithRetries(nodeId,
+            new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd, msg),
+            orderedTopic);
     }
 
     /**
@@ -793,7 +797,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         try {
-            sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, null, err), null);
+            sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, null, err, false), null);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
@@ -854,7 +858,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         unregisterRemote(routineId);
 
         try {
-            sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null, null), null);
+            sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null, null, false), null);
         }
         catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
@@ -917,7 +921,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (msg.futureId() != null) {
                 try {
                     sendWithRetries(nodeId,
-                        new GridContinuousMessage(MSG_EVT_ACK, null, msg.futureId(), null),
+                        new GridContinuousMessage(MSG_EVT_ACK, null, msg.futureId(), null, false),
                         null);
                 }
                 catch (IgniteCheckedException e) {
@@ -1015,9 +1019,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             Collection<Object> toSnd = t.get1();
 
-                            if (toSnd != null) {
+                            if (toSnd != null && !toSnd.isEmpty()) {
                                 try {
-                                    sendNotification(nodeId, routineId, null, toSnd, hnd.orderedTopic());
+                                    boolean msg = toSnd.iterator().next() instanceof Message;
+
+                                    sendNotification(nodeId, routineId, null, toSnd, hnd.orderedTopic(), msg);
                                 }
                                 catch (ClusterTopologyCheckedException ignored) {
                                     if (log.isDebugEnabled())
@@ -1129,7 +1135,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         assert !F.isEmpty(nodes);
         assert msg != null;
 
-        if (msg.data() != null && (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
+        if (!msg.messages() &&
+            msg.data() != null &&
+            (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
             msg.dataBytes(marsh.marshal(msg.data()));
 
         for (ClusterNode node : nodes) {
@@ -1617,6 +1625,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Consume ID. */
         private UUID routineId;
 
@@ -1641,7 +1652,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param routineId Consume ID.
          */
         StartFuture(GridKernalContext ctx, UUID routineId) {
-            super(ctx);
+            this.ctx = ctx;
 
             this.routineId = routineId;
         }
@@ -1701,18 +1712,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public StopFuture() {
-            // No-op.
-        }
+        /** */
+        private GridKernalContext ctx;
 
         /**
          * @param ctx Kernal context.
          */
         StopFuture(GridKernalContext ctx) {
-            super(ctx);
+            this.ctx = ctx;
         }
 
         /**
@@ -1751,19 +1758,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private UUID nodeId;
 
         /**
-         * Required by {@link Externalizable}.
-         */
-        public SyncMessageAckFuture() {
-            // No-op.
-        }
-
-        /**
          * @param ctx Kernal context.
          * @param nodeId Master node ID.
          */
         SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
-            super(ctx);
-
             this.nodeId = nodeId;
         }
 

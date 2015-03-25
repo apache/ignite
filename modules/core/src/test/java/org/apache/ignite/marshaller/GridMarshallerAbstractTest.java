@@ -18,22 +18,19 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.streamer.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.p2p.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
@@ -105,12 +102,17 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setAtomicityMode(TRANSACTIONAL);
         namedCache.setQueryIndexEnabled(true);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(marshaller());
         cfg.setStreamerConfiguration(streamerConfiguration());
         cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
         return cfg;
     }
+
+    /**
+     * @return Marshaller.
+     */
+    protected abstract Marshaller marshaller();
 
     /**
      * @return Streamer configuration.
@@ -138,14 +140,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /**
-     * @return Grid marshaller.
-     */
-    protected abstract Marshaller createMarshaller();
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        marsh = createMarshaller();
+        marsh = grid().configuration().getMarshaller();
     }
 
     /**
@@ -522,13 +519,13 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link org.apache.ignite.cluster.ClusterNodeLocalMap} instance.
+     * Tests marshal {@link ClusterNodeLocalMapImpl} instance.
      *
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
     public void testNodeLocalMarshalling() throws Exception {
-        ClusterNodeLocalMap<String, String> loc = grid().nodeLocalMap();
+        ConcurrentMap<String, String> loc = grid().cluster().nodeLocalMap();
 
         String key = "test-key";
         String val = "test-val";
@@ -552,7 +549,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         outBean.checkNullResources();
 
-        loc = (ClusterNodeLocalMap<String, String>)outBean.getObjectField();
+        loc = (ConcurrentMap<String, String>)outBean.getObjectField();
 
         assert loc.size() == 1;
         assert val.equals(loc.get(key));
@@ -652,7 +649,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteCompute compute = compute(grid().forNode(g1.cluster().localNode()));
+            IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
                 @Override
@@ -693,7 +690,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
+            IgniteEvents evts = events(grid().cluster().forNode(g1.cluster().localNode()));
 
             evts.localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event gridEvt) {
@@ -735,7 +732,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteMessaging messaging = message(grid().forNode(g1.cluster().localNode()));
+            IgniteMessaging messaging = message(grid().cluster().forNode(g1.cluster().localNode()));
 
             messaging.send(null, "test");
 
@@ -771,7 +768,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteServices services = grid().services(grid().forNode(g1.cluster().localNode()));
+            IgniteServices services = grid().services(grid().cluster().forNode(g1.cluster().localNode()));
 
             services.deployNodeSingleton("test", new DummyService());
 

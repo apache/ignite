@@ -21,6 +21,7 @@ import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
 
 import java.lang.System._
@@ -32,7 +33,6 @@ import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.util.control.Breaks._
 
 /**
@@ -81,9 +81,6 @@ import scala.util.control.Breaks._
  * }}}
  */
 class VisorConfigurationCommand {
-    /** Default value */
-    private val DFLT = "<n/a>"
-
     /**
      * Prints error message and advise.
      *
@@ -94,26 +91,6 @@ class VisorConfigurationCommand {
 
         warn(errMsgs: _*)
         warn("Type 'help config' to see how to use this command.")
-    }
-
-    /**
-     * Joins array elements to string.
-     *
-     * @param arr Array.
-     * @return String.
-     */
-    private def arr2Str[T: ClassTag](arr: Array[T]): String = {
-        if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else DFLT
-    }
-
-    /**
-     * Converts `Boolean` to 'Yes'/'No' string.
-     *
-     * @param bool Boolean value.
-     * @return String.
-     */
-    private def bool2Str(bool: Boolean): String = {
-        if (bool) "on" else "off"
     }
 
     /**
@@ -189,7 +166,7 @@ class VisorConfigurationCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = ignite.node(java.util.UUID.fromString(id.get))
+                    node = ignite.cluster.node(java.util.UUID.fromString(id.get))
 
                     if (node == null) {
                         scold("'id' does not match any node: " + id.get)
@@ -207,7 +184,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                ignite.compute(ignite.forNode(node))
+                ignite.compute(ignite.cluster.forNode(node))
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
@@ -221,28 +198,59 @@ class VisorConfigurationCommand {
 
             val cmnT = VisorTextTable()
 
-            cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
-            cmnT += ("Ignite home", safe(cfg.basic().ggHome(), DFLT))
-            cmnT += ("Localhost", safe(cfg.basic().localHost(), DFLT))
-            cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
-            cmnT += ("Marshaller", cfg.basic().marshaller())
-            cmnT += ("Deployment mode", safe(cfg.basic().deploymentMode(), DFLT))
-            cmnT += ("Daemon", bool2Str(cfg.basic().daemon()))
-            cmnT += ("Remote JMX", bool2Str(cfg.basic().jmxRemote()))
-            cmnT += ("Restart", bool2Str(cfg.basic().restart()))
-            cmnT += ("Network timeout", cfg.basic().networkTimeout() + "ms")
-            cmnT += ("Grid logger", safe(cfg.basic().logger(), DFLT))
-            cmnT += ("Discovery startup delay", cfg.basic().discoStartupDelay() + "ms")
-            cmnT += ("MBean server", safe(cfg.basic().mBeanServer(), DFLT))
-            cmnT += ("ASCII logo disabled", bool2Str(cfg.basic().noAscii()))
-            cmnT += ("Discovery order not required", bool2Str(cfg.basic().noDiscoOrder()))
-            cmnT += ("Shutdown hook disabled", bool2Str(cfg.basic().noShutdownHook()))
-            cmnT += ("Program name", safe(cfg.basic(). programName(), DFLT))
-            cmnT += ("Quiet mode", bool2Str(cfg.basic().quiet()))
-            cmnT += ("Success filename", safe(cfg.basic().successFile(), DFLT))
-            cmnT += ("Update notification", bool2Str(cfg.basic().updateNotifier()))
-            cmnT += ("Security credentials", safe(cfg.basic().securityCredentialsProvider(), DFLT))
-            cmnT += ("Include properties", safe(cfg.includeProperties(), DFLT))
+            val basic = cfg.basic()
+
+            cmnT += ("Grid name", escapeName(basic.gridName()))
+            cmnT += ("Ignite home", safe(basic.ggHome()))
+            cmnT += ("Localhost", safe(basic.localHost()))
+            cmnT += ("Node ID", safe(basic.nodeId()))
+            cmnT += ("Marshaller", basic.marshaller())
+            cmnT += ("Deployment mode", safe(basic.deploymentMode()))
+            cmnT += ("Daemon", bool2Str(basic.daemon()))
+            cmnT += ("Remote JMX", bool2Str(basic.jmxRemote()))
+            cmnT += ("Restart", bool2Str(basic.restart()))
+            cmnT += ("Network timeout", basic.networkTimeout() + "ms")
+            cmnT += ("Grid logger", safe(basic.logger()))
+            cmnT += ("Discovery startup delay", basic.discoStartupDelay() + "ms")
+            cmnT += ("MBean server", safe(basic.mBeanServer()))
+            cmnT += ("ASCII logo disabled", bool2Str(basic.noAscii()))
+            cmnT += ("Discovery order not required", bool2Str(basic.noDiscoOrder()))
+            cmnT += ("Shutdown hook disabled", bool2Str(basic.noShutdownHook()))
+            cmnT += ("Program name", safe(basic. programName()))
+            cmnT += ("Quiet mode", bool2Str(basic.quiet()))
+            cmnT += ("Success filename", safe(basic.successFile()))
+            cmnT += ("Update notification", bool2Str(basic.updateNotifier()))
+            cmnT += ("Include properties", safe(cfg.includeProperties()))
+
+            val atomic = cfg.atomic()
+
+            cmnT += ("Atomic Cache Mode", atomic.cacheMode())
+            cmnT += ("Atomic Sequence Reservation Size", atomic.atomicSequenceReserveSize())
+            cmnT += ("Atomic Number Of Backup Nodes", atomic.backups())
+
+            val trn = cfg.transaction()
+
+            cmnT += ("Transaction Concurrency", trn.defaultTxConcurrency())
+            cmnT += ("Transaction Isolation", trn.defaultTxIsolation())
+            cmnT += ("Transaction Timeout", trn.defaultTxTimeout() + "ms")
+            cmnT += ("Transaction Log Cleanup Delay", trn.pessimisticTxLogLinger() + "ms")
+            cmnT += ("Transaction Log Size", trn.getPessimisticTxLogSize)
+            cmnT += ("Transaction Serializable Enabled", bool2Str(trn.txSerializableEnabled()))
+
+            val query = cfg.queryConfiguration()
+
+            if (query != null) {
+                cmnT += ("Query Function Classes", arr2Str(query.indexCustomFunctionClasses()))
+                cmnT += ("Query Path To SQL Schema Objects", arr2Str(query.searchPath()))
+                cmnT += ("Query Initial Script Path", safe(query.initialScriptPath()))
+                cmnT += ("Query Off-Heap Storage Memory",
+                    if (query.maxOffHeapMemory() >= 0) query.maxOffHeapMemory() else NA)
+                cmnT += ("Query Execution Time Threshold", query.longQueryExecutionTimeout())
+                cmnT += ("Query Long Queries Explaining", bool2Str(query.longQryExplain()))
+                cmnT += ("Query Serializer", bool2Str(query.useOptimizedSerializer()))
+            }
+            else
+                cmnT += ("Query Configuration", NA)
 
             cmnT.render()
 
@@ -263,7 +271,7 @@ class VisorConfigurationCommand {
             val spisT = VisorTextTable()
 
             def spiClass(spi: IgniteBiTuple[String, java.util.Map[String, AnyRef]]) = {
-                if (spi != null) spi.get2().getOrElse("Class Name", DFLT) else DFLT
+                if (spi != null) spi.get2().getOrElse("Class Name", NA) else NA
             }
 
             def spisClass(spis: Array[IgniteBiTuple[String, java.util.Map[String, AnyRef]]]) = {
@@ -274,13 +282,12 @@ class VisorConfigurationCommand {
             spisT += ("Communication", spiClass(cfg.spis().communicationSpi()))
             spisT += ("Event storage", spiClass(cfg.spis().eventStorageSpi()))
             spisT += ("Collision", spiClass(cfg.spis().collisionSpi()))
-            spisT += ("Authentication", spiClass(cfg.spis().authenticationSpi()))
-            spisT += ("Secure session", spiClass(cfg.spis().secureSessionSpi()))
             spisT += ("Deployment", spiClass(cfg.spis().deploymentSpi()))
             spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
             spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
             spisT += ("Load balancings", spisClass(cfg.spis().loadBalancingSpis()))
             spisT += ("Swap spaces", spiClass(cfg.spis().swapSpaceSpi()))
+            spisT += ("Indexing", spisClass(cfg.spis().indexingSpis()))
 
             spisT.render()
 
@@ -290,7 +297,7 @@ class VisorConfigurationCommand {
 
             p2pT += ("Peer class loading enabled", bool2Str(cfg.p2p().p2pEnabled()))
             p2pT += ("Missed resources cache size", cfg.p2p().p2pMissedResponseCacheSize())
-            p2pT += ("Peer-to-Peer loaded packages", safe(cfg.p2p().p2pLocalClassPathExclude(), DFLT))
+            p2pT += ("Peer-to-Peer loaded packages", safe(cfg.p2p().p2pLocalClassPathExclude()))
 
             p2pT.render()
 
@@ -298,7 +305,7 @@ class VisorConfigurationCommand {
 
             val lifecycleT = VisorTextTable()
 
-            lifecycleT += ("Beans", safe(cfg.lifecycle().beans(), DFLT))
+            lifecycleT += ("Beans", safe(cfg.lifecycle().beans()))
 
             lifecycleT.render()
 
@@ -308,12 +315,12 @@ class VisorConfigurationCommand {
 
             val execCfg = cfg.executeService()
 
-            execSvcT += ("Public thread pool size", safe(execCfg.publicThreadPoolSize(), DFLT))
-            execSvcT += ("System thread pool size", safe(execCfg.systemThreadPoolSize(), DFLT))
-            execSvcT += ("Management thread pool size", safe(execCfg.managementThreadPoolSize(), DFLT))
-            execSvcT += ("IGFS thread pool size", safe(execCfg.igfsThreadPoolSize(), DFLT))
-            execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.peerClassLoadingThreadPoolSize(), DFLT))
-            execSvcT += ("REST thread pool size", safe(execCfg.restThreadPoolSize(), DFLT))
+            execSvcT += ("Public thread pool size", safe(execCfg.publicThreadPoolSize()))
+            execSvcT += ("System thread pool size", safe(execCfg.systemThreadPoolSize()))
+            execSvcT += ("Management thread pool size", safe(execCfg.managementThreadPoolSize()))
+            execSvcT += ("IGFS thread pool size", safe(execCfg.igfsThreadPoolSize()))
+            execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.peerClassLoadingThreadPoolSize()))
+            execSvcT += ("REST thread pool size", safe(execCfg.restThreadPoolSize()))
 
             execSvcT.render()
 
@@ -321,8 +328,8 @@ class VisorConfigurationCommand {
 
             val segT = VisorTextTable()
 
-            segT += ("Segmentation policy", safe(cfg.segmentation().policy(), DFLT))
-            segT += ("Segmentation resolvers", safe(cfg.segmentation().resolvers(), DFLT))
+            segT += ("Segmentation policy", safe(cfg.segmentation().policy()))
+            segT += ("Segmentation resolvers", safe(cfg.segmentation().resolvers()))
             segT += ("Segmentation check frequency", cfg.segmentation().checkFrequency())
             segT += ("Wait for segmentation on start", bool2Str(cfg.segmentation().waitOnStart()))
             segT += ("All resolvers pass required", bool2Str(cfg.segmentation().passRequired()))
@@ -333,7 +340,7 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(U.gridEventName)))
+            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(NA)(et => arr2Str(et.map(U.gridEventName)))
 
             evtsT += ("Included event types", inclEvtTypes)
 
@@ -344,14 +351,14 @@ class VisorConfigurationCommand {
             val restT = VisorTextTable()
 
             restT += ("REST enabled", bool2Str(cfg.rest().restEnabled()))
-            restT += ("Rest accessible folders", safe(cfg.rest().accessibleFolders(), DFLT))
-            restT += ("Jetty path", safe(cfg.rest().jettyPath(), DFLT))
-            restT += ("Jetty host", safe(cfg.rest().jettyHost(), DFLT))
-            restT += ("Jetty port", safe(cfg.rest().jettyPort(), DFLT))
+            restT += ("Rest accessible folders", safe(cfg.rest().accessibleFolders()))
+            restT += ("Jetty path", safe(cfg.rest().jettyPath()))
+            restT += ("Jetty host", safe(cfg.rest().jettyHost()))
+            restT += ("Jetty port", safe(cfg.rest().jettyPort()))
             restT += ("Tcp ssl enabled", bool2Str(cfg.rest().tcpSslEnabled()))
-            restT += ("Tcp ssl context factory", safe(cfg.rest().tcpSslContextFactory(), DFLT))
-            restT += ("Tcp host", safe(cfg.rest().tcpHost(), DFLT))
-            restT += ("Tcp port", safe(cfg.rest().tcpPort(), DFLT))
+            restT += ("Tcp ssl context factory", safe(cfg.rest().tcpSslContextFactory()))
+            restT += ("Tcp host", safe(cfg.rest().tcpHost()))
+            restT += ("Tcp port", safe(cfg.rest().tcpPort()))
 
             restT.render()
 
@@ -401,7 +408,7 @@ class VisorConfigurationCommand {
                 println("\nNo system properties defined.")
 
             cfg.caches().foreach(cacheCfg => {
-                VisorCacheCommand.showCacheConfiguration("\nCache '" + safe(cacheCfg.name(), DFLT) + "':", cacheCfg)
+                VisorCacheCommand.showCacheConfiguration("\nCache '" + escapeName(cacheCfg.name()) + "':", cacheCfg)
             })
         }
     }

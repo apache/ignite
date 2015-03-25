@@ -26,11 +26,9 @@ import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.*;
 
 /**
  * Class to support uniformity calculation.
- *
- * <a href="http://en.wikipedia.org/wiki/Coefficient_of_variation">
- * Uniformity calculated as coefficient of variation.
- * </a>
- *
+ *<p>
+ *<a href="http://en.wikipedia.org/wiki/Coefficient_of_variation">Uniformity calculated as coefficient of variation.</a>
+ *</p>
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
 public class VisorIgfsProfilerUniformityCounters implements Serializable {
@@ -125,7 +123,7 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable {
     private void capacity(int minCap) {
         counters.ensureCapacity(minCap);
 
-        while(counters.size() < minCap)
+        while (counters.size() < minCap)
             counters.add(0);
     }
 
@@ -166,8 +164,7 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable {
     }
 
     /**
-     * Calculate uniformity as standard deviation.
-     * See: http://en.wikipedia.org/wiki/Standard_deviation.
+     * Calculate uniformity as standard deviation. See: http://en.wikipedia.org/wiki/Standard_deviation.
      *
      * @return Uniformity value as number in {@code 0..1} range.
      */
@@ -175,7 +172,7 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable {
         if (counters.isEmpty())
             return -1;
         else {
-            int cap = (int) (fileSize / blockSize + (fileSize % blockSize > 0 ? 1 : 0));
+            int cap = (int)(fileSize / blockSize + (fileSize % blockSize > 0 ? 1 : 0));
 
             capacity(cap);
 

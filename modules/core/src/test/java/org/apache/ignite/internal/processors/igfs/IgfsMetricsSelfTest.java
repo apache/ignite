@@ -44,10 +44,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
-    private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>(){{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    private static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
@@ -56,16 +53,23 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary IGFS instances. */
-    private static IgniteFs[] igfsPrimary;
+    private static IgniteFileSystem[] igfsPrimary;
 
     /** Secondary IGFS instance. */
-    private static IgniteFs igfsSecondary;
+    private static IgfsImpl igfsSecondary;
 
     /** Primary file system block size. */
     public static final int PRIMARY_BLOCK_SIZE = 512;
 
     /** Secondary file system block size. */
     public static final int SECONDARY_BLOCK_SIZE = 512;
+
+    static {
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -84,7 +88,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startPrimary() throws Exception {
-        igfsPrimary = new IgniteFs[NODES_CNT];
+        igfsPrimary = new IgniteFileSystem[NODES_CNT];
 
         for (int i = 0; i < NODES_CNT; i++) {
             Ignite g = G.start(primaryConfiguration(i));
@@ -101,14 +105,14 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
         igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setSecondaryFileSystem(igfsSecondary);
+        igfsCfg.setSecondaryFileSystem(igfsSecondary.asSecondary());
 
         Map<String, IgfsMode> pathModes = new HashMap<>();
 
@@ -146,7 +150,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -159,7 +163,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startSecondary() throws Exception {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
         igfsCfg.setMetaCacheName("metaCache");
@@ -198,18 +202,18 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 
         Ignite g = G.start(cfg);
 
-        igfsSecondary = g.fileSystem(IGFS_SECONDARY);
+        igfsSecondary = (IgfsImpl)g.fileSystem(IGFS_SECONDARY);
     }
 
     /** @throws Exception If failed. */
     public void testMetrics() throws Exception {
-        IgniteFs fs = igfsPrimary[0];
+        IgniteFileSystem fs = igfsPrimary[0];
 
         assertNotNull(fs);
 
@@ -349,7 +353,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMultipleClose() throws Exception {
-        IgniteFs fs = igfsPrimary[0];
+        IgniteFileSystem fs = igfsPrimary[0];
 
         IgfsOutputStream out = fs.create(new IgfsPath("/file"), false);
 

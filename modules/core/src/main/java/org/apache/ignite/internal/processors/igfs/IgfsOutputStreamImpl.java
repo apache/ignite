@@ -96,11 +96,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param mode Grid IGFS mode.
      * @param batch Optional secondary file system batch.
      * @param metrics Local IGFS metrics.
-     * @throws IgniteCheckedException If stream creation failed.
      */
     IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics)
-        throws IgniteCheckedException {
+        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
         assert fileInfo != null;
@@ -366,7 +364,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
-                catch (IgfsFileNotFoundException ignore) {
+                catch (IgfsPathNotFoundException ignore) {
                     data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
 
                     throw new IOException("File was concurrently deleted: " + path);
@@ -407,7 +405,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
-        if (!Boolean.parseBoolean(fileInfo.properties().get(IgniteFs.PROP_PREFER_LOCAL_WRITES)))
+        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsEx.PROP_PREFER_LOCAL_WRITES)))
             return null;
 
         int blockSize = fileInfo.blockSize();

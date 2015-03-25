@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -89,7 +89,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
         cc.setDistributionMode(distributionMode());
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cc.setReadThrough(true);

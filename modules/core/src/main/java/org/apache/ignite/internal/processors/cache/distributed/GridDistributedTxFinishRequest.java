@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,14 +67,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     private int txSize;
 
     /** Group lock key. */
-    @GridDirectTransient
     private IgniteTxKey grpLockKey;
 
-    /** Group lock key bytes. */
-    private byte[] grpLockKeyBytes;
-
-    /** System flag. */
+    /** System transaction flag. */
     private boolean sys;
+
+    /** IO policy. */
+    private GridIoPolicy plc;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -90,7 +89,8 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
+     * @param sys System transaction flag.
+     * @param plc IO policy.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
@@ -105,6 +105,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         boolean commit,
         boolean invalidate,
         boolean sys,
+        GridIoPolicy plc,
         boolean syncCommit,
         boolean syncRollback,
         GridCacheVersion baseVer,
@@ -122,6 +123,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.commit = commit;
         this.invalidate = invalidate;
         this.sys = sys;
+        this.plc = plc;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
@@ -132,10 +134,17 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
-     * @return System flag.
+     * @return System transaction flag.
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
     }
 
     /**
@@ -226,23 +235,19 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (grpLockKey != null && grpLockKeyBytes == null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(grpLockKey, ctx);
-
-            grpLockKeyBytes = CU.marshal(ctx, grpLockKey);
-        }
+        if (grpLockKey != null)
+            grpLockKey.prepareMarshal(ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
+        if (grpLockKey != null)
+            grpLockKey.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -252,11 +257,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -285,7 +290,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
+                if (!writer.writeMessage("grpLockKey", grpLockKey))
                     return false;
 
                 writer.incrementState();
@@ -297,30 +302,36 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeBoolean("syncRollback", syncRollback))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
             case 18:
+                if (!writer.writeLong("threadId", threadId))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -332,20 +343,23 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
                 baseVer = reader.readMessage("baseVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 commit = reader.readBoolean("commit");
@@ -353,7 +367,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 10:
                 commitVer = reader.readMessage("commitVer");
@@ -361,7 +375,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 11:
                 futId = reader.readIgniteUuid("futId");
@@ -369,15 +383,15 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 12:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+                grpLockKey = reader.readMessage("grpLockKey");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 13:
                 invalidate = reader.readBoolean("invalidate");
@@ -385,47 +399,59 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 14:
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
+
+                reader.incrementState();
+
+            case 15:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 15:
+            case 16:
                 syncRollback = reader.readBoolean("syncRollback");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 16:
+            case 17:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 17:
+            case 18:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 18:
+            case 19:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -435,6 +461,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 23;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 20;
     }
 
     /** {@inheritDoc} */

@@ -290,7 +290,7 @@ public class CacheQueryExample {
         private String resume;
 
         /** Salary (indexed). */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private double salary;
 
         /** Custom cache key to guarantee that person is always collocated with its organization. */

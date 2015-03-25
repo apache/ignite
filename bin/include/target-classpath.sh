@@ -19,7 +19,7 @@
 # Target class path resolver.
 #
 # Can be used like:
-#       . "${IGNITE_HOME}"/os/bin/include/target-classpath.sh
+#       . "${IGNITE_HOME}"/bin/include/target-classpath.sh
 # in other scripts to set classpath using libs from target folder.
 #
 # Will be excluded in release.
@@ -49,6 +49,10 @@ includeToClassPath() {
                 IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
+            if [ -d "${file}/target/test-classes" ]; then
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/test-classes
+            fi
+
             if [ -d "${file}/target/libs" ]; then
                 IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
             fi
@@ -57,11 +61,11 @@ includeToClassPath() {
 }
 
 #
-# Include target libraries for opensourse modules to classpath.
+# Include target libraries for enterprise modules to classpath.
 #
-includeToClassPath ${IGNITE_HOME}/os/modules
+includeToClassPath modules
 
 #
-# Include target libraries for enterprise modules to classpath.
+# Include target libraries for opensourse modules to classpath.
 #
 includeToClassPath ${IGNITE_HOME}/modules

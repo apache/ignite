@@ -78,9 +78,9 @@
             </bean>
         </property>
 
-        <property name="igfsConfiguration">
+        <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgfsConfiguration">
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
                     <property name="metaCacheName" value="igfs-meta"/>
                     <property name="dataCacheName" value="igfs-data"/>
@@ -95,9 +95,9 @@
 
                     <!-- Loopback endpoint. -->
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="tcp"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
                     </property>
 
                 </bean>

@@ -59,7 +59,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
             catch (IllegalArgumentException iae) {
                 throw new IgniteException("Failed to set sampling state for IGFS: " + arg.get1(), iae);
             }
-            catch(IgniteCheckedException e) {
+            catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
         }

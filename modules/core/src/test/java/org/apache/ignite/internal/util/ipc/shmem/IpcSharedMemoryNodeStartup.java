@@ -19,11 +19,10 @@ package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -41,7 +40,7 @@ public class IpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception{
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -49,10 +48,10 @@ public class IpcSharedMemoryNodeStartup {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        Map<String, String> endpointCfg = new HashMap<>();
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
-        endpointCfg.put("type", "shmem");
-        endpointCfg.put("port", "10500");
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(10500);
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
@@ -60,7 +59,7 @@ public class IpcSharedMemoryNodeStartup {
         igfsCfg.setMetaCacheName("partitioned");
         igfsCfg.setName("igfs");
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 

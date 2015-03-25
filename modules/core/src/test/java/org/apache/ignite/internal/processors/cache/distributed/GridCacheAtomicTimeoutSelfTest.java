@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -293,7 +292,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         private boolean skipDhtResponse;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             if (!skipMessage((GridIoMessage)msg))
                 super.sendMessage(node, msg);

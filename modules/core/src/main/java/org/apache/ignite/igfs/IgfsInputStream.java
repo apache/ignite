@@ -23,7 +23,7 @@ import java.io.*;
  * {@code IGFS} input stream to read data from the file system.
  * It provides several additional methods for asynchronous access.
  */
-public abstract class IgfsInputStream extends InputStream implements IgfsReader {
+public abstract class IgfsInputStream extends InputStream {
     /**
      * Gets file length during file open.
      *
@@ -76,5 +76,5 @@ public abstract class IgfsInputStream extends InputStream implements IgfsReader 
      * @return Total number of bytes read into the buffer, or -1 if there is no more data (EOF).
      * @throws IOException In case of IO exception.
      */
-    @Override public abstract int read(long pos, byte[] buf, int off, int len) throws IOException;
+    public abstract int read(long pos, byte[] buf, int off, int len) throws IOException;
 }

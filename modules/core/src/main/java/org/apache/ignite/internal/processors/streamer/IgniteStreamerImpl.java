@@ -730,7 +730,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             execSvc.submit(worker);
 
-            batchFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            batchFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     BatchExecutionFuture fut = (BatchExecutionFuture)t;
 
@@ -1014,7 +1014,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @return Execution request.
      * @throws IgniteCheckedException If failed.
      */
-    private MessageAdapter createExecutionRequest(GridStreamerExecutionBatch batch)
+    private Message createExecutionRequest(GridStreamerExecutionBatch batch)
         throws IgniteCheckedException {
         boolean depEnabled = ctx.deploy().enabled();
 
@@ -1088,7 +1088,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param msg Message to send.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendWithRetries(UUID dstNodeId, MessageAdapter msg) throws IgniteCheckedException {
+    private void sendWithRetries(UUID dstNodeId, Message msg) throws IgniteCheckedException {
         for (int i = 0; i < SEND_RETRY_COUNT; i++) {
             try {
                 ctx.io().send(dstNodeId, topic, msg, GridIoPolicy.SYSTEM_POOL);
@@ -1139,7 +1139,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /**
-     * Data loader peer-deploy aware.
+     * Data streamer peer-deploy aware.
      */
     private class StreamerPda implements GridPeerDeployAware {
         /** */
@@ -1155,7 +1155,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private Collection<Object> objs;
 
         /**
-         * Constructs data loader peer-deploy aware.
+         * Constructs data streamer peer-deploy aware.
          *
          * @param objs Collection of objects to detect deploy class and class loader.
          */
@@ -1221,7 +1221,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private long schedTs;
 
         /** Stage completion future. */
-        private BatchExecutionFuture fut = new BatchExecutionFuture(ctx);
+        private BatchExecutionFuture fut = new BatchExecutionFuture();
 
         /**
          * Creates worker.
@@ -1351,20 +1351,6 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         /** */
         private BatchWorker w;
 
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public BatchExecutionFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Context.
-         */
-        private BatchExecutionFuture(GridKernalContext ctx) {
-            super(ctx);
-        }
-
         /** {@inheritDoc} */
         @Override public boolean cancel() throws IgniteCheckedException {
             assert w != null;
@@ -1384,11 +1370,6 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             assert w != null;
 
             this.w = w;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Throwable error() {
-            return super.error();
         }
     }
 }

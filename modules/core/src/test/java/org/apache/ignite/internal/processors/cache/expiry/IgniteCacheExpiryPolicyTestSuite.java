@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.expiry;
 
 import junit.framework.*;
+import org.apache.ignite.cache.store.*;
 
 /**
  *
@@ -44,6 +45,8 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyWithStoreTest.class);
         suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);
+
+        suite.addTestSuite(IgniteCacheExpiryStoreLoadSelfTest.class);
 
         return suite;
     }

@@ -21,9 +21,12 @@
     Ignite Spring configuration file to startup grid.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:util="http://www.springframework.org/schema/util"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
     <!--
         Store data source.
     -->
@@ -45,7 +48,9 @@
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                     <property name="databaseName" value="ID"/>
-                    <property name="databaseType" value="4"/>
+                    <property name="databaseType">
+                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                    </property>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="int"/>
                 </bean>
@@ -55,7 +60,9 @@
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
                     <property name="databaseName" value="VALUE"/>
-                    <property name="databaseType" value="4"/>
+                    <property name="databaseType">
+                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                    </property>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="int"/>
                 </bean>
@@ -65,24 +72,6 @@
 
     <bean class="org.apache.ignite.configuration.IgniteConfiguration" >
         <property name="peerClassLoadingEnabled" value="false"/>
-
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="true"/>
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.yardstick.cache.model.SampleKey</value>
-                        <value>org.apache.ignite.yardstick.cache.model.SampleValue</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Person</value>
-                        <value>org.apache.ignite.yardstick.cache.model.Organization</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopTask$NoopJob</value>
-                        <value>org.apache.ignite.yardstick.compute.model.NoopCallable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteRunBenchmark$NoopRunnable</value>
-                        <value>org.apache.ignite.yardstick.compute.IgniteApplyBenchmark$NoopClosure</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
 
         <property name="cacheConfiguration">
             <list>

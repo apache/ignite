@@ -78,9 +78,9 @@
             </bean>
         </property>
 
-        <property name="igfsConfiguration">
+        <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.IgfsConfiguration">
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
                     <property name="metaCacheName" value="igfs-meta"/>
                     <property name="dataCacheName" value="igfs-data"/>
@@ -95,10 +95,10 @@
 
                     <!-- Shared memory endpoint. -->
                     <property name="ipcEndpointConfiguration">
-                        <map>
-                            <entry key="type" value="shmem"/>
-                            <entry key="port" value="10500"/>
-                        </map>
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="SHMEM" />
+                            <property name="port" value="10500" />
+                        </bean>
                     </property>
                 </bean>
             </list>

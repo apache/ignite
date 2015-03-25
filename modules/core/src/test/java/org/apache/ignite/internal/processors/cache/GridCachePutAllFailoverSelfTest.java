@@ -259,7 +259,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    fut.listen(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -431,7 +431,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    fut.listen(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -482,7 +482,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                fut.listen(new CI1<IgniteFuture<Void>>() {
                     @Override public void apply(IgniteFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -558,11 +558,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * @param workerNode Worker node.
      * @param keys Keys that are suspected to be absent
      * @return List of absent keys. If no keys are absent, the list is empty.
-     * @throws IgniteCheckedException If error occurs.
      */
-    private Collection<Integer> findAbsentKeys(Ignite workerNode,
-        Collection<Integer> keys) throws IgniteCheckedException {
-
+    private Collection<Integer> findAbsentKeys(Ignite workerNode, Collection<Integer> keys) {
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
         IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);
@@ -623,7 +620,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setBackups(backups);
 
-            cacheCfg.setStoreValueBytes(true);
             cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
             cacheCfg.setQueryIndexEnabled(false);
 

@@ -84,6 +84,16 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             Marshaller marsh = new OptimizedMarshaller();
 
+            marsh.setContext(new MarshallerContext() {
+                @Override public boolean registerClass(int id, Class cls) {
+                    return true;
+                }
+
+                @Override public Class getClass(int id, ClassLoader ldr) {
+                    throw new UnsupportedOperationException();
+                }
+            });
+
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;
             TWO_KB_VAL_SIZE = marsh.marshal(new Value(new byte[2048])).length;
@@ -188,7 +198,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -242,7 +252,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -280,7 +290,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(GridCacheEntryEx<?, ?> entry) throws Exception {
+    private int extrasSize(GridCacheEntryEx entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);

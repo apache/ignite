@@ -41,6 +41,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String version();
 
     /**
+     * @return Copyright.
+     */
+    public String copyright();
+
+    /**
      * @return Plugin API.
      */
     public <T extends IgnitePlugin> T plugin();
@@ -62,10 +67,9 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * Starts grid component.
      *
      * @param ctx Plugin context.
-     * @param attrs Attributes.
      * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start(PluginContext ctx, Map<String, Object> attrs) throws IgniteCheckedException;
+    public void start(PluginContext ctx) throws IgniteCheckedException;
 
     /**
      * Stops grid component.
@@ -106,10 +110,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * on new node during discovery process). This data is provided by
      * {@link #provideDiscoveryData(UUID)} method on the other nodes.
      *
+     * @param nodeId Remote node ID.
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
      */
-    public void receiveDiscoveryData(Object data);
+    public void receiveDiscoveryData(UUID nodeId, Object data);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

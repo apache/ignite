@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.internal.util.offheap.*;
 
 /**
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.offheap.*;
 public class GridUnsafePartitionedMapPerformanceTest extends GridOffHeapPartitionedMapPerformanceAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridOffHeapPartitionedMap newMap() {
-        return GridOffHeapMapFactory.unsafePartitionedMap(CacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT,
+        return GridOffHeapMapFactory.unsafePartitionedMap(CacheRendezvousAffinityFunction.DFLT_PARTITION_COUNT,
             Runtime.getRuntime().availableProcessors(), load, LOAD_CNT, mem, lruStripes, null);
     }
 }

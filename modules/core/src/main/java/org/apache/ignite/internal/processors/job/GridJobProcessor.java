@@ -52,6 +52,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 /**
  * Responsible for all grid job execution and communication.
  */
+@SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
@@ -146,14 +147,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Internal task flag. */
-    private final GridThreadLocal<Boolean> internal = new GridThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> internal = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** Current session. */
-    private final GridThreadLocal<ComputeTaskSession> currentSess = new GridThreadLocal<>();
+    private final ThreadLocal<ComputeTaskSession> currentSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.

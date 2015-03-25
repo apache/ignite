@@ -19,6 +19,7 @@ package org.apache.ignite.internal.executor;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -585,7 +586,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     private <T> Future<T> addFuture(IgniteInternalFuture<T> fut) {
         synchronized (mux) {
             if (!fut.isDone()) {
-                fut.listenAsync(lsnr);
+                fut.listen(lsnr);
 
                 futs.add(fut);
             }

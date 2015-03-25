@@ -112,7 +112,6 @@ public class CacheManager implements javax.cache.CacheManager {
             igniteCacheCfg = new CacheConfiguration();
 
             igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
-            igniteCacheCfg.setStoreValueBytes(cacheCfg.isStoreByValue());
         }
 
         igniteCacheCfg.setName(cacheName);
@@ -305,7 +304,6 @@ public class CacheManager implements javax.cache.CacheManager {
             ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(false);
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {

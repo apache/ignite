@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -40,7 +40,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -75,9 +75,9 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 18));
+        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setDistributionMode(PARTITIONED_ONLY);
 
         c.setCacheConfiguration(cc);
@@ -498,8 +498,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                CacheConsistentHashAffinityFunction affinity = (CacheConsistentHashAffinityFunction)((IgniteKernal)grid(i))
-                    .internalCache().context().config().getAffinity();
+                CacheAffinity affinity = grid(i).affinity(null);
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
 

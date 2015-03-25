@@ -134,7 +134,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 IgniteInternalFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
 
-                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> e) {
                         latch.countDown();
                     }
@@ -195,10 +195,13 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             GridCacheAdapter<String, Integer> internal = grid.internalCache();
 
-            IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
+            KeyCacheObject cacheKey = internal.context().toCacheKeyObject(key);
+
+            IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(
+                Collections.singletonList(cacheKey), 2);
 
             IgniteInternalFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
-                Collections.singletonList(key), 2);
+                Collections.singletonList(cacheKey), 2);
 
             assert !nearFut.isDone();
             assert !dhtFut.isDone();
@@ -235,7 +238,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         assert fut != null;
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        fut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> e) {
                 end.set(System.currentTimeMillis());
 
@@ -295,7 +298,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             assert fut != null;
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> e) {
                     end.set(System.currentTimeMillis());
 

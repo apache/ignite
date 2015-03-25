@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -66,6 +67,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean swapEnabled = true;
 
+    /** PeerClassLoading excluded. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -87,8 +91,10 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
@@ -147,6 +153,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     public void testSwapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
             GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
@@ -635,15 +644,15 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = entry.rawGet();
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assert val != null;
-            assert entry.key() == val.value();
+            assertEquals(CU.value(entry.key(), entry.context(), false), val.value());
             assert entry.version().equals(versions.get(i));
         }
     }

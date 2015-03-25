@@ -156,7 +156,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.fullSup = fullSup;
         this.subjId = subjId;
 
-        mapFut = new IgniteFutureImpl(new GridFutureAdapter(ctx));
+        mapFut = new IgniteFutureImpl(new GridFutureAdapter());
     }
 
     /** {@inheritDoc} */
@@ -485,8 +485,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         assert isTaskNode();
 
         synchronized (mux) {
-            Collection<ComputeJobSibling> tmp = new ArrayList<>(this.siblings);
+            Collection<ComputeJobSibling> tmp = new ArrayList<>(this.siblings.size() + siblings.size());
 
+            tmp.addAll(this.siblings);
             tmp.addAll(siblings);
 
             this.siblings = Collections.unmodifiableCollection(tmp);

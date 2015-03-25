@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -52,6 +53,7 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -148,7 +150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapterEx<DiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
+    private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -188,14 +190,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /**
-     * Sets local node attributes into discovery SPI.
-     *
-     * @param attrs Attributes to set.
-     * @param ver Version.
-     */
-    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-        // TODO GG-7574 move to metrics processor?
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        DiscoverySpi spi = getSpi();
+
+        spi.setNodeAttributes(ctx.nodeAttributes(), VER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
         long totSysMemory = -1;
 
         try {
@@ -205,13 +208,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
-        getSpi().setNodeAttributes(attrs, ver);
-    }
+        DiscoverySpi spi = getSpi();
 
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
         discoOrdered = discoOrdered();
 
         histSupported = historySupported();
@@ -235,26 +235,34 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         new IgniteThread(metricsUpdater).start();
 
-        getSpi().setMetricsProvider(createMetricsProvider());
+        spi.setMetricsProvider(createMetricsProvider());
 
-        getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
-                try {
-                    return ctx.security().authenticateNode(node, cred);
+        if (ctx.security().enabled()) {
+            spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
+                @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
+                    try {
+                        return ctx.security().authenticateNode(node, cred);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
+
+                @Override public boolean isGlobalNodeAuthentication() {
+                    return ctx.security().isGlobalNodeAuthentication();
                 }
-            }
+            });
+        }
 
-            @Override public boolean isGlobalNodeAuthentication() {
-                return ctx.security().isGlobalNodeAuthentication();
-            }
-        });
-
-        getSpi().setListener(new DiscoverySpiListener() {
-            @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
-                Map<Long, Collection<ClusterNode>> snapshots) {
+        spi.setListener(new DiscoverySpiListener() {
+            @Override public void onDiscovery(
+                int type,
+                long topVer,
+                ClusterNode node,
+                Collection<ClusterNode> topSnapshot,
+                Map<Long, Collection<ClusterNode>> snapshots,
+                @Nullable Serializable data
+            ) {
                 final ClusterNode locNode = localNode();
 
                 if (snapshots != null)
@@ -268,7 +276,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                if (type != EVT_NODE_METRICS_UPDATED) {
+                if (type != EVT_NODE_METRICS_UPDATED && type != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 
                     discoCacheHist.put(topVer, cache);
@@ -303,11 +311,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", evt=" + U.gridEventName(type) + ']';
                 }
 
-                discoWrk.addEvent(type, topVer, node, topSnapshot);
+                discoWrk.addEvent(type, topVer, node, topSnapshot, data);
             }
         });
 
-        getSpi().setDataExchange(new DiscoverySpiDataExchange() {
+        spi.setDataExchange(new DiscoverySpiDataExchange() {
             @Override public Map<Integer, Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
@@ -326,7 +334,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(Map<Integer, Object> data) {
+            @Override public void onExchange(UUID nodeId, Map<Integer, Object> data) {
                 for (Map.Entry<Integer, Object> e : data.entrySet()) {
                     GridComponent comp = null;
 
@@ -339,7 +347,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     if (comp != null)
-                        comp.onDiscoveryDataReceived(e.getValue());
+                        comp.onDiscoveryDataReceived(nodeId, e.getValue());
                     else
                         U.warn(log, "Received discovery data for unknown component: " + e.getKey());
                 }
@@ -359,7 +367,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         checkAttributes(discoCache().remoteNodes());
 
-        locNode = getSpi().getLocalNode();
+        locNode = spi.getLocalNode();
 
         topVer.setIfGreater(locNode.order());
 
@@ -776,12 +784,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // Stop receiving notifications.
         getSpi().setListener(null);
 
-        // Stop discovery worker.
+        // Stop discovery worker and metrics updater.
         U.cancel(discoWrk);
-        U.join(discoWrk, log);
-
-        // Stop metrics updater.
         U.cancel(metricsUpdater);
+
+        U.join(discoWrk, log);
         U.join(metricsUpdater, log);
 
         // Stop SPI itself.
@@ -915,7 +922,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         long topVer = topologyVersion();
 
         if (topVer >= awaitVer)
-            return new GridFinishedFuture<>(ctx, topVer);
+            return new GridFinishedFuture<>(topVer);
 
         DiscoTopologyFuture fut = new DiscoTopologyFuture(ctx, awaitVer);
 
@@ -1183,6 +1190,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ).start();
     }
 
+    /**
+     * @param evt Event.
+     */
+    public void sendCustomEvent(Serializable evt) {
+        getSpi().sendCustomEvent(evt);
+    }
+
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
@@ -1239,7 +1253,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     if (!segValid) {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED, 0, getSpi().getLocalNode(),
-                            Collections.<ClusterNode>emptyList());
+                            Collections.<ClusterNode>emptyList(), null);
 
                         lastSegChkRes.set(false);
                     }
@@ -1259,7 +1273,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** Event queue. */
-        private final BlockingQueue<GridTuple4<Integer, Long, ClusterNode, Collection<ClusterNode>>> evts =
+        private final BlockingQueue<GridTuple5<Integer, Long, ClusterNode, Collection<ClusterNode>, Serializable>> evts =
             new LinkedBlockingQueue<>();
 
         /** Node segmented event fired flag. */
@@ -1290,12 +1304,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.eventNode(node);
                 evt.type(type);
 
-                evt.topologySnapshot(topVer, new ArrayList<>(
-                    F.viewReadOnly(topSnapshot, new C1<ClusterNode, ClusterNode>() {
-                        @Override public ClusterNode apply(ClusterNode e) {
-                            return e;
-                        }
-                    }, daemonFilter)));
+                evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, daemonFilter));
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     evt.message("Metrics were updated: " + node);
@@ -1325,10 +1334,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param node Node.
          * @param topSnapshot Topology snapshot.
          */
-        void addEvent(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot) {
+        void addEvent(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable Serializable data
+        ) {
             assert node != null;
 
-            evts.add(F.t(type, topVer, node, topSnapshot));
+            evts.add(F.t(type, topVer, node, topSnapshot, data));
         }
 
         /**
@@ -1362,7 +1377,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @throws InterruptedException If interrupted. */
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
-            GridTuple4<Integer, Long, ClusterNode, Collection<ClusterNode>> evt = evts.take();
+            GridTuple5<Integer, Long, ClusterNode, Collection<ClusterNode>, Serializable> evt = evts.take();
 
             int type = evt.get1();
 
@@ -1469,6 +1484,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         log.debug("Local node SEGMENTED: " + node);
 
                     break;
+                }
+
+                case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
+                    DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
+
+                    customEvt.node(ctx.discovery().localNode());
+                    customEvt.eventNode(node);
+                    customEvt.type(type);
+                    customEvt.topologySnapshot(topVer, null);
+                    customEvt.data(evt.get5());
+
+                    assert ctx.event().isRecordable(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT);
+
+                    ctx.event().record(customEvt);
+
+                    return;
                 }
 
                 // Don't log metric update to avoid flooding the log.
@@ -1621,6 +1652,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private GridKernalContext ctx;
+
         /** Topology await version. */
         private long awaitVer;
 
@@ -1634,8 +1668,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param awaitVer Await version.
          */
         private DiscoTopologyFuture(GridKernalContext ctx, long awaitVer) {
-            super(ctx);
-
+            this.ctx = ctx;
             this.awaitVer = awaitVer;
         }
 
@@ -2056,12 +2089,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param exclNode Node to exclude.
          */
         private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
-            IgnitePredicate<ClusterNode> p = new P1<ClusterNode>() {
-                @Override public boolean apply(ClusterNode e) {
-                    return exclNode.equals(e);
-                }
-            };
-
             for (String cacheName : U.cacheNames(exclNode)) {
                 String maskedName = maskNull(cacheName);
 
@@ -2071,7 +2098,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (oldNodes == null || oldNodes.isEmpty())
                         break;
 
-                    Collection<ClusterNode> newNodes = F.lose(oldNodes, true, p);
+                    Collection<ClusterNode> newNodes = new ArrayList<>(oldNodes);
+
+                    if (!newNodes.remove(exclNode))
+                        break;
 
                     if (map.replace(maskedName, oldNodes, newNodes))
                         break;
@@ -2117,8 +2147,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param id Node ID.
          * @return Node.
          */
-        @Nullable
-        ClusterNode node(UUID id) {
+        @Nullable ClusterNode node(UUID id) {
             return nodeMap.get(id);
         }
 

@@ -92,14 +92,14 @@ public class CachePopularNumbersExample {
      * @throws IgniteException If failed.
      */
     private static void streamData(final Ignite ignite) throws IgniteException {
-        try (IgniteDataLoader<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
-            ldr.perNodeBufferSize(2048);
+            stmr.perNodeBufferSize(2048);
 
-            ldr.updater(new IncrementingUpdater());
+            stmr.updater(new IncrementingUpdater());
 
             for (int i = 0; i < CNT; i++)
-                ldr.addData(RAND.nextInt(RANGE), 1L);
+                stmr.addData(RAND.nextInt(RANGE), 1L);
         }
     }
 
@@ -119,7 +119,7 @@ public class CachePopularNumbersExample {
 
                 try {
                     List<List<?>> results = new ArrayList<>(cache.queryFields(
-                        sql("select _key, _val from Long order by _val desc limit ?").setArgs(cnt)).getAll());
+                        sql("select _key, _val from Long order by _val desc, _key limit ?").setArgs(cnt)).getAll());
 
                     for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
@@ -140,8 +140,8 @@ public class CachePopularNumbersExample {
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
-        /** */
+    private static class IncrementingUpdater implements IgniteDataStreamer.Updater<Integer, Long> {
+        /** Process entries to increase value by entry key. */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();

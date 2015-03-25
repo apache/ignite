@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -82,10 +83,11 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /**
          * @param subJob Sub job to execute asynchronously.
+         * @param idx Index.
          * @return {@code true} If subJob was not completed and this job should be suspended.
          */
         private boolean callAsync(IgniteCallable<Integer> subJob, int idx) {
-            IgniteCompute compute = ignite.compute(ignite.forCacheNodes(cacheName)).withAsync();
+            IgniteCompute compute = ignite.compute(ignite.cluster().forCacheNodes(cacheName)).withAsync();
 
             compute.call(subJob);
 
@@ -98,7 +100,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
             jobCtx.holdcc();
 
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             return true;
         }
@@ -135,6 +137,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
     @GridInternal
     private static class VisorCacheSizeCallable implements IgniteCallable<Integer> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteCache cache;
 
         /**
@@ -146,7 +151,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            return cache.size();
+            return cache.size(CachePeekMode.PRIMARY);
         }
     }
 
@@ -155,6 +160,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
      */
     @GridInternal
     private static class VisorCacheClearCallable implements IgniteCallable<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteCache cache;
 

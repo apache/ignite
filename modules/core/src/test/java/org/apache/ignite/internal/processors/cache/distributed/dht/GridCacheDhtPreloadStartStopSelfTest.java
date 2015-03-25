@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
@@ -53,7 +53,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Default cache count. */
     private static final int DFLT_CACHE_CNT = 10;
@@ -62,7 +62,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -95,10 +95,10 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             cacheCfg.setName("partitioned-" + i);
 
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setPreloadBatchSize(preloadBatchSize);
+            cacheCfg.setRebalanceBatchSize(preloadBatchSize);
             cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setPreloadMode(preloadMode);
-            cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
+            cacheCfg.setRebalanceMode(preloadMode);
+            cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
             cacheCfg.setBackups(backups);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -135,7 +135,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @return {@code True} if synchronoous preloading.
      */
     private boolean isSync(IgniteCache<?, ?> c) {
-        return c.getConfiguration(CacheConfiguration.class).getPreloadMode() == SYNC;
+        return c.getConfiguration(CacheConfiguration.class).getRebalanceMode() == SYNC;
     }
 
     /**
@@ -214,9 +214,9 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
-                    for (GridDhtLocalPartition<Integer, String> p : top.localPartitions())
+                    for (GridDhtLocalPartition p : top.localPartitions())
                         assertEquals("Invalid partition state for partition: " + p, OWNING, p.state());
                 }
             }

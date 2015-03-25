@@ -59,7 +59,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected final SecureRandom rnd = new SecureRandom();
 
     /** File system. */
-    protected IgniteFs igfs;
+    protected IgniteFileSystem igfs;
 
     /** Meta cache. */
     private GridCache<Object, Object> metaCache;
@@ -73,7 +73,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         igfs = grid.fileSystem(igfsName());
 
-        IgfsConfiguration[] cfgs = grid.configuration().getIgfsConfiguration();
+        FileSystemConfiguration[] cfgs = grid.configuration().getFileSystemConfiguration();
 
         assert cfgs.length == 1;
 
@@ -111,13 +111,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
         igfsCfg.setName("igfs");
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -157,7 +157,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testigfsEnabled() throws Exception {
-        IgniteFs igfs = grid(0).fileSystem(igfsName());
+        IgniteFileSystem igfs = grid(0).fileSystem(igfsName());
 
         assertNotNull(igfs);
     }
@@ -960,9 +960,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @param path Directory path to validate listing for.
      * @param item List of directory items.
-     * @throws IgniteCheckedException If failed.
      */
-    private void assertListDir(String path, String... item) throws IgniteCheckedException {
+    private void assertListDir(String path, String... item) {
         Collection<IgfsFile> files = igfs.listFiles(new IgfsPath(path));
 
         List<String> names = new ArrayList<>(item.length);

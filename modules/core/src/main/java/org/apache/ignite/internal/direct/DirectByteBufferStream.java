@@ -210,6 +210,9 @@ public class DirectByteBufferStream {
     private final MessageFactory msgFactory;
 
     /** */
+    private final MessageFormatter msgFormatter;
+
+    /** */
     private ByteBuffer buf;
 
     /** */
@@ -234,10 +237,22 @@ public class DirectByteBufferStream {
     private boolean msgTypeDone;
 
     /** */
-    private MessageAdapter msg;
+    private Message msg;
+
+    /** */
+    private Iterator<?> mapIt;
 
     /** */
     private Iterator<?> it;
+
+    /** */
+    private Iterator<?> arrIt;
+
+    /** */
+    private Object arrCur = NULL;
+
+    /** */
+    private Object mapCur = NULL;
 
     /** */
     private Object cur = NULL;
@@ -263,11 +278,16 @@ public class DirectByteBufferStream {
     /** */
     private boolean lastFinished;
 
+    /** */
+    private MessageReader reader;
+
     /**
      * @param msgFactory Message factory.
+     * @param msgFormatter Message formatter.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory, MessageFormatter msgFormatter) {
         this.msgFactory = msgFactory;
+        this.msgFormatter = msgFormatter;
     }
 
     /**
@@ -429,6 +449,18 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param val Value.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void writeByteArray(byte[] val, long off, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param val Value
      */
     public void writeShortArray(short[] val) {
@@ -529,7 +561,7 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      */
-    public void writeMessage(MessageAdapter msg, MessageWriter writer) {
+    public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
@@ -553,30 +585,30 @@ public class DirectByteBufferStream {
      * @param itemType Component type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageAdapter.Type itemType, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
         if (arr != null) {
-            if (it == null) {
+            if (arrIt == null) {
                 writeInt(arr.length);
 
                 if (!lastFinished)
                     return;
 
-                it = arrayIterator(arr);
+                arrIt = arrayIterator(arr);
             }
 
-            while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
-                    cur = it.next();
+            while (arrIt.hasNext() || arrCur != NULL) {
+                if (arrCur == NULL)
+                    arrCur = arrIt.next();
 
-                write(itemType, cur, writer);
+                write(itemType, arrCur, writer);
 
                 if (!lastFinished)
                     return;
 
-                cur = NULL;
+                arrCur = NULL;
             }
 
-            it = null;
+            arrIt = null;
         }
         else
             writeInt(-1);
@@ -587,7 +619,7 @@ public class DirectByteBufferStream {
      * @param itemType Item type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageAdapter.Type itemType, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -623,25 +655,25 @@ public class DirectByteBufferStream {
      * @param writer Writer.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, MessageAdapter.Type keyType, MessageAdapter.Type valType,
+    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType,
         MessageWriter writer) {
         if (map != null) {
-            if (it == null) {
+            if (mapIt == null) {
                 writeInt(map.size());
 
                 if (!lastFinished)
                     return;
 
-                it = map.entrySet().iterator();
+                mapIt = map.entrySet().iterator();
             }
 
-            while (it.hasNext() || cur != NULL) {
+            while (mapIt.hasNext() || mapCur != NULL) {
                 Map.Entry<K, V> e;
 
-                if (cur == NULL)
-                    cur = it.next();
+                if (mapCur == NULL)
+                    mapCur = mapIt.next();
 
-                e = (Map.Entry<K, V>)cur;
+                e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
                     write(keyType, e.getKey(), writer);
@@ -657,11 +689,11 @@ public class DirectByteBufferStream {
                 if (!lastFinished)
                     return;
 
-                cur = NULL;
+                mapCur = NULL;
                 keyDone = false;
             }
 
-            it = null;
+            mapIt = null;
         }
         else
             writeInt(-1);
@@ -900,7 +932,7 @@ public class DirectByteBufferStream {
      * @return Message.
      */
     @SuppressWarnings("unchecked")
-    public <T extends MessageAdapter> T readMessage() {
+    public <T extends Message> T readMessage() {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -912,13 +944,16 @@ public class DirectByteBufferStream {
 
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
+            if (msg != null)
+                reader = msgFormatter.reader(msgFactory);
+
             msgTypeDone = true;
         }
 
-        lastFinished = msg == null || msg.readFrom(buf);
+        lastFinished = msg == null || msg.readFrom(buf, reader);
 
         if (lastFinished) {
-            MessageAdapter msg0 = msg;
+            Message msg0 = msg;
 
             msgTypeDone = false;
             msg = null;
@@ -935,7 +970,7 @@ public class DirectByteBufferStream {
      * @return Array.
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] readObjectArray(MessageAdapter.Type itemType, Class<T> itemCls) {
+    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -947,7 +982,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = (Object[])Array.newInstance(itemCls, readSize);
+                objArr = itemCls != null ? (Object[])Array.newInstance(itemCls, readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
@@ -977,7 +1012,7 @@ public class DirectByteBufferStream {
      * @return Collection.
      */
     @SuppressWarnings("unchecked")
-    public <C extends Collection<?>> C readCollection(MessageAdapter.Type itemType) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1021,7 +1056,8 @@ public class DirectByteBufferStream {
      * @return Map.
      */
     @SuppressWarnings("unchecked")
-    public <M extends Map<?, ?>> M readMap(MessageAdapter.Type keyType, MessageAdapter.Type valType, boolean linked) {
+    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
+        boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1042,7 +1078,7 @@ public class DirectByteBufferStream {
                     if (!lastFinished)
                         return null;
 
-                    cur = key;
+                    mapCur = key;
                     keyDone = true;
                 }
 
@@ -1051,7 +1087,7 @@ public class DirectByteBufferStream {
                 if (!lastFinished)
                     return null;
 
-                map.put(cur, val);
+                map.put(mapCur, val);
 
                 keyDone = false;
 
@@ -1061,7 +1097,7 @@ public class DirectByteBufferStream {
 
         readSize = -1;
         readItems = 0;
-        cur = null;
+        mapCur = null;
 
         M map0 = (M)map;
 
@@ -1220,7 +1256,7 @@ public class DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    private void write(MessageAdapter.Type type, Object val, MessageWriter writer) {
+    private void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1327,7 +1363,7 @@ public class DirectByteBufferStream {
                     if (val != null)
                         writer.beforeInnerMessageWrite();
 
-                    writeMessage((MessageAdapter)val, writer);
+                    writeMessage((Message)val, writer);
                 }
                 finally {
                     if (val != null)
@@ -1345,7 +1381,7 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @return Value.
      */
-    private Object read(MessageAdapter.Type type) {
+    private Object read(MessageCollectionItemType type) {
         switch (type) {
             case BYTE:
                 return readByte();

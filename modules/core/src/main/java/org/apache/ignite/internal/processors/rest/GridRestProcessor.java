@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -56,6 +55,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
 
+    /** */
+    public static final byte[] ZERO_BYTES = new byte[0];
+
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -70,6 +72,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /** Workers count. */
     private final LongAdder workersCnt = new LongAdder();
+
+    /** SecurityContext map. */
+    private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -88,11 +93,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
 
         try {
-            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>();
 
             workersCnt.increment();
 
@@ -101,7 +106,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
+                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
                             @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());
@@ -154,7 +159,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Failed to handle request " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
                     "(protocol handler was interrupted when awaiting grid start).", e));
             }
         }
@@ -162,31 +167,27 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        GridSecurityContext subjCtx = null;
+        SecurityContext subjCtx = null;
 
-        try {
-            subjCtx = authenticate(req);
+        if (ctx.security().enabled()) {
+            try {
+                subjCtx = authenticate(req);
 
-            authorize(req, subjCtx);
-        }
-        catch (GridSecurityException e) {
-            assert subjCtx != null;
-
-            GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
-
-            if (ctx.secureSession().enabled()) {
-                try {
-                    res.sessionTokenBytes(updateSessionToken(req, subjCtx));
-                }
-                catch (IgniteCheckedException e1) {
-                    U.warn(log, "Cannot update response session token: " + e1.getMessage());
-                }
+                authorize(req, subjCtx);
             }
+            catch (GridSecurityException e) {
+                assert subjCtx != null;
 
-            return new GridFinishedFuture<>(ctx, res);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+
+                updateSession(req, subjCtx);
+                res.sessionTokenBytes(ZERO_BYTES);
+
+                return new GridFinishedFuture<>(res);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
         }
 
         interceptRequest(req);
@@ -196,10 +197,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
 
         if (res == null)
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
-        final GridSecurityContext subjCtx0 = subjCtx;
+        final SecurityContext subjCtx0 = subjCtx;
 
         return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
@@ -219,13 +220,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.secureSession().enabled()) {
-                    try {
-                        res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.warn(log, "Cannot update response session token: " + e.getMessage());
-                    }
+                if (ctx.security().enabled()) {
+                    updateSession(req, subjCtx0);
+                    res.sessionTokenBytes(ZERO_BYTES);
                 }
 
                 interceptResponse(res, req);
@@ -256,6 +253,25 @@ public class GridRestProcessor extends GridProcessorAdapter {
             // Start protocols.
             startTcpProtocol();
             startHttpProtocol();
+
+            for (GridRestProtocol proto : protos) {
+                Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
+
+                if (props != null) {
+                    for (IgniteBiTuple<String, Object> p : props) {
+                        String key = p.getKey();
+
+                        if (key == null)
+                            continue;
+
+                        if (ctx.hasNodeAttribute(key))
+                            throw new IgniteCheckedException(
+                                "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                        ctx.addNodeAttribute(key, p.getValue());
+                    }
+                }
+            }
         }
     }
 
@@ -300,28 +316,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("REST processor stopped.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
-        for (GridRestProtocol proto : protos) {
-            Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
-
-            if (props != null) {
-                for (IgniteBiTuple<String, Object> p : props) {
-                    String key = p.getKey();
-
-                    if (key == null)
-                        continue;
-
-                    if (attrs.containsKey(key))
-                        throw new IgniteCheckedException(
-                            "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
-
-                    attrs.put(key, p.getValue());
-                }
-            }
         }
     }
 
@@ -457,20 +451,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Authentication subject context.
      * @throws IgniteCheckedException If authentication failed.
      */
-    private GridSecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
+    private SecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         UUID clientId = req.clientId();
+        SecurityContext secCtx = clientId == null ? null : sesMap.get(clientId);
 
-        byte[] sesTok = req.sessionToken();
-
-        // Validate session.
-        if (sesTok != null) {
-            // Session is still valid.
-            GridSecureSession ses = ctx.secureSession().validateSession(REMOTE_CLIENT, clientId, sesTok, null);
-
-            if (ses != null)
-                // Session is still valid.
-                return ses.authenticationSubjectContext();
-        }
+        if (secCtx != null)
+            return secCtx;
 
         // Authenticate client if invalid session.
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -501,7 +487,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.credentials(cred);
 
-        GridSecurityContext subjCtx = ctx.security().authenticate(authCtx);
+        SecurityContext subjCtx = ctx.security().authenticate(authCtx);
 
         if (subjCtx == null) {
             if (req.credentials() == null)
@@ -514,22 +500,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Update session token to actual state.
-     *
-     * @param req Grid est request.
-     * @param subjCtx Authentication subject context.
-     * @return Valid session token.
-     * @throws IgniteCheckedException If session token update process failed.
+     * Update session.
+     * @param req REST request.
+     * @param sCtx Security context.
      */
-    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws IgniteCheckedException {
-        // Update token from request to actual state.
-        byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
-
-        // Validate token has been created.
-        if (sesTok == null)
-            throw new IgniteCheckedException("Cannot create session token (is secure session SPI set?).");
-
-        return sesTok;
+    private void updateSession(GridRestRequest req, SecurityContext sCtx) {
+        if (sCtx != null) {
+            UUID id = req.clientId();
+            sesMap.put(id, sCtx);
+        }
     }
 
     /**
@@ -537,7 +516,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param sCtx Security context.
      * @throws GridSecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, GridSecurityContext sCtx) throws GridSecurityException {
+    private void authorize(GridRestRequest req, SecurityContext sCtx) throws GridSecurityException {
         GridSecurityPermission perm = null;
         String name = null;
 
@@ -589,8 +568,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case VERSION:
             case NOOP:
             case QUIT:
-            case GET_PORTABLE_METADATA:
-            case PUT_PORTABLE_METADATA:
             case ATOMIC_INCREMENT:
             case ATOMIC_DECREMENT:
                 break;

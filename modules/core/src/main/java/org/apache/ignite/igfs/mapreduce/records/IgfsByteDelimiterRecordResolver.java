@@ -77,7 +77,7 @@ public class IgfsByteDelimiterRecordResolver implements IgfsRecordResolver, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileRange resolveRecords(IgniteFs fs, IgfsInputStream stream,
+    @Override public IgfsFileRange resolveRecords(IgniteFileSystem fs, IgfsInputStream stream,
         IgfsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();

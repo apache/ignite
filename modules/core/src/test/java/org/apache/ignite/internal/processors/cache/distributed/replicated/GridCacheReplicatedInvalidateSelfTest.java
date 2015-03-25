@@ -36,7 +36,7 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -83,7 +83,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
         cc.setCacheMode(REPLICATED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -224,7 +224,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode destNode, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode destNode, Message msg)
             throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
 

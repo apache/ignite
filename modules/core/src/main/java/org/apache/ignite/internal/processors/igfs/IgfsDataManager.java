@@ -24,13 +24,14 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -298,23 +299,23 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Creates new instance of explicit data loader.
+     * Creates new instance of explicit data streamer.
      *
-     * @return New instance of data loader.
+     * @return New instance of data streamer.
      */
-    private IgniteDataLoader<IgfsBlockKey, byte[]> dataLoader() {
-        IgniteDataLoader<IgfsBlockKey, byte[]> ldr =
-            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
+    private IgniteDataStreamer<IgfsBlockKey, byte[]> dataStreamer() {
+        IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
+            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
 
-        IgfsConfiguration cfg = igfsCtx.configuration();
+        FileSystemConfiguration cfg = igfsCtx.configuration();
 
         if (cfg.getPerNodeBatchSize() > 0)
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
 
         if (cfg.getPerNodeParallelBatchCount() > 0)
-            ldr.perNodeParallelLoadOperations(cfg.getPerNodeParallelBatchCount());
+            ldr.perNodeParallelOperations(cfg.getPerNodeParallelBatchCount());
 
-        ldr.updater(GridDataLoadCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
+        ldr.updater(DataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
     }
@@ -382,7 +383,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsFileInfo fileInfo, final IgfsPath path,
-        final long blockIdx, @Nullable final IgfsReader secReader)
+        final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -406,7 +407,7 @@ public class IgfsDataManager extends IgfsManager {
                     byte[] res = fut.get();
 
                     if (res == null) {
-                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+                        GridFutureAdapter<byte[]> rmtReadFut = new GridFutureAdapter<>();
 
                         IgniteInternalFuture<byte[]> oldRmtReadFut = rmtReadFuts.putIfAbsent(key, rmtReadFut);
 
@@ -490,7 +491,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
     public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(igfsCtx.kernalContext(), fileInfo.id());
+        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
 
@@ -599,7 +600,7 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);
 
-            return new GridFinishedFuture<>(igfsCtx.kernalContext());
+            return new GridFinishedFuture<>();
         }
         else
             return delWorker.deleteAsync(fileInfo);
@@ -641,7 +642,7 @@ public class IgfsDataManager extends IgfsManager {
                 ", cleanNonColocated=" + cleanNonColocated + ", startIdx=" + startIdx + ", endIdx=" + endIdx + ']');
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 for (long idx = startIdx; idx <= endIdx; idx++) {
                     ldr.removeData(new IgfsBlockKey(fileInfo.id(), range.affinityKey(), fileInfo.evictExclude(),
                         idx));
@@ -667,7 +668,7 @@ public class IgfsDataManager extends IgfsManager {
         long endIdx = range.endOffset() / fileInfo.blockSize();
 
         try {
-            try (IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader()) {
+            try (IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer()) {
                 long bytesProcessed = 0;
 
                 for (long idx = startIdx; idx <= endIdx; idx++) {
@@ -859,10 +860,8 @@ public class IgfsDataManager extends IgfsManager {
      * @param len Length.
      * @param maxLen Maximum allowed split length.
      * @param res Result collection to add regions to.
-     * @throws IgniteCheckedException If failed.
      */
-    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res)
-        throws IgniteCheckedException {
+    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res) {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 
@@ -1047,14 +1046,15 @@ public class IgfsDataManager extends IgfsManager {
                 @Override
                 @Nullable
                 public Object call() throws Exception {
-                    storeBlocksAsync(blocks).listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override
                         public void apply(IgniteInternalFuture<?> fut) {
                             try {
                                 fut.get();
 
                                 completionFut.onWriteAck(nodeId, batchId);
-                            } catch (IgniteCheckedException e) {
+                            }
+                            catch (IgniteCheckedException e) {
                                 completionFut.onError(nodeId, e);
                             }
                         }
@@ -1258,14 +1258,14 @@ public class IgfsDataManager extends IgfsManager {
 
                 // Additional size check.
                 if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
-                    return new GridFinishedFuture<Object>(igfsCtx.kernalContext(),
+                    return new GridFinishedFuture<Object>(
                         new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
 
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(igfsCtx.kernalContext(), new IgniteCheckedException("Failed to store data " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to store data " +
                     "block due to unexpected exception.", e));
             }
         }
@@ -1278,7 +1278,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param blocksMsg Write request message.
      */
     private void processBlocksMessage(final UUID nodeId, final IgfsBlocksMessage blocksMsg) {
-        storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<IgniteInternalFuture<?>>() {
+        storeBlocksAsync(blocksMsg.blocks()).listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 IgniteCheckedException err = null;
 
@@ -1676,7 +1676,7 @@ public class IgfsDataManager extends IgfsManager {
          * Gracefully stops worker by adding STOP_INFO to queue.
          */
         private void stop() {
-            delReqs.offer(F.t(new GridFutureAdapter<>(igfsCtx.kernalContext()), stopInfo));
+            delReqs.offer(F.t(new GridFutureAdapter<>(), stopInfo));
         }
 
         /**
@@ -1684,7 +1684,7 @@ public class IgfsDataManager extends IgfsManager {
          * @return Future which completes when entry is actually removed.
          */
         private IgniteInternalFuture<Object> deleteAsync(IgfsFileInfo info) {
-            GridFutureAdapter<Object> fut = new GridFutureAdapter<>(igfsCtx.kernalContext());
+            GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
             delReqs.offer(F.t(fut, info));
 
@@ -1707,7 +1707,7 @@ public class IgfsDataManager extends IgfsManager {
                         break;
                     }
 
-                    IgniteDataLoader<IgfsBlockKey, byte[]> ldr = dataLoader();
+                    IgniteDataStreamer<IgfsBlockKey, byte[]> ldr = dataStreamer();
 
                     try {
                         IgfsFileMap map = fileInfo.fileMap();
@@ -1745,7 +1745,8 @@ public class IgfsDataManager extends IgfsManager {
                                 ldr.close(isCancelled());
                             }
                             catch (IgniteException e) {
-                                log.error("Failed to stop data loader while shutting down igfs async delete thread.", e);
+                                log.error("Failed to stop data streamer while shutting down " +
+                                    "igfs async delete thread.", e);
                             }
                             finally {
                                 fut.onDone(); // Complete future.
@@ -1786,19 +1787,9 @@ public class IgfsDataManager extends IgfsManager {
         private volatile boolean awaitingLast;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public WriteCompletionFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
          * @param fileId File id.
          */
-        private WriteCompletionFuture(GridKernalContext ctx, IgniteUuid fileId) {
-            super(ctx);
-
+        private WriteCompletionFuture(IgniteUuid fileId) {
             assert fileId != null;
 
             this.fileId = fileId;

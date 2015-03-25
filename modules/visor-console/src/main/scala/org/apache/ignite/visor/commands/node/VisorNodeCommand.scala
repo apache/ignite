@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.jetbrains.annotations._
 
 import java.util.UUID
@@ -149,7 +149,7 @@ class VisorNodeCommand {
                     }
                     else if (id.isDefined)
                         try
-                            node = ignite.node(UUID.fromString(id.get))
+                            node = ignite.cluster.node(UUID.fromString(id.get))
                         catch {
                             case e: IllegalArgumentException => warn("Invalid node ID: " + id.get).^^
                         }
@@ -190,7 +190,7 @@ class VisorNodeCommand {
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
-                            t += ("Grid name", safe(gridName, "<default>"))
+                            t += ("Grid name", escapeName(gridName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
@@ -245,7 +245,7 @@ class VisorNodeCommand {
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
                             t += ("Ignite version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
-                            t += ("Grid name", safe(gridName, "<default>"))
+                            t += ("Grid name", escapeName(gridName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))

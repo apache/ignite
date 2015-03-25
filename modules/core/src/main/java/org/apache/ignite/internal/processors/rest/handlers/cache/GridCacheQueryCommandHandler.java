@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -93,7 +92,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             }
 
             default:
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Unsupported query command: " + req.command()));
+                return new GridFinishedFuture<>(new IgniteCheckedException("Unsupported query command: " + req.command()));
         }
     }
 
@@ -125,12 +124,12 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             return ctx.closure().callLocalSafe(c, false);
         else {
             if (ctx.discovery().node(destId) == null)
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Destination node ID has left the grid " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Destination node ID has left the grid " +
                     "(retry the query): " + destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
+            return ctx.closure().callAsync(BALANCE, c, ctx.grid().cluster().forNodeId(destId).nodes());
         }
     }
 
@@ -144,7 +143,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         IgniteInternalFuture<Collection<Object>> fut = ctx.closure().callAsync(BROADCAST,
             Arrays.asList(c),
-            ctx.grid().forCacheNodes(cacheName).nodes());
+            ctx.grid().cluster().forCacheNodes(cacheName).nodes());
 
         return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {
@@ -331,8 +330,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             else
                 fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
 
-            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.cluster().nodeLocalMap();
+            ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap = g.cluster().nodeLocalMap();
 
             QueryFutureWrapper wrapper = new QueryFutureWrapper(fut);
 
@@ -367,8 +365,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            ClusterNodeLocalMap<QueryExecutionKey, QueryFutureWrapper> locMap =
-                g.cluster().nodeLocalMap();
+            ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap = g.cluster().nodeLocalMap();
 
             return fetchQueryResults(req.queryId(), locMap.get(new QueryExecutionKey(req.queryId())),
                 locMap, g.cluster().localNode().id());

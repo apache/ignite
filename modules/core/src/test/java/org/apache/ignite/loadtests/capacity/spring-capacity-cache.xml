@@ -77,13 +77,13 @@
                         sets the number of backups to 0 to ensure maximum capacity..
                     -->
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
                             <property name="keyBackups" value="0"/> <!-- No backups. -->
                         </bean>
                     </property>
 
-                    <!-- Set synchronous preloading (default is asynchronous). -->
-                    <property name="preloadMode" value="SYNC"/>
+                    <!-- Set synchronous rebalancing (default is asynchronous). -->
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
             </list>
         </property>

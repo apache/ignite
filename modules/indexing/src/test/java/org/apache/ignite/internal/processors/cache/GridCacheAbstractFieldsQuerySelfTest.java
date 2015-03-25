@@ -41,7 +41,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests for fields queries.
@@ -93,7 +93,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cache.setPreloadMode(SYNC);
+        cache.setRebalanceMode(SYNC);
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
@@ -680,7 +680,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     public void testQueryIntegersWithJoin() throws Exception {
         CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)((IgniteKernal)grid(0)).cache(null).queries()).createSqlFieldsQuery(
             "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true)
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -773,7 +773,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         for (int i = 0; i < 200; i++)
             assert cache.putx(i, i);
 
-        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0));
+        CacheQuery<List<?>> qry =
+            cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0).cluster());
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -907,7 +908,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
         CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
             "Integer")
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         q.pageSize(10);
         q.keepAll(false);
@@ -1034,40 +1035,6 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         assert res.size() == 2;
         assert "John White".equals(res.get(0));
         assert res.get(1).equals(25);
-    }
-
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        P2<Integer, Integer> p = new P2<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                return val < 30;
-            }
-        };
-
-        CacheProjection<Integer, Integer> cachePrj = ((IgniteKernal)grid(0))
-            .<Integer, Integer>cache(null).projection(p);
-
-        CacheQuery<List<?>> q = cachePrj.queries()
-            .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");
-
-        List<List<?>> list = new ArrayList<>(q.execute().get());
-
-        dedup(list);
-
-        Collections.sort(list, new Comparator<List<?>>() {
-            @Override public int compare(List<?> r1, List<?> r2) {
-                return ((Integer)r1.get(0)).compareTo((Integer)r2.get(0));
-            }
-        });
-
-        assertEquals(10, list.size());
-
-        for (int i = 20; i < 30; i++) {
-            List<?> row = list.get(i - 20);
-
-            assertEquals(i, row.get(0));
-            assertEquals(i, row.get(1));
-        }
     }
 
     /**

@@ -103,23 +103,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnUpdate() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return Duration.ZERO;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, 0L, null));
 
         startGrids();
 
@@ -150,23 +134,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnAccess() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return Duration.ZERO;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return null;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, null, 0L));
 
         startGrids();
 
@@ -1019,7 +987,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+            GridCacheEntryEx e = cache.peekEx(key);
 
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
@@ -1030,7 +998,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 found = true;
 
                 if (wait) {
-                    final GridCacheEntryEx<Object, Object> e0 = e;
+                    final GridCacheEntryEx e0 = e;
 
                     GridTestUtils.waitForCondition(new PA() {
                         @Override public boolean apply() {
@@ -1087,7 +1055,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestPolicy implements ExpiryPolicy {
+    private static class TestPolicy implements ExpiryPolicy {
         /** */
         private Long create;
 

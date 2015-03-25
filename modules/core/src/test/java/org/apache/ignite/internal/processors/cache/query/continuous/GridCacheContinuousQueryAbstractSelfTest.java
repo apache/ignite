@@ -52,7 +52,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
@@ -79,7 +79,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setDistributionMode(distributionMode());
-        cacheCfg.setPreloadMode(ASYNC);
+        cacheCfg.setRebalanceMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         cacheCfg.setReadThrough(true);
@@ -129,7 +129,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
-                    if (grid(i).nodes().size() != gridCount())
+                    if (grid(i).cluster().nodes().size() != gridCount())
                         return false;
                 }
 
@@ -138,7 +138,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }, 3000);
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(gridCount(), grid(i).nodes().size());
+            assertEquals(gridCount(), grid(i).cluster().nodes().size());
 
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
@@ -160,7 +160,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0, ((IgniteKernal)grid(i)).cache(null).size());
+            assertEquals("Cache is not empty: " + ((IgniteKernal)grid(i)).cache(null).entrySet(), 0,
+                ((IgniteKernal)grid(i)).cache(null).size());
+
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
@@ -416,7 +418,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -483,14 +485,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.setBufferSize(5);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            ClusterNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).cluster().forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
 
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -569,14 +571,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         qry.setTimeInterval(3000);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
-            ClusterNode node = F.first(grid(0).forRemotes().nodes());
+            ClusterNode node = F.first(grid(0).cluster().forRemotes().nodes());
 
             Collection<Integer> keys = new HashSet<>();
 
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).mapKeyToNode(null, key);
+                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
 
                 assert n != null;
 
@@ -614,12 +616,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicate() throws Exception {
+    public void testInitialQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }
@@ -659,12 +661,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testInitialPredicateAndUpdates() throws Exception {
+    public void testInitialQueryAndUpdates() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         ContinuousQuery<Integer, Integer> qry = Query.continuous();
 
-        qry.setInitialPredicate(Query.scan(new P2<Integer, Integer>() {
+        qry.setInitialQuery(Query.scan(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 return k >= 5;
             }

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -35,7 +35,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Partitioned affinity test.
@@ -67,7 +67,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
 
         aff.setBackupFilter(backupFilter);
 
@@ -77,7 +77,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAffinity(aff);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
@@ -123,7 +123,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void checkPartitions() throws Exception {
-        int partCnt = CacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT;
+        int partCnt = CacheRendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
         CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 

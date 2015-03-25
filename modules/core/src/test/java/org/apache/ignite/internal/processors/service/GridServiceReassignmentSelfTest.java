@@ -155,7 +155,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         GridServiceAssignments assignments = cache.get(new GridServiceAssignmentsKey("testService"));
 
-        Collection<UUID> nodes = F.viewReadOnly(grid.nodes(), F.node2id());
+        Collection<UUID> nodes = F.viewReadOnly(grid.cluster().nodes(), F.node2id());
 
         assertNotNull("Grid assignments object is null", assignments);
 

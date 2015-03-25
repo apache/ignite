@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -101,6 +103,151 @@ public class F0 {
                 return F.eq(t, target);
             }
         };
+    }
+
+    /**
+     * @param p1 Filter1.
+     * @param p2 Filter2.
+     * @return And filter.
+     */
+    public static CacheEntryPredicate and0(@Nullable final CacheEntryPredicate[] p1,
+        @Nullable final CacheEntryPredicate... p2) {
+        if (CU.isAlwaysFalse0(p1) || CU.isAlwaysFalse0(p2))
+            return CU.alwaysFalse0();
+
+        if (CU.isAlwaysTrue0(p1) && CU.isAlwaysTrue0(p2))
+            return CU.alwaysTrue0();
+
+        final boolean e1 = F.isEmpty(p1);
+        final boolean e2 = F.isEmpty(p2);
+
+        if (e1 && e2)
+            return CU.alwaysTrue0();
+
+        if (e1 && !e2) {
+            assert p2 != null;
+
+            if (p2.length == 1)
+                return p2[0];
+        }
+
+        if (!e1 && e2) {
+            assert p1 != null;
+
+            if (p1.length == 1)
+                return p1[0];
+        }
+
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                if (!e1) {
+                    assert p1 != null;
+
+                    for (CacheEntryPredicate p : p1)
+                        if (p != null && !p.apply(e))
+                            return false;
+                }
+
+                if (!e2) {
+                    assert p2 != null;
+
+                    for (CacheEntryPredicate p : p2)
+                        if (p != null && !p.apply(e))
+                            return false;
+                }
+
+                return true;
+            }
+
+            @Override public void entryLocked(boolean locked) {
+                if (p1 != null) {
+                    for (CacheEntryPredicate p : p1) {
+                        if (p != null)
+                            p.entryLocked(locked);
+                    }
+                }
+
+                if (p2 != null) {
+                    for (CacheEntryPredicate p : p2) {
+                        if (p != null)
+                            p.entryLocked(locked);
+                    }
+                }
+            }
+
+            @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+                if (!e1) {
+                    assert p1 != null;
+
+                    for (CacheEntryPredicate p : p1)
+                        p.prepareMarshal(ctx);
+                }
+
+                if (!e2) {
+                    assert p2 != null;
+
+                    for (CacheEntryPredicate p : p2)
+                        p.prepareMarshal(ctx);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param p Filter1.
+     * @param ps Filter2.
+     * @return And filter.
+     */
+    public static CacheEntryPredicate and0(
+        @Nullable final CacheEntryPredicate p,
+        @Nullable final CacheEntryPredicate... ps) {
+        if (p == null && F.isEmptyOrNulls(ps))
+            return CU.alwaysTrue0();
+
+        if (F.isAlwaysFalse(p) && F.isAlwaysFalse(ps))
+            return CU.alwaysFalse0();
+
+        if (F.isAlwaysTrue(p) && F.isAlwaysTrue(ps))
+            return CU.alwaysTrue0();
+
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx e) {
+                assert ps != null;
+
+                if (p != null && !p.apply(e))
+                    return false;
+
+                for (CacheEntryPredicate p : ps) {
+                    if (p != null && !p.apply(e))
+                        return false;
+                }
+
+                return true;
+            }
+
+            @Override public void entryLocked(boolean locked) {
+                assert ps != null;
+
+                if (p != null)
+                    p.entryLocked(locked);
+
+                for (CacheEntryPredicate p : ps) {
+                    if (p != null)
+                        p.entryLocked(locked);
+                }
+            }
+
+            @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+                assert ps != null;
+
+                if (p != null)
+                    p.prepareMarshal(ctx);
+
+                for (CacheEntryPredicate p : ps)
+                    if (p != null)
+                        p.prepareMarshal(ctx);
+            }
+        });
     }
 
     /**

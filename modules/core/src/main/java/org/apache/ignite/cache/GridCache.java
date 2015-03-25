@@ -19,11 +19,9 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -184,54 +182,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
 
     /**
-     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
-     * to load state from the underlying persistent storage. The loaded values
-     * will then be given to the optionally passed in predicate, and, if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all loaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
-     * @throws IgniteCheckedException If loading failed.
-     */
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
-     * to reload state from the underlying persistent storage. The reloaded values
-     * will then be given to the optionally passed in predicate, and if the predicate returns
-     * {@code true}, will be stored in cache. If predicate is {@code null}, then
-     * all reloaded values will be stored in cache.
-     * <p>
-     * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link CacheStore} implementation to provide all the data to be loaded.
-     * <p>
-     * This method is not transactional and may end up loading a stale value into
-     * cache if another thread has updated the value immediately after it has been
-     * loaded. It is mostly useful when pre-loading the cache from underlying
-     * data store before start, or for read-only caches.
-     *
-     * @param p Optional predicate (may be {@code null}). If provided, will be used to
-     *      filter values to be put into cache.
-     * @param ttl Time to live for loaded entries ({@code 0} for infinity).
-     * @param args Optional user arguments to be passed into
-     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
-     * @return Future to be completed whenever loading completes.
-     */
-    public IgniteInternalFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
-
-    /**
      * Gets a random entry out of cache. In the worst cache scenario this method
      * has complexity of <pre>O(S * N/64)</pre> where {@code N} is the size of internal hash
      * table and {@code S} is the number of hash table buckets to sample, which is {@code 5}
@@ -249,23 +199,23 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
-     * {@link CacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
-     * preloading until the node topology is stable to make sure that no redundant re-partitioning
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
      * happens.
      * <p>
      * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
      * usually make sure that new nodes get placed on the same place of consistent hash ring as
      * the left nodes, and that nodes are restarted before
-     * {@link CacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction#setHashIdResolver(org.apache.ignite.cache.affinity.CacheAffinityNodeHashResolver)} to make sure that
+     * {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link org.apache.ignite.configuration.CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
-     * preload re-partition delay.
+     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * rebalance re-partition delay.
      * <p>
-     * @return Future that will be completed when preloading is finished.
+     * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteInternalFuture<?> forceRepartition();
 }

@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
-public class GridContinuousMessage extends MessageAdapter {
+public class GridContinuousMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,6 +47,10 @@ public class GridContinuousMessage extends MessageAdapter {
     @GridToStringInclude
     @GridDirectTransient
     private Object data;
+
+    /** */
+    @GridDirectCollection(Message.class)
+    private Collection<Message> msgs;
 
     /** Serialized message data. */
     private byte[] dataBytes;
@@ -66,18 +70,24 @@ public class GridContinuousMessage extends MessageAdapter {
      * @param routineId Consume ID.
      * @param futId Future ID.
      * @param data Optional message data.
+     * @param msgs If {@code true} then data is collection of messages.
      */
     GridContinuousMessage(GridContinuousMessageType type,
         @Nullable UUID routineId,
         @Nullable IgniteUuid futId,
-        @Nullable Object data) {
+        @Nullable Object data,
+        boolean msgs) {
         assert type != null;
         assert routineId != null || type == MSG_EVT_ACK;
 
         this.type = type;
         this.routineId = routineId;
         this.futId = futId;
-        this.data = data;
+
+        if (msgs)
+            this.msgs = (Collection)data;
+        else
+            this.data = data;
     }
 
     /**
@@ -95,11 +105,18 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /**
+     * @return {@code True} is data is collection of messages.
+     */
+    public boolean messages() {
+        return msgs != null;
+    }
+
+    /**
      * @return Message data.
      */
     @SuppressWarnings("unchecked")
     public <T> T data() {
-        return (T)data;
+        return msgs != null ? (T)msgs : (T)data;
     }
 
     /**
@@ -134,11 +151,11 @@ public class GridContinuousMessage extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -155,12 +172,18 @@ public class GridContinuousMessage extends MessageAdapter {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("routineId", routineId))
+                if (!writer.writeCollection("msgs", msgs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 3:
+                if (!writer.writeUuid("routineId", routineId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
@@ -172,17 +195,20 @@ public class GridContinuousMessage extends MessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 dataBytes = reader.readByteArray("dataBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 futId = reader.readIgniteUuid("futId");
@@ -190,17 +216,25 @@ public class GridContinuousMessage extends MessageAdapter {
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
+                msgs = reader.readCollection("msgs", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 routineId = reader.readUuid("routineId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
-            case 3:
+            case 4:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -210,7 +244,7 @@ public class GridContinuousMessage extends MessageAdapter {
 
                 type = GridContinuousMessageType.fromOrdinal(typeOrd);
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -220,6 +254,11 @@ public class GridContinuousMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 61;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
     }
 
     /** {@inheritDoc} */

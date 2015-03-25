@@ -76,7 +76,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
     @Override public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException {
         Space space = space(spaceName);
 
-        return space.count(parts);
+        return space != null ? space.count(parts) : 0;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -71,7 +71,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 30));
+        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 30));
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
@@ -317,11 +317,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(i)).internalCache();
 
                 for (Integer key : keys) {
-                    GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
-                        Collection<GridCacheMvccCandidate<Object>> locCands = entry.localCandidates();
-                        Collection<GridCacheMvccCandidate<Object>> rmtCands = entry.remoteMvccSnapshot();
+                        Collection<GridCacheMvccCandidate> locCands = entry.localCandidates();
+                        Collection<GridCacheMvccCandidate> rmtCands = entry.remoteMvccSnapshot();
 
                         assert locCands == null || locCands.isEmpty() : "Local candidates is not empty [idx=" + i +
                             ", entry=" + entry + ']';

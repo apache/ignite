@@ -33,14 +33,14 @@ import java.util.*;
 /**
  * Response to prepare request.
  */
-public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Collections of local lock candidates. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, Collection<GridCacheMvccCandidate<K>>> cands;
+    private Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands;
 
     /** */
     private byte[] candsBytes;
@@ -101,18 +101,18 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /**
      * @param cands Candidates map to set.
      */
-    public void candidates(Map<K, Collection<GridCacheMvccCandidate<K>>> cands) {
+    public void candidates(Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands) {
         this.cands = cands;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (candsBytes == null && cands != null) {
             if (ctx.deploymentEnabled()) {
-                for (K k : cands.keySet())
+                for (KeyCacheObject k : cands.keySet())
                     prepareObject(k, ctx);
             }
 
@@ -124,7 +124,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (candsBytes != null && cands == null)
@@ -139,7 +139,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
      * @param key Candidates key.
      * @return Collection of lock candidates at given index.
      */
-    @Nullable public Collection<GridCacheMvccCandidate<K>> candidatesForKey(K key) {
+    @Nullable public Collection<GridCacheMvccCandidate> candidatesForKey(KeyCacheObject key) {
         assert key != null;
 
         if (cands == null)
@@ -155,11 +155,11 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -181,20 +181,23 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 8:
                 candsBytes = reader.readByteArray("candsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 9:
                 errBytes = reader.readByteArray("errBytes");
@@ -202,7 +205,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -212,6 +215,11 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 26;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 10;
     }
 
     /** {@inheritDoc} */

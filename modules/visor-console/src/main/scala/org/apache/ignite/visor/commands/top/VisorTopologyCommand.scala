@@ -23,12 +23,11 @@ import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgnitePredicate
-
-import java.net.{InetAddress, UnknownHostException}
-
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
+
+import java.net.{InetAddress, UnknownHostException}
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -225,7 +224,7 @@ class VisorTopologyCommand {
         assert(f != null)
         assert(hosts != null)
 
-        var nodes = ignite.forPredicate(new IgnitePredicate[ClusterNode] {
+        var nodes = ignite.cluster.forPredicate(new IgnitePredicate[ClusterNode] {
             override def apply(e: ClusterNode) = f(e)
         }).nodes()
 
@@ -327,14 +326,14 @@ class VisorTopologyCommand {
 
         nl()
 
-        val m = ignite.forNodes(nodes).metrics()
+        val m = ignite.cluster.forNodes(nodes).metrics()
 
         val freeHeap = (m.getHeapMemoryTotal - m.getHeapMemoryUsed) * 100 / m.getHeapMemoryTotal
 
         val sumT = VisorTextTable()
 
         sumT += ("Total hosts", U.neighborhood(nodes).size)
-        sumT += ("Total nodes", nodes.size)
+        sumT += ("Total nodes", m.getTotalNodes)
         sumT += ("Total CPUs", m.getTotalCpus)
         sumT += ("Avg. CPU load", safePercent(m.getAverageCpuLoad * 100))
         sumT += ("Avg. free heap", formatDouble(freeHeap) + " %")

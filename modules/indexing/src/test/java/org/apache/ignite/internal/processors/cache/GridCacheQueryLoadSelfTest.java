@@ -33,8 +33,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.integration.*;
+import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -112,9 +113,9 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        grid().jcache(null).localLoadCache(null);
 
-        cache.loadCache(null, 0);
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT;
 
@@ -130,9 +131,13 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> asyncCache = grid().<Integer, ValueObject>jcache(null).withAsync();
 
-        cache.loadCacheAsync(null, 0).get();
+        asyncCache.localLoadCache(null);
+
+        asyncCache.future().get();
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT;
 
@@ -148,13 +153,13 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
-
-        cache.loadCache(new P2<Integer, ValueObject>() {
+        grid().<Integer, ValueObject>jcache(null).localLoadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
+        });
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT - 5;
 
@@ -170,13 +175,17 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> asyncCache = grid().<Integer, ValueObject>jcache(null).withAsync();
 
-        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
+        asyncCache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0).get();
+        });
+
+        asyncCache.future().get();
+
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.size() == PUT_CNT - 5;
 
@@ -245,7 +254,11 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PUT_CNT - 5; i++)
             keys[i] = i + 5;
 
-        cache.reloadAll(F.asList(keys));
+        CompletionListenerFuture fut = new CompletionListenerFuture();
+
+        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
+
+        fut.get();
 
         assert cache.size() == PUT_CNT - 5;
 
@@ -261,48 +274,11 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert cache.isEmpty();
         assertEquals(0, cache.size());
 
-        cache.reloadAll(Arrays.asList(keys));
+        fut = new CompletionListenerFuture();
 
-        assertEquals(PUT_CNT - 5, cache.size());
+        grid().<Integer, Integer>jcache(null).loadAll(F.asSet(keys), true, fut);
 
-        res = cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReloadAllAsync() throws Exception {
-        for (int i = 0; i < PUT_CNT; i++)
-            STORE_MAP.put(i, new ValueObject(i));
-
-        GridCache<Integer, ValueObject> cache = cache();
-
-        Integer[] keys = new Integer[PUT_CNT - 5];
-
-        for (int i = 0; i < PUT_CNT - 5; i++)
-            keys[i] = i + 5;
-
-        cache.reloadAllAsync(F.asList(keys)).get();
-
-        assert cache.size() == PUT_CNT - 5;
-
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-
-        cache.clear();
-
-        assert cache.isEmpty();
-        assertEquals(0, cache.size());
-
-        cache.reloadAllAsync(Arrays.asList(keys)).get();
+        fut.get();
 
         assertEquals(PUT_CNT - 5, cache.size());
 
@@ -352,7 +328,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * Value object class.
      */
-    private static class ValueObject {
+    private static class ValueObject implements Serializable {
         /** Value. */
         @QuerySqlField
         private final int val;

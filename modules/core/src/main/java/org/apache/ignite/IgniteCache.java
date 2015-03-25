@@ -20,6 +20,8 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -381,10 +383,101 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
+    /**
+     * Invokes an {@link IgniteEntryProcessor} against the {@link Entry} specified by
+     * the provided key. If an {@link Entry} does not exist for the specified key,
+     * an attempt is made to load it (if a loader is configured) or a surrogate
+     * {@link Entry}, consisting of the key with a null value is used instead.
+     * This method different
+     * <p>
+     *
+     * @param key            the key to the entry
+     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param arguments      additional arguments to pass to the
+     *                       {@link IgniteEntryProcessor}
+     * @return the result of the processing, if any, defined by the
+     *         {@link IgniteEntryProcessor} implementation
+     * @throws NullPointerException    if key or {@link IgniteEntryProcessor} is null
+     * @throws IllegalStateException   if the cache is {@link #isClosed()}
+     * @throws ClassCastException    if the implementation is configured to perform
+     *                               runtime-type-checking, and the key or value
+     *                               types are incompatible with those that have been
+     *                               configured for the {@link Cache}
+     * @throws EntryProcessorException if an exception is thrown by the {@link
+     *                                 IgniteEntryProcessor}, a Caching Implementation
+     *                                 must wrap any {@link Exception} thrown
+     *                                 wrapped in an {@link EntryProcessorException}.
+     * @see IgniteEntryProcessor
+     */
+    @IgniteAsyncSupported
+    public <T> T invoke(K key, IgniteEntryProcessor<K, V, T> entryProcessor, Object... arguments);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args);
+
+    /**
+     * Invokes an {@link IgniteEntryProcessor} against the set of {@link Entry}s
+     * specified by the set of keys.
+     * <p>
+     * If an {@link Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link Entry},
+     * consisting of the key and a value of null is provided.
+     * <p>
+     * The order that the entries for the keys are processed is undefined.
+     * Implementations may choose to process the entries in any order, including
+     * concurrently.  Furthermore there is no guarantee implementations will
+     * use the same {@link IgniteEntryProcessor} instance to process each entry, as
+     * the case may be in a non-local cache topology.
+     * <p>
+     * The result of executing the {@link IgniteEntryProcessor} is returned as a
+     * {@link Map} of {@link EntryProcessorResult}s, one result per key.  Should the
+     * {@link IgniteEntryProcessor} or Caching implementation throw an exception, the
+     * exception is wrapped and re-thrown when a call to
+     * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     *
+     * @param keys           the set of keys for entries to process
+     * @param entryProcessor the {@link IgniteEntryProcessor} to invoke
+     * @param args      additional arguments to pass to the
+     *                       {@link IgniteEntryProcessor}
+     * @return the map of {@link EntryProcessorResult}s of the processing per key,
+     * if any, defined by the {@link IgniteEntryProcessor} implementation.  No mappings
+     * will be returned for {@link IgniteEntryProcessor}s that return a
+     * <code>null</code> value for a key.
+     * @throws NullPointerException    if keys or {@link IgniteEntryProcessor} are null
+     * @throws IllegalStateException   if the cache is {@link #isClosed()}
+     * @throws ClassCastException    if the implementation is configured to perform
+     *                               runtime-type-checking, and the key or value
+     *                               types are incompatible with those that have been
+     *                               configured for the {@link Cache}
+     * @see IgniteEntryProcessor
+     */
+    @IgniteAsyncSupported
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        IgniteEntryProcessor<K, V, T> entryProcessor, Object... args);
+
+    /**
+     * This cache node to re-balance its partitions. This method is usually used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
+     * When many nodes are started or stopped almost concurrently, it is more efficient to delay
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+     * happens.
+     * <p>
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
+     * usually make sure that new nodes get placed on the same place of consistent hash ring as
+     * the left nodes, and that nodes are restarted before
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
+     * on the same place in consistent hash ring, use
+     * {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * a node maps to the same hash ID if re-started.
+     * <p>
+     * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * rebalance re-partition delay.
+     * <p>
+     * @return Future that will be completed when rebalancing is finished.
+     */
+    public IgniteFuture<?> rebalance();
 
     /**
      * Gets snapshot metrics (statistics) for this cache.

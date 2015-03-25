@@ -56,7 +56,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
         String seqName = UUID.randomUUID().toString();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Set<Long> retVal = compute(grid(i).forLocal()).
+            Set<Long> retVal = compute(grid(i).cluster().forLocal()).
                 call(new IncrementAndGetJob(seqName, RETRIES));
 
             for (Long l : retVal)
@@ -91,7 +91,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
         String seqName = UUID.randomUUID().toString();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Set<Long> retVal = compute(grid(i).forLocal()).
+            Set<Long> retVal = compute(grid(i).cluster().forLocal()).
                 call(new GetAndIncrementJob(seqName, RETRIES));
 
             for (Long l : retVal)
@@ -126,7 +126,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0, true);
 
         grid(1).compute().run(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 assertNotNull(seq);
 
                 for (int i = 0; i < RETRIES; i++)

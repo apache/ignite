@@ -211,17 +211,17 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                             if (ctx.config().isPeerClassLoadingEnabled() && node != null &&
                                 U.hasCache(node, cacheName)) {
-                                evt.entry().p2pMarshal(ctx.config().getMarshaller());
-
-                                evt.entry().cacheName(cacheName);
+                                evt.entry().prepareMarshal(cctx);
 
                                 GridCacheDeploymentManager depMgr =
                                     ctx.cache().internalCache(cacheName).context().deploy();
 
                                 depMgr.prepare(evt.entry());
                             }
+                            else
+                                evt.entry().prepareMarshal(cctx);
 
-                            ctx.continuous().addNotification(nodeId, routineId, evt, topic, sync);
+                            ctx.continuous().addNotification(nodeId, routineId, evt.entry(), topic, sync, true);
                         }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
@@ -289,7 +289,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param ctx Kernal context.
      * @return Continuous query manager.
      */
-    private CacheContinuousQueryManager<K, V> manager(GridKernalContext ctx) {
+    private CacheContinuousQueryManager manager(GridKernalContext ctx) {
         return cacheContext(ctx).continuousQueries();
     }
 
@@ -301,45 +301,41 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert objs != null;
         assert ctx != null;
 
-        Collection<CacheEntryEvent<? extends K, ? extends V>> evts =
-            (Collection<CacheEntryEvent<? extends K, ? extends V>>)objs;
+        Collection<CacheContinuousQueryEntry> entries = (Collection<CacheContinuousQueryEntry>)objs;
 
-        if (ctx.config().isPeerClassLoadingEnabled()) {
-            for (CacheEntryEvent<? extends K, ? extends V> evt : evts) {
-                assert evt instanceof CacheContinuousQueryEvent;
+        final GridCacheContext cctx = cacheContext(ctx);
 
-                CacheContinuousQueryEntry<? extends K, ? extends V> e = ((CacheContinuousQueryEvent)evt).entry();
+        for (CacheContinuousQueryEntry e : entries) {
+            GridCacheDeploymentManager depMgr = cctx.deploy();
 
-                GridCacheAdapter cache = ctx.cache().internalCache(e.cacheName());
+            ClassLoader ldr = depMgr.globalLoader();
 
-                ClassLoader ldr = null;
+            if (ctx.config().isPeerClassLoadingEnabled()) {
+                GridDeploymentInfo depInfo = e.deployInfo();
 
-                if (cache != null) {
-                    GridCacheDeploymentManager depMgr = cache.context().deploy();
-
-                    GridDeploymentInfo depInfo = e.deployInfo();
-
-                    if (depInfo != null) {
-                        depMgr.p2pContext(nodeId, depInfo.classLoaderId(), depInfo.userVersion(), depInfo.deployMode(),
-                            depInfo.participants(), depInfo.localDeploymentOwner());
-                    }
-
-                    ldr = depMgr.globalLoader();
-                }
-                else {
-                    U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
-                        "when peer class loading is enabled: " + e.cacheName() + ". Will try to unmarshal " +
-                        "with default class loader.");
-                }
-
-                try {
-                    e.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
-                }
-                catch (IgniteCheckedException ex) {
-                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                if (depInfo != null) {
+                    depMgr.p2pContext(nodeId, depInfo.classLoaderId(), depInfo.userVersion(), depInfo.deployMode(),
+                        depInfo.participants(), depInfo.localDeploymentOwner());
                 }
             }
+
+            try {
+                e.unmarshal(cctx, ldr);
+            }
+            catch (IgniteCheckedException ex) {
+                U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+            }
         }
+
+        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
+
+        Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries,
+            new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
+                @Override public CacheEntryEvent<? extends K, ? extends V> apply(CacheContinuousQueryEntry e) {
+                    return new CacheContinuousQueryEvent<K, V>(cache, cctx, e);
+                };
+            }
+        );
 
         locLsnr.onUpdated(evts);
     }
@@ -366,6 +362,16 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return topic;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousHandler clone() {
+        try {
+            return (GridContinuousHandler)super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** {@inheritDoc} */
