@@ -34,13 +34,14 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for cache swap preloading.
  */
 public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     /** Entry count. */
-    private static final int ENTRY_CNT = 15000;
+    private static final int ENTRY_CNT = 15_000;
 
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -62,7 +63,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setRebalanceMode(SYNC);
@@ -134,12 +135,9 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: GG-4804 Swap preloading test failed with NotNull assertion, TODO: GG-4804 while key should have been found
-     * either in swap or in cache
-     *
      * @throws Exception If failed.
      */
-    public void _testSwapReplicatedMultithreaded() throws Exception {
+    public void testSwapReplicatedMultithreaded() throws Exception {
         cacheMode = REPLICATED;
 
         checkSwapMultithreaded();
@@ -194,6 +192,10 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
             startGrid(1);
 
             done.set(true);
+
+            fut.get();
+
+            fut = null;
 
             int size = grid(1).cache(null).localSize();
 
