@@ -23,11 +23,11 @@ import java.io.*;
  * Affinity mapper which maps cache key to an affinity key. Affinity key is a key which will be
  * used to determine a node on which this key will be cached. Every cache key will first be passed
  * through {@link #affinityKey(Object)} method, and the returned value of this method
- * will be given to {@link CacheAffinityFunction} implementation to find out key-to-node affinity.
+ * will be given to {@link AffinityFunction} implementation to find out key-to-node affinity.
  * <p>
  * The default implementation, which will be used if no explicit affinity mapper is specified
  * in cache configuration, will first look for any field or method annotated with
- * {@link CacheAffinityKeyMapped @CacheAffinityKeyMapped} annotation. If such field or method
+ * {@link AffinityKeyMapped @AffinityKeyMapped} annotation. If such field or method
  * is not found, then the cache key itself will be returned from {@link #affinityKey(Object) affinityKey(Object)}
  * method (this means that all objects with the same cache key will always be routed to the same node).
  * If such field or method is found, then the value of this field or method will be returned from
@@ -37,12 +37,12 @@ import java.io.*;
  * A custom (other than default) affinity mapper can be provided
  * via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinityMapper()} configuration property.
  * <p>
- * For more information on affinity mapping and examples refer to {@link CacheAffinityFunction} and
- * {@link CacheAffinityKeyMapped @CacheAffinityKeyMapped} documentation.
- * @see CacheAffinityFunction
- * @see CacheAffinityKeyMapped
+ * For more information on affinity mapping and examples refer to {@link AffinityFunction} and
+ * {@link AffinityKeyMapped @AffinityKeyMapped} documentation.
+ * @see AffinityFunction
+ * @see AffinityKeyMapped
  */
-public interface CacheAffinityKeyMapper extends Serializable {
+public interface AffinityKeyMapper extends Serializable {
     /**
      * Maps passed in key to an alternate key which will be used for node affinity.
      *

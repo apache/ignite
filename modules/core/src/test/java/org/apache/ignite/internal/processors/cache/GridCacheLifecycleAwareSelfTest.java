@@ -117,7 +117,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    public static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
+    public static class TestAffinityFunction extends TestLifecycleAware implements AffinityFunction {
         /**
          */
         public TestAffinityFunction() {
@@ -140,7 +140,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             List<List<ClusterNode>> res = new ArrayList<>();
 
             res.add(nodes(0, affCtx.currentTopologySnapshot()));
@@ -161,7 +161,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    public static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy, Serializable {
+    public static class TestEvictionPolicy extends TestLifecycleAware implements EvictionPolicy, Serializable {
         /**
          */
         public TestEvictionPolicy() {
@@ -169,14 +169,14 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
     }
 
     /**
      */
-    private static class TestEvictionFilter extends TestLifecycleAware implements CacheEvictionFilter {
+    private static class TestEvictionFilter extends TestLifecycleAware implements EvictionFilter {
         /**
          */
         TestEvictionFilter() {
@@ -191,7 +191,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestAffinityKeyMapper extends TestLifecycleAware implements CacheAffinityKeyMapper {
+    private static class TestAffinityKeyMapper extends TestLifecycleAware implements AffinityKeyMapper {
         /**
          */
         TestAffinityKeyMapper() {

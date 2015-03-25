@@ -35,7 +35,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Affinity function. */
-    private CacheAffinityFunction func;
+    private AffinityFunction func;
 
     /** */
     private int nodesCnt = 5;
@@ -60,7 +60,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testRendezvousBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new CacheRendezvousAffinityFunction());
+            checkBackups(i, new RendezvousAffinityFunction());
     }
 
     /**
@@ -68,7 +68,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testFairBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new CachePartitionFairAffinity());
+            checkBackups(i, new FairAffinityFunction());
     }
 
     /**
@@ -76,7 +76,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      * @param func Affinity function.
      * @throws Exception If failed.
      */
-    private void checkBackups(int backups, CacheAffinityFunction func) throws Exception {
+    private void checkBackups(int backups, AffinityFunction func) throws Exception {
         this.backups = backups;
         this.func = func;
 

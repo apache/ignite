@@ -28,12 +28,12 @@ import java.util.*;
  * for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  * <p>
  * Whenever a key is given to cache, it is first passed to a pluggable
- * {@link CacheAffinityKeyMapper} which may potentially map this key to an alternate
+ * {@link AffinityKeyMapper} which may potentially map this key to an alternate
  * key which should be used for affinity. The key returned from
- * {@link CacheAffinityKeyMapper#affinityKey(Object)} method is then passed to
+ * {@link AffinityKeyMapper#affinityKey(Object)} method is then passed to
  * {@link #partition(Object) partition(Object)} method to find out the partition for the key.
  * On each topology change, partition-to-node mapping is calculated using
- * {@link #assignPartitions(CacheAffinityFunctionContext)} method, which assigns a collection
+ * {@link #assignPartitions(AffinityFunctionContext)} method, which assigns a collection
  * of nodes to each partition.
  * This collection of nodes is used for node affinity. In {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED}
  * cache mode the key will be cached on all returned nodes; generally, all caching nodes
@@ -43,12 +43,12 @@ import java.util.*;
  * have {@code 2} nodes in it - {@code primary} node in first position, and {@code backup}
  * node in second.
  * <p>
- * For more information about cache affinity and examples refer to {@link CacheAffinityKeyMapper} and
- * {@link CacheAffinityKeyMapped @CacheAffinityKeyMapped} documentation.
- * @see CacheAffinityKeyMapped
- * @see CacheAffinityKeyMapper
+ * For more information about cache affinity and examples refer to {@link AffinityKeyMapper} and
+ * {@link AffinityKeyMapped @AffinityKeyMapped} documentation.
+ * @see AffinityKeyMapped
+ * @see AffinityKeyMapper
  */
-public interface CacheAffinityFunction extends Serializable {
+public interface AffinityFunction extends Serializable {
     /**
      * Resets cache affinity to its initial state. This method will be called by
      * the system any time the affinity has been sent to remote node where
@@ -98,7 +98,7 @@ public interface CacheAffinityFunction extends Serializable {
      * @return Unmodifiable list indexed by partition number. Each element of array is a collection in which
      *      first node is a primary node and other nodes are backup nodes.
      */
-    public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx);
+    public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx);
 
     /**
      * Removes node from affinity. This method is called when it is safe to remove left node from

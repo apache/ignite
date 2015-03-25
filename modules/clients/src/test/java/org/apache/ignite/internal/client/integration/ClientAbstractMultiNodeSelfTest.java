@@ -192,7 +192,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
 
-        cfg.setAffinity(new CacheRendezvousAffinityFunction());
+        cfg.setAffinity(new RendezvousAffinityFunction());
 
         return cfg;
     }

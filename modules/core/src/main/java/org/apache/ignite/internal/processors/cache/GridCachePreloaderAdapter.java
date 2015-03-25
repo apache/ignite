@@ -39,7 +39,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final IgniteLogger log;
 
     /** Affinity. */
-    protected final CacheAffinityFunction aff;
+    protected final AffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;

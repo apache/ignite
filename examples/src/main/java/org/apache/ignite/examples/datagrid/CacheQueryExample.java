@@ -41,7 +41,7 @@ import java.util.*;
  * <ul>
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
- *         collocated mode. Refer to {@link CacheAffinityKey} javadoc for more details.
+ *         collocated mode. Refer to {@link AffinityKey} javadoc for more details.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will
@@ -83,7 +83,7 @@ public class CacheQueryExample {
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             personCacheCfg.setName(PERSONS_CACHE_NAME);
-            personCacheCfg.setIndexedTypes(CacheAffinityKey.class, Person.class);
+            personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
                 IgniteCache<?, ?> orgCache = ignite.createCache(orgCacheCfg);
@@ -123,11 +123,11 @@ public class CacheQueryExample {
      * Example for scan query based on a predicate.
      */
     private static void scanQuery() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
-        ScanQuery<CacheAffinityKey<UUID>, Person> scan = new ScanQuery<>(
-            new IgniteBiPredicate<CacheAffinityKey<UUID>, Person>() {
-                @Override public boolean apply(CacheAffinityKey<UUID> key, Person person) {
+        ScanQuery<AffinityKey<UUID>, Person> scan = new ScanQuery<>(
+            new IgniteBiPredicate<AffinityKey<UUID>, Person>() {
+                @Override public boolean apply(AffinityKey<UUID> key, Person person) {
                     return person.salary <= 1000;
                 }
             }
@@ -141,18 +141,18 @@ public class CacheQueryExample {
      * Example for SQL queries based on salary ranges.
      */
     private static void sqlQuery() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
         // SQL clause which selects salaries based on range.
         String sql = "salary > ? and salary <= ?";
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000 (queried with SQL query): ",
-            cache.query(new SqlQuery<CacheAffinityKey<UUID>, Person>(Person.class, sql).
+            cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, sql).
                 setArgs(0, 1000)).getAll());
 
         print("People with salaries between 1000 and 2000 (queried with SQL query): ",
-            cache.query(new SqlQuery<CacheAffinityKey<UUID>, Person>(Person.class, sql).
+            cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, sql).
                 setArgs(1000, 2000)).getAll());
     }
 
@@ -160,7 +160,7 @@ public class CacheQueryExample {
      * Example for SQL queries based on all employees working for a specific organization.
      */
     private static void sqlQueryWithJoin() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
         // SQL clause query which joins on 2 types to select people for a specific organization.
         String joinSql =
@@ -170,11 +170,11 @@ public class CacheQueryExample {
 
         // Execute queries for find employees for different organizations.
         print("Following people are 'GridGain' employees: ",
-            cache.query(new SqlQuery<CacheAffinityKey<UUID>, Person>(Person.class, joinSql).
+            cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
                 setArgs("GridGain")).getAll());
 
         print("Following people are 'Other' employees: ",
-            cache.query(new SqlQuery<CacheAffinityKey<UUID>, Person>(Person.class, joinSql).
+            cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
                 setArgs("Other")).getAll());
     }
 
@@ -182,15 +182,15 @@ public class CacheQueryExample {
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      */
     private static void textQuery() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
-        QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> masters =
-            cache.query(new TextQuery<CacheAffinityKey<UUID>, Person>(Person.class, "Master"));
+        QueryCursor<Cache.Entry<AffinityKey<UUID>, Person>> masters =
+            cache.query(new TextQuery<AffinityKey<UUID>, Person>(Person.class, "Master"));
 
         // Query for all people with "Bachelor Degree" in their resumes.
-        QueryCursor<Cache.Entry<CacheAffinityKey<UUID>, Person>> bachelors =
-            cache.query(new TextQuery<CacheAffinityKey<UUID>, Person>(Person.class, "Bachelor"));
+        QueryCursor<Cache.Entry<AffinityKey<UUID>, Person>> bachelors =
+            cache.query(new TextQuery<AffinityKey<UUID>, Person>(Person.class, "Bachelor"));
 
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
@@ -200,7 +200,7 @@ public class CacheQueryExample {
      * Example for SQL queries to calculate average salary for a specific organization.
      */
     private static void sqlQueryWithAggregation() {
-        IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
         String sql =
@@ -268,7 +268,7 @@ public class CacheQueryExample {
         orgCache.put(org1.id, org1);
         orgCache.put(org2.id, org2);
 
-        IgniteCache<CacheAffinityKey<UUID>, Person> personCache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
+        IgniteCache<AffinityKey<UUID>, Person> personCache = Ignition.ignite().cache(PERSONS_CACHE_NAME);
 
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
@@ -344,7 +344,7 @@ public class CacheQueryExample {
         private double salary;
 
         /** Custom cache key to guarantee that person is always collocated with its organization. */
-        private transient CacheAffinityKey<UUID> key;
+        private transient AffinityKey<UUID> key;
 
         /**
          * Constructs person record.
@@ -373,9 +373,9 @@ public class CacheQueryExample {
          *
          * @return Custom affinity key to guarantee that person is always collocated with organization.
          */
-        public CacheAffinityKey<UUID> key() {
+        public AffinityKey<UUID> key() {
             if (key == null)
-                key = new CacheAffinityKey<>(id, orgId);
+                key = new AffinityKey<>(id, orgId);
 
             return key;
         }

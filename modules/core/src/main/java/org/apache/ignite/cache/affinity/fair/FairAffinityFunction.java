@@ -33,8 +33,8 @@ import java.util.*;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-@CacheCentralizedAffinityFunction
-public class CachePartitionFairAffinity implements CacheAffinityFunction {
+@AffinityCentralizedFunction
+public class FairAffinityFunction implements AffinityFunction {
     /** Default partition count. */
     public static final int DFLT_PART_CNT = 256;
 
@@ -53,19 +53,19 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
     /**
      * Creates fair affinity with default partition count.
      */
-    public CachePartitionFairAffinity() {
+    public FairAffinityFunction() {
         this(DFLT_PART_CNT);
     }
 
     /**
      * @param parts Number of partitions.
      */
-    public CachePartitionFairAffinity(int parts) {
+    public FairAffinityFunction(int parts) {
         this.parts = parts;
     }
 
     /** {@inheritDoc} */
-    @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext ctx) {
+    @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
 
         if (topSnapshot.size() == 1) {
@@ -380,7 +380,7 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
      * @param ctx Affinity function context.
      * @return Assignment copy and per node partition map.
      */
-    private List<List<ClusterNode>> createCopy(CacheAffinityFunctionContext ctx) {
+    private List<List<ClusterNode>> createCopy(AffinityFunctionContext ctx) {
         DiscoveryEvent discoEvt = ctx.discoveryEvent();
 
         UUID leftNodeId = (discoEvt == null || discoEvt.type() == EventType.EVT_NODE_JOINED)

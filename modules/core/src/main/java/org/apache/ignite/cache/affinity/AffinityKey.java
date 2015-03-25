@@ -38,7 +38,7 @@ import java.io.*;
  * an example of how {@code Person} objects can be collocated with
  * {@code Company} objects they belong to:
  * <pre name="code" class="java">
- * Object personKey = new CacheAffinityKey(myPersonId, myCompanyId);
+ * Object personKey = new AffinityKey(myPersonId, myCompanyId);
  *
  * // Both, the company and the person objects will be cached on the same node.
  * cache.put(myCompanyId, new Company(..));
@@ -46,13 +46,13 @@ import java.io.*;
  * </pre>
  * <p>
  * For more information and examples of cache affinity refer to
- * {@link CacheAffinityKeyMapper} and {@link CacheAffinityKeyMapped @CacheAffinityKeyMapped}
+ * {@link AffinityKeyMapper} and {@link AffinityKeyMapped @AffinityKeyMapped}
  * documentation.
- * @see CacheAffinityKeyMapped
- * @see CacheAffinityKeyMapper
- * @see CacheAffinityFunction
+ * @see AffinityKeyMapped
+ * @see AffinityKeyMapper
+ * @see AffinityFunction
  */
-public class CacheAffinityKey<K> implements Externalizable {
+public class AffinityKey<K> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class CacheAffinityKey<K> implements Externalizable {
     /**
      * Empty constructor.
      */
-    public CacheAffinityKey() {
+    public AffinityKey() {
         // No-op.
     }
 
@@ -77,7 +77,7 @@ public class CacheAffinityKey<K> implements Externalizable {
      *
      * @param key Key.
      */
-    public CacheAffinityKey(K key) {
+    public AffinityKey(K key) {
         A.notNull(key, "key");
 
         this.key = key;
@@ -89,7 +89,7 @@ public class CacheAffinityKey<K> implements Externalizable {
      * @param key Key.
      * @param affKey Affinity key.
      */
-    public CacheAffinityKey(K key, Object affKey) {
+    public AffinityKey(K key, Object affKey) {
         A.notNull(key, "key");
 
         this.key = key;
@@ -118,12 +118,12 @@ public class CacheAffinityKey<K> implements Externalizable {
      * Gets affinity key to use for affinity mapping. If affinity key is not provided,
      * then {@code key} value will be returned.
      * <p>
-     * This method is annotated with {@link CacheAffinityKeyMapped} and will be picked up
+     * This method is annotated with {@link AffinityKeyMapped} and will be picked up
      * by {@link GridCacheDefaultAffinityKeyMapper} automatically.
      *
      * @return Affinity key to use for affinity mapping.
      */
-    @CacheAffinityKeyMapped
+    @AffinityKeyMapped
     @SuppressWarnings({"unchecked"})
     public <T> T affinityKey() {
         A.notNull(key, "key");
@@ -155,7 +155,7 @@ public class CacheAffinityKey<K> implements Externalizable {
 
     /**
      * Hash code implementation which delegates to the underlying {@link #key()}. Note, however,
-     * that different subclasses of {@code CacheAffinityKey} will produce different hash codes.
+     * that different subclasses of {@link AffinityKey} will produce different hash codes.
      * <p>
      * Users should override this method if different behavior is desired.
      *
@@ -169,7 +169,7 @@ public class CacheAffinityKey<K> implements Externalizable {
 
     /**
      * Equality check which delegates to the underlying key equality. Note, however, that
-     * different subclasses of {@code CacheAffinityKey} will never be equal.
+     * different subclasses of {@link AffinityKey} will never be equal.
      * <p>
      * Users should override this method if different behavior is desired.
      *
@@ -179,11 +179,11 @@ public class CacheAffinityKey<K> implements Externalizable {
     @Override public boolean equals(Object obj) {
         A.notNull(key, "key");
 
-        return obj != null && getClass() == obj.getClass() && key.equals(((CacheAffinityKey)obj).key);
+        return obj != null && getClass() == obj.getClass() && key.equals(((AffinityKey)obj).key);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheAffinityKey.class, this);
+        return S.toString(AffinityKey.class, this);
     }
 }

@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.igfs;
+package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.igfs.*;
-
-import javax.cache.*;
+import java.lang.annotation.*;
 
 /**
- * IGFS eviction filter which will not evict blocks of particular files.
+ * Annotation marker which identifies affinity function that must be calculated on one centralized node
+ * instead of independently on each node. In many cases it happens because it requires previous affinity state
+ * in order to calculate new one.
  */
-public class CacheIgfsEvictionFilter implements CacheEvictionFilter {
-    /** */
-    private static final long serialVersionUID = 0L;
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface AffinityCentralizedFunction {
 
-    /** {@inheritDoc} */
-    @Override public boolean evictAllowed(Cache.Entry entry) {
-        Object key = entry.getKey();
-
-        return !(key instanceof IgfsBlockKey && ((IgfsBlockKey)key).evictExclude());
-    }
 }

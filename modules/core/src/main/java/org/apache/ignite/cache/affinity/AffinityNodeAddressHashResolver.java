@@ -21,20 +21,19 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
- * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
+ * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.
  */
-public class CacheAffinityNodeIdHashResolver implements CacheAffinityNodeHashResolver {
+public class AffinityNodeAddressHashResolver implements AffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public Object resolve(ClusterNode node) {
-        return node.id();
+        return node.consistentId();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheAffinityNodeIdHashResolver.class, this);
+        return S.toString(AffinityNodeAddressHashResolver.class, this);
     }
 }

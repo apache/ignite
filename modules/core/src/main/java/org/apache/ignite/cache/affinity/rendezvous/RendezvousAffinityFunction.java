@@ -52,7 +52,7 @@ import java.util.*;
  * <p>
  * Cache affinity can be configured for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  */
-public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, Externalizable {
+public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,7 +88,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** Hash ID resolver. */
-    private CacheAffinityNodeHashResolver hashIdRslvr = new CacheAffinityNodeAddressHashResolver();
+    private AffinityNodeHashResolver hashIdRslvr = new AffinityNodeAddressHashResolver();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -97,7 +97,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     /**
      * Empty constructor with all defaults.
      */
-    public CacheRendezvousAffinityFunction() {
+    public RendezvousAffinityFunction() {
         this(false);
     }
 
@@ -110,7 +110,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
      */
-    public CacheRendezvousAffinityFunction(boolean exclNeighbors) {
+    public RendezvousAffinityFunction(boolean exclNeighbors) {
         this(exclNeighbors, DFLT_PARTITION_COUNT);
     }
 
@@ -124,7 +124,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      *      of each other.
      * @param parts Total number of partitions.
      */
-    public CacheRendezvousAffinityFunction(boolean exclNeighbors, int parts) {
+    public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
         this(exclNeighbors, parts, null);
     }
 
@@ -140,8 +140,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      * <p>
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      */
-    public CacheRendezvousAffinityFunction(int parts,
-                                           @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this(false, parts, backupFilter);
     }
 
@@ -152,8 +151,8 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
      */
-    private CacheRendezvousAffinityFunction(boolean exclNeighbors, int parts,
-                                            IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts != 0, "parts != 0");
 
         this.exclNeighbors = exclNeighbors;
@@ -205,7 +204,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      *
      * @return Hash ID resolver.
      */
-    public CacheAffinityNodeHashResolver getHashIdResolver() {
+    public AffinityNodeHashResolver getHashIdResolver() {
         return hashIdRslvr;
     }
 
@@ -221,7 +220,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
      *
      * @param hashIdRslvr Hash ID resolver.
      */
-    public void setHashIdResolver(CacheAffinityNodeHashResolver hashIdRslvr) {
+    public void setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
     }
 
@@ -397,7 +396,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     }
 
     /** {@inheritDoc} */
-    @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+    @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
         List<List<ClusterNode>> assignments = new ArrayList<>(parts);
 
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
@@ -430,7 +429,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         parts = in.readInt();
         exclNeighbors = in.readBoolean();
-        hashIdRslvr = (CacheAffinityNodeHashResolver)in.readObject();
+        hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 

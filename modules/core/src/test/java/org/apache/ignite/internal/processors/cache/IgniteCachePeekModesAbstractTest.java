@@ -84,7 +84,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         if (hasNearCache())
             ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(HEAP_ENTRIES));
+        ccfg.setEvictionPolicy(new FifoEvictionPolicy(HEAP_ENTRIES));
 
         return ccfg;
     }
@@ -180,7 +180,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertNull(cache0.localPeek(key, BACKUP));
             }
 
-            CacheAffinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(null);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -537,7 +537,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             checkPrimarySize(PUT_KEYS);
 
-            CacheAffinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(null);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -620,7 +620,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
         assertNotNull(it);
 
-        CacheAffinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(null);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 
@@ -667,7 +667,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         else
             offheapIt = internalCache.context().swap().lazyOffHeapIterator();
 
-        CacheAffinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(null);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 

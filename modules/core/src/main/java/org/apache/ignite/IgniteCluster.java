@@ -110,7 +110,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link CacheAffinityFunction} is
+     *      For fully replicated caches, {@link AffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -133,7 +133,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link CacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>

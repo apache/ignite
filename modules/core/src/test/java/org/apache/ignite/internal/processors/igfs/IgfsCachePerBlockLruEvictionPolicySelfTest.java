@@ -68,7 +68,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private static GridCacheAdapter<IgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheIgfsPerBlockLruEvictionPolicy evictPlc;
+    private static IgfsPerBlockLruEvictionPolicy evictPlc;
 
     static {
         SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -108,7 +108,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheIgfsPerBlockLruEvictionPolicy();
+        evictPlc = new IgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));

@@ -26,9 +26,9 @@ import java.io.*;
  * This eviction policy can be used whenever one cache is used to front another
  * and its size should be kept at {@code 0}.
  */
-public class GridCacheAlwaysEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>, Externalizable {
+public class GridCacheAlwaysEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable {
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!rmv && entry.isCached())
             entry.evict();
     }

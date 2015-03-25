@@ -42,7 +42,7 @@ public class GridTestKey implements Externalizable {
         return id;
     }
 
-    @CacheAffinityKeyMapped
+    @AffinityKeyMapped
     public int affinityKey() {
         return affinityKey(id);
     }
