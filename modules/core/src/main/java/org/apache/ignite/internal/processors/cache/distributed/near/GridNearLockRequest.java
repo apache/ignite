@@ -78,6 +78,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Flag indicating whether cache operation requires a previous value. */
+    private boolean retVal;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -119,6 +122,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean implicitTx,
         boolean implicitSingleTx,
         boolean isRead,
+        boolean retVal,
         TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
@@ -157,6 +161,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
+        this.retVal = retVal;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }
@@ -260,6 +265,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      */
     public boolean hasTransforms() {
         return hasTransforms;
+    }
+
+    /**
+     * @return Need return value flag.
+     */
+    public boolean needReturnValue() {
+        return retVal;
     }
 
     /**
@@ -390,24 +402,30 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("retVal", retVal))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 33:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 34:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -494,7 +512,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                subjId = reader.readUuid("subjId");
+                retVal = reader.readBoolean("retVal");
 
                 if (!reader.isLastRead())
                     return false;
@@ -502,7 +520,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 31:
-                syncCommit = reader.readBoolean("syncCommit");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -510,7 +528,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 32:
-                taskNameHash = reader.readInt("taskNameHash");
+                syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -518,6 +536,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 33:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 34:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -537,7 +563,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 34;
+        return 35;
     }
 
     /** {@inheritDoc} */

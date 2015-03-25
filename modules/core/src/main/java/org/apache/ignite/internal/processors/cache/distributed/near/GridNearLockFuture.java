@@ -850,6 +850,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             implicitTx(),
                                             implicitSingleTx(),
                                             read,
+                                            retval,
                                             isolation(),
                                             isInvalidate(),
                                             timeout,
