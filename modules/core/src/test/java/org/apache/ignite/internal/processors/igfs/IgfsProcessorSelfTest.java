@@ -63,7 +63,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected IgniteFileSystem igfs;
 
     /** Meta cache. */
-    private GridCache<Object, Object> metaCache;
+    private GridCacheAdapter<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -80,7 +80,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         metaCacheName = cfgs[0].getMetaCacheName();
 
-        metaCache = grid.cachex(metaCacheName);
+        metaCache = ((IgniteKernal)grid).internalCache(metaCacheName);
     }
 
     /** {@inheritDoc} */
