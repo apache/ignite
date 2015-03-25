@@ -71,7 +71,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
 
         cfg.setName(CACHE_NAME);
 
-        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 128));
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);

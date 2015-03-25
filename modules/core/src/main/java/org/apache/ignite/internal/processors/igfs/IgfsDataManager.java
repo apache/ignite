@@ -209,7 +209,7 @@ public class IgfsDataManager extends IgfsManager {
 
         assert dataCachePrj != null;
 
-        CacheAffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
+        AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
             .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?

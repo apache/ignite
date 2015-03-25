@@ -65,7 +65,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setNearConfiguration(new NearCacheConfiguration());
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
+        cc.setEvictionPolicy(new FifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(

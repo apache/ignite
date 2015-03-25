@@ -177,7 +177,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                     System.err.println("Put: " + i);
             }
 
-            final CacheAffinity<Integer> aff = grid(0).affinity(null);
+            final Affinity<Integer> aff = grid(0).affinity(null);
 
             boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {

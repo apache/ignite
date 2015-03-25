@@ -183,7 +183,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long ttl = DFLT_TIME_TO_LIVE;
 
     /** Cache expiration policy. */
-    private CacheEvictionPolicy evictPlc;
+    private EvictionPolicy evictPlc;
 
     /** Flag indicating whether eviction is synchronized. */
     private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
@@ -198,7 +198,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long evictSyncTimeout = DFLT_EVICT_SYNCHRONIZED_TIMEOUT;
 
     /** Eviction filter. */
-    private CacheEvictionFilter<?, ?> evictFilter;
+    private EvictionFilter<?, ?> evictFilter;
 
     /** Maximum eviction overflow ratio. */
     private float evictMaxOverflowRatio = DFLT_MAX_EVICTION_OVERFLOW_RATIO;
@@ -228,7 +228,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
-    private CacheAffinityFunction aff;
+    private AffinityFunction aff;
 
     /** Cache mode. */
     private CacheMode cacheMode = DFLT_CACHE_MODE;
@@ -285,7 +285,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
-    private CacheAffinityKeyMapper affMapper;
+    private AffinityKeyMapper affMapper;
 
     /** */
     private long rebalanceDelay;
@@ -459,7 +459,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public CacheEvictionPolicy<K, V> getEvictionPolicy() {
+    @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -468,7 +468,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param evictPlc Cache expiration policy.
      */
-    public void setEvictionPolicy(@Nullable CacheEvictionPolicy evictPlc) {
+    public void setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
     }
 
@@ -658,7 +658,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets eviction filter to specify which entries should not be evicted
      * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
-     * If {@link CacheEvictionFilter#evictAllowed(Cache.Entry)} method
+     * If {@link EvictionFilter#evictAllowed(Cache.Entry)} method
      * returns {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -668,8 +668,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Eviction filter or {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public CacheEvictionFilter<K, V> getEvictionFilter() {
-        return (CacheEvictionFilter<K, V>)evictFilter;
+    public EvictionFilter<K, V> getEvictionFilter() {
+        return (EvictionFilter<K, V>)evictFilter;
     }
 
     /**
@@ -677,7 +677,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param evictFilter Eviction filter.
      */
-    public void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
+    public void setEvictionFilter(EvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
     }
 
@@ -689,7 +689,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
      * {@link ExpiryPolicy} and should not be confused with entry
-     * evictions based on configured {@link CacheEvictionPolicy}.
+     * evictions based on configured {@link EvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.
      */
@@ -792,7 +792,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Key topology resolver to provide mapping from keys to nodes.
      */
-    public CacheAffinityFunction getAffinity() {
+    public AffinityFunction getAffinity() {
         return aff;
     }
 
@@ -801,7 +801,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param aff Cache key affinity.
      */
-    public void setAffinity(CacheAffinityFunction aff) {
+    public void setAffinity(AffinityFunction aff) {
         this.aff = aff;
     }
 
@@ -1231,7 +1231,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)}
+     * use {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1296,21 +1296,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link CacheAffinityKeyMapper} documentation.
+     * is described in {@link AffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
-    public CacheAffinityKeyMapper getAffinityMapper() {
+    public AffinityKeyMapper getAffinityMapper() {
         return affMapper;
     }
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link CacheAffinityKeyMapper} documentation.
+     * described in {@link AffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
-    public void setAffinityMapper(CacheAffinityKeyMapper affMapper) {
+    public void setAffinityMapper(AffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
     }
 

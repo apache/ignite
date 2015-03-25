@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+package org.apache.ignite.cache.eviction.lru;
 
 import org.apache.ignite.mxbean.*;
 
 /**
- * MBean for {@code random} eviction policy.
+ * MBean for {@code LRU} eviction policy.
  */
-@MXBeanDescription("MBean for random cache eviction policy.")
-public interface CacheRandomEvictionPolicyMBean {
+@MXBeanDescription("MBean for LRU cache eviction policy.")
+public interface LruEvictionPolicyMBean {
     /**
      * Gets maximum allowed cache size.
      *
@@ -39,4 +39,12 @@ public interface CacheRandomEvictionPolicyMBean {
      */
     @MXBeanDescription("Sets maximum allowed cache size.")
     public void setMaxSize(int max);
+
+    /**
+     * Gets current queue size.
+     *
+     * @return Current queue size.
+     */
+    @MXBeanDescription("Current queue size.")
+    public int getCurrentSize();
 }

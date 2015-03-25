@@ -48,7 +48,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     private CacheMode mode = REPLICATED;
 
     /** */
-    private CacheEvictionPolicy<?, ?> plc;
+    private EvictionPolicy<?, ?> plc;
 
     /** */
     private int warmUpPutsCnt;
@@ -98,7 +98,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      */
     public void testConcurrentPutsFifoLocal() throws Exception {
         mode = LOCAL;
-        plc = new CacheFifoEvictionPolicy<Object, Object>(1000);
+        plc = new FifoEvictionPolicy<Object, Object>(1000);
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 
@@ -110,7 +110,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      */
     public void testConcurrentPutsLruLocal() throws Exception {
         mode = LOCAL;
-        plc = new CacheLruEvictionPolicy<Object, Object>(1000);
+        plc = new LruEvictionPolicy<Object, Object>(1000);
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 

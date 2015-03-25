@@ -128,7 +128,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 Ignite g = F.rand(ignites);
 
-                g.cache(null).put(new CacheAffinityKey<>(i, mainKey), Integer.toString(cntr++));
+                g.cache(null).put(new AffinityKey<>(i, mainKey), Integer.toString(cntr++));
             }
 
             IgniteCache cache = priIgnite.cache(null);

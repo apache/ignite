@@ -238,7 +238,7 @@ public class CodeGenerator {
             add1(src, "/** Value for " + fldName + ". */");
 
             if (key && field.affinityKey())
-                add1(src, "@CacheAffinityKeyMapped");
+                add1(src, "@AffinityKeyMapped");
 
             add1(src, "private " + javaTypeName(field) + " " + fldName + ";");
             add0(src, "");

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
@@ -40,7 +41,7 @@ public enum CacheMode {
     /**
      * Specifies fully replicated cache behavior. In this mode all the keys are distributed
      * to all participating nodes. User still has affinity control
-     * over subset of nodes for any given key via {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
+     * over subset of nodes for any given key via {@link AffinityFunction}
      * configuration.
      */
     REPLICATED,
@@ -49,7 +50,7 @@ public enum CacheMode {
      * Specifies partitioned cache behaviour. In this mode the overall
      * key set will be divided into partitions and all partitions will be split
      * equally between participating nodes. User has affinity
-     * control over key assignment via {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
+     * control over key assignment via {@link AffinityFunction}
      * configuration.
      * <p>
      * Note that partitioned cache is always fronted by local

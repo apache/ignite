@@ -29,7 +29,7 @@ import java.util.*;
 /**
  *
  */
-public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTest {
+public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
@@ -92,7 +92,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
     private void checkNodeRemoved(int backups) throws Exception {
         int parts = 256;
 
-        CacheAffinityFunction aff = new CachePartitionFairAffinity(parts);
+        AffinityFunction aff = new FairAffinityFunction(parts);
 
         int nodesCnt = 50;
 
@@ -113,7 +113,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
                 node);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
                     backups));
 
             info("Assigned.");
@@ -137,7 +137,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             DiscoveryEvent discoEvt = new DiscoveryEvent(rmv, "", EventType.EVT_NODE_LEFT, rmv);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
                     backups));
 
             info("Assigned.");
@@ -152,7 +152,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
     private void checkRandomReassignment(int backups) {
         int parts = 256;
 
-        CacheAffinityFunction aff = new CachePartitionFairAffinity(parts);
+        AffinityFunction aff = new FairAffinityFunction(parts);
 
         Random rnd = new Random();
 
@@ -210,7 +210,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
             info("======================================");
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridCacheAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
+                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
                     backups));
 
             verifyAssignment(assignment, backups, parts, nodes.size());
