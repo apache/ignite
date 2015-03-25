@@ -98,10 +98,6 @@ public class CacheQueryExample {
                 // fields instead of whole key-value pairs.
                 sqlFieldsQuery();
 
-                // Example for SQL-based fields queries that return only required
-                // fields instead of whole key-value pairs.
-                sqlFieldsQuery();
-
                 // Example for SQL-based fields queries that uses joins.
                 sqlFieldsQueryWithJoin();
             }
