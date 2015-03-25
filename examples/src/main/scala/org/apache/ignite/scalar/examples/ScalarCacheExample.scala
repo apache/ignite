@@ -27,10 +27,10 @@ import scala.collection.JavaConversions._
 
 /**
  * Demonstrates basic In-Memory Data Ignite Cluster operations with Scalar.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
- * <p>
+ * <p/>
  * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-ignite.xml` configuration.
  */

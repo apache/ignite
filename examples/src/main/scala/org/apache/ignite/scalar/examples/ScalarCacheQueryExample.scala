@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
- * <p>
+ * <p/>
  * Remote nodes should be started using `ExampleNodeStartup` which will
  * start node with `examples/config/example-ignite.xml` configuration.
  */
