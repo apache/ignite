@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -63,7 +63,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
         try {
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            IgniteCache<String, Integer> cache = jcache();
+            GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
             try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
@@ -86,7 +86,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
                     }
                 }
 
-                ((GridCacheProjectionEx<String, Integer>)cache).getAllOutTx(F.asList("key" + key));
+                cache.getAllOutTx(F.asList("key" + key));
             }
 
             assertTrue(GridTestUtils.waitForCondition(new PA() {
