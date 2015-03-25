@@ -24,7 +24,7 @@ import java.io.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
- * calling explicit evict via {@link CacheEvictableEntry#evict()}.
+ * calling explicit evict via {@link EvictableEntry#evict()}.
  * If {@link #evictAllowed(Cache.Entry)} method returns {@code false} then eviction
  * policy will not be notified and entry will never be evicted.
  * <p>
@@ -32,7 +32,7 @@ import java.io.*;
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
  */
-public interface CacheEvictionFilter<K, V> extends Serializable {
+public interface EvictionFilter<K, V> extends Serializable {
     /**
      * Checks if entry may be evicted from cache.
      *

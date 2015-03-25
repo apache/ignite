@@ -89,7 +89,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         cache.setRebalanceMode(SYNC);
         cache.setIndexedTypes(
             String.class, Organization.class,
-            CacheAffinityKey.class, Person.class
+            AffinityKey.class, Person.class
         );
 
         if (cacheMode() == PARTITIONED)
@@ -126,13 +126,13 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
+        GridCache<AffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        assert personCache.putx(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        assert personCache.putx(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        assert personCache.putx(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
     }
 
     /** {@inheritDoc} */
@@ -202,7 +202,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //        qry = qry.remoteKeyFilter(
 //            new GridPredicate<Object>() {
 //                @Override public boolean apply(Object e) {
-//                    return !"p2".equals(((CacheAffinityKey)e).key());
+//                    return !"p2".equals(((AffinityKey)e).key());
 //                }
 //            }
 //        ).remoteValueFilter(
@@ -225,16 +225,16 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //     * @throws Exception If failed.
 //     */
 //    public void testOnProjectionWithFilter() throws Exception {
-//        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
-//            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
+//        P2<AffinityKey<String>, Person> p = new P2<AffinityKey<String>, Person>() {
+//            @Override public boolean apply(AffinityKey<String> key, Person val) {
 //                return val.orgId == 1;
 //            }
 //        };
 //
-//        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
-//            grid(0).<CacheAffinityKey<String>, Person>cache(null).projection(p);
+//        CacheProjection<AffinityKey<String>, Person> cachePrj =
+//            grid(0).<AffinityKey<String>, Person>cache(null).projection(p);
 //
-//        GridCacheReduceFieldsQuery<CacheAffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
+//        GridCacheReduceFieldsQuery<AffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
 //            cachePrj.queries().createReduceFieldsQuery("select age from Person");
 //
 //        qry = qry.remoteValueFilter(

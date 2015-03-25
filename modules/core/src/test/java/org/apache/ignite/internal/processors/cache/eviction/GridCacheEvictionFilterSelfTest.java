@@ -53,8 +53,8 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     private EvictionFilter filter;
 
     /** Policy. */
-    private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, CacheEvictableEntry entry) {
+    private EvictionPolicy<Object, Object> plc = new EvictionPolicy<Object, Object>() {
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             assert !(entry.getValue() instanceof Integer);
         }
     };
@@ -66,17 +66,17 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
+        cc.setEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
         cc.setEvictSynchronized(false);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionFilter(notSerializableProxy(filter, CacheEvictionFilter.class));
+        cc.setEvictionFilter(notSerializableProxy(filter, org.apache.ignite.cache.eviction.EvictionFilter.class));
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, CacheEvictionPolicy.class));
+            nearCfg.setNearEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
 
             cc.setNearConfiguration(nearCfg);
         }
@@ -218,7 +218,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final class EvictionFilter implements CacheEvictionFilter<Object, Object> {
+    private final class EvictionFilter implements org.apache.ignite.cache.eviction.EvictionFilter<Object, Object> {
         /** */
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 

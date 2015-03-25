@@ -280,7 +280,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+    @Override public <K> Affinity<K> affinity(String cacheName) {
         return null;
     }
 }

@@ -118,7 +118,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheEvictableEntry wrapEviction() {
+    @Nullable @Override public EvictableEntry wrapEviction() {
         return null;
     }
 

@@ -43,13 +43,13 @@ public class GridAffinityAssignmentCache {
     private int backups;
 
     /** Affinity function. */
-    private final CacheAffinityFunction aff;
+    private final AffinityFunction aff;
 
     /** Partitions count. */
     private final int partsCnt;
 
     /** Affinity mapper function. */
-    private final CacheAffinityKeyMapper affMapper;
+    private final AffinityKeyMapper affMapper;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
@@ -81,8 +81,8 @@ public class GridAffinityAssignmentCache {
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridCacheContext ctx,
         String cacheName,
-        CacheAffinityFunction aff,
-        CacheAffinityKeyMapper affMapper,
+        AffinityFunction aff,
+        AffinityKeyMapper affMapper,
         int backups)
     {
         assert ctx != null;
@@ -178,11 +178,11 @@ public class GridAffinityAssignmentCache {
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment,
+                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
                     discoEvt, topVer, backups));
         }
         else
-            assignment = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
+            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
                 topVer, backups));
 
         assert assignment != null;
@@ -416,7 +416,7 @@ public class GridAffinityAssignmentCache {
         private AffinityTopologyVersion reqTopVer;
 
         /**
-         * 
+         *
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
             this.reqTopVer = reqTopVer;

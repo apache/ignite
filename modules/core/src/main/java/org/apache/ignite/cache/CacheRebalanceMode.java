@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.affinity.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.*;
  * explicitly, then {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_REBALANCE_MODE} is used.
  * <p>
  * Replicated caches will try to load the full set of cache entries from other nodes (or as defined by
- * pluggable {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}), while partitioned caches will only load the entries for which
+ * pluggable {@link AffinityFunction}), while partitioned caches will only load the entries for which
  * current node is primary or back up.
  * <p>
  * Note that rebalance mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}

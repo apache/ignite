@@ -82,7 +82,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
 
         // Affinity tests.
-        suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
+        suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 

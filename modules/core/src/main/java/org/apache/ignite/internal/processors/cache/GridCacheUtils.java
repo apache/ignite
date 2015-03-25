@@ -1767,7 +1767,7 @@ public class GridCacheUtils {
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
     public static CacheEntryPredicate cachePrimary(
-        final CacheAffinity aff,
+        final Affinity aff,
         final ClusterNode n
     ) {
         return new CacheEntryPredicateAdapter() {
@@ -1783,7 +1783,7 @@ public class GridCacheUtils {
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
-        final CacheAffinity<K> aff,
+        final Affinity<K> aff,
         final ClusterNode n
     ) {
         return new IgnitePredicate<Cache.Entry<K, V>>() {

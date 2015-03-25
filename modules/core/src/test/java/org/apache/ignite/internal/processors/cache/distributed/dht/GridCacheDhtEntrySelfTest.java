@@ -61,7 +61,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
@@ -289,7 +289,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        CacheAffinity<Integer> aff = grid(0).affinity(null);
+        Affinity<Integer> aff = grid(0).affinity(null);
 
         int part = aff.partition(key);
 

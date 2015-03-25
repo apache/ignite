@@ -109,7 +109,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private static UUID primaryId(Ignite ignite, Object key) {
-        CacheAffinity aff = ignite.affinity(null);
+        Affinity aff = ignite.affinity(null);
 
         Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
 

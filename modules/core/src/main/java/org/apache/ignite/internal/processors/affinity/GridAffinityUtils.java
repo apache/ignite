@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -37,11 +38,11 @@ import java.util.concurrent.*;
  */
 class GridAffinityUtils {
     /**
-     * Creates a job that will look up {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} and {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} on a
+     * Creates a job that will look up {@link AffinityKeyMapper} and {@link AffinityFunction} on a
      * cache with given name. If they exist, this job will serialize and transfer them together with all deployment
      * information needed to unmarshal objects on remote node. Result is returned as a {@link GridTuple3},
-     * where first object is {@link GridAffinityMessage} for {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}, second object
-     * is {@link GridAffinityMessage} for {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} and third object is affinity assignment
+     * where first object is {@link GridAffinityMessage} for {@link AffinityFunction}, second object
+     * is {@link GridAffinityMessage} for {@link AffinityKeyMapper} and third object is affinity assignment
      * for given topology version.
      *
      * @param cacheName Cache name.

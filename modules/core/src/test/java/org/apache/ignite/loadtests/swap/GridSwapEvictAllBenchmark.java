@@ -266,7 +266,7 @@ public class GridSwapEvictAllBenchmark {
 
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);
-        ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
+        ccfg.setEvictionPolicy(new FifoEvictionPolicy(EVICT_PLC_SIZE));
 
         if (store != null) {
             ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));

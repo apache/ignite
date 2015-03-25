@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Tests partition fair affinity in real grid.
  */
-public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstractTest {
+public class GridFairAffinityFunctionNodesSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -103,7 +103,7 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
         cfg.setNearConfiguration(null);
 
-        cfg.setAffinity(new CachePartitionFairAffinity(parts));
+        cfg.setAffinity(new FairAffinityFunction(parts));
 
         return cfg;
     }

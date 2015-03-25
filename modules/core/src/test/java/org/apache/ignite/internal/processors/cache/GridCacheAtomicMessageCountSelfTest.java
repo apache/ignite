@@ -142,7 +142,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < putCnt; i++) {
                 ClusterNode locNode = grid(0).localNode();
 
-                CacheAffinity<Object> affinity = ignite(0).affinity(null);
+                Affinity<Object> affinity = ignite(0).affinity(null);
 
                 if (writeOrderMode == CLOCK) {
                     if (affinity.isPrimary(locNode, i) || affinity.isBackup(locNode, i))

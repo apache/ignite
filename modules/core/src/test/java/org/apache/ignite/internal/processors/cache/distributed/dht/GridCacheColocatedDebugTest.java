@@ -69,7 +69,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 30));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 30));
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);

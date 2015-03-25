@@ -32,7 +32,7 @@ import java.io.*;
  * Therefore you must ensure that server and clients can marshal and unmarshal this object in portable format,
  * i.e. all parties have object class(es) configured as portable.
  */
-public interface CacheAffinityNodeHashResolver extends Serializable {
+public interface AffinityNodeHashResolver extends Serializable {
     /**
      * Resolve alternate hash value for the given Grid node.
      *
