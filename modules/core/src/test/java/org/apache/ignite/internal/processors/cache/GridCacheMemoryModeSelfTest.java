@@ -237,7 +237,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         x.applyx(c);
 
-        assertEquals(cache, c.size());
+        assertEquals(cache, c.size(CachePeekMode.ONHEAP));
         assertEquals(offheapSwap, c.localSize(CachePeekMode.OFFHEAP) + c.localSize(CachePeekMode.SWAP));
 
         info("size: " + c.size());
