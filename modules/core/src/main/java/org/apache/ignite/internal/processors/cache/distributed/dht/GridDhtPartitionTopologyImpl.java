@@ -443,7 +443,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                                 changed = true;
 
                                 cctx.events().addEvent(p, null, cctx.localNodeId(), (IgniteUuid)null,
-                                    null, EVT_CACHE_PARTITION_NOT_FULLY_LOADED, null, false, null,
+                                    null, EVT_CACHE_REBALANCE_PART_DATA_LOST, null, false, null,
                                     false, null, null, null);
 
                                 if (log.isDebugEnabled())

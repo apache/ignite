@@ -613,7 +613,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      */
-    public static final int EVT_CACHE_PARTITION_NOT_FULLY_LOADED = 86;
+    public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
      * Built-in event type: query executed.
