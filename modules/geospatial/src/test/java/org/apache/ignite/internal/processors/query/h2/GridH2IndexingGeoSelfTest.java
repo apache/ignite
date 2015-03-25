@@ -77,8 +77,13 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
 
         SqlQuery<Integer, EnemyCamp> query = new SqlQuery(EnemyCamp.class, "coords && ?");
 
-        Collection<Cache.Entry<Integer, EnemyCamp>> res = cache.query(
-            query.setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))"))).getAll();
+        Geometry geom = r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))");
+
+        query.setArgs(geom);
+
+        QueryCursor<Cache.Entry<Integer, EnemyCamp>> cursor = cache.query(query);
+
+        Collection<Cache.Entry<Integer, EnemyCamp>> res = cursor.getAll();
 
         checkPoints(res, "A");
 

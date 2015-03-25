@@ -493,12 +493,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
-                    assertNotNull(c.localPeek(i));
+                    assertNotNull(c.localPeek(i, CachePeekMode.ONHEAP));
 
                     c.localEvict(Collections.singleton(i)); // Swap.
 
                     if (!partitioned || g.affinity(null).mapKeyToNode(i).isLocal()) {
-                        ObjectValue peekVal = c.localPeek(i);
+                        ObjectValue peekVal = c.localPeek(i, CachePeekMode.ONHEAP);
 
                         assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
                     }
