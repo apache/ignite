@@ -516,14 +516,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 assertEquals("3", s);
 
-                assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
+                assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
                 assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
-
-                // This assertion no longer makes sense as we bring the value over whenever
-                // there is a version mismatch.
-                // assertNull(dht(primaryGrid(2)).peek(2, new GridCachePeekMode[]{GLOBAL}));
 
                 tx.commit();
             }
