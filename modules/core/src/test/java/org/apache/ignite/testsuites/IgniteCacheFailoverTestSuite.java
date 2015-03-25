@@ -56,6 +56,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
         //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
+        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO-gg-4813
 
         return suite;
     }
