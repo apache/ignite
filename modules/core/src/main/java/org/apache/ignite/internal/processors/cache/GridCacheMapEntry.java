@@ -3162,7 +3162,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (swapEntry == null)
             return null;
 
-        // TODO do we need all this val.finishUnmarshal stuff??
         return swapEntry.value();
     }
 
