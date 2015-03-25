@@ -76,10 +76,12 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheStoreManager(GridKernalContext ctx,
+    public GridCacheStoreManager(
+        GridKernalContext ctx,
         Map<CacheStore, ThreadLocal> sesHolders,
         @Nullable CacheStore<Object, Object> cfgStore,
-        CacheConfiguration cfg) throws IgniteCheckedException {
+        CacheConfiguration cfg
+    ) throws IgniteCheckedException {
         this.cfgStore = cfgStore;
 
         store = cacheStoreWrapper(ctx, cfgStore, cfg);
@@ -96,8 +98,11 @@ public class GridCacheStoreManager extends GridCacheManagerAdapter {
             if (sesHolder0 == null) {
                 ThreadLocalSession locSes = new ThreadLocalSession();
 
-                if (ctx.resource().injectStoreSession(cfgStore, locSes))
+                if (ctx.resource().injectStoreSession(cfgStore, locSes)) {
                     sesHolder0 = locSes.sesHolder;
+
+                    sesHolders.put(cfgStore, sesHolder0);
+                }
             }
         }
 

@@ -610,6 +610,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.topologyVersion(),
             keys.size(),
             isRead,
+            retval,
             timeout,
             tx,
             tx.threadId(),
@@ -725,6 +726,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.topologyVersion(),
                                 cnt,
                                 req.txRead(),
+                                req.needReturnValue(),
                                 req.timeout(),
                                 tx,
                                 req.threadId(),
@@ -836,6 +838,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.onePhaseCommit(),
                                 req.messageId(),
                                 req.txRead(),
+                                req.needReturnValue(),
                                 req.accessTtl());
 
                             final GridDhtTxLocal t = tx;
@@ -1276,12 +1279,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param entry Entry.
      * @param nodes Nodes.
      * @param map Map.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
     private void map(GridCacheEntryEx entry,
         @Nullable Iterable<? extends ClusterNode> nodes,
-        Map<ClusterNode, List<KeyCacheObject>> map) throws IgniteCheckedException {
+        Map<ClusterNode, List<KeyCacheObject>> map) {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 List<KeyCacheObject> keys = map.get(n);
