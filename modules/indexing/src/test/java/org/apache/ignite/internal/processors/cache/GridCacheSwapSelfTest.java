@@ -447,7 +447,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         cache.localEvict(keys);
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
         assert swapCnt.get() == ENTRY_CNT;
         assert unswapCnt.get() == 0;
@@ -501,7 +501,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         assertEquals(0, unswapCnt.get());
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             cache.localPromote(Collections.singleton(i));
 
@@ -536,7 +536,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         Set<Integer> keys = new HashSet<>();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             keys.add(i);
         }
@@ -564,7 +564,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             CacheValue val = cache.get(i);
 
@@ -593,7 +593,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             CacheValue val = cache.localPeek(i, CachePeekMode.SWAP);
 

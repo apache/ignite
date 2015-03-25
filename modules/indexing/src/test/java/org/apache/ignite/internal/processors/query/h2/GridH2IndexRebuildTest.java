@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -166,22 +165,21 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
             cache2.put(ENTRY_CNT * 2 + i, new TestValue2(i, "val2-" + i));
         }
 
-        QueryCursor<Cache.Entry<Integer, TestValue1>> qry1 =
-            cache1.query(new SqlQuery(TestValue1.class, "val1 = 9000"));
+        SqlQuery<Integer, TestValue1> qry1 = new SqlQuery(TestValue1.class, "val1 = 9000");
 
-        QueryCursor<Cache.Entry<Integer, TestValue1>> qry2 =
-            cache1.query(new SqlQuery(TestValue1.class, "val2 = 'val2-9000'"));
+        SqlQuery<Integer, TestValue1> qry2 = new SqlQuery(TestValue1.class, "val2 = 'val2-9000'");
 
-        QueryCursor<Cache.Entry<Integer, TestValue1>> qry3 =
-            cache1.query(new SqlQuery(TestValue1.class, "val3 = 9000 and val4 = 9000"));
+        SqlQuery<Integer, TestValue1> qry3 = new SqlQuery(TestValue1.class, "val3 = 9000 and val4 = 9000");
 
-        QueryCursor<Cache.Entry<Integer, TestValue2>> qry4 =
-            cache2.query(new SqlQuery(TestValue2.class, "val1 = 9000"));
+        SqlQuery<Integer, TestValue2> qry4 = new SqlQuery(TestValue2.class, "val1 = 9000");
 
-        QueryCursor<Cache.Entry<Integer, TestValue2>> qry5 =
-            cache2.query(new SqlQuery(TestValue2.class, "val2 = 'val2-9000'"));
+        SqlQuery<Integer, TestValue2> qry5 = new SqlQuery(TestValue2.class, "val2 = 'val2-9000'");
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
 
         for (int i = 0; i < ENTRY_CNT / 2; i++) {
             cache1.remove(i);
@@ -191,11 +189,19 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         cache().queries().rebuildIndexes(TestValue1.class).get();
         cache().queries().rebuildIndexes(TestValue2.class).get();
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
 
         cache().queries().rebuildAllIndexes().get();
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
     }
 
     /**
@@ -246,13 +252,5 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         }, IgniteFutureCancelledCheckedException.class, null);
 
         assertTrue(spi.interrupted.await(5, TimeUnit.SECONDS));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void checkQueryReturnsOneEntry(QueryCursor<?>... qrys) throws Exception {
-        for (QueryCursor<?> qry : qrys)
-            assertEquals(1, qry.getAll().size());
     }
 }
