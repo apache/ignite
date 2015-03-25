@@ -198,7 +198,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
             final long valPtr = mem.readLongVolatile(p);
 
-            assert valPtr > 0: valPtr;
+            if (valPtr == 0)
+                return; // Nothing to swap.
 
             desc.guard().finalizeLater(new Runnable() {
                 @Override public void run() {

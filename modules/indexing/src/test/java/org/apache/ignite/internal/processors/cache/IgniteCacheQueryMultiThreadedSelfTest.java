@@ -238,7 +238,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -310,7 +310,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLong() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -383,7 +383,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLongString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
