@@ -5315,22 +5315,22 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     private static class PeekModes {
         /** */
-        boolean near;
+        private boolean near;
 
         /** */
-        boolean primary;
+        private boolean primary;
 
         /** */
-        boolean backup;
+        private boolean backup;
 
         /** */
-        boolean heap;
+        private boolean heap;
 
         /** */
-        boolean offheap;
+        private boolean offheap;
 
         /** */
-        boolean swap;
+        private boolean swap;
 
         /** {@inheritDoc} */
         @Override public String toString() {

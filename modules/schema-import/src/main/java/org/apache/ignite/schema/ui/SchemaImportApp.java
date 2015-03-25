@@ -977,7 +977,7 @@ public class SchemaImportApp extends Application {
 
         regexPnl.add(buttonsPane(Pos.CENTER_LEFT, false,
             button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
-                    " with the given replacement.",
+                    " with the given replacement",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))

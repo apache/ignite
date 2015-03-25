@@ -65,7 +65,8 @@ public class StreamMarketData {
 
                     Instrument inst = instCache.get(symbol);
 
-                    if (inst == null) inst = new Instrument(symbol);
+                    if (inst == null)
+                        inst = new Instrument(symbol);
 
                     // Don't populate market cache, as we don't use it for querying.
                     // Update cached instrument based on the latest market tick.
