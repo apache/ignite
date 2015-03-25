@@ -85,9 +85,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
-        cacheCfg.setIndexedTypes(
-            Integer.class, CacheValue.class
-        );
+        cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -135,7 +133,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             info("Read value from cache2 [v=" + v2 + ", ldr=" + v2.getClass().getClassLoader() + ']');
 
-            assert v2 != null;
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
             assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
 
@@ -344,16 +341,16 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache.localEvict(Collections.singleton(i));
 
-            assertEquals(ENTRY_CNT - i - 1, cache.size());
+            assertEquals(ENTRY_CNT - i - 1, cache.localSize(CachePeekMode.ONHEAP));
             assertEquals(i + 1, cache.localSize(CachePeekMode.OFFHEAP));
         }
         // cache.evictAll();
 
-        assertEquals(0, cache.size());
+        assertEquals(0, cache.localSize(CachePeekMode.ONHEAP));
         assertEquals(ENTRY_CNT, cache.localSize(CachePeekMode.OFFHEAP));
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            assertNull(cache.localPeek(i));
+            assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
         assertEquals(ENTRY_CNT, swapCnt.get());
         assertEquals(0, unswapCnt.get());
@@ -407,7 +404,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         assertEquals(0, unswapCnt.get());
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             cache.localPromote(Collections.singleton(i));
             CacheValue val = cache.localPeek(i);
@@ -441,7 +438,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         Set<Integer> keys = new HashSet<>();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             keys.add(i);
         }
@@ -469,7 +466,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
             CacheValue val = cache.get(i);
 
@@ -498,9 +495,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         resetCounters();
 
         for (int i = lowerBound; i < upperBound; i++) {
-            assert cache.localPeek(i) == null;
+            assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
-            CacheValue val = cache.localPeek(i, CachePeekMode.SWAP);
+            CacheValue val = cache.localPeek(i, CachePeekMode.SWAP, CachePeekMode.OFFHEAP);
 
             assert val != null;
             assert val.value() == i;
@@ -544,7 +541,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
             CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), val.value());
 
             assertEquals(entry.version(), versions.get(i));
         }
