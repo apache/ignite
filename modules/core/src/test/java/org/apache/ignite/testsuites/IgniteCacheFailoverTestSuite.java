@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -39,6 +40,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         // TODO: IGNITE-80.
         //suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
         //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
+
+        suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
