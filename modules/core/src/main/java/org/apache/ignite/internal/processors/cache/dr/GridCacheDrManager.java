@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.*;
 /**
  * Replication manager class which processes all replication events.
  */
-public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
+public interface GridCacheDrManager extends GridCacheManager {
     /**
      * @return Data center ID.
      */
@@ -41,19 +42,15 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * Performs replication.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @param ver Version.
      * @param drType Replication type.
      * @throws IgniteCheckedException If failed.
      */
-    public void replicate(K key,
-        @Nullable byte[] keyBytes,
-        @Nullable V val,
-        @Nullable byte[] valBytes,
+    public void replicate(KeyCacheObject key,
+        @Nullable CacheObject val,
         long ttl,
         long expireTime,
         GridCacheVersion ver,
@@ -66,7 +63,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param left {@code True} if exchange has been caused by node leave.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException;
+    public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

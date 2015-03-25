@@ -22,8 +22,7 @@ import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -42,15 +41,15 @@ public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitione
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setBackups(1);
         cc.setAtomicWriteOrderMode(atomicWriteOrderMode());
 

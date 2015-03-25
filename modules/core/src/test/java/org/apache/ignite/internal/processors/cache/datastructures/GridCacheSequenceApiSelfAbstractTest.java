@@ -361,7 +361,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid().jcache(GridCacheUtils.ATOMICS_CACHE_NAME);
+                grid().cache(GridCacheUtils.ATOMICS_CACHE_NAME);
 
                 return null;
             }

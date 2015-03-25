@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -180,7 +179,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
                     GridCacheAdapter<Object, Object> cache =
                         ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
 
-                    Iterator<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0().iterator();
+                    Iterator<GridCacheEntryEx> entries = cache.map().allEntries0().iterator();
 
                     while (entries.hasNext()) {
                         cnt++;

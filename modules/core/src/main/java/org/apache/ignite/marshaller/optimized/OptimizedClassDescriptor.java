@@ -18,16 +18,18 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import sun.misc.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.lang.reflect.Modifier.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ENUM;
 
 /**
  * Class descriptor.
@@ -36,113 +38,26 @@ class OptimizedClassDescriptor {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** */
-    private static final int TYPE_BYTE = 1;
-
-    /** */
-    private static final int TYPE_SHORT = 2;
-
-    /** */
-    private static final int TYPE_INT = 3;
-
-    /** */
-    private static final int TYPE_LONG = 4;
-
-    /** */
-    private static final int TYPE_FLOAT = 5;
-
-    /** */
-    private static final int TYPE_DOUBLE = 6;
-
-    /** */
-    private static final int TYPE_CHAR = 7;
-
-    /** */
-    private static final int TYPE_BOOLEAN = 8;
-
-    /** */
-    private static final int TYPE_BYTE_ARR = 9;
-
-    /** */
-    private static final int TYPE_SHORT_ARR = 10;
-
-    /** */
-    private static final int TYPE_INT_ARR = 11;
-
-    /** */
-    private static final int TYPE_LONG_ARR = 12;
-
-    /** */
-    private static final int TYPE_FLOAT_ARR = 13;
-
-    /** */
-    private static final int TYPE_DOUBLE_ARR = 14;
-
-    /** */
-    private static final int TYPE_CHAR_ARR = 15;
-
-    /** */
-    private static final int TYPE_BOOLEAN_ARR = 16;
-
-    /** */
-    private static final int TYPE_OBJ_ARR = 17;
-
-    /** */
-    private static final int TYPE_STR = 18;
-
-    /** */
-    private static final int TYPE_ENUM = 19;
-
-    /** */
-    private static final int TYPE_UUID = 20;
-
-    /** */
-    private static final int TYPE_PROPS = 21;
-
-    /** */
-    private static final int TYPE_ARRAY_LIST = 22;
-
-    /** */
-    private static final int TYPE_HASH_MAP = 23;
-
-    /** */
-    private static final int TYPE_HASH_SET = 24;
-
-    /** */
-    private static final int TYPE_LINKED_LIST = 25;
-
-    /** */
-    private static final int TYPE_LINKED_HASH_MAP = 26;
-
-    /** */
-    private static final int TYPE_LINKED_HASH_SET = 27;
-
-    /** */
-    private static final int TYPE_DATE = 28;
-
-    /** */
-    private static final int TYPE_CLS = 29;
-
-    /** */
-    private static final int TYPE_EXTERNALIZABLE = 50;
-
-    /** */
-    private static final int TYPE_SERIALIZABLE = 51;
-
     /** Class. */
-    private Class<?> cls;
+    private final Class<?> cls;
 
-    /** Header. */
-    private Integer hdr;
+    /** Context. */
+    private final MarshallerContext ctx;
 
-    /** ID. */
-    private Integer id;
+    /** */
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
-    /** Short ID. */
-    private Short shortId;
+    /** ID mapper. */
+    private final OptimizedMarshallerIdMapper mapper;
 
     /** Class name. */
-    private String name;
+    private final String name;
+
+    /** Type ID. */
+    private final int typeId;
+
+    /** Short ID. */
+    private final short checksum;
 
     /** Class type. */
     private int type;
@@ -157,13 +72,10 @@ class OptimizedClassDescriptor {
     private boolean isSerial;
 
     /** Excluded flag. */
-    private final boolean excluded;
+    private boolean excluded;
 
     /** {@code True} if descriptor is for {@link Class}. */
     private boolean isCls;
-
-    /** Array component type. */
-    private Class<?> arrCompType;
 
     /** Enumeration values. */
     private Object[] enumVals;
@@ -192,113 +104,116 @@ class OptimizedClassDescriptor {
     /** Load factor field offset. */
     private long loadFactorFieldOff;
 
-    /** Map field offset. */
-    private long mapFieldOff;
-
     /** Access order field offset. */
     private long accessOrderFieldOff;
 
     /**
      * Creates descriptor for class.
      *
+     * @param typeId Type ID.
+     * @param clsMap Class descriptors by class map.
      * @param cls Class.
+     * @param ctx Context.
+     * @param mapper ID mapper.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "MapReplaceableByEnumMap"})
-    OptimizedClassDescriptor(Class<?> cls) throws IOException {
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    OptimizedClassDescriptor(Class<?> cls,
+        int typeId,
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
+        throws IOException {
         this.cls = cls;
+        this.typeId = typeId;
+        this.clsMap = clsMap;
+        this.ctx = ctx;
+        this.mapper = mapper;
+
+        name = cls.getName();
 
         excluded = MarshallerExclusions.isExcluded(cls);
-
-        T2<Integer, Integer> t = OptimizedClassResolver.writeClassData(cls);
-
-        hdr = t.get1();
-        id = t.get2();
-        name = cls.getName();
 
         if (!excluded) {
             Class<?> parent;
 
             if (cls == byte.class || cls == Byte.class) {
-                type = TYPE_BYTE;
+                type = BYTE;
 
                 isPrimitive = true;
             }
             else if (cls == short.class || cls == Short.class) {
-                type = TYPE_SHORT;
+                type = SHORT;
 
                 isPrimitive = true;
             }
             else if (cls == int.class || cls == Integer.class) {
-                type = TYPE_INT;
+                type = INT;
 
                 isPrimitive = true;
             }
             else if (cls == long.class || cls == Long.class) {
-                type = TYPE_LONG;
+                type = LONG;
 
                 isPrimitive = true;
             }
             else if (cls == float.class || cls == Float.class) {
-                type = TYPE_FLOAT;
+                type = FLOAT;
 
                 isPrimitive = true;
             }
             else if (cls == double.class || cls == Double.class) {
-                type = TYPE_DOUBLE;
+                type = DOUBLE;
 
                 isPrimitive = true;
             }
             else if (cls == char.class || cls == Character.class) {
-                type = TYPE_CHAR;
+                type = CHAR;
 
                 isPrimitive = true;
             }
             else if (cls == boolean.class || cls == Boolean.class) {
-                type = TYPE_BOOLEAN;
+                type = BOOLEAN;
 
                 isPrimitive = true;
             }
             else if (cls == byte[].class)
-                type = TYPE_BYTE_ARR;
+                type = BYTE_ARR;
             else if (cls == short[].class)
-                type = TYPE_SHORT_ARR;
+                type = SHORT_ARR;
             else if (cls == int[].class)
-                type = TYPE_INT_ARR;
+                type = INT_ARR;
             else if (cls == long[].class)
-                type = TYPE_LONG_ARR;
+                type = LONG_ARR;
             else if (cls == float[].class)
-                type = TYPE_FLOAT_ARR;
+                type = FLOAT_ARR;
             else if (cls == double[].class)
-                type = TYPE_DOUBLE_ARR;
+                type = DOUBLE_ARR;
             else if (cls == char[].class)
-                type = TYPE_CHAR_ARR;
+                type = CHAR_ARR;
             else if (cls == boolean[].class)
-                type = TYPE_BOOLEAN_ARR;
-            else if (cls.isArray()) {
-                type = TYPE_OBJ_ARR;
-
-                arrCompType = cls.getComponentType();
-            }
+                type = BOOLEAN_ARR;
+            else if (cls.isArray())
+                type = OBJ_ARR;
             else if (cls == String.class)
-                type = TYPE_STR;
+                type = STR;
             else if (cls.isEnum()) {
-                type = TYPE_ENUM;
+                type = ENUM;
 
                 isEnum = true;
                 enumVals = cls.getEnumConstants();
             }
             // Support for enum constants, based on anonymous children classes.
             else if ((parent = cls.getSuperclass()) != null && parent.isEnum()) {
-                type = TYPE_ENUM;
+                type = ENUM;
 
                 isEnum = true;
                 enumVals = parent.getEnumConstants();
             }
             else if (cls == UUID.class)
-                type = TYPE_UUID;
+                type = UUID;
             else if (cls == Properties.class) {
-                type = TYPE_PROPS;
+                type = PROPS;
 
                 try {
                     dfltsFieldOff = UNSAFE.objectFieldOffset(Properties.class.getDeclaredField("defaults"));
@@ -308,9 +223,9 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == ArrayList.class)
-                type = TYPE_ARRAY_LIST;
+                type = ARRAY_LIST;
             else if (cls == HashMap.class) {
-                type = TYPE_HASH_MAP;
+                type = HASH_MAP;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
@@ -320,20 +235,19 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == HashSet.class) {
-                type = TYPE_HASH_SET;
+                type = HASH_SET;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
-                    mapFieldOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
                 }
             }
             else if (cls == LinkedList.class)
-                type = TYPE_LINKED_LIST;
+                type = LINKED_LIST;
             else if (cls == LinkedHashMap.class) {
-                type = TYPE_LINKED_HASH_MAP;
+                type = LINKED_HASH_MAP;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
@@ -344,20 +258,19 @@ class OptimizedClassDescriptor {
                 }
             }
             else if (cls == LinkedHashSet.class) {
-                type = TYPE_LINKED_HASH_SET;
+                type = LINKED_HASH_SET;
 
                 try {
                     loadFactorFieldOff = UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
-                    mapFieldOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
                 }
             }
             else if (cls == Date.class)
-                type = TYPE_DATE;
+                type = DATE;
             else if (cls == Class.class) {
-                type = TYPE_CLS;
+                type = CLS;
 
                 isCls = true;
             }
@@ -403,10 +316,12 @@ class OptimizedClassDescriptor {
                 }
 
                 if (Externalizable.class.isAssignableFrom(cls)) {
-                    type = TYPE_EXTERNALIZABLE;
+                    type = EXTERNALIZABLE;
 
                     try {
-                        constructor = cls.getDeclaredConstructor();
+                        constructor = !Modifier.isStatic(cls.getModifiers()) && cls.getDeclaringClass() != null ?
+                            cls.getDeclaredConstructor(cls.getDeclaringClass()) :
+                            cls.getDeclaredConstructor();
 
                         constructor.setAccessible(true);
                     }
@@ -415,16 +330,13 @@ class OptimizedClassDescriptor {
                     }
                 }
                 else {
-                    type = TYPE_SERIALIZABLE;
+                    type = SERIALIZABLE;
 
                     isSerial = Serializable.class.isAssignableFrom(cls);
 
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
-                    List<List<Field>> fields = new ArrayList<>();
-                    List<List<T2<OptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
-                    List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
-                    List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
+                    List<ClassFields> fields = new ArrayList<>();
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -465,33 +377,14 @@ class OptimizedClassDescriptor {
 
                         Field[] clsFields0 = c.getDeclaredFields();
 
-                        Arrays.sort(clsFields0, new Comparator<Field>() {
-                            @Override public int compare(Field f1, Field f2) {
-                                return f1.getName().compareTo(f2.getName());
-                            }
-                        });
+                        Map<String, Field> fieldNames = new HashMap<>();
 
-                        List<Field> clsFields = new ArrayList<>(clsFields0.length);
-                        List<T2<OptimizedFieldType, Long>> clsFieldOffs =
-                            new ArrayList<>(clsFields0.length);
+                        for (Field f : clsFields0)
+                            fieldNames.put(f.getName(), f);
 
-                        for (int i = 0; i < clsFields0.length; i++) {
-                            Field f = clsFields0[i];
+                        List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
 
-                            int mod = f.getModifiers();
-
-                            if (!isStatic(mod) && !isTransient(mod)) {
-                                OptimizedFieldType type = fieldType(f.getType());
-
-                                clsFields.add(f);
-                                clsFieldOffs.add(new T2<>(type, UNSAFE.objectFieldOffset(f)));
-                            }
-                        }
-
-                        fields.add(clsFields);
-                        fieldOffs.add(clsFieldOffs);
-
-                        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap = null;
+                        boolean hasSerialPersistentFields  = false;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -500,16 +393,33 @@ class OptimizedClassDescriptor {
 
                             if (serFieldsDesc.getType() == ObjectStreamField[].class &&
                                 isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
+                                hasSerialPersistentFields = true;
+
                                 serFieldsDesc.setAccessible(true);
 
-                                ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
-
-                                fieldInfoMap = new HashMap<>();
+                                ObjectStreamField[] serFields = (ObjectStreamField[]) serFieldsDesc.get(null);
 
                                 for (int i = 0; i < serFields.length; i++) {
                                     ObjectStreamField serField = serFields[i];
 
-                                    fieldInfoMap.put(serField.getName(), F.t(i, fieldType(serField.getType())));
+                                    FieldInfo fieldInfo;
+
+                                    if (!fieldNames.containsKey(serField.getName())) {
+                                        fieldInfo = new FieldInfo(null,
+                                            serField.getName(),
+                                            -1,
+                                            fieldType(serField.getType()));
+                                    }
+                                    else {
+                                        Field f = fieldNames.get(serField.getName());
+
+                                        fieldInfo = new FieldInfo(f,
+                                            serField.getName(),
+                                            UNSAFE.objectFieldOffset(f),
+                                            fieldType(serField.getType()));
+                                    }
+
+                                    clsFields.add(fieldInfo);
                                 }
                             }
                         }
@@ -521,44 +431,40 @@ class OptimizedClassDescriptor {
                                 cls.getName(), e);
                         }
 
-                        if (fieldInfoMap == null) {
-                            fieldInfoMap = new HashMap<>();
+                        if (!hasSerialPersistentFields) {
+                            for (int i = 0; i < clsFields0.length; i++) {
+                                Field f = clsFields0[i];
 
-                            for (int i = 0; i < clsFields.size(); i++) {
-                                Field f = clsFields.get(i);
+                                int mod = f.getModifiers();
 
-                                fieldInfoMap.put(f.getName(), F.t(i, fieldType(f.getType())));
+                                if (!isStatic(mod) && !isTransient(mod)) {
+                                    FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
+                                        UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
+
+                                    clsFields.add(fieldInfo);
+                                }
                             }
                         }
 
-                        fieldInfoMaps.add(fieldInfoMap);
-
-                        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList =
-                            new ArrayList<>(fieldInfoMap.values());
-
-                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, OptimizedFieldType>>() {
-                            @Override public int compare(IgniteBiTuple<Integer, OptimizedFieldType> t1,
-                                IgniteBiTuple<Integer, OptimizedFieldType> t2) {
-                                return t1.get1().compareTo(t2.get1());
+                        Collections.sort(clsFields, new Comparator<FieldInfo>() {
+                            @Override public int compare(FieldInfo t1, FieldInfo t2) {
+                                return t1.name().compareTo(t2.name());
                             }
                         });
 
-                        fieldInfoLists.add(fieldInfoList);
+                        fields.add(new ClassFields(clsFields));
                     }
 
                     Collections.reverse(writeObjMtds);
                     Collections.reverse(readObjMtds);
                     Collections.reverse(fields);
-                    Collections.reverse(fieldOffs);
-                    Collections.reverse(fieldInfoMaps);
-                    Collections.reverse(fieldInfoLists);
 
-                    this.fields = new Fields(fields, fieldOffs, fieldInfoLists, fieldInfoMaps);
+                    this.fields = new Fields(fields);
                 }
             }
         }
 
-        shortId = OptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
+        checksum = computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null);
     }
 
     /**
@@ -573,41 +479,6 @@ class OptimizedClassDescriptor {
      */
     Class<?> describedClass() {
         return cls;
-    }
-
-    /**
-     * @return Header.
-     */
-    Integer header() {
-        return hdr;
-    }
-
-    /**
-     * @return ID.
-     */
-    Integer id() {
-        return id;
-    }
-
-    /**
-     * @return Short ID.
-     */
-    Short shortId() {
-        return shortId;
-    }
-
-    /**
-     * @return Class name.
-     */
-    String name() {
-        return name;
-    }
-
-    /**
-     * @return Array component type.
-     */
-    Class<?> componentType() {
-        return arrCompType;
     }
 
     /**
@@ -660,163 +531,182 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
+        out.write(type);
+
         switch (type) {
-            case TYPE_BYTE:
+            case BYTE:
                 out.writeByte((Byte)obj);
 
                 break;
 
-            case TYPE_SHORT:
+            case SHORT:
                 out.writeShort((Short)obj);
 
                 break;
 
-            case TYPE_INT:
+            case INT:
                 out.writeInt((Integer)obj);
 
                 break;
 
-            case TYPE_LONG:
+            case LONG:
                 out.writeLong((Long)obj);
 
                 break;
 
-            case TYPE_FLOAT:
+            case FLOAT:
                 out.writeFloat((Float)obj);
 
                 break;
 
-            case TYPE_DOUBLE:
+            case DOUBLE:
                 out.writeDouble((Double)obj);
 
                 break;
 
-            case TYPE_CHAR:
+            case CHAR:
                 out.writeChar((Character)obj);
 
                 break;
 
-            case TYPE_BOOLEAN:
+            case BOOLEAN:
                 out.writeBoolean((Boolean)obj);
 
                 break;
 
-            case TYPE_BYTE_ARR:
+            case BYTE_ARR:
                 out.writeByteArray((byte[])obj);
 
                 break;
 
-            case TYPE_SHORT_ARR:
+            case SHORT_ARR:
                 out.writeShortArray((short[])obj);
 
                 break;
 
-            case TYPE_INT_ARR:
+            case INT_ARR:
                 out.writeIntArray((int[])obj);
 
                 break;
 
-            case TYPE_LONG_ARR:
+            case LONG_ARR:
                 out.writeLongArray((long[])obj);
 
                 break;
 
-            case TYPE_FLOAT_ARR:
+            case FLOAT_ARR:
                 out.writeFloatArray((float[])obj);
 
                 break;
 
-            case TYPE_DOUBLE_ARR:
+            case DOUBLE_ARR:
                 out.writeDoubleArray((double[])obj);
 
                 break;
 
-            case TYPE_CHAR_ARR:
+            case CHAR_ARR:
                 out.writeCharArray((char[])obj);
 
                 break;
 
-            case TYPE_BOOLEAN_ARR:
+            case BOOLEAN_ARR:
                 out.writeBooleanArray((boolean[])obj);
 
                 break;
 
-            case TYPE_OBJ_ARR:
+            case OBJ_ARR:
+                OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
+                    obj.getClass().getComponentType(),
+                    ctx,
+                    mapper);
+
+                compDesc.writeTypeData(out);
+
                 out.writeArray((Object[])obj);
 
                 break;
 
-            case TYPE_STR:
+            case STR:
                 out.writeString((String)obj);
 
                 break;
 
-            case TYPE_ENUM:
-                out.writeInt(((Enum)obj).ordinal());
-
-                break;
-
-            case TYPE_UUID:
+            case UUID:
                 out.writeUuid((UUID)obj);
 
                 break;
 
-            case TYPE_PROPS:
+            case PROPS:
                 out.writeProperties((Properties)obj, dfltsFieldOff);
 
                 break;
 
-            case TYPE_ARRAY_LIST:
+            case ARRAY_LIST:
                 out.writeArrayList((ArrayList<?>)obj);
 
                 break;
 
-            case TYPE_HASH_MAP:
+            case HASH_MAP:
                 out.writeHashMap((HashMap<?, ?>)obj, loadFactorFieldOff, false);
 
                 break;
 
-            case TYPE_HASH_SET:
-                out.writeHashSet((HashSet<?>)obj, mapFieldOff, loadFactorFieldOff);
+            case HASH_SET:
+                out.writeHashSet((HashSet<?>)obj, HASH_SET_MAP_OFF, loadFactorFieldOff);
 
                 break;
 
-            case TYPE_LINKED_LIST:
+            case LINKED_LIST:
                 out.writeLinkedList((LinkedList<?>)obj);
 
                 break;
 
-            case TYPE_LINKED_HASH_MAP:
+            case LINKED_HASH_MAP:
                 out.writeLinkedHashMap((LinkedHashMap<?, ?>)obj, loadFactorFieldOff, accessOrderFieldOff, false);
 
                 break;
 
-            case TYPE_LINKED_HASH_SET:
-                out.writeLinkedHashSet((LinkedHashSet<?>)obj, mapFieldOff, loadFactorFieldOff);
+            case LINKED_HASH_SET:
+                out.writeLinkedHashSet((LinkedHashSet<?>)obj, HASH_SET_MAP_OFF, loadFactorFieldOff);
 
                 break;
 
-            case TYPE_DATE:
+            case DATE:
                 out.writeDate((Date)obj);
 
                 break;
 
-            case TYPE_CLS:
-                OptimizedClassResolver.writeClass(out, OptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
+            case CLS:
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+
+                clsDesc.writeTypeData(out);
 
                 break;
 
-            case TYPE_EXTERNALIZABLE:
+            case ENUM:
+                writeTypeData(out);
+
+                out.writeInt(((Enum)obj).ordinal());
+
+                break;
+
+            case EXTERNALIZABLE:
+                writeTypeData(out);
+
+                out.writeShort(checksum);
                 out.writeExternalizable(obj);
 
                 break;
 
-            case TYPE_SERIALIZABLE:
+            case SERIALIZABLE:
                 if (out.requireSerializable() && !isSerial)
                     throw new NotSerializableException("Must implement java.io.Serializable or " +
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
+                writeTypeData(out);
+
+                out.writeShort(checksum);
                 out.writeSerializable(obj, writeObjMtds, fields);
 
                 break;
@@ -824,6 +714,17 @@ class OptimizedClassDescriptor {
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
         }
+    }
+
+    /**
+     * @param out Output stream.
+     * @throws IOException In case of error.
+     */
+    void writeTypeData(OptimizedObjectOutputStream out) throws IOException {
+        out.writeInt(typeId);
+
+        if (typeId == 0)
+            out.writeUTF(name);
     }
 
     /**
@@ -836,102 +737,36 @@ class OptimizedClassDescriptor {
      */
     Object read(OptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
         switch (type) {
-            case TYPE_BYTE:
-                return in.readByte();
-
-            case TYPE_SHORT:
-                return in.readShort();
-
-            case TYPE_INT:
-                return in.readInt();
-
-            case TYPE_LONG:
-                return in.readLong();
-
-            case TYPE_FLOAT:
-                return in.readFloat();
-
-            case TYPE_DOUBLE:
-                return in.readDouble();
-
-            case TYPE_CHAR:
-                return in.readChar();
-
-            case TYPE_BOOLEAN:
-                return in.readBoolean();
-
-            case TYPE_BYTE_ARR:
-                return in.readByteArray();
-
-            case TYPE_SHORT_ARR:
-                return in.readShortArray();
-
-            case TYPE_INT_ARR:
-                return in.readIntArray();
-
-            case TYPE_LONG_ARR:
-                return in.readLongArray();
-
-            case TYPE_FLOAT_ARR:
-                return in.readFloatArray();
-
-            case TYPE_DOUBLE_ARR:
-                return in.readDoubleArray();
-
-            case TYPE_CHAR_ARR:
-                return in.readCharArray();
-
-            case TYPE_BOOLEAN_ARR:
-                return in.readBooleanArray();
-
-            case TYPE_OBJ_ARR:
-                return in.readArray(arrCompType);
-
-            case TYPE_STR:
-                return in.readString();
-
-            case TYPE_ENUM:
+            case ENUM:
                 return enumVals[in.readInt()];
 
-            case TYPE_UUID:
-                return in.readUuid();
+            case EXTERNALIZABLE:
+                verifyChecksum(in.readShort());
 
-            case TYPE_PROPS:
-                return in.readProperties();
-
-            case TYPE_ARRAY_LIST:
-                return in.readArrayList();
-
-            case TYPE_HASH_MAP:
-                return in.readHashMap(false);
-
-            case TYPE_HASH_SET:
-                return in.readHashSet(mapFieldOff);
-
-            case TYPE_LINKED_LIST:
-                return in.readLinkedList();
-
-            case TYPE_LINKED_HASH_MAP:
-                return in.readLinkedHashMap(false);
-
-            case TYPE_LINKED_HASH_SET:
-                return in.readLinkedHashSet(mapFieldOff);
-
-            case TYPE_DATE:
-                return in.readDate();
-
-            case TYPE_CLS:
-                return OptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
-
-            case TYPE_EXTERNALIZABLE:
                 return in.readExternalizable(constructor, readResolveMtd);
 
-            case TYPE_SERIALIZABLE:
+            case SERIALIZABLE:
+                verifyChecksum(in.readShort());
+
                 return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
-                throw new IllegalStateException("Invalid class type: " + type);
+                assert false : "Unexpected type: " + type;
+
+                return null;
         }
+    }
+
+    /**
+     * @param checksum Checksum.
+     * @throws ClassNotFoundException If checksum is wrong.
+     * @throws IOException In case of error.
+     */
+    private void verifyChecksum(short checksum) throws ClassNotFoundException, IOException {
+        if (checksum != this.checksum)
+            throw new ClassNotFoundException("Optimized stream class checksum mismatch " +
+                "(is same version of marshalled class present on all nodes?) " +
+                "[expected=" + this.checksum + ", actual=" + checksum + ", cls=" + cls + ']');
     }
 
     /**
@@ -965,37 +800,147 @@ class OptimizedClassDescriptor {
     }
 
     /**
+     * Information about one field.
+     */
+    @SuppressWarnings("PackageVisibleInnerClass")
+    static class FieldInfo {
+        /** Field. */
+        private final Field field;
+
+        /** Field offset. */
+        private final long fieldOffs;
+
+        /** Field type. */
+        private final OptimizedFieldType fieldType;
+
+        /** Field name. */
+        private final String fieldName;
+
+        /**
+         * @param field Field.
+         * @param name Field name.
+         * @param offset Field offset.
+         * @param type Grid optimized field type.
+         */
+        FieldInfo(Field field, String name, long offset, OptimizedFieldType type) {
+            this.field = field;
+            fieldOffs = offset;
+            fieldType = type;
+            fieldName = name;
+        }
+
+        /**
+         * @return Returns field.
+         */
+        Field field() {
+            return field;
+        }
+
+        /**
+         * @return Offset.
+         */
+        long offset() {
+            return fieldOffs;
+        }
+
+        /**
+         * @return Type.
+         */
+        OptimizedFieldType type() {
+            return fieldType;
+        }
+
+        /**
+         * @return Name.
+         */
+        String name() {
+            return fieldName;
+        }
+    }
+
+    /**
+     * Information about one class.
+     */
+    static class ClassFields {
+        /** Fields. */
+        private final List<FieldInfo> fields;
+
+        private final Map<String, Integer> nameToIndex;
+
+        /**
+         * @param fields Field infos.
+         */
+        ClassFields(List<FieldInfo> fields) {
+            this.fields = fields;
+
+            nameToIndex = U.newHashMap(fields.size());
+
+            for (int i = 0; i < fields.size(); ++i)
+                nameToIndex.put(fields.get(i).name(), i);
+        }
+
+        /**
+         * @return Class fields.
+         */
+        List<FieldInfo> fields() {
+            return fields;
+        }
+
+        /**
+         * @return Fields count.
+         */
+        int size() {
+            return fields.size();
+        }
+
+        /**
+         * @param i Field's index.
+         * @return FieldInfo.
+         */
+        FieldInfo get(int i) {
+            return fields.get(i);
+        }
+
+        /**
+         * @param name Field's name.
+         * @return Field's index.
+         */
+        int getIndex(String name) {
+            assert nameToIndex.containsKey(name);
+
+            return nameToIndex.get(name);
+        }
+    }
+
+    /**
      * Encapsulates data about class fields.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
     static class Fields {
         /** Fields. */
-        private final List<List<Field>> fields;
+        private final List<ClassFields> fields;
 
-        /** Fields offsets. */
-        private final List<List<T2<OptimizedFieldType, Long>>> fieldOffs;
-
-        /** Fields details lists. */
-        private final List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists;
-
-        /** Fields details maps. */
-        private final List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps;
+        /** Own fields (excluding inherited). */
+        private final List<Field> ownFields;
 
         /**
          * Creates new instance.
          *
          * @param fields Fields.
-         * @param fieldOffs Field offsets.
-         * @param fieldInfoLists List of field details sequences for each type in the object's class hierarchy.
-         * @param fieldInfoMaps List of field details maps for each type in the object's class hierarchy.
          */
-        Fields(List<List<Field>> fields, List<List<T2<OptimizedFieldType, Long>>> fieldOffs,
-            List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists,
-            List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps) {
+        Fields(List<ClassFields> fields) {
             this.fields = fields;
-            this.fieldOffs = fieldOffs;
-            this.fieldInfoLists = fieldInfoLists;
-            this.fieldInfoMaps = fieldInfoMaps;
+
+            if (fields.isEmpty())
+                ownFields = null;
+            else {
+                ownFields = new ArrayList<>(fields.size());
+
+                for (FieldInfo f : fields.get(fields.size() - 1).fields()) {
+                    if (f.field() != null)
+                        ownFields.add(f.field);
+                }
+            }
         }
 
         /**
@@ -1004,7 +949,7 @@ class OptimizedClassDescriptor {
          * @return List of fields or {@code null} if fields list is empty.
          */
         List<Field> ownFields() {
-            return fields.isEmpty() ? null : fields.get(fields.size() - 1);
+            return ownFields;
         }
 
         /**
@@ -1013,28 +958,8 @@ class OptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs where first value is field type and second value is its offset.
          */
-        List<T2<OptimizedFieldType, Long>> fieldOffs(int i) {
-            return fieldOffs.get(i);
-        }
-
-        /**
-         * Returns field sequence numbers and their types as list.
-         *
-         * @param i hierarchy level where 0 corresponds to top level.
-         * @return list of pairs (field number, field type) for the given hierarchy level.
-         */
-        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList(int i) {
-            return fieldInfoLists.get(i);
-        }
-
-        /**
-         * Returns field sequence numbers and their types as map where key is a field name,
-         *
-         * @param i hierarchy level where 0 corresponds to top level.
-         * @return map of field names and their details.
-         */
-        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap(int i) {
-            return fieldInfoMaps.get(i);
+        ClassFields fields(int i) {
+            return fields.get(i);
         }
     }
 }

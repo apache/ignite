@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -37,19 +37,14 @@ import java.util.*;
 /**
  * DHT lock request.
  */
-public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
+public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Near keys. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private List<K> nearKeys;
-
     /** Near keys to lock. */
-    @GridToStringExclude
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearKeyBytes;
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> nearKeys;
 
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
@@ -58,7 +53,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     private IgniteUuid miniId;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Subject ID. */
     private UUID subjId;
@@ -108,7 +103,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion lockVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
         boolean isRead,
         TransactionIsolation isolation,
@@ -137,8 +132,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         this.topVer = topVer;
 
-        nearKeyBytes = nearCnt == 0 ? Collections.<byte[]>emptyList() : new ArrayList<byte[]>(nearCnt);
-        nearKeys = nearCnt == 0 ? Collections.<K>emptyList() : new ArrayList<K>(nearCnt);
+        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
 
         assert miniId != null;
@@ -178,60 +172,45 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @return Near keys.
-     */
-    public List<byte[]> nearKeyBytes() {
-        return nearKeyBytes == null ? Collections.<byte[]>emptyList() : nearKeyBytes;
     }
 
     /**
      * Adds a Near key.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        if (ctx.deploymentEnabled())
-            prepareObject(key, ctx);
-
+    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
+        throws IgniteCheckedException {
         nearKeys.add(key);
-
-        if (keyBytes != null)
-            nearKeyBytes.add(keyBytes);
     }
 
     /**
      * @return Near keys.
      */
-    public List<K> nearKeys() {
-        return nearKeys == null ? Collections.<K>emptyList() : nearKeys;
+    public List<KeyCacheObject> nearKeys() {
+        return nearKeys == null ? Collections.<KeyCacheObject>emptyList() : nearKeys;
     }
 
     /**
      * Adds a DHT key.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addDhtKey(
-        K key,
-        byte[] keyBytes,
+        KeyCacheObject key,
         boolean invalidateEntry,
-        GridCacheContext<K, V> ctx
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, keyBytes, false, null, ctx);
+        addKeyBytes(key, false, null, ctx);
     }
 
     /**
@@ -278,18 +257,17 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        assert F.isEmpty(nearKeys) || !F.isEmpty(nearKeyBytes);
+        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (nearKeys == null && nearKeyBytes != null)
-            nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -325,8 +303,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 writer.incrementState();
 
-            case 21:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, MessageCollectionItemType.BYTE_ARR))
+            case 25:
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -349,8 +327,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 writer.incrementState();
 
-            case 25:
-                if (!writer.writeLong("topVer", topVer))
+            case 30:
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -395,8 +373,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 reader.incrementState();
 
-            case 21:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", MessageCollectionItemType.BYTE_ARR);
+            case 25:
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -427,8 +405,8 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 reader.incrementState();
 
-            case 25:
-                topVer = reader.readLong("topVer");
+            case 30:
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -452,7 +430,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtLockRequest.class, this, "nearKeyBytesSize", nearKeyBytes.size(),
-            "super", super.toString());
+        return S.toString(GridDhtLockRequest.class, this, "super", super.toString());
     }
 }

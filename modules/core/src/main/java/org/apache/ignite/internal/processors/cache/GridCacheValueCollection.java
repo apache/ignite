@@ -118,9 +118,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K, V>cacheEntry2Key(), filter), CU.<K, V>empty());
-
-        map.clear();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -135,7 +133,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
             if (F.isAll(e, filter) && F.eq(o, e.getValue())) {
                 it.remove();
 
-                ctx.grid().jcache(ctx.name()).remove(e.getKey(), e.getValue());
+                ctx.grid().cache(ctx.name()).remove(e.getKey(), e.getValue());
 
                 rmv = true;
             }

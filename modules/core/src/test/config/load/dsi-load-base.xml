@@ -32,22 +32,6 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="classNames">
-                    <list>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiSession</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiPerfJob</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiRequestTask</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiResponseTask</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiRequest</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiResponse</value>
-                        <value>org.apache.ignite.loadtests.dsi.GridDsiMessage</value>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

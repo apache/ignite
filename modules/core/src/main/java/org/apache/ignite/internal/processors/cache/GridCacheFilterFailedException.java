@@ -27,7 +27,7 @@ public class GridCacheFilterFailedException extends Exception {
     private static final long serialVersionUID = 0L;
 
     /** Value for which filter failed. */
-    private final Object val;
+    private final CacheObject val;
 
     /**
      * Empty constructor.
@@ -39,7 +39,7 @@ public class GridCacheFilterFailedException extends Exception {
     /**
      * @param val Value for which filter failed.
      */
-    public GridCacheFilterFailedException(Object val) {
+    public GridCacheFilterFailedException(CacheObject val) {
         this.val = val;
     }
 
@@ -47,8 +47,8 @@ public class GridCacheFilterFailedException extends Exception {
      * @return Value for failed filter.
      */
     @SuppressWarnings({"unchecked"})
-    public <V> V value() {
-        return (V)val;
+    public CacheObject value() {
+        return val;
     }
 
     /** {@inheritDoc} */

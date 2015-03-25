@@ -19,7 +19,7 @@ package org.apache.ignite.loadtests.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -68,13 +68,12 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setStartSize(200);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictionPolicy(new CacheLruEvictionPolicy<>(1000));
+        cc.setEvictionPolicy(new LruEvictionPolicy<>(1000));
         cc.setBackups(1);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(true));
+        cc.setAffinity(new RendezvousAffinityFunction(true));
         cc.setEvictSynchronized(true);
-        cc.setEvictNearSynchronized(true);
 
         c.setCacheConfiguration(cc);
 
@@ -109,7 +108,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         @Override public Boolean call() throws Exception {
             Ignite ignite = grid();
 
-            IgniteCache cache = ignite.jcache(null);
+            IgniteCache cache = ignite.cache(null);
 
             assert cache != null;
 

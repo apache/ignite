@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -36,9 +35,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -72,17 +70,20 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictNearSynchronized(true);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setBackups(1);
 
         // Set eviction queue size explicitly.
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setEvictMaxOverflowRatio(0);
-        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10));
-        cacheCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10));
+        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(10));
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10));
+
+        cfg.setNearCacheConfiguration(nearCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -138,14 +139,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @param node Node.
-     * @return Grid for the given node.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
-    }
-
-    /**
      * @param g Grid.
      * @return Near cache.
      */
@@ -164,21 +157,11 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @param idx Index.
-     * @return Affinity.
-     */
-    private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
-    }
-
-    /**
      * @param key Key.
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheConsistentHashAffinityFunction aff = affinity(0);
-
-        return aff.nodes(aff.partition(key), grid(0).cluster().nodes(), 1);
+        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
@@ -247,13 +230,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // Put on primary node.
         nearPrimary.put(key, val);
 
-        GridDhtCacheEntry<Integer, String> entryPrimary = dhtPrimary.peekExx(key);
-        GridDhtCacheEntry<Integer, String> entryBackup = dhtBackup.peekExx(key);
+        GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
+        GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
 
         assert entryPrimary != null;
         assert entryBackup != null;
-        assert nearOther.peekExx(key) == null;
-        assert dhtOther.peekExx(key) == null;
+        assert nearOther.peekEx(key) == null;
+        assert dhtOther.peekEx(key) == null;
 
         IgniteFuture<Event> futOther =
             waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
@@ -267,8 +250,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // Get value on other node, it should be loaded to near cache.
         assertEquals(val, nearOther.get(key, true));
 
-        entryPrimary = dhtPrimary.peekExx(key);
-        entryBackup = dhtBackup.peekExx(key);
+        entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
+        entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
 
         assert entryPrimary != null;
         assert entryBackup != null;
@@ -279,7 +262,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         // Evict on primary node.
         // It will trigger dht eviction and eviction on backup node.
-        grid(primary).jcache(null).localEvict(Collections.<Object>singleton(key));
+        grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
 
         futOther.get(3000);
         futBackup.get(3000);

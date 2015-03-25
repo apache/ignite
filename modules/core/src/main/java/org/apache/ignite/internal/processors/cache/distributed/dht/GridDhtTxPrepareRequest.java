@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -37,7 +38,7 @@ import java.util.*;
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,27 +52,28 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     private IgniteUuid miniId;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Invalidate near entries flags. */
     private BitSet invalidateNearEntries;
 
     /** Near writes. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> nearWrites;
-
-    /** Serialized near writes. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearWritesBytes;
+    @GridDirectCollection(IgniteTxEntry.class)
+    private Collection<IgniteTxEntry> nearWrites;
 
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey<K>, GridCacheVersion> owned;
+    private Map<IgniteTxKey, GridCacheVersion> owned;
 
-    /** Owned versions bytes. */
-    private byte[] ownedBytes;
+    /** Owned keys. */
+    @GridDirectCollection(IgniteTxKey.class)
+    private Collection<IgniteTxKey> ownedKeys;
+
+    /** Owned values. */
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> ownedVals;
 
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
@@ -110,10 +112,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
         IgniteUuid miniId,
-        long topVer,
-        GridDhtTxLocalAdapter<K, V> tx,
-        Collection<IgniteTxEntry<K, V>> dhtWrites,
-        Collection<IgniteTxEntry<K, V>> nearWrites,
+        AffinityTopologyVersion topVer,
+        GridDhtTxLocalAdapter tx,
+        Collection<IgniteTxEntry> dhtWrites,
+        Collection<IgniteTxEntry> nearWrites,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
         boolean last,
@@ -182,8 +184,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Near writes.
      */
-    public Collection<IgniteTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
+    public Collection<IgniteTxEntry> nearWrites() {
+        return nearWrites == null ? Collections.<IgniteTxEntry>emptyList() : nearWrites;
     }
 
     /**
@@ -239,7 +241,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -249,7 +251,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(IgniteTxKey<K> key, GridCacheVersion ownerMapped) {
+    public void owned(IgniteTxKey key, GridCacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -259,49 +261,56 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Owned versions map.
      */
-    public Map<IgniteTxKey<K>, GridCacheVersion> owned() {
+    public Map<IgniteTxKey, GridCacheVersion> owned() {
         return owned;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (ownedBytes == null && owned != null) {
-            ownedBytes = CU.marshal(ctx, owned);
+        if (owned != null) {
+            ownedKeys = owned.keySet();
+
+            ownedVals = owned.values();
+
+            for (IgniteTxKey key: ownedKeys)
+                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
 
             if (ctx.deploymentEnabled()) {
-                for (IgniteTxKey<K> k : owned.keySet())
+                for (IgniteTxKey k : owned.keySet())
                     prepareObject(k, ctx);
             }
         }
 
-        if (nearWrites != null) {
+        if (nearWrites != null)
             marshalTx(nearWrites, ctx);
-
-            nearWritesBytes = new ArrayList<>(nearWrites.size());
-
-            for (IgniteTxEntry<K, V> e : nearWrites)
-                nearWritesBytes.add(ctx.marshaller().marshal(e));
-        }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (ownedBytes != null && owned == null)
-            owned = ctx.marshaller().unmarshal(ownedBytes, ldr);
+        if (ownedKeys != null) {
+            assert ownedKeys.size() == ownedVals.size();
 
-        if (nearWritesBytes != null) {
-            nearWrites = new ArrayList<>(nearWritesBytes.size());
+            owned = U.newHashMap(ownedKeys.size());
 
-            for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
+            Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
 
-            unmarshalTx(nearWrites, true, ctx, ldr);
+            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
+
+            while (keyIter.hasNext()) {
+                IgniteTxKey key = keyIter.next();
+
+                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
+
+                owned.put(key, valIter.next());
+            }
         }
+
+        unmarshalTx(nearWrites, true, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -324,74 +333,80 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         }
 
         switch (writer.state()) {
-            case 19:
+            case 25:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 26:
                 if (!writer.writeBitSet("invalidateNearEntries", invalidateNearEntries))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 27:
                 if (!writer.writeBoolean("last", last))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 28:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 29:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
-                if (!writer.writeCollection("nearWritesBytes", nearWritesBytes, MessageCollectionItemType.BYTE_ARR))
+            case 30:
+                if (!writer.writeCollection("nearWrites", nearWrites, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 31:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
-                if (!writer.writeByteArray("ownedBytes", ownedBytes))
+            case 32:
+                if (!writer.writeCollection("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 33:
+                if (!writer.writeCollection("ownedVals", ownedVals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 34:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 35:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 36:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
-                if (!writer.writeLong("topVer", topVer))
+            case 37:
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -412,7 +427,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             return false;
 
         switch (reader.state()) {
-            case 19:
+            case 25:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -420,7 +435,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 20:
+            case 26:
                 invalidateNearEntries = reader.readBitSet("invalidateNearEntries");
 
                 if (!reader.isLastRead())
@@ -428,7 +443,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 21:
+            case 27:
                 last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
@@ -436,7 +451,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 22:
+            case 28:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -444,7 +459,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 23:
+            case 29:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -452,15 +467,15 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 24:
-                nearWritesBytes = reader.readCollection("nearWritesBytes", MessageCollectionItemType.BYTE_ARR);
+            case 30:
+                nearWrites = reader.readCollection("nearWrites", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 25:
+            case 31:
                 nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
@@ -468,15 +483,23 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 26:
-                ownedBytes = reader.readByteArray("ownedBytes");
+            case 32:
+                ownedKeys = reader.readCollection("ownedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 27:
+            case 33:
+                ownedVals = reader.readCollection("ownedVals", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 34:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
@@ -484,7 +507,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 28:
+            case 35:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -492,7 +515,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 29:
+            case 36:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -500,8 +523,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 reader.incrementState();
 
-            case 30:
-                topVer = reader.readLong("topVer");
+            case 37:
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -31,19 +31,20 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -242,11 +242,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridSegmentationProcessor segmentation();
 
     /**
-     * Gets data loader processor.
+     * Gets data streamer processor.
      *
-     * @return Data loader processor.
+     * @return Data streamer processor.
      */
-    public <K, V> GridDataLoaderProcessor<K, V> dataLoad();
+    public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
      * Gets file system processor.
@@ -263,13 +263,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public IgfsHelper igfsHelper();
 
     /**
-     * Gets stream processor.
-     *
-     * @return Stream processor.
-     */
-    public GridStreamProcessor stream();
-
-    /**
      * Gets event continuous processor.
      *
      * @return Event continuous processor.
@@ -281,21 +274,28 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Hadoop processor.
      */
-    public IgniteHadoopProcessorAdapter hadoop();
+    public HadoopProcessorAdapter hadoop();
 
     /**
      * Gets utility cache pool.
      *
-     * @return DR pool.
+     * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
 
     /**
-     * Gets portable processor.
+     * Gets marshaller cache pool.
      *
-     * @return Portable processor.
+     * @return Marshaller cache pool.
      */
-    public GridPortableProcessor portable();
+    public ExecutorService marshallerCachePool();
+
+    /**
+     * Gets cache object processor.
+     *
+     * @return Cache object processor.
+     */
+    public IgniteCacheObjectProcessor cacheObjects();
 
     /**
      * Gets query processor.
@@ -508,4 +508,48 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Exception registry.
      */
     public IgniteExceptionRegistry exceptionRegistry();
+
+    /**
+     * Get node attribute by name.
+     *
+     * @param key Attribute name.
+     * @return Attribute value.
+     */
+    public Object nodeAttribute(String key);
+
+    /**
+     * Check if node has specified attribute.
+     *
+     * @param key Attribute name.
+     * @return {@code true} If node has attribute with specified name.
+     */
+    public boolean hasNodeAttribute(String key);
+
+    /**
+     * Add attribute to node attributes.
+     *
+     * @param key Attribute name.
+     * @param val Attribute value.
+     * @return Previous attribute value associated with attribute name.
+     */
+    public Object addNodeAttribute(String key, Object val);
+
+    /**
+     * @return Node attributes.
+     */
+    public Map<String, Object> nodeAttributes();
+
+    /**
+     * Gets Cluster processor.
+     *
+     * @return Cluster processor.
+     */
+    public ClusterProcessor cluster();
+
+    /**
+     * Gets marshaller context.
+     *
+     * @return Marshaller context.
+     */
+    public MarshallerContextImpl marshallerContext();
 }

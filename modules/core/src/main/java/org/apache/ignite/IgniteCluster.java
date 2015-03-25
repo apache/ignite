@@ -28,10 +28,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@code GridCluster} also provides a handle on {@link #nodeLocalMap()} which provides map-like functionality
- * linked to current grid node. Node-local map is useful for saving shared state between job executions
- * on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to caching nodes,
- * and get other useful information about topology.
+ * Represents whole cluster (all available nodes) and also provides a handle on {@link #nodeLocalMap()} which
+ * provides map-like functionality linked to current grid node. Node-local map is useful for saving shared state
+ * between job executions on the grid. Additionally you can also ping, start, and restart remote nodes, map keys to
+ * caching nodes, and get other useful information about topology.
  */
 public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
@@ -110,7 +110,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link CacheAffinityFunction} is
+     *      For fully replicated caches, {@link AffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -133,7 +133,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link CacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>

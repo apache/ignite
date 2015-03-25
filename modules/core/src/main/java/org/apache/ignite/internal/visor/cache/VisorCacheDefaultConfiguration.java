@@ -45,9 +45,8 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     public static VisorCacheDefaultConfiguration from(CacheConfiguration ccfg) {
         VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();
 
-        cfg.timeToLive(ccfg.getDefaultTimeToLive());
-        cfg.txLockTimeout(ccfg.getDefaultLockTimeout());
-        cfg.queryTimeout(ccfg.getDefaultQueryTimeout());
+        cfg.ttl = ccfg.getDefaultTimeToLive();
+        cfg.txLockTimeout = ccfg.getDefaultLockTimeout();
 
         return cfg;
     }
@@ -60,13 +59,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     }
 
     /**
-     * @param ttl New tTL value.
-     */
-    public void timeToLive(long ttl) {
-        this.ttl = ttl;
-    }
-
-    /**
      * @return Default transaction timeout.
      */
     public long txLockTimeout() {
@@ -74,24 +66,10 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     }
 
     /**
-     * @param txLockTimeout New default transaction timeout.
-     */
-    public void txLockTimeout(long txLockTimeout) {
-        this.txLockTimeout = txLockTimeout;
-    }
-
-    /**
      * @return Default query timeout.
      */
     public long queryTimeout() {
         return qryTimeout;
-    }
-
-    /**
-     * @param qryTimeout New default query timeout.
-     */
-    public void queryTimeout(long qryTimeout) {
-        this.qryTimeout = qryTimeout;
     }
 
     /** {@inheritDoc} */

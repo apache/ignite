@@ -32,9 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -75,9 +74,9 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(getCacheMode());
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         if (getCacheMode() == PARTITIONED)
             cacheCfg.setBackups(1);
@@ -96,7 +95,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        IgniteCache<Integer, String> cache = g1.jcache(null);
+        IgniteCache<Integer, String> cache = g1.cache(null);
 
         cache.put(1, "val1");
         cache.put(2, "val2");
@@ -104,7 +103,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         Ignite g2 = startGrid("g2");
 
-        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, U.toIntList(new int[]{1, 2, 3}));
     }
@@ -119,8 +118,8 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         for (Event evt : evts) {
             CacheEvent cacheEvt = (CacheEvent)evt;
-            assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
-            assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
+            assertEquals(EVT_CACHE_REBALANCE_OBJECT_LOADED, cacheEvt.type());
+            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());

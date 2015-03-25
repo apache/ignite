@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.commons.codec.binary.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -74,9 +73,6 @@ public class GridLuceneIndex implements Closeable {
     private final boolean storeVal;
 
     /** */
-    private final BitSet keyFields = new BitSet();
-
-    /** */
     private final AtomicLong updateCntr = new GridAtomicLong();
 
     /** */
@@ -130,9 +126,6 @@ public class GridLuceneIndex implements Closeable {
             idxdFields = new String[fields.size() + 1];
 
             fields.toArray(idxdFields);
-
-            for (int i = 0, len = fields.size() ; i < len; i++)
-                keyFields.set(i, type.keyFields().containsKey(idxdFields[i]));
         }
         else {
             assert type.valueTextIndex() || type.valueClass() == String.class;
@@ -164,7 +157,7 @@ public class GridLuceneIndex implements Closeable {
         }
 
         for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
-            Object fieldVal = type.value(keyFields.get(i) ? key : val, idxdFields[i]);
+            Object fieldVal = type.value(idxdFields[i], key, val);
 
             if (fieldVal != null) {
                 doc.add(new Field(idxdFields[i], fieldVal.toString(), Field.Store.YES, Field.Index.ANALYZED));
@@ -173,7 +166,7 @@ public class GridLuceneIndex implements Closeable {
             }
         }
 
-        String keyStr = Base64.encodeBase64String(marshaller.marshal(key));
+        String keyStr = org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key));
 
         try {
             // Delete first to avoid duplicates.
@@ -210,7 +203,7 @@ public class GridLuceneIndex implements Closeable {
      */
     public void remove(Object key) throws IgniteCheckedException {
         try {
-            writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
+            writer.deleteDocuments(new Term(KEY_FIELD_NAME, org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key))));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -359,7 +352,7 @@ public class GridLuceneIndex implements Closeable {
                 if (ctx != null && ctx.deploy().enabled())
                     ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
 
-                K k = marshaller.unmarshal(Base64.decodeBase64(keyStr), ldr);
+                K k = marshaller.unmarshal(org.apache.commons.codec.binary.Base64.decodeBase64(keyStr), ldr);
 
                 byte[] valBytes = doc.getBinaryValue(VAL_FIELD_NAME);
 

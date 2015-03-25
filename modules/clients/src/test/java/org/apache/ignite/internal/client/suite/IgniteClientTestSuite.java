@@ -95,18 +95,16 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ClientDefaultCacheSelfTest.class));
 
         suite.addTestSuite(ClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(ClientPartitionAffinitySelfTest.class);
         suite.addTestSuite(ClientPropertiesConfigurationSelfTest.class);
         suite.addTestSuite(ClientConsistentHashSelfTest.class);
         suite.addTestSuite(ClientJavaHasherSelfTest.class);
 
         suite.addTestSuite(ClientByteUtilsTest.class);
 
-        suite.addTest(new TestSuite(ClientTopologyCacheSelfTest.class));
-
         // Router tests.
         suite.addTest(new TestSuite(TcpRouterSelfTest.class));
-        suite.addTest(new TestSuite(TcpSslRouterSelfTest.class));
+        // TODO uncomment when fixed https://issues.apache.org/jira/browse/IGNITE-433
+        // suite.addTest(new TestSuite(TcpSslRouterSelfTest.class));
         suite.addTest(new TestSuite(TcpRouterMultiNodeSelfTest.class));
 
         suite.addTest(new TestSuite(ClientFailedInitSelfTest.class));

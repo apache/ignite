@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
@@ -28,8 +29,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -962,7 +963,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        assertEquals(props, igfsSecondary.info(SUBSUBDIR).properties());
+        // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
+        assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
@@ -986,7 +988,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        assertEquals(props, igfsSecondary.info(SUBSUBDIR).properties());
+        // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
+        assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
@@ -1049,7 +1052,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfs, paths(DIR), null);
 
         // Set different properties to the sub-directory.
-        igfsSecondary.update(SUBDIR, propsSubDir);
+        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
         igfs.update(FILE, propsFile);
 
@@ -1057,10 +1060,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR, FILE);
 
         // Ensure properties propagation.
-        assertEquals(propsSubDir, igfsSecondary.info(SUBDIR).properties());
+        assertEquals(propsSubDir, igfsSecondary.properties(SUBDIR.toString()));
         assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
 
-        assertEquals(propsFile, igfsSecondary.info(FILE).properties());
+        assertEquals(propsFile, igfsSecondary.properties(FILE.toString()));
         assertEquals(propsFile, igfs.info(FILE).properties());
     }
 
@@ -1077,7 +1080,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfs, null, null);
 
         // Set different properties to the sub-directory.
-        igfsSecondary.update(SUBDIR, propsSubDir);
+        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
         igfs.update(FILE, propsFile);
 
@@ -1085,10 +1088,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, DIR, SUBDIR, FILE);
 
         // Ensure properties propagation.
-        assertEquals(propsSubDir, igfsSecondary.info(SUBDIR).properties());
+        assertEquals(propsSubDir, igfsSecondary.properties(SUBDIR.toString()));
         assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
 
-        assertEquals(propsFile, igfsSecondary.info(FILE).properties());
+        assertEquals(propsFile, igfsSecondary.properties(FILE.toString()));
         assertEquals(propsFile, igfs.info(FILE).properties());
     }
 
@@ -1107,7 +1110,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         checkExist(igfs, DIR);
 
-        assertEquals(props, igfsSecondary.info(DIR).properties());
+        assertEquals(props, igfsSecondary.properties(DIR.toString()));
         assertEquals(props, igfs.info(DIR).properties());
     }
 
@@ -1136,19 +1139,17 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         // Write enough data to the secondary file system.
         final int blockSize = IGFS_BLOCK_SIZE;
 
-        IgfsOutputStream out = igfsSecondary.append(FILE, false);
-
         int totalWritten = 0;
+        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
 
-        while (totalWritten < blockSize * 2 + chunk.length) {
-            out.write(chunk);
+            while (totalWritten < blockSize * 2 + chunk.length) {
+                out.write(chunk);
 
-            totalWritten += chunk.length;
+                totalWritten += chunk.length;
+            }
         }
 
-        out.close();
-
-        awaitFileClose(igfsSecondary, FILE);
+        awaitFileClose(igfsSecondaryFileSystem, FILE);
 
         // Read the first block.
         int totalRead = 0;
@@ -1179,7 +1180,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         U.sleep(300);
 
         // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE, false);
+        igfsSecondary.delete(FILE.toString(), false);
 
         // Let's wait for file will be deleted.
         U.sleep(300);
@@ -1215,19 +1216,16 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         // Write enough data to the secondary file system.
         final int blockSize = igfs.info(FILE).blockSize();
 
-        IgfsOutputStream out = igfsSecondary.append(FILE, false);
-
         int totalWritten = 0;
+        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
+            while (totalWritten < blockSize * 2 + chunk.length) {
+                out.write(chunk);
 
-        while (totalWritten < blockSize * 2 + chunk.length) {
-            out.write(chunk);
-
-            totalWritten += chunk.length;
+                totalWritten += chunk.length;
+            }
         }
 
-        out.close();
-
-        awaitFileClose(igfsSecondary, FILE);
+        awaitFileClose(igfsSecondaryFileSystem, FILE);
 
         // Read the first two blocks.
         int totalRead = 0;
@@ -1260,7 +1258,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         }
 
         // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE, false);
+        igfsSecondary.delete(FILE.toString(), false);
 
         // Let's wait for file will be deleted.
         U.sleep(300);
@@ -1290,9 +1288,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        igfsSecondary.update(SUBDIR, props);
+        igfsSecondaryFileSystem.update(SUBDIR, props);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs.asSecondary(), FILE, true, chunk);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
@@ -1314,10 +1312,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        igfsSecondary.update(DIR, propsDir);
-        igfsSecondary.update(SUBDIR, propsSubDir);
+        igfsSecondaryFileSystem.update(DIR, propsDir);
+        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs.asSecondary(), FILE, true, chunk);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk);
@@ -1338,9 +1336,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        igfsSecondary.update(SUBDIR, props);
+        igfsSecondaryFileSystem.update(SUBDIR, props);
 
-        createFile(igfsSecondary, FILE, true, BLOCK_SIZE, chunk);
+        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 
@@ -1364,10 +1362,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        igfsSecondary.update(DIR, propsDir);
-        igfsSecondary.update(SUBDIR, propsSubDir);
+        igfsSecondaryFileSystem.update(DIR, propsDir);
+        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
-        createFile(igfsSecondary, FILE, true, BLOCK_SIZE, chunk);
+        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 
@@ -1391,7 +1389,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1406,7 +1404,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1447,7 +1445,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1462,7 +1460,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1499,7 +1497,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1514,7 +1512,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1559,7 +1557,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths());
 
-            GridPlainFuture<Boolean> res1 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res1 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 
@@ -1574,7 +1572,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
                 }
             });
 
-            GridPlainFuture<Boolean> res2 = execute(new Callable<Boolean>() {
+            IgniteInternalFuture<Boolean> res2 = execute(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     U.awaitQuiet(barrier);
 

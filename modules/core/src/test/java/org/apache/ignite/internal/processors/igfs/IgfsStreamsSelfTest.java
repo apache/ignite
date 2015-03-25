@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -74,7 +75,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     public static final int ASSERT_RETRY_INTERVAL = 100;
 
     /** File system to test. */
-    private IgniteFs fs;
+    private IgniteFileSystem fs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -110,7 +111,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -118,7 +119,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setBlockSize(CFG_BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(true);
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -133,7 +134,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
@@ -141,7 +142,6 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }
@@ -229,12 +229,12 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         IgfsPath path = new IgfsPath("/file");
 
         try {
-            IgniteFs fs0 = grid(0).fileSystem("igfs");
-            IgniteFs fs1 = grid(1).fileSystem("igfs");
-            IgniteFs fs2 = grid(2).fileSystem("igfs");
+            IgniteFileSystem fs0 = grid(0).fileSystem("igfs");
+            IgniteFileSystem fs1 = grid(1).fileSystem("igfs");
+            IgniteFileSystem fs2 = grid(2).fileSystem("igfs");
 
             try (IgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
-                F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {
+                F.asMap(IgfsEx.PROP_PREFER_LOCAL_WRITES, "true"))) {
                 // 1.5 blocks
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
 

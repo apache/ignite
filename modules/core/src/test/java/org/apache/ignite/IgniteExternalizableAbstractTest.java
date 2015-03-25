@@ -28,14 +28,21 @@ import java.util.*;
  * Base externalizable test class.
  */
 public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
+    /** */
+    private static final MarshallerContext CTX = new MarshallerContextTestImpl();
+
     /**
      * @return Marshallers.
      */
     protected List<Marshaller> getMarshallers() {
         List<Marshaller> marshallers = new ArrayList<>();
 
+        OptimizedMarshaller opt = new OptimizedMarshaller();
+
+        opt.setContext(CTX);
+
         marshallers.add(new JdkMarshaller());
-        marshallers.add(new OptimizedMarshaller());
+        marshallers.add(opt);
 
         return marshallers;
     }

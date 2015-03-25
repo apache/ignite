@@ -30,8 +30,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -154,7 +154,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridClientCompute compute = client.compute();
 
         for (int i = 0; i < 1000; i++)
-            assertEquals("executing".length(), compute.execute(TestTask.class.getName(), "executing"));
+            assertEquals(new Integer("executing".length()), compute.execute(TestTask.class.getName(), "executing"));
 
         GridClientFactory.stop(client.id(), true);
 

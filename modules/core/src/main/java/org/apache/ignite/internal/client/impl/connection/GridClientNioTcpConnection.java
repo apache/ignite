@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.impl.connection;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.marshaller.*;
@@ -420,8 +421,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             lastMsgSndTime = U.currentTimeMillis();
 
             if (routeMode) {
-                sndFut.listenAsync(new CI1<GridNioFuture<?>>() {
-                    @Override public void apply(GridNioFuture<?> sndFut) {
+                sndFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> sndFut) {
                         try {
                             sndFut.get();
                         }
@@ -868,8 +869,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             .nodeId(nodeBean.getNodeId())
             .consistentId(nodeBean.getConsistentId())
             .tcpAddresses(nodeBean.getTcpAddresses())
-            .tcpPort(nodeBean.getTcpPort())
-            .replicaCount(nodeBean.getReplicaCount());
+            .tcpPort(nodeBean.getTcpPort());
 
         Map<String, GridClientCacheMode> caches = new HashMap<>();
 

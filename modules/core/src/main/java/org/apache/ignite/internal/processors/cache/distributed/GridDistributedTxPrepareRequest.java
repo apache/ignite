@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +37,7 @@ import java.util.*;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,30 +67,26 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** Transaction read set. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> reads;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> readsBytes;
+    @GridDirectCollection(IgniteTxEntry.class)
+    private Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> writes;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> writesBytes;
+    @GridDirectCollection(IgniteTxEntry.class)
+    private Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey<K>, GridCacheVersion> dhtVers;
+    private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
-    /** Serialized map. */
-    @GridToStringExclude
-    private byte[] dhtVersBytes;
+    /** */
+    @GridDirectCollection(IgniteTxKey.class)
+    private Collection<IgniteTxKey> dhtVerKeys;
+
+    /** */
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
     private int txSize;
@@ -107,6 +104,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** System flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -122,9 +122,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param onePhaseCommit One phase commit flag.
      */
     public GridDistributedTxPrepareRequest(
-        IgniteInternalTx<K, V> tx,
-        @Nullable Collection<IgniteTxEntry<K, V>> reads,
-        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteInternalTx tx,
+        @Nullable Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
         boolean onePhaseCommit
     ) {
@@ -138,6 +138,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
+        plc = tx.ioPolicy();
 
         this.reads = reads;
         this.writes = writes;
@@ -160,12 +161,19 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     }
 
     /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
+    }
+
+    /**
      * Adds version to be verified on remote node.
      *
      * @param key Key for which version is verified.
      * @param dhtVer DHT version to check.
      */
-    public void addDhtVersion(IgniteTxKey<K> key, @Nullable GridCacheVersion dhtVer) {
+    public void addDhtVersion(IgniteTxKey key, @Nullable GridCacheVersion dhtVer) {
         if (dhtVers == null)
             dhtVers = new HashMap<>();
 
@@ -175,8 +183,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Map of versions to be verified.
      */
-    public Map<IgniteTxKey<K>, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap() : dhtVers;
+    public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
+        return dhtVers == null ? Collections.<IgniteTxKey, GridCacheVersion>emptyMap() : dhtVers;
     }
 
     /**
@@ -220,28 +228,28 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Read set.
      */
-    public Collection<IgniteTxEntry<K, V>> reads() {
+    public Collection<IgniteTxEntry> reads() {
         return reads;
     }
 
     /**
      * @return Write entries.
      */
-    public Collection<IgniteTxEntry<K, V>> writes() {
+    public Collection<IgniteTxEntry> writes() {
         return writes;
     }
 
     /**
      * @param reads Reads.
      */
-    protected void reads(Collection<IgniteTxEntry<K, V>> reads) {
+    protected void reads(Collection<IgniteTxEntry> reads) {
         this.reads = reads;
     }
 
     /**
      * @param writes Writes.
      */
-    protected void writes(Collection<IgniteTxEntry<K, V>> writes) {
+    protected void writes(Collection<IgniteTxEntry> writes) {
         this.writes = writes;
     }
 
@@ -261,119 +269,60 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (writes != null) {
+        if (writes != null)
             marshalTx(writes, ctx);
 
-            writesBytes = new ArrayList<>(writes.size());
-
-            for (IgniteTxEntry<K, V> e : writes)
-                writesBytes.add(ctx.marshaller().marshal(e));
-        }
-
-        if (reads != null) {
+        if (reads != null)
             marshalTx(reads, ctx);
 
-            readsBytes = new ArrayList<>(reads.size());
+        if (dhtVers != null) {
+            for (IgniteTxKey key : dhtVers.keySet()) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-            for (IgniteTxEntry<K, V> e : reads)
-                readsBytes.add(ctx.marshaller().marshal(e));
+                key.prepareMarshal(cctx);
+            }
+
+            dhtVerKeys = dhtVers.keySet();
+            dhtVerVals = dhtVers.values();
         }
-
-        if (dhtVers != null && dhtVersBytes == null)
-            dhtVersBytes = ctx.marshaller().marshal(dhtVers);
 
         if (txNodes != null)
             txNodesBytes = ctx.marshaller().marshal(txNodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (writesBytes != null) {
-            writes = new ArrayList<>(writesBytes.size());
-
-            for (byte[] arr : writesBytes)
-                writes.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
+        if (writes != null)
             unmarshalTx(writes, false, ctx, ldr);
-        }
 
-        if (readsBytes != null) {
-            reads = new ArrayList<>(readsBytes.size());
-
-            for (byte[] arr : readsBytes)
-                reads.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
+        if (reads != null)
             unmarshalTx(reads, false, ctx, ldr);
-        }
 
-        if (dhtVersBytes != null && dhtVers == null)
-            dhtVers = ctx.marshaller().unmarshal(dhtVersBytes, ldr);
+        if (dhtVerKeys != null && dhtVers == null) {
+            assert dhtVerVals != null;
+            assert dhtVerKeys.size() == dhtVerVals.size();
+
+            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
+            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
+
+            dhtVers = U.newHashMap(dhtVerKeys.size());
+
+            while (keyIt.hasNext()) {
+                IgniteTxKey key = keyIt.next();
+
+                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
+
+                dhtVers.put(key, verIt.next());
+            }
+        }
 
         if (txNodesBytes != null)
             txNodes = ctx.marshaller().unmarshal(txNodesBytes, ldr);
-    }
-
-    /**
-     *
-     * @param out Output.
-     * @param col Set to write.
-     * @throws IOException If write failed.
-     */
-    private void writeCollection(ObjectOutput out, Collection<IgniteTxEntry<K, V>> col) throws IOException {
-        boolean empty = F.isEmpty(col);
-
-        if (!empty) {
-            out.writeInt(col.size());
-
-            for (IgniteTxEntry<K, V> e : col) {
-                V val = e.value();
-                boolean hasWriteVal = e.hasWriteValue();
-                boolean hasReadVal = e.hasReadValue();
-
-                try {
-                    // Don't serialize value if invalidate is set to true.
-                    if (invalidate)
-                        e.value(null, false, false);
-
-                    out.writeObject(e);
-                }
-                finally {
-                    // Set original value back.
-                    e.value(val, hasWriteVal, hasReadVal);
-                }
-            }
-        }
-        else
-            out.writeInt(-1);
-    }
-
-    /**
-     * @param in Input.
-     * @return Deserialized set.
-     * @throws IOException If deserialization failed.
-     * @throws ClassNotFoundException If deserialized class could not be found.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable private Collection<IgniteTxEntry<K, V>> readCollection(ObjectInput in) throws IOException,
-        ClassNotFoundException {
-        List<IgniteTxEntry<K, V>> col = null;
-
-        int size = in.readInt();
-
-        // Check null flag.
-        if (size != -1) {
-            col = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++)
-                col.add((IgniteTxEntry<K, V>)in.readObject());
-        }
-
-        return col == null ? Collections.<IgniteTxEntry<K,V>>emptyList() : col;
     }
 
     /** {@inheritDoc} */
@@ -397,74 +346,86 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeByteArray("dhtVersBytes", dhtVersBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeBoolean("invalidate", invalidate))
-                    return false;
-
-                writer.incrementState();
-
             case 9:
-                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
+                if (!writer.writeCollection("dhtVerKeys", dhtVerKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeCollection("readsBytes", readsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("dhtVerVals", dhtVerVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeLong("timeout", timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeInt("txSize", txSize))
+                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeCollection("reads", reads, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection("writesBytes", writesBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
+                if (!writer.writeLong("threadId", threadId))
+                    return false;
+
+                writer.incrementState();
+
+            case 20:
+                if (!writer.writeLong("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 21:
+                if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
+                if (!writer.writeInt("txSize", txSize))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeCollection("writes", writes, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -497,15 +458,31 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 reader.incrementState();
 
-            case 7:
-                dhtVersBytes = reader.readByteArray("dhtVersBytes");
+            case 9:
+                dhtVerKeys = reader.readCollection("dhtVerKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 8:
+            case 10:
+                dhtVerVals = reader.readCollection("dhtVerVals", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -513,7 +490,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 reader.incrementState();
 
-            case 9:
+            case 13:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte("isolation");
@@ -525,7 +502,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 reader.incrementState();
 
-            case 10:
+            case 14:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
@@ -533,40 +510,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 reader.incrementState();
 
-            case 11:
-                readsBytes = reader.readCollection("readsBytes", MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                sys = reader.readBoolean("sys");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                threadId = reader.readLong("threadId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                timeout = reader.readLong("timeout");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 15:
-                txNodesBytes = reader.readByteArray("txNodesBytes");
+                partLock = reader.readBoolean("partLock");
 
                 if (!reader.isLastRead())
                     return false;
@@ -574,15 +519,19 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 reader.incrementState();
 
             case 16:
-                txSize = reader.readInt("txSize");
+                byte plcOrd;
+
+                plcOrd = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
+                plc = GridIoPolicy.fromOrdinal(plcOrd);
+
                 reader.incrementState();
 
             case 17:
-                writeVer = reader.readMessage("writeVer");
+                reads = reader.readCollection("reads", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -590,7 +539,55 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 reader.incrementState();
 
             case 18:
-                writesBytes = reader.readCollection("writesBytes", MessageCollectionItemType.BYTE_ARR);
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
+                threadId = reader.readLong("threadId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 20:
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
+                txNodesBytes = reader.readByteArray("txNodesBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
+                txSize = reader.readInt("txSize");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                writes = reader.readCollection("writes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

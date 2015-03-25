@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
-
-import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 
 /**
  *
@@ -44,7 +42,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
             for (int replicas = 128; replicas <= 4096; replicas*=2) {
                 Collection<ClusterNode> nodes = createNodes(i, replicas);
 
-                CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction(false, 10000);
+                RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 10000);
 
                 checkDistribution(aff, nodes);
             }
@@ -71,11 +69,11 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param aff Affinity to check.
      * @param nodes Collection of nodes to test on.
      */
-    private void checkDistribution(CacheConsistentHashAffinityFunction aff, Collection<ClusterNode> nodes) {
+    private void checkDistribution(RendezvousAffinityFunction aff, Collection<ClusterNode> nodes) {
         Map<ClusterNode, Integer> parts = new HashMap<>(nodes.size());
 
         for (int part = 0; part < aff.getPartitions(); part++) {
-            Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 0);
+            Collection<ClusterNode> affNodes = aff.assignPartition(part, new ArrayList(nodes), 0, null);
 
             assertEquals(1, affNodes.size());
 
@@ -112,8 +110,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
         m2 /= (n - 1);
         assertEquals(aff.getPartitions(), total);
 
-        System.out.printf("%6s, %6s, %6s, %6s, %8.4f\n", nodes.size(),
-            F.first(nodes).attribute(DFLT_REPLICA_COUNT_ATTR_NAME), min, max, Math.sqrt(m2));
+        System.out.printf("%6s, %6s, %6s, %8.4f\n", nodes.size(),min, max, Math.sqrt(m2));
     }
 
     /**
@@ -158,9 +155,6 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public <T> T attribute(String name) {
-            if (DFLT_REPLICA_COUNT_ATTR_NAME.equals(name))
-                return (T)new Integer(replicas);
-
             return super.attribute(name);
         }
     }

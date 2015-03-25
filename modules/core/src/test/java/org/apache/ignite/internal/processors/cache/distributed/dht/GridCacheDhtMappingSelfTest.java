@@ -28,9 +28,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Tests dht mapping.
@@ -50,10 +49,9 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -78,7 +76,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodeCnt);
 
-        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
 
         int kv = 1;
 

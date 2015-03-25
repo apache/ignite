@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 /**
- * Test for {@link org.apache.ignite.cluster.ClusterGroup}.
+ * Test for {@link ClusterGroup}.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridProjectionSelfTest extends GridProjectionAbstractTest {
@@ -45,13 +45,20 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
 
         ids = new LinkedList<>();
 
-        for (int i = 0; i < NODES_CNT; i++) {
-            Ignite g = startGrid(i);
+        try {
+            for (int i = 0; i < NODES_CNT; i++) {
+                Ignition.setClientMode(i > 1);
 
-            ids.add(g.cluster().localNode().id());
+                Ignite g = startGrid(i);
 
-            if (i == 0)
-                ignite = g;
+                ids.add(g.cluster().localNode().id());
+
+                if (i == 0)
+                    ignite = g;
+            }
+        }
+        finally {
+            Ignition.setClientMode(false);
         }
     }
 
@@ -141,5 +148,22 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
             assertEquals(latest.id(), n.id());
             assertEquals(oldest.node(), old);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientServer() throws Exception {
+        ClusterGroup srv = ignite.cluster().forServers();
+
+        assertEquals(2, srv.nodes().size());
+        assertTrue(srv.nodes().contains(ignite(0).cluster().localNode()));
+        assertTrue(srv.nodes().contains(ignite(1).cluster().localNode()));
+
+        ClusterGroup cli = ignite.cluster().forClients();
+
+        assertEquals(2, srv.nodes().size());
+        assertTrue(cli.nodes().contains(ignite(2).cluster().localNode()));
+        assertTrue(cli.nodes().contains(ignite(3).cluster().localNode()));
     }
 }

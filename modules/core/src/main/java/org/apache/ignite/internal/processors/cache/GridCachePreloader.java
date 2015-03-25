@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -71,13 +72,13 @@ public interface GridCachePreloader<K, V> {
      *
      * @param lastFut Last future.
      */
-    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture<K, V> lastFut);
+    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut);
 
     /**
      * @param exchFut Exchange future to assign.
      * @return Assignments.
      */
-    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut);
+    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
@@ -90,13 +91,13 @@ public interface GridCachePreloader<K, V> {
     /**
      * @param p Preload predicate.
      */
-    public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo<K, V>> p);
+    public void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> p);
 
     /**
      * @return Preload predicate. If not {@code null}, will evaluate each preloaded entry during
      *      send and receive, and if predicate evaluates to {@code false}, entry will be skipped.
      */
-    public IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPredicate();
+    public IgnitePredicate<GridCacheEntryInfo> preloadPredicate();
 
     /**
      * @return Future which will complete when preloader is safe to use.
@@ -115,7 +116,7 @@ public interface GridCachePreloader<K, V> {
      * @param topVer Topology version, {@code -1} if not required.
      * @return Future to complete when all keys are preloaded.
      */
-    public IgniteInternalFuture<Object> request(Collection<? extends K> keys, long topVer);
+    public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
 
     /**
      * Force preload process.

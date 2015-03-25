@@ -302,7 +302,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
+     * @see IgniteCluster#startNodes(java.io.File, boolean, int, int)
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file,
       boolean restart,
@@ -319,7 +319,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -330,7 +330,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     * @see IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts,
@@ -344,7 +344,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            IgniteSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
+            IgniteSshHelper sshHelper = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
@@ -401,7 +401,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
+                        nodeRuns.add(sshHelper.nodeStartCallable(spec, timeout));
 
                         nodeCallCnt++;
                     }
@@ -411,12 +411,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             // If there is nothing to start, return finished future with empty result.
             if (nodeCallCnt == 0)
                 return new GridFinishedFuture<Collection<GridTuple3<String, Boolean, String>>>(
-                    ctx, Collections.<GridTuple3<String, Boolean, String>>emptyList());
+                    Collections.<GridTuple3<String, Boolean, String>>emptyList());
 
             // Exceeding max line width for readability.
             GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>>
                 fut = new GridCompoundFuture<>(
-                ctx,
                 CU.<GridTuple3<String, Boolean, String>>objectsReducer()
             );
 
@@ -433,7 +432,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             return fut;
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             unguard();
@@ -489,7 +488,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         if (cnt.decrementAndGet() == 0)
             comp.markInitialized();
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
+        fut.listen(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
             @Override public void apply(IgniteInternalFuture<GridTuple3<String, Boolean, String>> f) {
                 runNextNodeCallable(queue, comp, cnt);
             }

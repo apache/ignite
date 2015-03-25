@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Check prepared transactions response.
  */
-public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridCacheOptimisticCheckPreparedTxResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

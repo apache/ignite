@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.processor.*;
@@ -77,7 +77,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @return Terminal ID.
      */
-    @CacheAffinityKeyMapped
+    @AffinityKeyMapped
     @Nullable public String terminalId() {
         GridDsiMessage msg = message();
 
@@ -222,7 +222,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      *
      */
     private void doWork() {
-        IgniteCache cache = ignite.jcache(cacheName);
+        IgniteCache cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -311,7 +311,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @param cacheKey Key.
      */
     private void put(final Object o, Object cacheKey) {
-        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -332,6 +332,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     private <T> Object get(Object key) {
-        return ignite.jcache(cacheName).get(key);
+        return ignite.cache(cacheName).get(key);
     }
 }

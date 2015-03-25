@@ -18,13 +18,13 @@
 package org.apache.ignite.loadtests.offheap;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -77,7 +77,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
             keys = new T3[LOAD_CNT];
             wrappers = new GridByteArrayWrapper[LOAD_CNT];
 
-            CacheAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+            AffinityFunction aff = new RendezvousAffinityFunction();
 
             Random rnd = new Random();
 

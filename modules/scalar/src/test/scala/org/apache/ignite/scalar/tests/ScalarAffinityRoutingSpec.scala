@@ -29,10 +29,12 @@ import org.scalatest.junit.JUnitRunner
  */
 @RunWith(classOf[JUnitRunner])
 class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+    private val CFG = "modules/scalar/src/test/resources/spring-cache.xml"
+
     /** Cache name. */
     private val CACHE_NAME = "partitioned_tx"
 
-    "affinityRun$ method" should "run correctly" in scalar("examples/config/example-cache.xml") {
+    "affinityRun$ method" should "run correctly" in scalar(CFG) {
         val c = cache$[Int, Int](CACHE_NAME).get
 
 //        c += (0 -> 0)
@@ -48,7 +50,7 @@ class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with Before
         assert(cnt.get === 3)
     }
 
-    "affinityRunAsync$ method" should "run correctly" in scalar("examples/config/example-cache.xml") {
+    "affinityRunAsync$ method" should "run correctly" in scalar(CFG) {
         val c = cache$[Int, Int](CACHE_NAME).get
 
 //        c += (0 -> 0)

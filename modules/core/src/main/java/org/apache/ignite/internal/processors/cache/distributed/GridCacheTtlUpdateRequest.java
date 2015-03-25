@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.nio.*;
 import java.util.*;
@@ -31,18 +33,14 @@ import java.util.*;
 /**
  *
  */
-public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
+public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Entries keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private List<K> keys;
-
-    /** Keys bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keysBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> keys;
 
     /** Entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
@@ -50,12 +48,8 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
     /** Near entries keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private List<K> nearKeys;
-
-    /** Near entries bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearKeysBytes;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
@@ -65,7 +59,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     private long ttl;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * Required empty constructor.
@@ -75,12 +69,14 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param ttl TTL.
      */
-    public GridCacheTtlUpdateRequest(long topVer, long ttl) {
+    public GridCacheTtlUpdateRequest(int cacheId, AffinityTopologyVersion topVer, long ttl) {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
+        this.cacheId = cacheId;
         this.topVer = topVer;
         this.ttl = ttl;
     }
@@ -88,7 +84,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -100,33 +96,33 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
-     * @param keyBytes Key bytes.
+     * @param key Key.
      * @param ver Version.
      */
-    public void addEntry(byte[] keyBytes, GridCacheVersion ver) {
-        if (keysBytes == null) {
-            keysBytes = new ArrayList<>();
+    public void addEntry(KeyCacheObject key, GridCacheVersion ver) {
+        if (keys == null) {
+            keys = new ArrayList<>();
 
             vers = new ArrayList<>();
         }
 
-        keysBytes.add(keyBytes);
+        keys.add(key);
 
         vers.add(ver);
     }
 
     /**
-     * @param keyBytes Key bytes.
+     * @param key Key.
      * @param ver Version.
      */
-    public void addNearEntry(byte[] keyBytes, GridCacheVersion ver) {
-        if (nearKeysBytes == null) {
-            nearKeysBytes = new ArrayList<>();
+    public void addNearEntry(KeyCacheObject key, GridCacheVersion ver) {
+        if (nearKeys == null) {
+            nearKeys = new ArrayList<>();
 
             nearVers = new ArrayList<>();
         }
 
-        nearKeysBytes.add(keyBytes);
+        nearKeys.add(key);
 
         nearVers.add(ver);
     }
@@ -134,7 +130,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -158,7 +154,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     /**
      * @return Keys for near cache.
      */
-    public List<K> nearKeys() {
+    public List<KeyCacheObject> nearKeys() {
         return nearKeys;
     }
 
@@ -170,15 +166,26 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr)
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
+
+        prepareMarshalCacheObjects(nearKeys, cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null && keysBytes != null)
-            keys = unmarshalCollection(keysBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (nearKeys == null && nearKeysBytes != null)
-            nearKeys = unmarshalCollection(nearKeysBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -197,13 +204,13 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("keysBytes", keysBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -215,7 +222,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -249,7 +256,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         switch (reader.state()) {
             case 3:
-                keysBytes = reader.readCollection("keysBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +264,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 reader.incrementState();
 
             case 4:
-                nearKeysBytes = reader.readCollection("nearKeysBytes", MessageCollectionItemType.BYTE_ARR);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -273,7 +280,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

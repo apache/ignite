@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.top;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -95,7 +94,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 final String ip = req0.nodeIp();
 
                 if (id == null && ip == null)
-                    return new GridFinishedFuture<>(ctx, new IgniteCheckedException(
+                    return new GridFinishedFuture<>(new IgniteCheckedException(
                         "Failed to handle request (either id or ip should be specified)."));
 
                 ClusterNode node;
@@ -132,7 +131,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handled topology REST request [res=" + res + ", req=" + req + ']');
 
-        return new GridFinishedFuture<>(ctx, res);
+        return new GridFinishedFuture<>(res);
     }
 
     /**
@@ -173,13 +172,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
-
-        Integer dfltReplicaCnt = node.attribute(CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
-
-        if (dfltReplicaCnt == null)
-            dfltReplicaCnt = CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
-
-        nodeBean.setReplicaCount(dfltReplicaCnt);
 
         GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
 

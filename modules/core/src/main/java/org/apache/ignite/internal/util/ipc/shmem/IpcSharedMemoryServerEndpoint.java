@@ -42,8 +42,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** IPC error message. */
-    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment"; // todo IGNITE-70 Add
-                                                                                                // link to documentation
+    public static final String OUT_OF_RESOURCES_MSG = "Failed to allocate shared memory segment";
 
     /** Default endpoint port number. */
     public static final int DFLT_IPC_PORT = 10500;
@@ -119,7 +118,10 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private final Collection<IpcSharedMemoryClientEndpoint> endpoints =
         new GridConcurrentHashSet<>();
 
-    /** Use this constructor when dependencies could be injected with {@link GridResourceProcessor#injectGeneric(Object)}. */
+    /**
+     * Use this constructor when dependencies could be injected
+     * with {@link GridResourceProcessor#injectGeneric(Object)}.
+     */
     public IpcSharedMemoryServerEndpoint() {
         // No-op.
     }
@@ -525,37 +527,20 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
             assert workTokDir != null;
 
-            while (!isCancelled()) {
-                U.sleep(GC_FREQ);
+            boolean lastRunNeeded = true;
+
+            while (true) {
+                try {
+                    Thread.sleep(GC_FREQ);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Starting GC iteration.");
 
-                RandomAccessFile lockFile = null;
-
-                FileLock lock = null;
-
-                try {
-                    lockFile = new RandomAccessFile(new File(workTokDir, LOCK_FILE_NAME), "rw");
-
-                    lock = lockFile.getChannel().lock();
-
-                    if (lock != null)
-                        processTokenDirectory(workTokDir);
-                    else if (log.isDebugEnabled())
-                        log.debug("Token directory is being processed concurrently: " + workTokDir.getAbsolutePath());
-                }
-                catch (OverlappingFileLockException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Token directory is being processed concurrently: " + workTokDir.getAbsolutePath());
-                }
-                catch (IOException e) {
-                    U.error(log, "Failed to process directory: " + workTokDir.getAbsolutePath(), e);
-                }
-                finally {
-                    U.releaseQuiet(lock);
-                    U.closeQuiet(lockFile);
-                }
+                cleanupResources(workTokDir);
 
                 // Process spaces created by this endpoint.
                 if (log.isDebugEnabled())
@@ -572,10 +557,56 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                             log.debug("Removed endpoint: " + e);
                     }
                 }
+
+                if (isCancelled()) {
+                    if (lastRunNeeded)
+                        lastRunNeeded = false;
+                    else {
+                        Thread.currentThread().interrupt();
+
+                        break;
+                    }
+                }
             }
         }
 
-        /** @param workTokDir Token directory (common for multiple nodes). */
+        /**
+         * @param workTokDir Token directory (common for multiple nodes).
+         */
+        private void cleanupResources(File workTokDir) {
+            RandomAccessFile lockFile = null;
+
+            FileLock lock = null;
+
+            try {
+                lockFile = new RandomAccessFile(new File(workTokDir, LOCK_FILE_NAME), "rw");
+
+                lock = lockFile.getChannel().lock();
+
+                if (lock != null)
+                    processTokenDirectory(workTokDir);
+                else if (log.isDebugEnabled())
+                    log.debug("Token directory is being processed concurrently: " + workTokDir.getAbsolutePath());
+            }
+            catch (OverlappingFileLockException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Token directory is being processed concurrently: " + workTokDir.getAbsolutePath());
+            }
+            catch (InterruptedIOException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            catch (IOException e) {
+                U.error(log, "Failed to process directory: " + workTokDir.getAbsolutePath(), e);
+            }
+            finally {
+                U.releaseQuiet(lock);
+                U.closeQuiet(lockFile);
+            }
+        }
+
+        /**
+         * @param workTokDir Token directory (common for multiple nodes).
+         */
         private void processTokenDirectory(File workTokDir) {
             for (File f : workTokDir.listFiles()) {
                 if (!f.isDirectory()) {

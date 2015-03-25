@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -32,8 +33,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate
 /**
  * Lock candidate.
  */
-public class GridCacheMvccCandidate<K> implements Externalizable,
-    Comparable<GridCacheMvccCandidate<K>> {
+public class GridCacheMvccCandidate implements Externalizable,
+    Comparable<GridCacheMvccCandidate> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,22 +71,22 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /** Topology version. */
     @SuppressWarnings( {"TransientFieldNotInitialized"})
     @GridToStringInclude
-    private transient volatile long topVer = -1;
+    private transient volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** Linked reentry. */
-    private GridCacheMvccCandidate<K> reentry;
+    private GridCacheMvccCandidate reentry;
 
     /** Previous lock for the thread. */
     @GridToStringExclude
-    private transient volatile GridCacheMvccCandidate<K> prev;
+    private transient volatile GridCacheMvccCandidate prev;
 
     /** Next lock for the thread. */
     @GridToStringExclude
-    private transient volatile GridCacheMvccCandidate<K> next;
+    private transient volatile GridCacheMvccCandidate next;
 
     /** Parent entry. */
     @GridToStringExclude
-    private transient GridCacheEntryEx<K, ?> parent;
+    private transient GridCacheEntryEx parent;
 
     /** Alternate node ID specifying additional node involved in this lock. */
     private transient volatile UUID otherNodeId;
@@ -120,7 +121,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
      * @param dhtLoc DHT local flag.
      */
     public GridCacheMvccCandidate(
-        GridCacheEntryEx<K, ?> parent,
+        GridCacheEntryEx parent,
         UUID nodeId,
         @Nullable UUID otherNodeId,
         @Nullable GridCacheVersion otherVer,
@@ -178,31 +179,31 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
      * @return Parent entry.
      */
     @SuppressWarnings({"unchecked"})
-    public <V> GridCacheEntryEx<K, V> parent() {
-        return (GridCacheEntryEx<K, V>)parent;
+    public <V> GridCacheEntryEx parent() {
+        return parent;
     }
 
     /**
      * @return Topology for which this lock was acquired.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /**
      * @param topVer Topology version.
      */
-    public void topologyVersion(long topVer) {
+    public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 
     /**
      * @return Reentry candidate.
      */
-    public GridCacheMvccCandidate<K> reenter() {
-        GridCacheMvccCandidate<K> old = reentry;
+    public GridCacheMvccCandidate reenter() {
+        GridCacheMvccCandidate old = reentry;
 
-        GridCacheMvccCandidate<K> reentry = new GridCacheMvccCandidate<>(
+        GridCacheMvccCandidate reentry = new GridCacheMvccCandidate(
             parent,
             nodeId,
             otherNodeId,
@@ -237,9 +238,9 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /**
      * @return Removed reentry candidate or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate<K> unenter() {
+    @Nullable public GridCacheMvccCandidate unenter() {
         if (reentry != null) {
-            GridCacheMvccCandidate<K> old = reentry;
+            GridCacheMvccCandidate old = reentry;
 
             // Link to next.
             reentry = reentry.reentry;
@@ -253,7 +254,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /**
      * @param parent Sets locks parent entry.
      */
-    public void parent(GridCacheEntryEx<K, ?> parent) {
+    public void parent(GridCacheEntryEx parent) {
         assert parent != null;
 
         this.parent = parent;
@@ -469,14 +470,14 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     /**
      * @return Lock that comes before in the same thread, possibly <tt>null</tt>.
      */
-    public GridCacheMvccCandidate<K> previous() {
+    public GridCacheMvccCandidate previous() {
         return prev;
     }
 
     /**
      * @param prev Lock that comes before in the same thread, possibly <tt>null</tt>.
      */
-    public void previous(GridCacheMvccCandidate<K> prev) {
+    public void previous(GridCacheMvccCandidate prev) {
         this.prev = prev;
     }
 
@@ -484,22 +485,22 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
      *
      * @return Gets next candidate in this thread.
      */
-    public GridCacheMvccCandidate<K> next() {
+    public GridCacheMvccCandidate next() {
         return next;
     }
 
     /**
      * @param next Next candidate in this thread.
      */
-    public void next(GridCacheMvccCandidate<K> next) {
+    public void next(GridCacheMvccCandidate next) {
         this.next = next;
     }
 
     /**
      * @return Key.
      */
-    public K key() {
-        GridCacheEntryEx<K, ?> parent0 = parent;
+    public KeyCacheObject key() {
+        GridCacheEntryEx parent0 = parent;
 
         if (parent0 == null)
             throw new IllegalStateException("Parent entry was not initialized for MVCC candidate: " + this);
@@ -551,7 +552,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridCacheMvccCandidate<K> o) {
+    @Override public int compareTo(GridCacheMvccCandidate o) {
         if (o == this)
             return 0;
 
@@ -573,7 +574,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
         if (o == this)
             return true;
 
-        GridCacheMvccCandidate<K> other = (GridCacheMvccCandidate<K>)o;
+        GridCacheMvccCandidate other = (GridCacheMvccCandidate)o;
 
         assert key() != null && other.key() != null : "Key is null [this=" + this + ", other=" + o + ']';
 
@@ -587,8 +588,8 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        GridCacheMvccCandidate<?> prev = previous();
-        GridCacheMvccCandidate<?> next = next();
+        GridCacheMvccCandidate prev = previous();
+        GridCacheMvccCandidate next = next();
 
         return S.toString(GridCacheMvccCandidate.class, this,
             "key", parent == null ? null : parent.key(),

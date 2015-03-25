@@ -19,6 +19,7 @@ package org.apache.ignite.internal.events;
 
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -27,6 +28,9 @@ import java.io.*;
  * Custom event.
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
+    /** */
+    private static final long serialVersionUID = 0L;
+    
     /**
      * Built-in event type: custom event sent.
      * <br>
@@ -39,6 +43,9 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
 
     /** */
     private Serializable data;
+
+    /** Affinity topology version. */
+    private AffinityTopologyVersion affTopVer;
 
     /**
      * Default constructor.
@@ -59,6 +66,20 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
      */
     public void data(Serializable data) {
         this.data = data;
+    }
+
+    /**
+     * @return Affinity topology version.
+     */
+    public AffinityTopologyVersion affinityTopologyVersion() {
+        return affTopVer;
+    }
+
+    /**
+     * @param affTopVer Affinity topology version.
+     */
+    public void affinityTopologyVersion(AffinityTopologyVersion affTopVer) {
+        this.affTopVer = affTopVer;
     }
 
     /** {@inheritDoc} */

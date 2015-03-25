@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.access.*;
 import org.jetbrains.annotations.*;
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
  * Implementation of {@link AccessType#TRANSACTIONAL} cache access strategy.
  * <p>
  * It is supposed that this strategy is used in JTA environment and Hibernate and
- * {@link GridCache} corresponding to the L2 cache region are configured to use the same transaction manager.
+ * {@link org.apache.ignite.internal.processors.cache.GridCache} corresponding to the L2 cache region are configured to use the same transaction manager.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:

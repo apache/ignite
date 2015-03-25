@@ -18,11 +18,10 @@
 package org.apache.ignite.jvmtest;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -56,7 +55,9 @@ public class ConcurrentMapTest {
 
             X.println("Testing map with concurrency level: " + lvl);
 
-            int writes = testMap(100000, GridConcurrentFactory.<String, Integer>newMap(256, lvl));
+            int cap = 256 / lvl < 16 ? 16 * lvl : 256;
+
+            int writes = testMap(100000, new ConcurrentHashMap8<String, Integer>(cap, 0.75f, lvl));
 
             ress.add(F.pair(lvl, writes));
         }

@@ -48,10 +48,10 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      * @throws Exception If failed.
      */
     public void testRemoteNodeCallback() throws Exception {
-        IgniteCache<Integer, Integer> cache1 = grid(0).jcache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).jcache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
 
-        ContinuousQuery<Integer, Integer> qry = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final AtomicReference<Integer> val = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -88,8 +88,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      */
     public void testCrossCallback() throws Exception {
         // Prepare.
-        IgniteCache<Integer, Integer> cache1 = grid(0).jcache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).jcache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
 
         final int key1 = primaryKey(cache1);
         final int key2 = primaryKey(cache2);
@@ -97,7 +97,7 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
         final CountDownLatch latch1 = new CountDownLatch(2);
         final CountDownLatch latch2 = new CountDownLatch(2);
 
-        ContinuousQuery<Integer, Integer> qry1 = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry1 = new ContinuousQuery<>();
 
         qry1.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
@@ -109,7 +109,7 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
             }
         });
 
-        ContinuousQuery<Integer, Integer> qry2 = Query.continuous();
+        ContinuousQuery<Integer, Integer> qry2 = new ContinuousQuery<>();
 
         qry2.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {

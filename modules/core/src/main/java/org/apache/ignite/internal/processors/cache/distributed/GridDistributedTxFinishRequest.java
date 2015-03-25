@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
@@ -29,7 +34,7 @@ import java.nio.*;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,6 +65,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** System flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -75,6 +83,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param txSize Expected transaction size.
      */
     public GridDistributedTxFinishRequest(
@@ -85,6 +94,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         boolean commit,
         boolean invalidate,
         boolean sys,
+        GridIoPolicy plc,
         boolean syncCommit,
         boolean syncRollback,
         int txSize
@@ -98,16 +108,24 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.commit = commit;
         this.invalidate = invalidate;
         this.sys = sys;
+        this.plc = plc;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.txSize = txSize;
     }
 
     /**
-     * @return System flag.
+     * @return System transaction flag.
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy.
+     */
+    public GridIoPolicy policy() {
+        return plc;
     }
 
     /**
@@ -294,12 +312,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
             case 10:
                 syncCommit = reader.readBoolean("syncCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
+                
             case 11:
                 syncRollback = reader.readBoolean("syncRollback");
 

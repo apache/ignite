@@ -50,6 +50,11 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("See https://issues.apache.org/jira/browse/IGNITE-572");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
     }
@@ -232,7 +237,9 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Get all command result: " + ret);
 
-        jsonEquals(ret, cacheBulkPattern("\\{\\\"getKey1\\\":\\\"getVal1\\\"\\,\\\"getKey2\\\":\\\"getVal2\\\"\\}",
+        jsonEquals(ret,
+            // getKey[12] is used since the order is not determined.
+            cacheBulkPattern("\\{\\\"getKey[12]\\\":\\\"getVal[12]\\\"\\,\\\"getKey[12]\\\":\\\"getVal[12]\\\"\\}",
             true));
     }
 

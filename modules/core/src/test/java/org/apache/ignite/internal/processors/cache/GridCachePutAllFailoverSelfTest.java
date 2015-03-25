@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -259,7 +258,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    fut.listen(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -340,7 +339,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
+                info(">>>>> " + g.cache(CACHE_NAME).localSize());
 
                 primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
@@ -431,7 +430,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    fut.listen(new CI1<IgniteFuture<Void>>() {
                         @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -482,7 +481,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                fut.listen(new CI1<IgniteFuture<Void>>() {
                     @Override public void apply(IgniteFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
@@ -540,7 +539,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
+                info(">>>>> " + g.cache(CACHE_NAME).localSize());
 
                 primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
@@ -562,7 +561,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private Collection<Integer> findAbsentKeys(Ignite workerNode, Collection<Integer> keys) {
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.
@@ -620,9 +619,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setBackups(backups);
 
-            cacheCfg.setStoreValueBytes(true);
-            cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-            cacheCfg.setQueryIndexEnabled(false);
+            cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 

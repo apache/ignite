@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -122,8 +123,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     return new CreateUpdateRemoveExpireListener();
                 }
             },
-            new Factory<CacheEntryEventFilter<? super Integer, ? super Integer>>() {
-                @Override public CacheEntryEventFilter<? super Integer, ? super Integer> create() {
+            new Factory<CacheEntryEventSerializableFilter<? super Integer, ? super Integer>>() {
+                @Override public CacheEntryEventSerializableFilter<? super Integer, ? super Integer> create() {
                     return new ExceptionFilter();
                 }
             },
@@ -283,11 +284,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             return;
 
         lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            new Factory<CacheEntryListener<Integer, Integer>>() {
-                @Override public CacheEntryListener<Integer, Integer> create() {
-                    return new NoOpCreateUpdateListener();
-                }
-            },
+            new NoOpCreateUpdateListenerFactory(),
             null,
             true,
             true
@@ -302,7 +299,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             Map<Integer, Integer> vals = new HashMap<>();
 
-            for (Integer key : nearKeys(grid.jcache(null), 100, 1_000_000))
+            for (Integer key : nearKeys(grid.cache(null), 100, 1_000_000))
                 vals.put(key, 1);
 
             final AtomicBoolean done = new AtomicBoolean();
@@ -382,34 +379,6 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @throws Exception If failed.
      */
     public void testEvents() throws Exception {
-        CacheEntryCreatedListener<Integer, Integer> createLsnr = new CacheEntryCreatedListener<Integer, Integer>() {
-            @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
-                    onEvent(evt);
-            }
-        };
-
-        CacheEntryUpdatedListener<Integer, Integer> updateLsnr = new CacheEntryUpdatedListener<Integer, Integer>() {
-            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
-                    onEvent(evt);
-            }
-        };
-
-        CacheEntryRemovedListener<Integer, Integer> rmvLsnr = new CacheEntryRemovedListener<Integer, Integer>() {
-            @Override public void onRemoved(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
-                    onEvent(evt);
-            }
-        };
-
-        CacheEntryExpiredListener<Integer, Integer> expireLsnr = new CacheEntryExpiredListener<Integer, Integer>() {
-            @Override public void onExpired(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-                for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
-                    onEvent(evt);
-            }
-        };
-
         IgniteCache<Integer, Integer> cache = jcache();
 
         Map<Integer, Integer> vals = new HashMap<>();
@@ -422,35 +391,31 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         for (Integer key : keys()) {
             log.info("Check create event [key=" + key + ']');
 
-            checkEvents(cache, createLsnr, key, true, false, false, false);
+            checkEvents(cache, new CreateListenerFactory(), key, true, false, false, false);
 
             log.info("Check update event [key=" + key + ']');
 
-            checkEvents(cache, updateLsnr, key, false, true, false, false);
+            checkEvents(cache, new UpdateListenerFactory(), key, false, true, false, false);
 
             log.info("Check remove event [key=" + key + ']');
 
-            checkEvents(cache, rmvLsnr, key, false, false, true, false);
+            checkEvents(cache, new RemoveListenerFactory(), key, false, false, true, false);
 
             log.info("Check expire event [key=" + key + ']');
 
-            checkEvents(cache, expireLsnr, key, false, false, false, true);
+            checkEvents(cache, new ExpireListenerFactory(), key, false, false, false, true);
 
             log.info("Check create/update events [key=" + key + ']');
 
-            checkEvents(cache, new CreateUpdateListener(), key, true, true, false, false);
+            checkEvents(cache, new CreateUpdateListenerFactory(), key, true, true, false, false);
 
             log.info("Check create/update/remove/expire events [key=" + key + ']');
 
-            checkEvents(cache, new CreateUpdateRemoveExpireListener(), key, true, true, true, true);
+            checkEvents(cache, new CreateUpdateRemoveExpireListenerFactory(), key, true, true, true, true);
         }
 
         CacheEntryListenerConfiguration<Integer, Integer> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            new Factory<CacheEntryListener<Integer, Integer>>() {
-                @Override public CacheEntryListener<Integer, Integer> create() {
-                    return new CreateUpdateRemoveExpireListener();
-                }
-            },
+            new CreateUpdateRemoveExpireListenerFactory(),
             new TestFilterFactory(),
             true,
             false
@@ -484,11 +449,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     @SuppressWarnings("unchecked")
     private void checkListenerOnStart(Map<Integer, Integer> vals) throws Exception {
         lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            new Factory<CacheEntryListener<Integer, Integer>>() {
-                @Override public CacheEntryListener<Integer, Integer> create() {
-                    return new CreateUpdateRemoveExpireListener();
-                }
-            },
+            new CreateUpdateRemoveExpireListenerFactory(),
             null,
             true,
             false
@@ -499,7 +460,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Integer, Integer> cache = grid.jcache(null);
+            IgniteCache<Integer, Integer> cache = grid.cache(null);
 
             Integer key = Integer.MAX_VALUE;
 
@@ -512,11 +473,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         }
 
         lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            new Factory<CacheEntryListener<Integer, Integer>>() {
-                @Override public CacheEntryListener<Integer, Integer> create() {
-                    return new CreateUpdateRemoveExpireListener();
-                }
-            },
+            new CreateUpdateRemoveExpireListenerFactory(),
             new TestFilterFactory(),
             true,
             false
@@ -527,7 +484,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Integer, Integer> cache = grid.jcache(null);
+            IgniteCache<Integer, Integer> cache = grid.cache(null);
 
             log.info("Check filter for listener in configuration.");
 
@@ -543,7 +500,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
     /**
      * @param cache Cache.
-     * @param lsnr Listener.
+     * @param lsnrFactory Listener factory.
      * @param key Key.
      * @param create {@code True} if listens for create events.
      * @param update {@code True} if listens for update events.
@@ -553,18 +510,14 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      */
     private void checkEvents(
         final IgniteCache<Integer, Integer> cache,
-        final CacheEntryListener<Integer, Integer> lsnr,
+        final Factory<CacheEntryListener<Integer, Integer>> lsnrFactory,
         Integer key,
         boolean create,
         boolean update,
         boolean rmv,
         boolean expire) throws Exception {
         CacheEntryListenerConfiguration<Integer, Integer> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
-            new Factory<CacheEntryListener<Integer, Integer>>() {
-                @Override public CacheEntryListener<Integer, Integer> create() {
-                    return lsnr;
-                }
-            },
+            lsnrFactory,
             null,
             true,
             false
@@ -936,9 +889,72 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class TestFilterFactory implements Factory<CacheEntryEventFilter<Integer, Integer>> {
+    private static class CreateUpdateRemoveExpireListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new CreateUpdateRemoveExpireListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NoOpCreateUpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new NoOpCreateUpdateListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CreateUpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new CreateUpdateListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CreateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new CreateListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new RemoveListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class UpdateListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new UpdateListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ExpireListenerFactory implements Factory<CacheEntryListener<Integer, Integer>> {
+        @Override public CacheEntryListener<Integer, Integer> create() {
+            return new ExpireListener();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestFilterFactory implements Factory<CacheEntryEventSerializableFilter<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public CacheEntryEventFilter<Integer, Integer> create() {
+        @Override public CacheEntryEventSerializableFilter<Integer, Integer> create() {
             return new TestFilter();
         }
     }
@@ -946,7 +962,47 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class TestFilter implements CacheEntryEventFilter<Integer, Integer> {
+    private static class CreateListener implements CacheEntryCreatedListener<Integer, Integer> {
+        @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
+                onEvent(evt);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class UpdateListener implements CacheEntryUpdatedListener<Integer, Integer> {
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
+                onEvent(evt);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveListener implements CacheEntryRemovedListener<Integer, Integer> {
+        @Override public void onRemoved(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
+                onEvent(evt);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ExpireListener implements CacheEntryExpiredListener<Integer, Integer> {
+        @Override public void onExpired(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts)
+                onEvent(evt);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             assert evt != null;
@@ -961,7 +1017,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class CreateUpdateListener implements CacheEntryCreatedListener<Integer, Integer>,
+    private static class CreateUpdateListener implements CacheEntryCreatedListener<Integer, Integer>,
         CacheEntryUpdatedListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
@@ -979,7 +1035,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class NoOpCreateUpdateListener implements CacheEntryCreatedListener<Integer, Integer>,
+    private static class NoOpCreateUpdateListener implements CacheEntryCreatedListener<Integer, Integer>,
         CacheEntryUpdatedListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
@@ -1005,7 +1061,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class CreateUpdateRemoveExpireListener extends CreateUpdateListener
+    private static class CreateUpdateRemoveExpireListener extends CreateUpdateListener
         implements CacheEntryRemovedListener<Integer, Integer>, CacheEntryExpiredListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onRemoved(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
@@ -1023,7 +1079,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class ExceptionFilter implements CacheEntryEventFilter<Integer, Integer> {
+    private static class ExceptionFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
             throw new RuntimeException("Test filter error.");
@@ -1033,7 +1089,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    static class ExceptionListener extends CreateUpdateListener
+    private static class ExceptionListener extends CreateUpdateListener
         implements CacheEntryRemovedListener<Integer, Integer>, CacheEntryExpiredListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {

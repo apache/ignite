@@ -209,7 +209,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test failed.
      */
     public void testBasicLock() throws Exception {
-        IgniteCache<Integer, String> cache = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache = ignite1.cache(null);
 
         Lock lock = cache.lock(1);
 
@@ -249,8 +249,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLock() throws Exception {
-        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.cache(null);
 
         Lock lock1_1 = cache1.lock(1);
         Lock lock2_1 = cache2.lock(1);
@@ -307,8 +307,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockWithKeyLists() throws Exception {
-        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.cache(null);
 
         Collection<Integer> keys1 = Arrays.asList(1, 2, 3);
         Collection<Integer> keys2 = Arrays.asList(2, 3, 4);
@@ -384,7 +384,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws IgniteCheckedException If test failed.
      */
     public void testLockReentry() throws IgniteCheckedException {
-        IgniteCache<Integer, String> cache = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache = ignite1.cache(null);
 
         Lock lock = cache.lock(1);
 
@@ -412,7 +412,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test failed.
      */
     public void testLockMultithreaded() throws Exception {
-        final IgniteCache<Integer, String> cache = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache = ignite1.cache(null);
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);

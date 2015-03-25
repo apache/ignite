@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -46,9 +46,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     /** Cache affinity partitions. */
     private Integer partitions;
 
-    /** Cache partitioned affinity default replicas. */
-    private Integer dfltReplicas;
-
     /** Cache partitioned affinity exclude neighbors. */
     private Boolean excludeNeighbors;
 
@@ -57,25 +54,23 @@ public class VisorCacheAffinityConfiguration implements Serializable {
      * @return Data transfer object for affinity configuration properties.
      */
     public static VisorCacheAffinityConfiguration from(CacheConfiguration ccfg) {
-        CacheAffinityFunction aff = ccfg.getAffinity();
+        AffinityFunction aff = ccfg.getAffinity();
 
-        Integer dfltReplicas = null;
         Boolean excludeNeighbors = null;
 
-        if (aff instanceof CacheConsistentHashAffinityFunction) {
-            CacheConsistentHashAffinityFunction hashAffFunc = (CacheConsistentHashAffinityFunction)aff;
+        if (aff instanceof RendezvousAffinityFunction) {
+            RendezvousAffinityFunction hashAffFunc = (RendezvousAffinityFunction)aff;
 
-            dfltReplicas = hashAffFunc.getDefaultReplicas();
             excludeNeighbors = hashAffFunc.isExcludeNeighbors();
         }
 
         VisorCacheAffinityConfiguration cfg = new VisorCacheAffinityConfiguration();
 
-        cfg.function(compactClass(aff));
-        cfg.mapper(compactClass(ccfg.getAffinityMapper()));
-        cfg.partitionedBackups(ccfg.getBackups());
-        cfg.defaultReplicas(dfltReplicas);
-        cfg.excludeNeighbors(excludeNeighbors);
+        cfg.function = compactClass(aff);
+        cfg.mapper = compactClass(ccfg.getAffinityMapper());
+        cfg.partitions = aff.partitions();
+        cfg.partitionedBackups = ccfg.getBackups();
+        cfg.excludeNeighbors = excludeNeighbors;
 
         return cfg;
     }
@@ -88,24 +83,10 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param function New cache affinity function.
-     */
-    public void function(String function) {
-        this.function = function;
-    }
-
-    /**
      * @return Cache affinity mapper.
      */
     public String mapper() {
         return mapper;
-    }
-
-    /**
-     * @param mapper New cache affinity mapper.
-     */
-    public void mapper(String mapper) {
-        this.mapper = mapper;
     }
 
     /**
@@ -116,13 +97,6 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param partitionedBackups New count of key backups.
-     */
-    public void partitionedBackups(int partitionedBackups) {
-        this.partitionedBackups = partitionedBackups;
-    }
-
-    /**
      * @return Cache affinity partitions.
      */
     public Integer partitions() {
@@ -130,38 +104,10 @@ public class VisorCacheAffinityConfiguration implements Serializable {
     }
 
     /**
-     * @param partitions New cache affinity partitions.
-     */
-    public void partitions(Integer partitions) {
-        this.partitions = partitions;
-    }
-
-    /**
-     * @return Cache partitioned affinity default replicas.
-     */
-    @Nullable public Integer defaultReplicas() {
-        return dfltReplicas;
-    }
-
-    /**
-     * @param dfltReplicas New cache partitioned affinity default replicas.
-     */
-    public void defaultReplicas(Integer dfltReplicas) {
-        this.dfltReplicas = dfltReplicas;
-    }
-
-    /**
      * @return Cache partitioned affinity exclude neighbors.
      */
     @Nullable public Boolean excludeNeighbors() {
         return excludeNeighbors;
-    }
-
-    /**
-     * @param excludeNeighbors New cache partitioned affinity exclude neighbors.
-     */
-    public void excludeNeighbors(Boolean excludeNeighbors) {
-        this.excludeNeighbors = excludeNeighbors;
     }
 
     /** {@inheritDoc} */

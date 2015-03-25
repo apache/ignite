@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -163,7 +163,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
         for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
             if (cCfg.getCacheMode() == CacheMode.PARTITIONED) {
-                cCfg.setAffinity(new CacheConsistentHashAffinityFunction(2048, null));
+                cCfg.setAffinity(new RendezvousAffinityFunction(2048, null));
                 cCfg.setBackups(1);
             }
         }

@@ -48,12 +48,10 @@ public interface IgniteCacheExpiryPolicy {
      * Callback for ttl update on entry access.
      *
      * @param key Entry key.
-     * @param keyBytes Entry key bytes.
      * @param ver Entry version.
      * @param rdrs Entry readers.
      */
-    public void ttlUpdated(Object key,
-       byte[] keyBytes,
+    public void ttlUpdated(KeyCacheObject key,
        GridCacheVersion ver,
        @Nullable Collection<UUID> rdrs);
 
@@ -71,10 +69,10 @@ public interface IgniteCacheExpiryPolicy {
     /**
      * @return Entries with TTL updated on access.
      */
-    @Nullable public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries();
+    @Nullable public Map<KeyCacheObject, GridCacheVersion> entries();
 
     /**
      * @return Readers for updated entries.
      */
-    @Nullable Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers();
+    @Nullable Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> readers();
 }

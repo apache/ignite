@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -25,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -41,10 +41,5 @@ public class GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest exte
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
     }
 }

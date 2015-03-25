@@ -34,12 +34,12 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -49,16 +49,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbstractTest {
     /** */
+    private static final long TTL_FOR_EXPIRE = 500L;
+
+    /** */
     private Factory<? extends ExpiryPolicy> factory;
 
     /** */
     private boolean nearCache;
 
     /** */
-    private Integer lastKey = 0;
+    private boolean disableEagerTtl;
 
     /** */
-    private static final long TTL_FOR_EXPIRE = 500L;
+    private Integer lastKey = 0;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -69,7 +72,25 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        factory = null;
+
         storeMap.clear();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+
+        if (nearCache)
+            cfg.setNearConfiguration(new NearCacheConfiguration());
+
+        cfg.setExpiryPolicyFactory(factory);
+
+        if (disableEagerTtl)
+            cfg.setEagerTtl(false);
+
+        return cfg;
     }
 
     /**
@@ -103,23 +124,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnUpdate() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return Duration.ZERO;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, 0L, null));
 
         startGrids();
 
@@ -150,23 +155,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testZeroOnAccess() throws Exception {
-        factory = new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return null;
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return Duration.ZERO;
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return null;
-                    }
-                };
-            }
-        };
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, null, 0L));
 
         startGrids();
 
@@ -175,6 +164,33 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             zeroOnAccess(key);
         }
+
+        IgniteCache<Integer, Object> cache = jcache(0);
+
+        Integer key = primaryKey(cache);
+
+        IgniteCache<Integer, Object> cache0 = cache.withExpiryPolicy(new TestPolicy(60_000L, 60_000L, 60_000L));
+
+        cache0.put(key, 1);
+
+        cache.get(key); // Access using get.
+
+        assertFalse(cache.iterator().hasNext());
+
+        cache0.put(key, 1);
+
+        assertNotNull(cache.iterator().next()); // Access using iterator.
+
+        assertFalse(cache.iterator().hasNext());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccessEagerTtlDisabled() throws Exception {
+        disableEagerTtl = true;
+
+        testZeroOnAccess();
     }
 
     /**
@@ -189,6 +205,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
 
         waitExpired(F.asList(key));
+
+        assertFalse(cache.iterator().hasNext());
     }
 
     /**
@@ -741,9 +759,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearCreateUpdate() throws Exception {
+    public void _testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -766,7 +785,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
+        assertNotNull(jcache(0).getConfiguration(CacheConfiguration.class).getNearConfiguration());
 
         cache0.put(key, 1);
 
@@ -864,9 +883,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearAccess() throws Exception {
+    public void _testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -1019,10 +1039,18 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 
-            GridCacheEntryEx<Object, Object> e = cache.peekEx(key);
+            GridCacheEntryEx e = cache.peekEx(key);
 
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
+
+            if (e != null && e.deleted()) {
+                assertEquals(0, e.ttl());
+
+                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+
+                continue;
+            }
 
             if (e == null)
                 assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
@@ -1030,7 +1058,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 found = true;
 
                 if (wait) {
-                    final GridCacheEntryEx<Object, Object> e0 = e;
+                    final GridCacheEntryEx e0 = e;
 
                     GridTestUtils.waitForCondition(new PA() {
                         @Override public boolean apply() {
@@ -1062,18 +1090,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertTrue(found);
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        if (nearCache && gridName.equals(getTestGridName(0)))
-            cfg.setDistributionMode(NEAR_PARTITIONED);
-
-        cfg.setExpiryPolicyFactory(factory);
-
-        return cfg;
-    }
-
     /**
      *
      */
@@ -1087,7 +1103,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestPolicy implements ExpiryPolicy {
+    private static class TestPolicy implements ExpiryPolicy, Serializable {
         /** */
         private Long create;
 

@@ -40,7 +40,7 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
 
         long start = System.nanoTime();
 
-        try (IgniteDataLoader<Integer, Person> dataLdr = ignite().dataLoader(cache.getName())) {
+        try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cache.getName())) {
             for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
                 dataLdr.addData(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
 
@@ -87,6 +87,6 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("query");
+        return ignite().cache("query");
     }
 }

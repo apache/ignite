@@ -21,4 +21,5 @@ package org.apache.ignite.internal.processors.cache.query;
  *
  */
 public class GridCacheSwapScanQuerySelfTest extends GridCacheSwapScanQueryAbstractSelfTest {
+    // No-op.
 }

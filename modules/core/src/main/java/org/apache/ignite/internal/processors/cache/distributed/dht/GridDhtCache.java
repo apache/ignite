@@ -53,7 +53,7 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    public GridDhtCache(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
+    public GridDhtCache(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
     }
 

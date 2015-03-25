@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -47,7 +47,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     private static final int KEY_CNT = 1000;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = CachePreloadMode.SYNC;
+    private CacheRebalanceMode preloadMode = CacheRebalanceMode.SYNC;
 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -62,8 +62,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 521));
+        cc.setRebalanceMode(preloadMode);
+        cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -92,7 +92,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.jcache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -102,8 +102,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        IgniteCache<String, Integer> c1 = g1.jcache(null);
-        IgniteCache<String, Integer> c2 = g2.jcache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(null);
+        IgniteCache<String, Integer> c2 = g2.cache(null);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)g0.configuration().getCommunicationSpi();
         TestCommunicationSpi spi1 = (TestCommunicationSpi)g1.configuration().getCommunicationSpi();

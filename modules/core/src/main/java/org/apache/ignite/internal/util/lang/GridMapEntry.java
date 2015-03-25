@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Simple {@link Map.Entry} implementation.
+ * Simple {@link java.util.Map.Entry} implementation.
  */
 public class GridMapEntry<K, V> implements Map.Entry<K, V>, Serializable {
     /** */
@@ -35,8 +35,8 @@ public class GridMapEntry<K, V> implements Map.Entry<K, V>, Serializable {
     @GridToStringInclude
     private K key;
 
-    @GridToStringInclude
     /** */
+    @GridToStringInclude
     private V val;
 
     /**

@@ -29,9 +29,8 @@ import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -66,13 +65,13 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         // This property is essential for this test.
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
 
-        cacheCfg.setPreloadBatchSize(10000);
+        cacheCfg.setRebalanceBatchSize(10000);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDeploymentMode(CONTINUOUS);
@@ -99,7 +98,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.jcache(null).put(i, i);
+            g0.cache(null).put(i, i);
 
         assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
         assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
@@ -130,7 +129,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.jcache(null).put(i, i);
+            g0.cache(null).put(i, i);
 
         assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
         assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());

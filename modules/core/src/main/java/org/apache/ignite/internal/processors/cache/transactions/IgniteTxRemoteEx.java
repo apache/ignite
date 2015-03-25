@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Local transaction API.
  */
-public interface IgniteTxRemoteEx<K, V> extends IgniteInternalTx<K, V> {
+public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
      * @return Remote thread ID.
      */
@@ -39,5 +39,5 @@ public interface IgniteTxRemoteEx<K, V> extends IgniteInternalTx<K, V> {
      * @param e Sets write value for pessimistic transactions.
      * @return {@code True} if entry was found.
      */
-    public boolean setWriteValue(IgniteTxEntry<K, V> e);
+    public boolean setWriteValue(IgniteTxEntry e);
 }

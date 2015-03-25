@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -29,33 +30,53 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Utils")
 public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /** */
-    private IgniteExceptionRegistry registry;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        registry = new IgniteExceptionRegistry(new GridStringLogger());
-    }
+    private IgniteExceptionRegistry registry = IgniteExceptionRegistry.get();
 
     /**
      * @throws Exception if failed.
      */
     public void testOnException() throws Exception {
+        awaitPartitionMapExchange();
+
         int expCnt = 150;
+
+        long errorCount = registry.errorCount();
+
+        info(">>> Registry error count before test: " + errorCount);
 
         for (int i = 0; i < expCnt; i++)
             registry.onException("Test " + i, new Exception("Test " + i));
 
-        Collection<IgniteExceptionRegistry.ExceptionInfo> exceptions = registry.getErrors();
+        Collection<IgniteExceptionRegistry.ExceptionInfo> errors = registry.getErrors(errorCount);
 
-        assertEquals(expCnt, registry.getErrors().size());
-        assertEquals(expCnt, registry.getErrors().size());
-        assertEquals(expCnt, registry.getErrors().size());
+        int sz = errors.size();
+
+        info(">>> Collected errors count after test: " + sz);
+
+        if (expCnt != sz) {
+            info(">>> Expected error count: " + expCnt + ", but actual: " + sz);
+
+            for (IgniteExceptionRegistry.ExceptionInfo e : errors)
+                if (!e.message().startsWith("Test ")) {
+                    info("----------------------------");
+
+                    info("!!! Found unexpected suppressed exception: msg=" + e.message() +
+                        ", threadId=" + e.threadId() + ", threadName=" + e.threadName() +
+                        ", err=" + e.error());
+
+                    StringWriter sw = new StringWriter(1024);
+                    e.error().printStackTrace(new PrintWriter(sw));
+                    info(sw.toString());
+
+                    info("----------------------------");
+                }
+
+            assert false;
+        }
 
         int i = expCnt - 1;
 
-        for (IgniteExceptionRegistry.ExceptionInfo e : exceptions) {
+        for (IgniteExceptionRegistry.ExceptionInfo e : errors) {
             assertNotNull(e);
             assertEquals(e.message(), "Test " + i);
             assertEquals(e.threadId(), Thread.currentThread().getId());
@@ -82,7 +103,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
             }
         }, 10, "TestSetMaxSize");
 
-        int size = registry.getErrors().size();
+        int size = registry.getErrors(0).size();
 
         assert maxSize + 1 >= size && maxSize - 1 <= size;
     }

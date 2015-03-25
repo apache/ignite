@@ -19,18 +19,17 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -39,12 +38,12 @@ import static org.apache.ignite.events.EventType.*;
  * Near cache entry.
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
-public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
+public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** */
     private static final int NEAR_SIZE_OVERHEAD = 36;
 
-    /** ID of primary node from which this entry was last read. */
-    private volatile UUID primaryNodeId;
+    /** Topology version at the moment when value was initialized from primary node. */
+    private volatile long topVer = -1L;
 
     /** DHT version which caused the last update. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -62,8 +61,14 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param ttl Time to live.
      * @param hdrId Header id.
      */
-    public GridNearCacheEntry(GridCacheContext<K, V> ctx, K key, int hash, V val, GridCacheMapEntry<K, V> next,
-        long ttl, int hdrId) {
+    public GridNearCacheEntry(GridCacheContext ctx,
+        KeyCacheObject key,
+        int hash,
+        CacheObject val,
+        GridCacheMapEntry next,
+        long ttl,
+        int hdrId)
+    {
         super(ctx, key, hash, val, next, ttl, hdrId);
 
         part = ctx.affinity().partition(key);
@@ -85,30 +90,50 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
-        assert topVer > 0 : "Topology version is invalid: " + topVer;
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
+        assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
-        UUID primaryNodeId = this.primaryNodeId;
+        long topVer0 = this.topVer;
 
-        if (primaryNodeId == null)
+        if (topVer0 == topVer.topologyVersion())
+            return true;
+
+        if (topVer0 == -1L || topVer.topologyVersion() < topVer0)
             return false;
 
-        if (cctx.discovery().node(primaryNodeId) == null) {
-            this.primaryNodeId = null;
+        try {
+            ClusterNode primary = null;
+
+            for (long ver = topVer0; ver <= topVer.topologyVersion(); ver++) {
+                ClusterNode primary0 = cctx.affinity().primary(part, new AffinityTopologyVersion(ver));
+
+                if (primary0 == null) {
+                    this.topVer = -1L;
+
+                    return false;
+                }
+
+                if (primary == null)
+                    primary = primary0;
+                else {
+                    if (!primary.equals(primary0)) {
+                        this.topVer = -1L;
+
+                        return false;
+                    }
+                }
+            }
+
+            this.topVer = topVer.topologyVersion();
+
+            return true;
+        }
+        catch (IllegalStateException ignore) {
+            // Do not have affinity history.
+            this.topVer = -1L;
 
             return false;
         }
-
-        // Make sure that primary node is alive before returning this value.
-        ClusterNode primary = cctx.affinity().primary(key(), topVer);
-
-        if (primary != null && primary.id().equals(primaryNodeId))
-            return true;
-
-        // Primary node changed.
-        this.primaryNodeId = null;
-
-        return false;
     }
 
     /**
@@ -116,12 +141,12 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return {@code True} if this entry was initialized by this call.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      */
-    public boolean initializeFromDht(long topVer) throws GridCacheEntryRemovedException {
+    public boolean initializeFromDht(AffinityTopologyVersion topVer) throws GridCacheEntryRemovedException {
         while (true) {
-            GridDhtCacheEntry<K, V> entry = cctx.near().dht().peekExx(key);
+            GridDhtCacheEntry entry = cctx.near().dht().peekExx(key);
 
             if (entry != null) {
-                GridCacheEntryInfo<K, V> e = entry.info();
+                GridCacheEntryInfo e = entry.info();
 
                 if (e != null) {
                     GridCacheVersion enqueueVer = null;
@@ -132,10 +157,10 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                             if (isNew() || !valid(topVer)) {
                                 // Version does not change for load ops.
-                                update(e.value(), e.valueBytes(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
                                 if (cctx.deferredDelete()) {
-                                    boolean deleted = val == null && valBytes == null;
+                                    boolean deleted = val == null;
 
                                     if (deleted != deletedUnlocked()) {
                                         deletedUnlocked(deleted);
@@ -170,7 +195,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * This method should be called only when lock is owned on this entry.
      *
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ver Version.
      * @param dhtVer DHT version.
      * @param primaryNodeId Primary node ID.
@@ -179,26 +203,23 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"RedundantTypeArguments"})
-    public boolean resetFromPrimary(V val, byte[] valBytes, GridCacheVersion ver, GridCacheVersion dhtVer,
-        UUID primaryNodeId) throws GridCacheEntryRemovedException, IgniteCheckedException {
+    public boolean resetFromPrimary(CacheObject val,
+        GridCacheVersion ver,
+        GridCacheVersion dhtVer,
+        UUID primaryNodeId)
+        throws GridCacheEntryRemovedException, IgniteCheckedException
+    {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
 
-        if (valBytes != null && val == null && !cctx.config().isStoreValueBytes()) {
-            GridCacheVersion curDhtVer = dhtVersion();
-
-            if (!F.eq(dhtVer, curDhtVer))
-                val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
-        }
-
         synchronized (this) {
             checkObsolete();
 
-            this.primaryNodeId = primaryNodeId;
+            primaryNode(primaryNodeId);
 
             if (!F.eq(this.dhtVer, dhtVer)) {
-                value(val, valBytes);
+                value(val);
 
                 this.ver = ver;
                 this.dhtVer = dhtVer;
@@ -215,13 +236,16 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      *
      * @param dhtVer DHT version.
      * @param val Value associated with version.
-     * @param valBytes Value bytes.
      * @param expireTime Expire time.
      * @param ttl Time to live.
      * @param primaryNodeId Primary node ID.
      */
-    public void updateOrEvict(GridCacheVersion dhtVer, @Nullable V val, @Nullable byte[] valBytes, long expireTime,
-        long ttl, UUID primaryNodeId) {
+    public void updateOrEvict(GridCacheVersion dhtVer,
+        @Nullable CacheObject val,
+        long expireTime,
+        long ttl,
+        UUID primaryNodeId)
+    {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -236,11 +260,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                 // If cannot evict, then update.
                 if (this.dhtVer == null) {
                     if (!markObsolete(dhtVer)) {
-                        value(val, valBytes);
+                        value(val);
 
                         ttlAndExpireTimeExtras((int) ttl, expireTime);
 
-                        this.primaryNodeId = primaryNodeId;
+                        primaryNode(primaryNodeId);
                     }
                 }
             }
@@ -261,43 +285,24 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Tuple with version and value of this entry.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public synchronized GridTuple3<GridCacheVersion, V, byte[]> versionedValue()
+    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue()
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
         if (dhtVer == null)
             return null;
         else {
-            V val0 = null;
-            byte[] valBytes0 = null;
+            CacheObject val0 = valueBytesUnlocked();
 
-            GridCacheValueBytes valBytesTuple = valueBytes();
-
-            if (!valBytesTuple.isNull()) {
-                if (valBytesTuple.isPlain())
-                    val0 = (V)valBytesTuple.get();
-                else
-                    valBytes0 = valBytesTuple.get();
-            }
-            else
-                val0 = val;
-
-            return F.t(dhtVer, val0, valBytes0);
+            return F.t(ver, val0);
         }
-    }
-
-    /**
-     * @return ID of primary node from which this value was loaded.
-     */
-    UUID nodeId() {
-        return primaryNodeId;
     }
 
     /** {@inheritDoc} */
     @Override protected void recordNodeId(UUID primaryNodeId) {
         assert Thread.holdsLock(this);
 
-        this.primaryNodeId = primaryNodeId;
+        primaryNode(primaryNodeId);
     }
 
     /**
@@ -312,7 +317,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
+    @Override protected Object readThrough(IgniteInternalTx tx, KeyCacheObject key, boolean reload,
         UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
@@ -322,14 +327,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             taskName,
             true,
             null,
-            false).get().get(key);
+            false).get().get(keyValue(false));
     }
 
     /**
      * @param tx Transaction.
      * @param primaryNodeId Primary node ID.
      * @param val New value.
-     * @param valBytes Value bytes.
      * @param ver Version to use.
      * @param dhtVer DHT version received from remote node.
      * @param expVer Optional version to match.
@@ -343,14 +347,19 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable IgniteInternalTx tx, UUID primaryNodeId, V val, byte[] valBytes,
-        GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
-        boolean evt, long topVer, UUID subjId)
+    public boolean loadedValue(@Nullable IgniteInternalTx tx,
+        UUID primaryNodeId,
+        CacheObject val,
+        GridCacheVersion ver,
+        GridCacheVersion dhtVer,
+        @Nullable GridCacheVersion expVer,
+        long ttl,
+        long expireTime,
+        boolean evt,
+        AffinityTopologyVersion topVer,
+        UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
-
-        if (valBytes != null && val == null && (isNewLocked() || !valid))
-            val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
         GridCacheVersion enqueueVer = null;
 
@@ -363,18 +372,18 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 boolean ret = false;
 
-                V old = this.val;
+                CacheObject old = this.val;
                 boolean hasVal = hasValueUnlocked();
 
                 if (isNew() || !valid || expVer == null || expVer.equals(this.dhtVer)) {
-                    this.primaryNodeId = primaryNodeId;
+                    primaryNode(primaryNodeId);
 
                     // Change entry only if dht version has changed.
                     if (!dhtVer.equals(dhtVersion())) {
-                        update(val, valBytes, expireTime, ttl, ver);
+                        update(val, expireTime, ttl, ver);
 
                         if (cctx.deferredDelete()) {
-                            boolean deleted = val == null && valBytes == null;
+                            boolean deleted = val == null;
 
                             if (deleted != deletedUnlocked()) {
                                 deletedUnlocked(deleted);
@@ -392,7 +401,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null || valBytes != null, old, hasVal, subjId, null, null);
+                        val, val != null, old, hasVal, subjId, null, null);
 
                 return ret;
             }
@@ -404,18 +413,18 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(V val, byte[] valBytes, long expireTime,
-        GridCacheVersion ver, V old) throws IgniteCheckedException {
+    @Override protected void updateIndex(CacheObject val, long expireTime,
+        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(V val) {
+    @Override protected void clearIndex(CacheObject val) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate<K> addLocal(
+    @Override public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
         long timeout,
@@ -446,7 +455,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public GridCacheMvccCandidate<K> addNearLocal(
+    @Nullable public GridCacheMvccCandidate addNearLocal(
         @Nullable UUID dhtNodeId,
         long threadId,
         GridCacheVersion ver,
@@ -455,26 +464,26 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         boolean tx,
         boolean implicitSingle)
         throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev;
-        GridCacheMvccCandidate<K> owner;
-        GridCacheMvccCandidate<K> cand;
+        GridCacheMvccCandidate prev;
+        GridCacheMvccCandidate owner;
+        GridCacheMvccCandidate cand;
 
-        V val;
+        CacheObject val;
 
         UUID locId = cctx.nodeId();
 
         synchronized (this) {
             checkObsolete();
 
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
-                mvcc = new GridCacheMvcc<>(cctx);
+                mvcc = new GridCacheMvcc(cctx);
 
                 mvccExtras(mvcc);
             }
 
-            GridCacheMvccCandidate<K> c = mvcc.localCandidate(locId, threadId);
+            GridCacheMvccCandidate c = mvcc.localCandidate(locId, threadId);
 
             if (c != null)
                 return reenter ? c.reenter() : null;
@@ -514,13 +523,13 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return {@code true} if candidate was found.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
+    @Nullable public synchronized GridCacheMvccCandidate dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        GridCacheMvcc<K> mvcc = mvccExtras();
+        GridCacheMvcc mvcc = mvccExtras();
 
-        GridCacheMvccCandidate<K> cand = mvcc == null ? null : mvcc.candidate(ver);
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
 
         if (cand == null)
             return null;
@@ -535,18 +544,18 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      *
      * @return Removed candidate, or <tt>null</tt> if thread still holds the lock.
      */
-    @Nullable @Override public GridCacheMvccCandidate<K> removeLock() {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
+    @Nullable @Override public GridCacheMvccCandidate removeLock() {
+        GridCacheMvccCandidate prev = null;
+        GridCacheMvccCandidate owner = null;
 
-        V val;
+        CacheObject val;
 
         UUID locId = cctx.nodeId();
 
-        GridCacheMvccCandidate<K> cand = null;
+        GridCacheMvccCandidate cand = null;
 
         synchronized (this) {
-            GridCacheMvcc<K> mvcc = mvccExtras();
+            GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
                 prev = mvcc.anyOwner();
@@ -559,7 +568,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 if (cand != null && cand.owner()) {
                     // If a reentry, then release reentry. Otherwise, remove lock.
-                    GridCacheMvccCandidate<K> reentry = cand.unenter();
+                    GridCacheMvccCandidate reentry = cand.unenter();
 
                     if (reentry != null) {
                         assert reentry.reentry();
@@ -605,7 +614,29 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
+        topVer = -1L;
         dhtVer = null;
+    }
+
+    /**
+     * @param nodeId Primary node ID.
+     */
+    private void primaryNode(UUID nodeId) {
+        assert Thread.holdsLock(this);
+        assert nodeId != null;
+
+        AffinityTopologyVersion topVer = cctx.discovery().topologyVersionEx();
+
+        ClusterNode primary = cctx.affinity().primary(part, topVer);
+
+        if (primary == null || !nodeId.equals(primary.id())) {
+            this.topVer = -1L;
+
+            return;
+        }
+
+        if (topVer.topologyVersion() > this.topVer)
+            this.topVer = topVer.topologyVersion();
     }
 
     /** {@inheritDoc} */

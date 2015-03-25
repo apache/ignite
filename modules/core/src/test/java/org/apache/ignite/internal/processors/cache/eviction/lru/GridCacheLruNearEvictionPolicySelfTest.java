@@ -29,9 +29,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -59,12 +58,13 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cc.setDistributionMode(NEAR_PARTITIONED);
-        cc.setPreloadMode(SYNC);
-        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+        cc.setRebalanceMode(SYNC);
         cc.setStartSize(100);
-        cc.setQueryIndexEnabled(true);
         cc.setBackups(0);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
@@ -108,7 +108,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataLoader<Integer, String> ldr = grid(0).dataLoader(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(null)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
@@ -120,7 +120,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).jcache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

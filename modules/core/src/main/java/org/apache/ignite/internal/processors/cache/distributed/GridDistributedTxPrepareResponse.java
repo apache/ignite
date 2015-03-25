@@ -33,14 +33,14 @@ import java.util.*;
 /**
  * Response to prepare request.
  */
-public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Collections of local lock candidates. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<K, Collection<GridCacheMvccCandidate<K>>> cands;
+    private Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands;
 
     /** */
     private byte[] candsBytes;
@@ -101,18 +101,18 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /**
      * @param cands Candidates map to set.
      */
-    public void candidates(Map<K, Collection<GridCacheMvccCandidate<K>>> cands) {
+    public void candidates(Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands) {
         this.cands = cands;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (candsBytes == null && cands != null) {
             if (ctx.deploymentEnabled()) {
-                for (K k : cands.keySet())
+                for (KeyCacheObject k : cands.keySet())
                     prepareObject(k, ctx);
             }
 
@@ -124,7 +124,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (candsBytes != null && cands == null)
@@ -139,7 +139,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
      * @param key Candidates key.
      * @return Collection of lock candidates at given index.
      */
-    @Nullable public Collection<GridCacheMvccCandidate<K>> candidatesForKey(K key) {
+    @Nullable public Collection<GridCacheMvccCandidate> candidatesForKey(KeyCacheObject key) {
         assert key != null;
 
         if (cands == null)

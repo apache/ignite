@@ -33,28 +33,22 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
-     * Gets mapping from values field name to its type.
+     * Gets mapping from field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.
      */
-    public Map<String, Class<?>> valueFields();
+    public Map<String, Class<?>> fields();
 
     /**
-     * Gets mapping from keys field name to its type.
+     * Gets field value for given key and value.
      *
-     * @return Fields that can be indexed, participate in queries and can be queried.
-     */
-    public Map<String, Class<?>> keyFields();
-
-    /**
-     * Gets field value for given object.
-     *
-     * @param obj Object to get field value from.
      * @param field Field name.
+     * @param key Key.
+     * @param val Value.
      * @return Value for given field.
      * @throws IgniteCheckedException If failed.
      */
-    public <T> T value(Object obj, String field) throws IgniteCheckedException;
+    public <T> T value(String field, Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Gets indexes for this type.

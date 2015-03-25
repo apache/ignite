@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  *
@@ -62,7 +62,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
-        cache.setPreloadMode(NONE);
+        cache.setRebalanceMode(NONE);
 
         cfg.setCacheConfiguration(cache);
 
@@ -89,16 +89,6 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testQuery() throws Exception {
-        CacheQueryFuture<Map.Entry<Object, Object>> fut =
-            ((IgniteKernal)grid(0)).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
-
-        testMessageSet(fut);
     }
 
     /**

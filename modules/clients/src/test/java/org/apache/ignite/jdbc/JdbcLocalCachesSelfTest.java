@@ -17,10 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -30,9 +27,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.sql.*;
 import java.util.*;
 
+import static org.apache.ignite.IgniteJdbcDriver.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * Test JDBC with several local caches.
@@ -56,12 +53,9 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setName(CACHE_NAME);
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-
-        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
-
-        qryCfg.setIndexPrimitiveKey(true);
-
-        cache.setQueryConfiguration(qryCfg);
+        cache.setIndexedTypes(
+            String.class, Integer.class
+        );
 
         cfg.setCacheConfiguration(cache);
 
@@ -80,14 +74,14 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        IgniteCache<Object, Object> cache1 = grid(0).jcache(CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
 
         assert cache1 != null;
 
         cache1.put("key1", 1);
         cache1.put("key2", 2);
 
-        IgniteCache<Object, Object> cache2 = grid(1).jcache(CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
 
         assert cache2 != null;
 

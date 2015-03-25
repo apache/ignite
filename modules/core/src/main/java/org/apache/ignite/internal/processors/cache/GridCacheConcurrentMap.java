@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -40,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 /**
  * Concurrent implementation of cache map.
  */
-public class GridCacheConcurrentMap<K, V> {
+public class GridCacheConcurrentMap {
     /** Debug flag. */
     private static final boolean DEBUG = false;
 
@@ -76,41 +77,41 @@ public class GridCacheConcurrentMap<K, V> {
     private final Segment[] segs;
 
     /** */
-    private GridCacheMapEntryFactory<K, V> factory;
+    private GridCacheMapEntryFactory factory;
 
     /** Cache context. */
-    protected final GridCacheContext<K, V> ctx;
+    protected final GridCacheContext ctx;
 
     /** */
-    private final LongAdder mapPubSize = new LongAdder();
+    private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** */
-    private final LongAdder mapSize = new LongAdder();
+    private final LongAdder8 mapSize = new LongAdder8();
 
     /** Filters cache internal entry. */
-    private static final P1<Cache.Entry<?, ?>> NON_INTERNAL =
-        new P1<Cache.Entry<?, ?>>() {
-            @Override public boolean apply(Cache.Entry<?, ?> entry) {
-                return !(entry.getKey() instanceof GridCacheInternal);
+    private static final CacheEntryPredicate NON_INTERNAL =
+        new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx entry) {
+                return !entry.isInternal();
             }
-        };
+        });
 
     /** Non-internal predicate array. */
-    public static final IgnitePredicate[] NON_INTERNAL_ARR = new P1[] {NON_INTERNAL};
+    public static final CacheEntryPredicate[] NON_INTERNAL_ARR = new CacheEntryPredicate[] {NON_INTERNAL};
 
     /** Filters obsolete cache map entry. */
-    private final IgnitePredicate<GridCacheMapEntry<K, V>> obsolete =
-        new P1<GridCacheMapEntry<K, V>>() {
-            @Override public boolean apply(GridCacheMapEntry<K, V> entry) {
+    private final IgnitePredicate<GridCacheMapEntry> obsolete =
+        new P1<GridCacheMapEntry>() {
+            @Override public boolean apply(GridCacheMapEntry entry) {
                 return entry.obsolete();
             }
         };
 
     /** Soft iterator queue. */
-    private final ReferenceQueue<Iterator0<K, V>> itQ = new ReferenceQueue<>();
+    private final ReferenceQueue<Iterator0> itQ = new ReferenceQueue<>();
 
     /** Soft iterator set. */
-    private final Map<WeakIterator<K, V>, SegmentHeader<K, V>> itMap =
+    private final Map<WeakIterator<KeyCacheObject, CacheObject>, SegmentHeader> itMap =
         new ConcurrentHashMap8<>();
 
     /**
@@ -119,13 +120,14 @@ public class GridCacheConcurrentMap<K, V> {
     private void checkWeakQueue() {
         // If queue is empty, then it is a lock-free volatile read which should happen
         // in most cases. Otherwise queue uses synchronization to poll elements.
-        for (Reference<? extends Iterator0<K, V>> itRef = itQ.poll(); itRef != null; itRef = itQ.poll()) {
+        for (Reference<? extends Iterator0> itRef = itQ.poll();
+             itRef != null; itRef = itQ.poll()) {
             assert itRef instanceof WeakIterator;
 
             if (DEBUG)
                 X.println("Checking weak queue [itSetSize=" + itMap.size() + ']');
 
-            SegmentHeader<K, V> lastSeg = removeWeakIterator(itRef);
+            SegmentHeader lastSeg = removeWeakIterator(itRef);
 
             // Segment may be null if iterator is empty at creation time.
             if (lastSeg != null)
@@ -137,10 +139,11 @@ public class GridCacheConcurrentMap<K, V> {
      * @param itRef Iterator reference.
      * @return Last segment.
      */
-    private SegmentHeader<K, V> removeWeakIterator(Reference<? extends Iterator0<K, V>> itRef) {
+    private SegmentHeader removeWeakIterator(
+        Reference<? extends Iterator0> itRef) {
         assert itRef instanceof WeakIterator;
 
-        SegmentHeader<K, V> hdr = itMap.remove(itRef);
+        SegmentHeader hdr = itMap.remove(itRef);
 
         if (DEBUG) {
             if (hdr == null)
@@ -156,8 +159,8 @@ public class GridCacheConcurrentMap<K, V> {
      * @param itRef Iterator reference.
      * @param hdr Segment header.
      */
-    private void addWeakIterator(WeakIterator<K, V> itRef, SegmentHeader<K, V> hdr) {
-        SegmentHeader<K, V> prev = itMap.put(itRef, hdr);
+    private void addWeakIterator(WeakIterator itRef, SegmentHeader hdr) {
+        SegmentHeader prev = itMap.put(itRef, hdr);
 
         if (DEBUG)
             if (prev == null)
@@ -176,7 +179,7 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @return Reference queue for iterators.
      */
-    private ReferenceQueue<Iterator0<K, V>> iteratorQueue() {
+    private ReferenceQueue<Iterator0> iteratorQueue() {
         return itQ;
     }
 
@@ -225,7 +228,7 @@ public class GridCacheConcurrentMap<K, V> {
      *      non-positive.
      */
     @SuppressWarnings({"unchecked"})
-    protected GridCacheConcurrentMap(GridCacheContext<K, V> ctx, int initCap, float loadFactor,
+    protected GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor,
         int concurrencyLevel) {
         this.ctx = ctx;
 
@@ -281,7 +284,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext<K, V> ctx, int initCap, float loadFactor) {
+    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor) {
         this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
     }
 
@@ -295,7 +298,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative.
      */
-    public GridCacheConcurrentMap(GridCacheContext<K, V> ctx, int initCap) {
+    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap) {
         this(ctx, initCap, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
@@ -304,7 +307,7 @@ public class GridCacheConcurrentMap<K, V> {
      *
      * @param factory Entry factory.
      */
-    public void setEntryFactory(GridCacheMapEntryFactory<K, V> factory) {
+    public void setEntryFactory(GridCacheMapEntryFactory factory) {
         assert factory != null;
 
         this.factory = factory;
@@ -313,17 +316,17 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @return Non-internal predicate.
      */
-    private static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] nonInternal() {
-        return (IgnitePredicate<Cache.Entry<K,V>>[])NON_INTERNAL_ARR;
+    private static CacheEntryPredicate[] nonInternal() {
+        return NON_INTERNAL_ARR;
     }
 
     /**
      * @param filter Filter to add to non-internal-key filter.
      * @return Non-internal predicate.
      */
-    private static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] nonInternal(
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        return F.asArray(F0.and((IgnitePredicate<Cache.Entry<K, V>>[])NON_INTERNAL_ARR, filter));
+    private static CacheEntryPredicate[] nonInternal(
+        CacheEntryPredicate[] filter) {
+        return F.asArray(F0.and0(NON_INTERNAL_ARR, filter));
     }
 
     /**
@@ -352,7 +355,7 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @param e Cache map entry.
      */
-    public void decrementSize(GridCacheMapEntry<K, V> e) {
+    public void decrementSize(GridCacheMapEntry e) {
         assert !e.isInternal();
         assert Thread.holdsLock(e);
         assert e.deletedUnlocked();
@@ -366,7 +369,7 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @param e Cache map entry.
      */
-    public void incrementSize(GridCacheMapEntry<K, V> e) {
+    public void incrementSize(GridCacheMapEntry e) {
         assert !e.isInternal();
         assert Thread.holdsLock(e);
         assert !e.deletedUnlocked();
@@ -395,7 +398,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return a collection view of the values contained in this map.
      */
-    public Collection<V> allValues(IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    public <K, V> Collection<V> allValues(CacheEntryPredicate[] filter) {
         checkWeakQueue();
 
         return new Values<>(this, filter);
@@ -404,7 +407,7 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @return Random entry out of hash map.
      */
-    @Nullable public GridCacheMapEntry<K, V> randomEntry() {
+    @Nullable public GridCacheMapEntry randomEntry() {
         checkWeakQueue();
 
         while (true) {
@@ -427,7 +430,7 @@ public class GridCacheConcurrentMap<K, V> {
                 // It happened so that all public values had been removed from segments.
                 return null;
 
-            GridCacheMapEntry<K, V> entry = seg.randomEntry();
+            GridCacheMapEntry entry = seg.randomEntry();
 
             if (entry == null)
                 continue;
@@ -446,7 +449,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public GridCacheMapEntry<K, V> getEntry(Object key) {
+    @Nullable public GridCacheMapEntry getEntry(Object key) {
         assert key != null;
 
         checkWeakQueue();
@@ -463,7 +466,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param ttl Time to live.
      * @return Cache entry for corresponding key-value pair.
      */
-    public GridCacheMapEntry<K, V> putEntry(long topVer, K key, @Nullable V val, long ttl) {
+    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
         assert key != null;
 
         checkWeakQueue();
@@ -482,8 +485,13 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
      */
-    public GridTriple<GridCacheMapEntry<K, V>> putEntryIfObsoleteOrAbsent(long topVer, K key, @Nullable V val,
-        long ttl, boolean create) {
+    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+        AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        long ttl,
+        boolean create)
+    {
         assert key != null;
 
         checkWeakQueue();
@@ -502,9 +510,9 @@ public class GridCacheConcurrentMap<K, V> {
      * @param ttl Time to live.
      * @throws NullPointerException If the specified map is null.
      */
-    public void putAll(Map<? extends K, ? extends V> m, long ttl) {
-        for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
-            putEntry(-1, e.getKey(), e.getValue(), ttl);
+    public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
+        for (Map.Entry<KeyCacheObject, CacheObject> e : m.entrySet())
+            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue(), ttl);
     }
 
     /**
@@ -513,12 +521,12 @@ public class GridCacheConcurrentMap<K, V> {
      * @param e Entry to remove.
      * @return {@code True} if remove happened.
      */
-    public boolean removeEntry(GridCacheEntryEx<K, V> e) {
+    public boolean removeEntry(GridCacheEntryEx e) {
         assert e != null;
 
         checkWeakQueue();
 
-        K key = e.key();
+        KeyCacheObject key = e.key();
 
         int hash = hash(key.hashCode());
 
@@ -529,9 +537,9 @@ public class GridCacheConcurrentMap<K, V> {
      * @param p Entry to check equality.
      * @return Predicate to filter the same (equal by ==) entry.
      */
-    private IgnitePredicate<GridCacheMapEntry<K, V>> same(final GridCacheEntryEx<K, V> p) {
-        return new P1<GridCacheMapEntry<K,V>>() {
-            @Override public boolean apply(GridCacheMapEntry<K, V> e) {
+    private IgnitePredicate<GridCacheMapEntry> same(final GridCacheEntryEx p) {
+        return new P1<GridCacheMapEntry>() {
+            @Override public boolean apply(GridCacheMapEntry e) {
                 return e == p;
             }
         };
@@ -546,7 +554,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Removed entry, possibly {@code null}.
      */
     @SuppressWarnings( {"unchecked"})
-    @Nullable public GridCacheMapEntry<K, V> removeEntryIfObsolete(K key) {
+    @Nullable public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
         assert key != null;
 
         checkWeakQueue();
@@ -561,7 +569,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Set of the mappings contained in this map.
      */
     @SuppressWarnings({"unchecked"})
-    public Set<Cache.Entry<K, V>> entries(IgnitePredicate<Cache.Entry<K, V>>... filter) {
+    public <K, V> Set<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
         return new EntrySet<>(this, filter);
@@ -574,7 +582,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Set of the mappings contained in this map.
      */
     @SuppressWarnings({"unchecked"})
-    public Set<Cache.Entry<K, V>> entriesx(IgnitePredicate<Cache.Entry<K, V>>... filter) {
+    public <K, V> Set<Cache.Entry<K, V>> entriesx(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
         return new EntrySet<>(this, filter, true);
@@ -585,10 +593,10 @@ public class GridCacheConcurrentMap<K, V> {
      *
      * @return Set of the mappings contained in this map.
      */
-    public Set<GridCacheEntryEx<K, V>> entries0() {
+    public Set<GridCacheEntryEx> entries0() {
         checkWeakQueue();
 
-        return new Set0<>(this, GridCacheConcurrentMap.<K, V>nonInternal());
+        return new Set0<>(this, GridCacheConcurrentMap.nonInternal());
     }
 
     /**
@@ -598,10 +606,10 @@ public class GridCacheConcurrentMap<K, V> {
      * @param totalCnt Maximum modulo.
      * @return Striped entry iterator.
      */
-    public Iterator<GridCacheEntryEx<K, V>> stripedEntryIterator(int id, int totalCnt) {
+    public Iterator<GridCacheEntryEx> stripedEntryIterator(int id, int totalCnt) {
         checkWeakQueue();
 
-        return new Iterator0<>(this, false, GridCacheConcurrentMap.<K, V>nonInternal(), id, totalCnt);
+        return new Iterator0<>(this, false, GridCacheConcurrentMap.nonInternal(), id, totalCnt);
     }
 
     /**
@@ -609,10 +617,10 @@ public class GridCacheConcurrentMap<K, V> {
      *
      * @return All internal entry set, including {@link GridCacheInternal} entries.
      */
-    public Set<GridCacheEntryEx<K, V>> allEntries0() {
+    public Set<GridCacheEntryEx> allEntries0() {
         checkWeakQueue();
 
-        return new Set0<>(this, CU.<K, V>empty());
+        return new Set0<>(this, CU.empty0());
     }
 
     /**
@@ -621,7 +629,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return Set of the keys contained in this map.
      */
-    public Set<K> keySet(IgnitePredicate<Cache.Entry<K, V>>... filter) {
+    public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
         return new KeySet<>(this, filter);
@@ -633,7 +641,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return Collection view of the values contained in this map.
      */
-    public Collection<V> values(IgnitePredicate<Cache.Entry<K, V>>... filter) {
+    public <K, V> Collection<V> values(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
         return allValues(filter);
@@ -660,9 +668,9 @@ public class GridCacheConcurrentMap<K, V> {
 
                 X.println("    Segment [idx=" + i + ", size=" + seg.size() + ']');
 
-                SegmentHeader<K, V> segHdr = seg.hdr;
+                SegmentHeader segHdr = seg.hdr;
 
-                GridCacheMapEntry<K, V>[] tab = segHdr.table();
+                GridCacheMapEntry[] tab = segHdr.table();
 
                 for (int j = 0; j < tab.length; j++)
                     X.println("        Bucket [idx=" + j + ", bucket=" + tab[j] + ']');
@@ -686,13 +694,13 @@ public class GridCacheConcurrentMap<K, V> {
         IgniteLogger log = ctx.logger(GridCacheConcurrentMap.class);
 
         for (Segment s : segs) {
-            SegmentHeader<K, V> segHdr = s.hdr;
+            SegmentHeader segHdr = s.hdr;
 
-            GridCacheMapEntry<K, V>[] tab = segHdr.table();
+            GridCacheMapEntry[] tab = segHdr.table();
 
-            for (GridCacheMapEntry<K, V> b : tab) {
+            for (GridCacheMapEntry b : tab) {
                 if (b != null) {
-                    GridCacheMapEntry<K, V> e = b;
+                    GridCacheMapEntry e = b;
 
                     assert e != null;
 
@@ -775,10 +783,10 @@ public class GridCacheConcurrentMap<K, V> {
         private int threshold;
 
         /** Segment header. */
-        private volatile SegmentHeader<K, V> hdr;
+        private volatile SegmentHeader hdr;
 
         /** The number of public elements in this segment's region. */
-        private final LongAdder pubSize = new LongAdder();
+        private final LongAdder8 pubSize = new LongAdder8();
 
         /**
          * The load factor for the hash table. Even though this value
@@ -796,7 +804,7 @@ public class GridCacheConcurrentMap<K, V> {
         Segment(int initCap, float lf) {
             loadFactor = lf;
 
-            hdr = new SegmentHeader<>(initCap, 0, null);
+            hdr = new SegmentHeader(initCap, 0, null);
 
             threshold = (int)(hdr.length() * loadFactor);
         }
@@ -808,8 +816,8 @@ public class GridCacheConcurrentMap<K, V> {
          * @param hash Hash.
          * @return Entry for hash.
          */
-        @Nullable GridCacheMapEntry<K, V> getFirst(GridCacheMapEntry<K, V>[] tbl, int hash) {
-            GridCacheMapEntry<K, V> bin = tbl[hash & (tbl.length - 1)];
+        @Nullable GridCacheMapEntry getFirst(GridCacheMapEntry[] tbl, int hash) {
+            GridCacheMapEntry bin = tbl[hash & (tbl.length - 1)];
 
             return bin != null ? bin : null;
         }
@@ -817,9 +825,9 @@ public class GridCacheConcurrentMap<K, V> {
         /**
          * @return Segment header for read operation.
          */
-        private SegmentHeader<K, V> headerForRead() {
+        private SegmentHeader headerForRead() {
             while (true) {
-                SegmentHeader<K, V> hdr = this.hdr;
+                SegmentHeader hdr = this.hdr;
 
                 hdr.onReadStart();
 
@@ -836,12 +844,12 @@ public class GridCacheConcurrentMap<K, V> {
          * @param hash Hash.
          * @return Value.
          */
-        @Nullable GridCacheMapEntry<K, V> get(Object key, int hash) {
-            SegmentHeader<K, V> hdr = headerForRead();
+        @Nullable GridCacheMapEntry get(Object key, int hash) {
+            SegmentHeader hdr = headerForRead();
 
             try {
                 if (hdr.size() != 0) {
-                    GridCacheMapEntry<K, V> e = getFirst(hdr.table(), hash);
+                    GridCacheMapEntry e = getFirst(hdr.table(), hash);
 
                     while (e != null) {
                         if (e.hash() == hash && key.equals(e.key()))
@@ -864,11 +872,11 @@ public class GridCacheConcurrentMap<K, V> {
          * @return {@code True} if segment contains value.
          */
         boolean containsKey(Object key, int hash) {
-            SegmentHeader<K, V> hdr = headerForRead();
+            SegmentHeader hdr = headerForRead();
 
             try {
                 if (hdr.size() != 0) {
-                    GridCacheMapEntry<K, V> e = getFirst(hdr.table(), hash);
+                    GridCacheMapEntry e = getFirst(hdr.table(), hash);
 
                     while (e != null) {
                         if (e.hash() == hash && key.equals(e.key))
@@ -894,7 +902,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry<K, V> put(K key, int hash, @Nullable V val, long topVer, long ttl) {
+        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             lock();
 
             try {
@@ -914,9 +922,9 @@ public class GridCacheConcurrentMap<K, V> {
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked", "SynchronizationOnLocalVariableOrMethodParameter"})
-        private GridCacheMapEntry<K, V> put0(K key, int hash, V val, long topVer, long ttl) {
+        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer, long ttl) {
             try {
-                SegmentHeader<K, V> hdr = this.hdr;
+                SegmentHeader hdr = this.hdr;
 
                 int c = hdr.size();
 
@@ -928,18 +936,18 @@ public class GridCacheConcurrentMap<K, V> {
 
                 int hdrId = hdr.id();
 
-                GridCacheMapEntry<K, V>[] tab = hdr.table();
+                GridCacheMapEntry[] tab = hdr.table();
 
                 int idx = hash & (tab.length - 1);
 
-                GridCacheMapEntry<K, V> bin = tab[idx];
+                GridCacheMapEntry bin = tab[idx];
 
-                GridCacheMapEntry<K, V> e = bin;
+                GridCacheMapEntry e = bin;
 
                 while (e != null && (e.hash() != hash || !key.equals(e.key)))
                     e = e.next(hdrId);
 
-                GridCacheMapEntry<K, V> retVal;
+                GridCacheMapEntry retVal;
 
                 if (e != null) {
                     retVal = e;
@@ -989,24 +997,29 @@ public class GridCacheConcurrentMap<K, V> {
          *      the second is created entry and the third is doomed (all may be null).
          */
         @SuppressWarnings( {"unchecked"})
-        GridTriple<GridCacheMapEntry<K, V>> putIfObsolete(K key, int hash, @Nullable V val, long topVer, long ttl,
-            boolean create) {
+        GridTriple<GridCacheMapEntry> putIfObsolete(KeyCacheObject key,
+            int hash,
+            @Nullable CacheObject val,
+            AffinityTopologyVersion topVer,
+            long ttl,
+            boolean create)
+        {
             lock();
 
             try {
-                SegmentHeader<K, V> hdr = this.hdr;
+                SegmentHeader hdr = this.hdr;
 
                 int hdrId = hdr.id();
 
-                GridCacheMapEntry<K, V>[] tab = hdr.table();
+                GridCacheMapEntry[] tab = hdr.table();
 
                 int idx = hash & (tab.length - 1);
 
-                GridCacheMapEntry<K, V> bin = tab[idx];
+                GridCacheMapEntry bin = tab[idx];
 
-                GridCacheMapEntry<K, V> cur = null;
-                GridCacheMapEntry<K, V> created = null;
-                GridCacheMapEntry<K, V> doomed = null;
+                GridCacheMapEntry cur = null;
+                GridCacheMapEntry created = null;
+                GridCacheMapEntry doomed = null;
 
                 if (bin == null) {
                     if (create)
@@ -1015,7 +1028,7 @@ public class GridCacheConcurrentMap<K, V> {
                     return new GridTriple<>(cur, created, doomed);
                 }
 
-                GridCacheMapEntry<K, V> e = bin;
+                GridCacheMapEntry e = bin;
 
                 while (e != null && (e.hash() != hash || !key.equals(e.key)))
                     e = e.next(hdrId);
@@ -1045,14 +1058,14 @@ public class GridCacheConcurrentMap<K, V> {
          */
         @SuppressWarnings("unchecked")
         void rehash() {
-            SegmentHeader<K, V> oldHdr = hdr;
+            SegmentHeader oldHdr = hdr;
 
             if (oldHdr.previous() != null && oldHdr.previous().hasReads())
                 return; // Wait for previous header to free up.
 
             int oldId = hdr.id();
 
-            GridCacheMapEntry<K, V>[] oldTbl = oldHdr.table();
+            GridCacheMapEntry[] oldTbl = oldHdr.table();
 
             int oldCap = oldTbl.length;
 
@@ -1072,24 +1085,24 @@ public class GridCacheConcurrentMap<K, V> {
              * reader thread that may be in the midst of traversing table
              * right now.
              */
-            SegmentHeader<K, V> newHdr = new SegmentHeader<>(oldCap << 1, oldId + 1, oldHdr);
+            SegmentHeader newHdr = new SegmentHeader(oldCap << 1, oldId + 1, oldHdr);
 
             oldHdr.next(newHdr); // Link.
 
             newHdr.size(oldHdr.size());
 
-            GridCacheMapEntry<K, V>[] newTbl = newHdr.table();
+            GridCacheMapEntry[] newTbl = newHdr.table();
 
             threshold = (int)(newTbl.length * loadFactor);
 
             int sizeMask = newTbl.length - 1;
 
-            for (GridCacheMapEntry<K, V> bin1 : oldTbl) {
+            for (GridCacheMapEntry bin1 : oldTbl) {
                 // Relink all nodes.
-                for (GridCacheMapEntry<K, V> e = bin1; e != null; e = e.next(oldId)) {
+                for (GridCacheMapEntry e = bin1; e != null; e = e.next(oldId)) {
                     int idx = e.hash() & sizeMask;
 
-                    GridCacheMapEntry<K, V> bin2 = newTbl[idx];
+                    GridCacheMapEntry bin2 = newTbl[idx];
 
                     newTbl[idx] = e;
 
@@ -1112,24 +1125,24 @@ public class GridCacheConcurrentMap<K, V> {
          * @return Removed value.
          */
         @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-        @Nullable GridCacheMapEntry<K, V> remove(Object key, int hash,
-            @Nullable IgnitePredicate<GridCacheMapEntry<K, V>> filter) {
+        @Nullable GridCacheMapEntry remove(Object key, int hash,
+            @Nullable IgnitePredicate<GridCacheMapEntry> filter) {
             lock();
 
             try {
-                SegmentHeader<K, V> hdr = this.hdr;
+                SegmentHeader hdr = this.hdr;
 
-                GridCacheMapEntry<K, V>[] tbl = hdr.table();
+                GridCacheMapEntry[] tbl = hdr.table();
 
                 int idx = hash & (tbl.length - 1);
 
-                GridCacheMapEntry<K, V> bin = tbl[idx];
+                GridCacheMapEntry bin = tbl[idx];
 
                 if (bin == null)
                     return null;
 
-                GridCacheMapEntry<K, V> prev = null;
-                GridCacheMapEntry<K, V> e = bin;
+                GridCacheMapEntry prev = null;
+                GridCacheMapEntry e = bin;
 
                 while (e != null && (e.hash() != hash || !key.equals(e.key))) {
                     prev = e;
@@ -1201,27 +1214,27 @@ public class GridCacheConcurrentMap<K, V> {
         /**
          * @return Random cache map entry from this segment.
          */
-        @Nullable GridCacheMapEntry<K, V> randomEntry() {
-            SegmentHeader<K, V> hdr = headerForRead();
+        @Nullable GridCacheMapEntry randomEntry() {
+            SegmentHeader hdr = headerForRead();
 
             try {
-                GridCacheMapEntry<K, V>[] tbl = hdr.table();
+                GridCacheMapEntry[] tbl = hdr.table();
 
-                Collection<GridCacheMapEntry<K, V>> entries = new ArrayList<>(3);
+                Collection<GridCacheMapEntry> entries = new ArrayList<>(3);
 
                 int pubCnt = 0;
 
                 int start = RAND.nextInt(tbl.length);
 
                 for (int i = start; i < start + tbl.length; i++) {
-                    GridCacheMapEntry<K, V> first = tbl[i % tbl.length];
+                    GridCacheMapEntry first = tbl[i % tbl.length];
 
                     if (first == null)
                         continue;
 
                     entries.add(first);
 
-                    for (GridCacheMapEntry<K, V> e = first; e != null; e = e.next(hdr.id()))
+                    for (GridCacheMapEntry e = first; e != null; e = e.next(hdr.id()))
                         if (!e.isInternal())
                             pubCnt++;
 
@@ -1240,9 +1253,9 @@ public class GridCacheConcurrentMap<K, V> {
 
                 int i = 0;
 
-                GridCacheMapEntry<K, V> retVal = null;
+                GridCacheMapEntry retVal = null;
 
-                for (GridCacheMapEntry<K, V> e : entries) {
+                for (GridCacheMapEntry e : entries) {
                     for (; e != null; e = e.next(hdr.id())) {
                         if (!(e.key instanceof GridCacheInternal)) {
                             // In case desired entry was deleted, we return the closest one from left.
@@ -1265,16 +1278,16 @@ public class GridCacheConcurrentMap<K, V> {
          *
          */
         void checkSegmentConsistency() {
-            SegmentHeader<K, V> hdr = this.hdr;
+            SegmentHeader hdr = this.hdr;
 
-            GridCacheMapEntry<K, V>[] tbl = hdr.table();
+            GridCacheMapEntry[] tbl = hdr.table();
 
             int cnt = 0;
             int pubCnt = 0;
 
-            for (GridCacheMapEntry<K, V> b : tbl) {
+            for (GridCacheMapEntry b : tbl) {
                 if (b != null) {
-                    GridCacheMapEntry<K, V> e = b;
+                    GridCacheMapEntry e = b;
 
                     assert e != null;
 
@@ -1298,21 +1311,21 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * Segment header.
      */
-    private static class SegmentHeader<K, V> {
+    private static class SegmentHeader {
         /** Entry table. */
-        private final GridCacheMapEntry<K, V>[] tbl;
+        private final GridCacheMapEntry[] tbl;
 
         /** Id for rehash. */
         private final int id;
 
         /** Reads. */
-        private final LongAdder reads = new LongAdder();
+        private final LongAdder8 reads = new LongAdder8();
 
         /** */
-        private volatile SegmentHeader<K, V> prev;
+        private volatile SegmentHeader prev;
 
         /** */
-        private volatile SegmentHeader<K, V> next;
+        private volatile SegmentHeader next;
 
         /** The number of elements in this segment's region. */
         private volatile int size;
@@ -1329,7 +1342,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param prev Previous header.
          */
         @SuppressWarnings("unchecked")
-        private SegmentHeader(int size, int id, @Nullable SegmentHeader<K, V> prev) {
+        private SegmentHeader(int size, int id, @Nullable SegmentHeader prev) {
             tbl = new GridCacheMapEntry[size];
 
             assert id >= 0;
@@ -1366,10 +1379,10 @@ public class GridCacheConcurrentMap<K, V> {
 
                 // Clean up.
                 if (leftReads == 0 && cleaned.compareAndSet(false, true)) {
-                    for (GridCacheMapEntry<K, V> bin : tbl) {
+                    for (GridCacheMapEntry bin : tbl) {
                         if (bin != null) {
-                            for (GridCacheMapEntry<K, V> e = bin; e != null; ) {
-                                GridCacheMapEntry<K, V> next = e.next(id);
+                            for (GridCacheMapEntry e = bin; e != null; ) {
+                                GridCacheMapEntry next = e.next(id);
 
                                 e.next(id, null); // Unlink.
 
@@ -1420,7 +1433,7 @@ public class GridCacheConcurrentMap<K, V> {
         /**
          * @return Table.
          */
-        GridCacheMapEntry<K, V>[] table() {
+        GridCacheMapEntry[] table() {
             return tbl;
         }
 
@@ -1434,28 +1447,28 @@ public class GridCacheConcurrentMap<K, V> {
         /**
          * @return Next header.
          */
-        SegmentHeader<K, V> next() {
+        SegmentHeader next() {
             return next;
         }
 
         /**
          * @param next Next header.
          */
-        void next(SegmentHeader<K, V> next) {
+        void next(SegmentHeader next) {
             this.next = next;
         }
 
         /**
          * @return Previous header.
          */
-        SegmentHeader<K, V> previous() {
+        SegmentHeader previous() {
             return prev;
         }
 
         /**
          * @param prev Previous header.
          */
-        void previous(SegmentHeader<K, V> prev) {
+        void previous(SegmentHeader prev) {
             this.prev = prev;
         }
 
@@ -1492,7 +1505,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param ref Referred segment header.
          * @param q Reference queue.
          */
-        WeakIterator(Iterator0<K, V> ref, ReferenceQueue<Iterator0<K, V>> q) {
+        WeakIterator(Iterator0<K, V> ref, ReferenceQueue<Iterator0> q) {
             super(ref, q);
 
             assert ref != null;
@@ -1506,7 +1519,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private static class Iterator0<K, V> implements Iterator<GridCacheEntryEx<K, V>>, Externalizable {
+    private static class Iterator0<K, V> implements Iterator<GridCacheEntryEx>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1517,16 +1530,16 @@ public class GridCacheConcurrentMap<K, V> {
         private int nextTblIdx;
 
         /** Segment header. */
-        private SegmentHeader<K, V> curSegHdr;
+        private SegmentHeader curSegHdr;
 
         /** */
-        private GridCacheMapEntry<K,V>[] curTbl;
+        private GridCacheMapEntry[] curTbl;
 
         /** */
-        private GridCacheMapEntry<K, V> nextEntry;
+        private GridCacheMapEntry nextEntry;
 
         /** Next entry to return. */
-        private GridCacheMapEntry<K, V> next;
+        private GridCacheMapEntry next;
 
         /** Next value. */
         private V nextVal;
@@ -1538,13 +1551,13 @@ public class GridCacheConcurrentMap<K, V> {
         private boolean isVal;
 
         /** Current entry. */
-        private GridCacheMapEntry<K, V> cur;
+        private GridCacheMapEntry cur;
 
         /** Iterator filter. */
-        private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+        private CacheEntryPredicate[] filter;
 
         /** Outer cache map. */
-        private GridCacheConcurrentMap<K, V> map;
+        private GridCacheConcurrentMap map;
 
         /** Cache context. */
         private GridCacheContext<K, V> ctx;
@@ -1573,8 +1586,8 @@ public class GridCacheConcurrentMap<K, V> {
          * @param totalCnt Total count of iterators.
          */
         @SuppressWarnings({"unchecked"})
-        Iterator0(GridCacheConcurrentMap<K, V> map, boolean isVal,
-            IgnitePredicate<Cache.Entry<K, V>>[] filter, int id, int totalCnt) {
+        Iterator0(GridCacheConcurrentMap map, boolean isVal,
+            CacheEntryPredicate[] filter, int id, int totalCnt) {
             this.filter = filter;
             this.isVal = isVal;
             this.id = id;
@@ -1604,7 +1617,7 @@ public class GridCacheConcurrentMap<K, V> {
                 return;
 
             while (nextTblIdx >= 0) {
-                GridCacheMapEntry<K, V> bucket = curTbl[nextTblIdx--];
+                GridCacheMapEntry bucket = curTbl[nextTblIdx--];
 
                 if (bucket != null && advanceInBucket(bucket, false))
                     return;
@@ -1628,7 +1641,7 @@ public class GridCacheConcurrentMap<K, V> {
                     curTbl = curSegHdr.table();
 
                     for (int j = curTbl.length - 1; j >= 0; --j) {
-                        GridCacheMapEntry<K, V> bucket = curTbl[j];
+                        GridCacheMapEntry bucket = curTbl[j];
 
                         if (bucket != null && advanceInBucket(bucket, false)) {
                             nextTblIdx = j - 1;
@@ -1646,7 +1659,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @return {@code True} if advance succeeded.
          */
         @SuppressWarnings( {"unchecked"})
-        private boolean advanceInBucket(@Nullable GridCacheMapEntry<K, V> e, boolean skipFirst) {
+        private boolean advanceInBucket(@Nullable GridCacheMapEntry e, boolean skipFirst) {
             if (e == null)
                 return false;
 
@@ -1661,7 +1674,7 @@ public class GridCacheConcurrentMap<K, V> {
                         continue;
 
                     if (isVal) {
-                        nextVal = next.wrap().getValue();
+                        nextVal = next.<K, V>wrap().getValue();
 
                         if (nextVal == null)
                             continue;
@@ -1707,8 +1720,8 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked"})
-        @Override public GridCacheEntryEx<K, V> next() {
-            GridCacheMapEntry<K, V> e = next;
+        @Override public GridCacheEntryEx next() {
+            GridCacheMapEntry e = next;
             V v = nextVal;
 
             if (e == null)
@@ -1727,13 +1740,13 @@ public class GridCacheConcurrentMap<K, V> {
             if (cur == null)
                 throw new IllegalStateException();
 
-            GridCacheMapEntry<K, V> e = cur;
+            GridCacheMapEntry e = cur;
 
             cur = null;
             curVal = null;
 
             try {
-                ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(e.key(), CU.<K, V>empty());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1753,7 +1766,7 @@ public class GridCacheConcurrentMap<K, V> {
         @SuppressWarnings({"unchecked"})
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             ctx = (GridCacheContext<K, V>)in.readObject();
-            filter = (IgnitePredicate<Cache.Entry<K, V>>[])in.readObject();
+            filter = (CacheEntryPredicate[])in.readObject();
             isVal = in.readBoolean();
             id = in.readInt();
             totalCnt = in.readInt();
@@ -1774,15 +1787,15 @@ public class GridCacheConcurrentMap<K, V> {
      * Entry set.
      */
     @SuppressWarnings("unchecked")
-    private static class Set0<K, V> extends AbstractSet<GridCacheEntryEx<K, V>> implements Externalizable {
+    private static class Set0<K, V> extends AbstractSet<GridCacheEntryEx> implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Filter. */
-        private IgnitePredicate<Cache.Entry<K, V>>[] filter;
+        private CacheEntryPredicate[] filter;
 
         /** Base map. */
-        private GridCacheConcurrentMap<K, V> map;
+        private GridCacheConcurrentMap map;
 
         /** Context. */
         private GridCacheContext<K, V> ctx;
@@ -1807,7 +1820,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Filter.
          */
-        private Set0(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        private Set0(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
             assert map != null;
 
             this.map = map;
@@ -1821,7 +1834,7 @@ public class GridCacheConcurrentMap<K, V> {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<GridCacheEntryEx<K, V>> iterator() {
+        @NotNull @Override public Iterator<GridCacheEntryEx> iterator() {
             return new Iterator0<>(map, false, filter, -1, -1);
         }
 
@@ -1853,12 +1866,14 @@ public class GridCacheConcurrentMap<K, V> {
          * @return {@code True} if key is in the map.
          */
         boolean containsKey(K k) {
-            GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
+            KeyCacheObject cacheKey = ctx.toCacheKeyObject(k);
+
+            GridCacheEntryEx e = ctx.cache().peekEx(cacheKey);
 
             try {
                 return e != null && !e.obsolete() &&
                     (!e.deleted() || e.lockedByThread()) &&
-                    F.isAll(e.wrapLazyValue(), filter);
+                    F.isAll(e, filter);
             }
             catch (GridCacheEntryRemovedException ignore) {
                 return false;
@@ -1871,9 +1886,6 @@ public class GridCacheConcurrentMap<K, V> {
          */
         boolean containsValue(V v) {
             A.notNull(v, "value");
-
-            if (v == null)
-                return false;
 
             for (Iterator<V> it = valueIterator(); it.hasNext(); ) {
                 V v0 = it.next();
@@ -1890,9 +1902,9 @@ public class GridCacheConcurrentMap<K, V> {
             if (!(o instanceof GridCacheEntryEx))
                 return false;
 
-            GridCacheEntryEx<K, V> e = (GridCacheEntryEx<K, V>)o;
+            GridCacheEntryEx e = (GridCacheEntryEx)o;
 
-            GridCacheEntryEx<K, V> cur = ctx.cache().peekEx(e.key());
+            GridCacheEntryEx cur = ctx.cache().peekEx(e.key());
 
             return cur != null && cur.equals(e);
         }
@@ -1908,7 +1920,7 @@ public class GridCacheConcurrentMap<K, V> {
          */
         boolean removeKey(K k) {
             try {
-                return ((IgniteKernal)ctx.grid()).cache(ctx.name()).remove(k, CU.<K, V>empty());
+                return ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(k, CU.<K, V>empty());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to remove cache entry for key: " + k, e);
@@ -1927,7 +1939,7 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ctx.cache().clearLocally0(new KeySet<>(map, filter), CU.<K, V>empty());
+            ctx.cache().clearLocally0(new KeySet<K, V>(map, filter));
         }
 
         /** {@inheritDoc} */
@@ -1939,7 +1951,7 @@ public class GridCacheConcurrentMap<K, V> {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             ctx = (GridCacheContext<K, V>)in.readObject();
-            filter = (IgnitePredicate<Cache.Entry<K, V>>[])in.readObject();
+            filter = (CacheEntryPredicate[])in.readObject();
         }
 
         /**
@@ -1989,8 +2001,8 @@ public class GridCacheConcurrentMap<K, V> {
          * @param forcedFlags Forced flags.
          */
         EntryIterator(
-            GridCacheConcurrentMap<K, V> map,
-            IgnitePredicate<Cache.Entry<K, V>>[] filter,
+            GridCacheConcurrentMap map,
+            CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
             GridCacheProjectionImpl<K, V> prjPerCall,
             CacheFlag[] forcedFlags) {
@@ -2078,9 +2090,9 @@ public class GridCacheConcurrentMap<K, V> {
          * @param clone Clone flag.
          */
         private ValueIterator(
-            GridCacheConcurrentMap<K, V> map,
-            IgnitePredicate<Cache.Entry<K, V>>[] filter,
-            GridCacheContext<K, V> ctx,
+            GridCacheConcurrentMap map,
+            CacheEntryPredicate[] filter,
+            GridCacheContext ctx,
             boolean clone) {
             it = new Iterator0<>(map, true, filter, -1, -1);
 
@@ -2150,7 +2162,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Cache map.
          * @param filter Filter.
          */
-        private KeyIterator(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        private KeyIterator(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
             it = new Iterator0<>(map, false, filter, -1, -1);
         }
 
@@ -2161,7 +2173,7 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @Override public K next() {
-            return it.next().key();
+            return it.next().key().value(it.ctx.cacheObjectContext(), true);
         }
 
         /** {@inheritDoc} */
@@ -2202,7 +2214,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Key filter.
          */
-        private KeySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        private KeySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
             assert map != null;
 
             set = new Set0<>(map, nonInternal(filter));
@@ -2270,7 +2282,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Value filter.
          */
-        private Values(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        private Values(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
             assert map != null;
 
             set = new Set0<>(map, nonInternal(filter));
@@ -2330,7 +2342,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Key filter.
          */
-        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        private EntrySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
             this(map, filter, false);
         }
 
@@ -2339,7 +2351,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param filter Key filter.
          * @param internal Whether to allow internal entries.
          */
-        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Cache.Entry<K, V>>[] filter,
+        private EntrySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter,
             boolean internal) {
             assert map != null;
 
@@ -2365,7 +2377,7 @@ public class GridCacheConcurrentMap<K, V> {
         @SuppressWarnings({"unchecked"})
         @Override public boolean contains(Object o) {
             if (o instanceof CacheEntryImpl) {
-                GridCacheEntryEx<K, V> unwrapped = set.map.getEntry(((CacheEntryImpl)o).getKey());
+                GridCacheEntryEx unwrapped = set.map.getEntry(((CacheEntryImpl)o).getKey());
 
                 return unwrapped != null && set.contains(unwrapped);
             }

@@ -21,8 +21,8 @@ import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.impl.connection.*;
 import org.apache.ignite.internal.client.router.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;

@@ -116,8 +116,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            for (GridCache cache : grid.caches()) {
-                CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
+            for (IgniteCache cache : grid.caches()) {
+                CacheDataStructuresManager dsMgr = grid.internalCache(cache.getName()).context().dataStructures();
 
                 Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
 
@@ -125,7 +125,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                 map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
-                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
+                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.getName() + ", map=" + map + ']',
                     0,
                     map.size());
             }
@@ -139,8 +139,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal) grid(i);
 
-            for (GridCache cache : grid.caches()) {
-                GridCacheQueryManager queries = grid.internalCache(cache.name()).context().queries();
+            for (IgniteCache cache : grid.caches()) {
+                GridCacheQueryManager queries = grid.internalCache(cache.getName()).context().queries();
 
                 Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
@@ -790,11 +790,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
         for (int i = 0; i < gridCount(); i++) {
-            Iterator<GridCacheEntryEx<Object, Object>> entries =
+            Iterator<GridCacheEntryEx> entries =
                     ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
 
             while (entries.hasNext()) {
-                GridCacheEntryEx<Object, Object> entry = entries.next();
+                GridCacheEntryEx entry = entries.next();
 
                 if (entry.hasValue()) {
                     cnt++;

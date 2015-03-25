@@ -541,8 +541,8 @@ class VisorAlertCommand {
 
             sum += ("Total alerts", alerts.size)
             sum += ("Total sends", (0 /: stats.values)((b, a) => b + a.cnt))
-            sum += ("First send", if (firstSnd == 0) "n/a" else formatDateTime(firstSnd))
-            sum += ("Last send", if (lastSnd == 0) "n/a" else formatDateTime(lastSnd))
+            sum += ("First send", if (firstSnd == 0) NA else formatDateTime(firstSnd))
+            sum += ("Last send", if (lastSnd == 0) NA else formatDateTime(lastSnd))
 
             sum.render()
         }
@@ -582,8 +582,8 @@ class VisorAlertCommand {
                     a.spec,
                     stat.cnt,
                     formatDateTime(a.createdOn),
-                    if (stat.firstSnd == 0) "n/a" else formatDateTime(stat.firstSnd),
-                    if (stat.lastSnd == 0) "n/a" else formatDateTime(stat.lastSnd)
+                    if (stat.firstSnd == 0) NA else formatDateTime(stat.firstSnd),
+                    if (stat.lastSnd == 0) NA else formatDateTime(stat.lastSnd)
                 )
             })
 

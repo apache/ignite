@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.transactions.*;
 import org.hibernate.cache.*;
@@ -74,30 +74,46 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
     /** {@inheritDoc} */
     @Override protected Object get(Object key) throws CacheException {
+        boolean success = false;
+
         try {
-            return cache.get(key);
+            Object o = cache.get(key);
+
+            success = true;
+
+            return o;
         }
         catch (IgniteCheckedException e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void putFromLoad(Object key, Object val) throws CacheException {
+        boolean success = false;
+
         try {
             cache.putx(key, val);
+
+            success = true;
         }
         catch (IgniteCheckedException e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
     /** {@inheritDoc} */
     @Override protected SoftLock lock(Object key) throws CacheException {
+        boolean success = false;
+
         try {
             TxContext ctx = txCtx.get();
 
@@ -108,27 +124,37 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
             ctx.locked(key);
 
+            success = true;
+
             return null;
         }
         catch (IgniteCheckedException e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void unlock(Object key, SoftLock lock) throws CacheException {
+        boolean success = false;
+
         try {
             TxContext ctx = txCtx.get();
 
             if (ctx != null)
                 unlock(ctx, key);
+
+            success = true;
         }
         catch (Exception e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
@@ -139,6 +165,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
     /** {@inheritDoc} */
     @Override protected boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+        boolean success = false;
+        boolean res = false;
+
         try {
             TxContext ctx = txCtx.get();
 
@@ -147,15 +176,19 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
                 unlock(ctx, key);
 
-                return true;
+                res = true;
             }
 
-            return false;
+            success = true;
+
+            return res;
         }
         catch (Exception e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
@@ -166,30 +199,42 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
 
     /** {@inheritDoc} */
     @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
+        boolean success = false;
+
         try {
             cache.putx(key, val);
+
+            success = true;
 
             return true;
         }
         catch (IgniteCheckedException e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void remove(Object key) throws CacheException {
+        boolean success = false;
+
         try {
             TxContext ctx = txCtx.get();
 
             if (ctx != null)
                 cache.removex(key);
+
+            success = true;
         }
         catch (IgniteCheckedException e) {
-            rollbackCurrentTx();
-
             throw new CacheException(e);
+        }
+        finally {
+            if (!success)
+                rollbackCurrentTx();
         }
     }
 

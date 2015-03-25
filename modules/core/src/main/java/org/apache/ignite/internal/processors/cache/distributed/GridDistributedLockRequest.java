@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Lock request message.
  */
-public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,12 +66,8 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     private TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keyBytes;
-
-    /** Keys. */
-    @GridDirectTransient
-    private List<K> keys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
     @GridToStringInclude
@@ -215,14 +211,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /**
-     *
-     * @return Key to lock.
-     */
-    public List<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Tx size.
      */
     public int txSize() {
@@ -234,28 +222,16 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
      *
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
-     * @param keyBytes Key bytes.
      * @param cands Candidates.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
-        K key,
-        @Nullable byte[] keyBytes,
+        KeyCacheObject key,
         boolean retVal,
-        @Nullable Collection<GridCacheMvccCandidate<K>> cands,
-        GridCacheContext<K, V> ctx
+        @Nullable Collection<GridCacheMvccCandidate> cands,
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
-        if (ctx.deploymentEnabled())
-            prepareObject(key, ctx.shared());
-
-        if (keyBytes != null) {
-            if (this.keyBytes == null)
-                this.keyBytes = new ArrayList<>(keysCount());
-
-            this.keyBytes.add(keyBytes);
-        }
-
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
@@ -271,7 +247,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Unmarshalled keys.
      */
-    public List<K> keys() {
+    public List<KeyCacheObject> keys() {
         return keys;
     }
 
@@ -284,19 +260,21 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (keyBytes == null && keys != null)
-            keyBytes = marshalCollection(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null)
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -345,7 +323,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection("keyBytes", keyBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -447,7 +425,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                keyBytes = reader.readCollection("keyBytes", MessageCollectionItemType.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

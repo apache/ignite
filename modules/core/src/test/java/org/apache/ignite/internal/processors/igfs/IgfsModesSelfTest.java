@@ -82,7 +82,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void startUp() throws Exception {
         startUpSecondary();
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("partitioned");
         igfsCfg.setMetaCacheName("replicated");
@@ -97,17 +97,16 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPathModes(pathModes);
 
         if (setSecondaryFs)
-            igfsCfg.setSecondaryFileSystem(igfsSecondary);
+            igfsCfg.setSecondaryFileSystem(igfsSecondary.asSecondary());
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -115,7 +114,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -128,7 +126,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
@@ -144,27 +142,27 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("partitioned");
         igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs-secondary");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", "11500");
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(11500);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -172,7 +170,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -185,7 +182,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
@@ -378,7 +375,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         }
 
         assertTrue(errMsg.startsWith(
-            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is SECONDARY"));
+            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is not PRIMARY"));
     }
 
     /**
@@ -444,7 +441,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         }
 
         assertTrue(errMsg.startsWith(
-            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is SECONDARY"));
+            "Grid configuration parameter invalid: secondaryFileSystem cannot be null when mode is not PRIMARY"));
     }
 
     /**

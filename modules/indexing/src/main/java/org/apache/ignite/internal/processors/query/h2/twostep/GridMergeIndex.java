@@ -24,8 +24,10 @@ import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.table.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -33,16 +35,16 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
-    protected final GridResultPage<?> END = new GridResultPage<Object>(null, null);
+    private static final int MAX_FETCH_SIZE = 100000; // TODO configure
+
+    /** All rows number. */
+    private final AtomicInteger rowsCnt = new AtomicInteger(0);
+
+    /** Remaining rows per source node ID. */
+    private final ConcurrentMap<UUID, Counter> remainingRows = new ConcurrentHashMap8<>();
 
     /** */
-    private static final int MAX_FETCH_SIZE = 100000;
-
-    /** */
-    private final AtomicInteger cnt = new AtomicInteger(0);
-
-    /** Result sources. */
-    private final AtomicInteger srcs = new AtomicInteger(0);
+    private final AtomicBoolean lastSubmitted = new AtomicBoolean();
 
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
@@ -59,9 +61,17 @@ public abstract class GridMergeIndex extends BaseIndex {
         initBaseIndex(tbl, 0, name, cols, type);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @return {@code true} If this index needs data from the given source node.
+     */
+    public boolean hasSource(UUID nodeId) {
+        return remainingRows.containsKey(nodeId);
+    }
+
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
-        return cnt.get();
+        return rowsCnt.get();
     }
 
     /** {@inheritDoc} */
@@ -70,52 +80,91 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param srcs Number of sources.
+     * @param nodeId Node ID.
      */
-    public void setNumberOfSources(int srcs) {
-        this.srcs.set(srcs);
+    public void addSource(UUID nodeId) {
+        if (remainingRows.put(nodeId, new Counter()) != null)
+            throw new IllegalStateException();
     }
 
     /**
-     * @param cnt Count.
+     * @param nodeId Node ID.
      */
-    public void addCount(int cnt) {
-        this.cnt.addAndGet(cnt);
+    public void fail(UUID nodeId) {
+        addPage0(new GridResultPage(nodeId, null, false));
     }
 
     /**
      * @param page Page.
      */
-    public final void addPage(GridResultPage<?> page) {
-        if (!page.response().rows().isEmpty())
+    public final void addPage(GridResultPage page) {
+        int pageRowsCnt = page.rows().size();
+
+        if (pageRowsCnt != 0)
             addPage0(page);
-        else
-            assert page.response().isLast();
 
-        if (page.response().isLast()) {
-            int srcs0 = srcs.decrementAndGet();
+        Counter cnt = remainingRows.get(page.source());
 
-            assert srcs0 >= 0;
+        int allRows = page.response().allRows();
 
-            if (srcs0 == 0)
-                addPage0(END); // We've fetched all.
+        if (allRows != -1) { // Only the first page contains allRows count and is allowed to init counter.
+            assert !cnt.initialized : "Counter is already initialized.";
+
+            cnt.addAndGet(allRows);
+            rowsCnt.addAndGet(allRows);
+
+            // We need this separate flag to handle case when the first source contains only one page
+            // and it will signal that all remaining counters are zero and fetch is finished.
+            cnt.initialized = true;
+        }
+
+        if (cnt.addAndGet(-pageRowsCnt) == 0) { // Result can be negative in case of race between messages, it is ok.
+            boolean last = true;
+
+            for (Counter c : remainingRows.values()) { // Check all the sources.
+                if (c.get() != 0 || !c.initialized) {
+                    last = false;
+
+                    break;
+                }
+            }
+
+            if (last)
+                last = lastSubmitted.compareAndSet(false, true);
+
+            addPage0(new GridResultPage(page.source(), null, last));
         }
     }
 
     /**
      * @param page Page.
      */
-    protected abstract void addPage0(GridResultPage<?> page);
+    protected abstract void addPage0(GridResultPage page);
+
+    /**
+     * @param page Page.
+     */
+    protected void fetchNextPage(GridResultPage page) {
+        if (remainingRows.get(page.source()).get() != 0)
+            page.fetchNextPage();
+    }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
         if (fetched == null)
             throw new IgniteException("Fetched result set was too large.");
 
-        if (fetched.size() == cnt.get())  // We've fetched all the rows.
+        if (fetchedAll())
             return findAllFetched(fetched, first, last);
 
         return findInStream(first, last);
+    }
+
+    /**
+     * @return {@code true} If we have fetched all the remote rows.
+     */
+    public boolean fetchedAll() {
+        return fetched.size() == rowsCnt.get();
     }
 
     /**
@@ -131,9 +180,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param last Last row.
      * @return Cursor.
      */
-    protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new IteratorCursor(fetched.iterator());
-    }
+    protected abstract Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last);
 
     /** {@inheritDoc} */
     @Override public void checkRename() {
@@ -294,5 +341,13 @@ public abstract class GridMergeIndex extends BaseIndex {
         @Override public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /**
+     * Counter with initialization flag.
+     */
+    private static class Counter extends AtomicInteger {
+        /** */
+        volatile boolean initialized;
     }
 }

@@ -20,9 +20,7 @@ package org.apache.ignite.examples.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -33,10 +31,10 @@ import java.util.concurrent.*;
  * To run this example you must have at least one remote node started.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-compute.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
+ * with {@code examples/config/example-ignite.xml} configuration.
  */
 public class MessagingPingPongExample {
     /**
@@ -47,7 +45,7 @@ public class MessagingPingPongExample {
      */
     public static void main(String[] args) throws Exception {
         // Game is played over the default ignite.
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
@@ -64,25 +62,16 @@ public class MessagingPingPongExample {
 
             // Set up remote player.
             ignite.message(nodeB).remoteListen(null, new IgniteBiPredicate<UUID, String>() {
-                /** This will be injected on node listener comes to. */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
-                    try {
-                        if ("PING".equals(rcvMsg)) {
-                            ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PONG");
+                    if ("PING".equals(rcvMsg)) {
+                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PONG");
 
-                            return true; // Continue listening.
-                        }
+                        return true; // Continue listening.
+                    }
 
-                        return false; // Unsubscribe.
-                    }
-                    catch (IgniteException e) {
-                        throw new GridClosureException(e);
-                    }
+                    return false; // Unsubscribe.
                 }
             });
 
@@ -95,26 +84,21 @@ public class MessagingPingPongExample {
                 @Override public boolean apply(UUID nodeId, String rcvMsg) {
                     System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
-                    try {
-                        if (cnt.getCount() == 1) {
-                            ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "STOP");
-
-                            cnt.countDown();
-
-                            return false; // Stop listening.
-                        }
-                        else if ("PONG".equals(rcvMsg))
-                            ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PING");
-                        else
-                            throw new RuntimeException("Received unexpected message: " + rcvMsg);
+                    if (cnt.getCount() == 1) {
+                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "STOP");
 
                         cnt.countDown();
 
-                        return true; // Continue listening.
+                        return false; // Stop listening.
                     }
-                    catch (IgniteException e) {
-                        throw new GridClosureException(e);
-                    }
+                    else if ("PONG".equals(rcvMsg))
+                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PING");
+                    else
+                        throw new IgniteException("Received unexpected message: " + rcvMsg);
+
+                    cnt.countDown();
+
+                    return true; // Continue listening.
                 }
             });
 

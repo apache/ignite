@@ -118,7 +118,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 case LIST_PATHS: {
                     IgfsMessage res = execute(ses, cmd, msg, in);
 
-                    fut = res == null ? null : new GridFinishedFuture<>(ctx, res);
+                    fut = res == null ? null : new GridFinishedFuture<>(res);
 
                     break;
                 }
@@ -138,7 +138,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
             return fut;
         }
         catch (Exception e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
     }
 

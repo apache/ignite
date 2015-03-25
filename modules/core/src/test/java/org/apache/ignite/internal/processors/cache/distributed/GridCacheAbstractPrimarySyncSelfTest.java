@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -28,7 +27,7 @@ import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -53,8 +52,8 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setBackups(1);
-        ccfg.setPreloadMode(SYNC);
-        ccfg.setDistributionMode(distributionMode());
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setNearConfiguration(nearConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -82,7 +81,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode distributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @throws Exception If failed.
@@ -90,7 +89,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).jcache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
                     try (Transaction tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

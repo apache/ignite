@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -55,6 +55,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
 
+    /** */
+    public static final byte[] ZERO_BYTES = new byte[0];
+
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -68,7 +71,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Workers count. */
-    private final LongAdder workersCnt = new LongAdder();
+    private final LongAdder8 workersCnt = new LongAdder8();
 
     /** SecurityContext map. */
     private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();
@@ -90,11 +93,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
 
         try {
-            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
+            final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>();
 
             workersCnt.increment();
 
@@ -103,7 +106,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
+                        res.listen(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
                             @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());
@@ -156,7 +159,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Failed to handle request " +
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to handle request " +
                     "(protocol handler was interrupted when awaiting grid start).", e));
             }
         }
@@ -177,18 +180,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-                try {
-                    updateSession(req, subjCtx);
-                    res.sessionTokenBytes(new byte[0]);
-                }
-                catch (IgniteCheckedException e1) {
-                    U.warn(log, "Cannot update response session token: " + e1.getMessage());
-                }
+                updateSession(req, subjCtx);
+                res.sessionTokenBytes(ZERO_BYTES);
 
-                return new GridFinishedFuture<>(ctx, res);
+                return new GridFinishedFuture<>(res);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
             }
         }
 
@@ -199,7 +197,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
 
         if (res == null)
-            return new GridFinishedFuture<>(ctx,
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
         final SecurityContext subjCtx0 = subjCtx;
@@ -223,13 +221,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 assert res != null;
 
                 if (ctx.security().enabled()) {
-                    try {
-                        updateSession(req, subjCtx0);
-                        res.sessionTokenBytes(new byte[0]);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.warn(log, "Cannot update response session token: " + e.getMessage());
-                    }
+                    updateSession(req, subjCtx0);
+                    res.sessionTokenBytes(ZERO_BYTES);
                 }
 
                 interceptResponse(res, req);
@@ -260,6 +253,25 @@ public class GridRestProcessor extends GridProcessorAdapter {
             // Start protocols.
             startTcpProtocol();
             startHttpProtocol();
+
+            for (GridRestProtocol proto : protos) {
+                Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
+
+                if (props != null) {
+                    for (IgniteBiTuple<String, Object> p : props) {
+                        String key = p.getKey();
+
+                        if (key == null)
+                            continue;
+
+                        if (ctx.hasNodeAttribute(key))
+                            throw new IgniteCheckedException(
+                                "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
+
+                        ctx.addNodeAttribute(key, p.getValue());
+                    }
+                }
+            }
         }
     }
 
@@ -304,28 +316,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("REST processor stopped.");
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
-        for (GridRestProtocol proto : protos) {
-            Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
-
-            if (props != null) {
-                for (IgniteBiTuple<String, Object> p : props) {
-                    String key = p.getKey();
-
-                    if (key == null)
-                        continue;
-
-                    if (attrs.containsKey(key))
-                        throw new IgniteCheckedException(
-                            "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
-
-                    attrs.put(key, p.getValue());
-                }
-            }
         }
     }
 
@@ -514,7 +504,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req REST request.
      * @param sCtx Security context.
      */
-    private void updateSession(GridRestRequest req, SecurityContext sCtx) throws IgniteCheckedException {
+    private void updateSession(GridRestRequest req, SecurityContext sCtx) {
         if (sCtx != null) {
             UUID id = req.clientId();
             sesMap.put(id, sCtx);
@@ -578,8 +568,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case VERSION:
             case NOOP:
             case QUIT:
-            case GET_PORTABLE_METADATA:
-            case PUT_PORTABLE_METADATA:
             case ATOMIC_INCREMENT:
             case ATOMIC_DECREMENT:
                 break;

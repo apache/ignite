@@ -36,13 +36,12 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.igfs.mapreduce.IgfsTask}.
+ * Tests for {@link IgfsTask}.
  */
 public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Predefined words dictionary. */
@@ -68,7 +67,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private static final int REPEAT_CNT = 10;
 
     /** IGFS. */
-    private static IgniteFs igfs;
+    private static IgniteFileSystem igfs;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -97,7 +96,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @return Grid configuration
      */
     private IgniteConfiguration config(int idx) {
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
         igfsCfg.setMetaCacheName("metaCache");
@@ -111,11 +110,9 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setDistributionMode(PARTITIONED_ONLY);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
@@ -123,7 +120,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -133,7 +129,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setGridName("node-" + idx);
 
@@ -172,7 +168,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         assertFalse(igfs.isAsync());
 
-        IgniteFs igfsAsync = igfs.withAsync();
+        IgniteFileSystem igfsAsync = igfs.withAsync();
 
         assertTrue(igfsAsync.isAsync());
 
@@ -269,7 +265,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in)
+        @Override public Object execute(IgniteFileSystem igfs, IgfsFileRange range, IgfsInputStream in)
             throws IOException {
             assert ignite != null;
             assert ses != null;

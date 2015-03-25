@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 
 /**
- * Evictable cache entry passed into {@link CacheEvictionPolicy}.
+ * Evictable cache entry passed into {@link EvictionPolicy}.
  *
  * @author @java.author
  * @version @java.version

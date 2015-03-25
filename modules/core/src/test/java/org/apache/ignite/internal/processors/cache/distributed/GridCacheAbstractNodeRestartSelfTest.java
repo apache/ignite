@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -55,7 +55,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     protected int backups = DFLT_BACKUPS;
@@ -76,7 +76,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static volatile int idx = -1;
 
     /** Preload mode. */
-    protected CachePreloadMode preloadMode = ASYNC;
+    protected CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     protected int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -163,7 +163,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         startGrids();
 
         try {
-            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -181,7 +181,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.jcache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 checkGet(c, j);
             }
@@ -496,7 +496,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread...");
 
-                            IgniteCache<Integer, String> cache = grid(gridIdx).jcache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
                                 int key = RAND.nextInt(keyCnt);
@@ -616,7 +616,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -774,7 +774,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 

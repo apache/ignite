@@ -21,7 +21,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 
 /**
@@ -30,9 +29,6 @@ import java.util.*;
 class GridCacheQueryInfo {
     /** */
     private boolean loc;
-
-    /** */
-    private IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
     /** */
     private IgniteClosure<Object, Object> trans;
@@ -63,7 +59,6 @@ class GridCacheQueryInfo {
 
     /**
      * @param loc {@code true} if local query.
-     * @param prjPred Projection predicate.
      * @param trans Transforming closure.
      * @param rdc Reducer.
      * @param qry Query base.
@@ -76,7 +71,6 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         IgniteClosure<Object, Object> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
@@ -88,7 +82,6 @@ class GridCacheQueryInfo {
         Object[] args
     ) {
         this.loc = loc;
-        this.prjPred = prjPred;
         this.trans = trans;
         this.rdc = rdc;
         this.qry = qry;
@@ -119,13 +112,6 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryAdapter<?> query() {
         return qry;
-    }
-
-    /**
-     * @return Projection predicate.
-     */
-    IgnitePredicate<Cache.Entry<Object, Object>> projectionPredicate() {
-        return prjPred;
     }
 
     /**

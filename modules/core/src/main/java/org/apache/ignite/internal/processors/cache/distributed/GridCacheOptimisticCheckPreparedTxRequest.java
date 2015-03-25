@@ -30,7 +30,7 @@ import java.nio.*;
  * Message sent to check that transactions related to some optimistic transaction
  * were prepared on remote node.
  */
-public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistributedBaseMessage<K, V> {
+public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param miniId Mini future ID.
      */
     public GridCacheOptimisticCheckPreparedTxRequest(
-        IgniteInternalTx<K, V> tx,
+        IgniteInternalTx tx,
         int txNum,
         IgniteUuid futId,
         IgniteUuid miniId,

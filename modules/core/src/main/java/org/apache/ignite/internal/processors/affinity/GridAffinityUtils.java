@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -37,18 +38,18 @@ import java.util.concurrent.*;
  */
 class GridAffinityUtils {
     /**
-     * Creates a job that will look up {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} and {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} on a
+     * Creates a job that will look up {@link AffinityKeyMapper} and {@link AffinityFunction} on a
      * cache with given name. If they exist, this job will serialize and transfer them together with all deployment
      * information needed to unmarshal objects on remote node. Result is returned as a {@link GridTuple3},
-     * where first object is {@link GridAffinityMessage} for {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}, second object
-     * is {@link GridAffinityMessage} for {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} and third object is affinity assignment
+     * where first object is {@link GridAffinityMessage} for {@link AffinityFunction}, second object
+     * is {@link GridAffinityMessage} for {@link AffinityKeyMapper} and third object is affinity assignment
      * for given topology version.
      *
      * @param cacheName Cache name.
      * @return Affinity job.
      */
     static Callable<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> affinityJob(
-        String cacheName, long topVer) {
+        String cacheName, AffinityTopologyVersion topVer) {
         return new AffinityJob(cacheName, topVer);
     }
 
@@ -135,12 +136,12 @@ class GridAffinityUtils {
         private String cacheName;
 
         /** */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * @param cacheName Cache name.
          */
-        private AffinityJob(@Nullable String cacheName, long topVer) {
+        private AffinityJob(@Nullable String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.topVer = topVer;
         }
@@ -166,6 +167,8 @@ class GridAffinityUtils {
 
             GridKernalContext ctx = kernal.context();
 
+            cctx.affinity().affinityReadyFuture(topVer).get();
+
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
@@ -175,13 +178,13 @@ class GridAffinityUtils {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
     }
 }

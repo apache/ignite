@@ -30,7 +30,7 @@ import javax.cache.expiry.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -63,7 +63,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setPreloadMode(SYNC);
+        cfg.setRebalanceMode(SYNC);
         cfg.setCacheStoreFactory(null);
         cfg.setWriteThrough(false);
         cfg.setReadThrough(false);
@@ -84,7 +84,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 100L));
 
-        IgniteCache cache = grid(0).jcache(null).withExpiryPolicy(expiry);
+        IgniteCache cache = grid(0).cache(null).withExpiryPolicy(expiry);
 
         for (int i = 0; i < KEYS_NUM; i++)
             cache.put(String.valueOf(i), i);
@@ -103,7 +103,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
 
         cache1.preloader().syncFuture().get();
 
-        Collection<Event> evts = g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
         assertEquals("Expected all entries are preloaded.", KEYS_NUM, evts.size());
 

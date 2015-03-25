@@ -43,7 +43,7 @@ public class GridTestMain {
 
         // Initialize Spring factory.
         try (Ignite g = G.start((IgniteConfiguration)ctx.getBean("grid.cfg"))) {
-            final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
+            final IgniteCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;
 
@@ -71,7 +71,7 @@ public class GridTestMain {
 
         Ignite g = G.ignite();
 
-        final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = g.cache("partitioned");
 
         final BlockingQueue<IgniteFuture> q = new ArrayBlockingQueue<>(400);
 
@@ -97,7 +97,7 @@ public class GridTestMain {
 
             q.put(f);
 
-            f.listenAsync(new CI1<IgniteFuture<?>>() {
+            f.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> o) {
                     q.poll();
                 }
@@ -133,7 +133,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        final IgniteCache<GridTestKey, Long> cache = G.ignite().jcache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
@@ -168,7 +168,7 @@ public class GridTestMain {
     }
 
     /**
-     * Generates and loads data directly through cache API using data loader.
+     * Generates and loads data directly through cache API using data streamer.
      * This method is provided as example and is not called directly because
      * data is loaded through {@link GridTestCacheStore} store.
      *
@@ -180,7 +180,7 @@ public class GridTestMain {
         ExecutorCompletionService<Object> execSvc =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(numThreads));
 
-        try (IgniteDataLoader<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
+        try (IgniteDataStreamer<GridTestKey, Long> ldr = G.ignite().dataStreamer("partitioned")) {
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
 

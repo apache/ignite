@@ -30,7 +30,6 @@ public class GridCacheDhtPreloadOffHeapSelfTest extends GridCacheDhtPreloadSelfT
     @Override protected CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);
 

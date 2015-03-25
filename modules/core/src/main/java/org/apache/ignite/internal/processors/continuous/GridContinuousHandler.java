@@ -27,7 +27,15 @@ import java.util.*;
 /**
  * Continuous routine handler.
  */
-public interface GridContinuousHandler extends Externalizable {
+@SuppressWarnings("PublicInnerClass")
+public interface GridContinuousHandler extends Externalizable, Cloneable {
+    /**
+     * Listener registration status.
+     */
+    public enum RegisterStatus {
+        REGISTERED, NOT_REGISTERED, DELAYED
+    }
+
     /**
      * Registers listener.
      *
@@ -37,7 +45,7 @@ public interface GridContinuousHandler extends Externalizable {
      * @return Whether listener was actually registered.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
+    public RegisterStatus register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Callback called after listener is registered and acknowledgement is sent.
@@ -89,6 +97,13 @@ public interface GridContinuousHandler extends Externalizable {
     @Nullable public Object orderedTopic();
 
     /**
+     * Clones this handler.
+     *
+     * @return Clone of this handler.
+     */
+    public GridContinuousHandler clone();
+
+    /**
      * @return {@code True} if for events.
      */
     public boolean isForEvents();
@@ -102,4 +117,9 @@ public interface GridContinuousHandler extends Externalizable {
      * @return {@code True} if for continuous queries.
      */
     public boolean isForQuery();
+
+    /**
+     * @return Cache name if this is a continuous query handler.
+     */
+    public String cacheName();
 }

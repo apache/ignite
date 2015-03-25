@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Partitioned affinity test.
@@ -53,6 +53,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
@@ -78,7 +79,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
         cc.setAffinity(affinityFunction());
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
 
         c.setCacheConfiguration(cc);
 
@@ -88,14 +89,14 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     /**
      * @return Affinity function for test.
      */
-    protected abstract CacheAffinityFunction affinityFunction();
+    protected abstract AffinityFunction affinityFunction();
 
     /**
      * @param aff Affinity.
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -115,7 +116,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                CacheAffinity<Object> aff = g.affinity(null);
+                Affinity<Object> aff = g.affinity(null);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 

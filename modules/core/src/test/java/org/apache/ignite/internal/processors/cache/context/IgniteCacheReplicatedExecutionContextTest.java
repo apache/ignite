@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.context;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
@@ -43,7 +43,7 @@ public class IgniteCacheReplicatedExecutionContextTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

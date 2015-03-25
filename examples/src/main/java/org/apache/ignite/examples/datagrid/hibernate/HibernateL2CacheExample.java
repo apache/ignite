@@ -18,6 +18,8 @@
 package org.apache.ignite.examples.datagrid.hibernate;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
@@ -27,6 +29,10 @@ import org.hibernate.stat.*;
 
 import java.net.*;
 import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * This example demonstrates the use of Ignite In-Memory Data Ignite cluster as a Hibernate
@@ -63,7 +69,11 @@ import java.util.*;
  * can experiment with other access types by modifying the Hibernate configuration file
  * {@code IGNITE_HOME/examples/config/hibernate/example-hibernate-L2-cache.xml}, used by the example.
  * <p>
- * Remote nodes should always be started using {@link HibernateL2CacheExampleNodeStartup}
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class HibernateL2CacheExample {
     /** JDBC URL for backing database (an H2 in-memory database is used). */
@@ -84,81 +94,108 @@ public class HibernateL2CacheExample {
      */
     public static void main(String[] args) throws IgniteException {
         // Start the node, run the example, and stop the node when finished.
-        try (Ignite ignite = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
-            URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
+            try (
+                // Create all required caches.
+                IgniteCache c1 = createCache("org.hibernate.cache.spi.UpdateTimestampsCache", ATOMIC);
+                IgniteCache c2 = createCache("org.hibernate.cache.internal.StandardQueryCache", ATOMIC);
+                IgniteCache c3 = createCache("org.apache.ignite.examples.datagrid.hibernate.User", TRANSACTIONAL);
+                IgniteCache c4 = createCache("org.apache.ignite.examples.datagrid.hibernate.User.posts", TRANSACTIONAL);
+                IgniteCache c5 = createCache("org.apache.ignite.examples.datagrid.hibernate.Post", TRANSACTIONAL)
+            ) {
+                URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
 
-            SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
+                SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
 
-            System.out.println();
-            System.out.println(">>> Creating objects.");
+                System.out.println();
+                System.out.println(">>> Creating objects.");
 
-            final long userId;
+                final long userId;
 
-            Session ses = sesFactory.openSession();
-
-            try {
-                Transaction tx = ses.beginTransaction();
-
-                User user = new User("jedi", "Luke", "Skywalker");
-
-                user.getPosts().add(new Post(user, "Let the Force be with you."));
-
-                ses.save(user);
-
-                tx.commit();
-
-                // Create a user object, store it in DB, and save the database-generated
-                // object ID. You may try adding more objects in a similar way.
-                userId = user.getId();
-            }
-            finally {
-                ses.close();
-            }
-
-            // Output L2 cache and Ignite cache stats. You may notice that
-            // at this point the object is not yet stored in L2 cache, because
-            // the read was not yet performed.
-            printStats(sesFactory);
-
-            System.out.println();
-            System.out.println(">>> Querying object by ID.");
-
-            // Query user by ID several times. First time we get an L2 cache
-            // miss, and the data is queried from DB, but it is then stored
-            // in cache and successive queries hit the cache and return
-            // immediately, no SQL query is made.
-            for (int i = 0; i < 3; i++) {
-                ses = sesFactory.openSession();
+                Session ses = sesFactory.openSession();
 
                 try {
                     Transaction tx = ses.beginTransaction();
 
-                    User user = (User)ses.get(User.class, userId);
+                    User user = new User("jedi", "Luke", "Skywalker");
 
-                    System.out.println("User: " + user);
+                    user.getPosts().add(new Post(user, "Let the Force be with you."));
 
-                    for (Post post : user.getPosts())
-                        System.out.println("\tPost: " + post);
+                    ses.save(user);
 
                     tx.commit();
+
+                    // Create a user object, store it in DB, and save the database-generated
+                    // object ID. You may try adding more objects in a similar way.
+                    userId = user.getId();
                 }
                 finally {
                     ses.close();
                 }
-            }
 
-            // Output the stats. We should see 1 miss and 2 hits for
-            // User and Collection object (stored separately in L2 cache).
-            // The Post is loaded with the collection, so it won't imply
-            // a miss.
-            printStats(sesFactory);
+                // Output L2 cache and Ignite cache stats. You may notice that
+                // at this point the object is not yet stored in L2 cache, because
+                // the read was not yet performed.
+                printStats(sesFactory);
+
+                System.out.println();
+                System.out.println(">>> Querying object by ID.");
+
+                // Query user by ID several times. First time we get an L2 cache
+                // miss, and the data is queried from DB, but it is then stored
+                // in cache and successive queries hit the cache and return
+                // immediately, no SQL query is made.
+                for (int i = 0; i < 3; i++) {
+                    ses = sesFactory.openSession();
+
+                    try {
+                        Transaction tx = ses.beginTransaction();
+
+                        User user = (User)ses.get(User.class, userId);
+
+                        System.out.println("User: " + user);
+
+                        for (Post post : user.getPosts())
+                            System.out.println("\tPost: " + post);
+
+                        tx.commit();
+                    }
+                    finally {
+                        ses.close();
+                    }
+                }
+
+                // Output the stats. We should see 1 miss and 2 hits for
+                // User and Collection object (stored separately in L2 cache).
+                // The Post is loaded with the collection, so it won't imply
+                // a miss.
+                printStats(sesFactory);
+            }
         }
+    }
+
+    /**
+     * Creates cache.
+     *
+     * @param name Cache name.
+     * @param atomicityMode Atomicity mode.
+     * @return Cache configuration.
+     */
+    private static IgniteCache createCache(String name, CacheAtomicityMode atomicityMode) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName(name);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        return Ignition.ignite().createCache(ccfg);
     }
 
     /**

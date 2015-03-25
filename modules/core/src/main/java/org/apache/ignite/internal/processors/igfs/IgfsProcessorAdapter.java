@@ -46,7 +46,7 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      *
      * @return Collection of IGFS instances.
      */
-    public abstract Collection<IgniteFs> igfss();
+    public abstract Collection<IgniteFileSystem> igfss();
 
     /**
      * Gets IGFS instance.
@@ -54,7 +54,7 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * @param name (Nullable) IGFS name.
      * @return IGFS instance.
      */
-    @Nullable public abstract IgniteFs igfs(@Nullable String name);
+    @Nullable public abstract IgniteFileSystem igfs(@Nullable String name);
 
     /**
      * Gets server endpoints for particular IGFS.
