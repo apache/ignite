@@ -93,7 +93,47 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean valid(AffinityTopologyVersion topVer) {
         assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
-        return this.topVer == topVer.topologyVersion();
+        long topVer0 = this.topVer;
+
+        if (topVer0 == topVer.topologyVersion())
+            return true;
+
+        if (topVer0 == -1L || topVer.topologyVersion() < topVer0)
+            return false;
+
+        try {
+            ClusterNode primary = null;
+
+            for (long ver = topVer0; ver <= topVer.topologyVersion(); ver++) {
+                ClusterNode primary0 = cctx.affinity().primary(part, new AffinityTopologyVersion(ver));
+
+                if (primary0 == null) {
+                    this.topVer = -1L;
+
+                    return false;
+                }
+
+                if (primary == null)
+                    primary = primary0;
+                else {
+                    if (!primary.equals(primary0)) {
+                        this.topVer = -1L;
+
+                        return false;
+                    }
+                }
+            }
+
+            this.topVer = topVer.topologyVersion();
+
+            return true;
+        }
+        catch (IllegalStateException ignore) {
+            // Do not have affinity history.
+            this.topVer = -1L;
+
+            return false;
+        }
     }
 
     /**
