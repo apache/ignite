@@ -63,7 +63,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected IgniteFileSystem igfs;
 
     /** Meta cache. */
-    private IgniteCache<Object, Object> metaCache;
+    private GridCache<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -80,7 +80,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         metaCacheName = cfgs[0].getMetaCacheName();
 
-        metaCache = grid.cache(metaCacheName);
+        metaCache = grid.cachex(metaCacheName);
     }
 
     /** {@inheritDoc} */
@@ -337,8 +337,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
-        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
-            info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+        for (Object key : metaCache.keySet())
+            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
 
         igfs.mkdirs(path("/A/B1/C2"));
         igfs.mkdirs(path("/A/B1/C3"));
@@ -351,8 +351,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         igfs.mkdirs(path("/A2/B2/C1"));
         igfs.mkdirs(path("/A2/B2/C2"));
 
-        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
-            info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+        for (Object key : metaCache.keySet())
+            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
 
         // Check existence.
         assert igfs.exists(path("/A/B1/C1"));
@@ -471,8 +471,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
-        for (Cache.Entry<Object, Object> e : metaCache.localEntries())
-            info("Entry in cache [key=" + e.getKey() + ", val=" + metaCache.get(e.getValue()) + ']');
+        for (Object key : metaCache.keySet())
+            info("Entry in cache [key=" + key + ", val=" + metaCache.get(key) + ']');
 
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
@@ -683,7 +683,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        IgniteCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cache(META_CACHE_NAME);
+        GridCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
         IgniteCache<IgfsBlockKey, byte[]> dataCache = grid(0).cache(DATA_CACHE_NAME);
 
         IgfsFileInfo info = metaCache.get(fileId);

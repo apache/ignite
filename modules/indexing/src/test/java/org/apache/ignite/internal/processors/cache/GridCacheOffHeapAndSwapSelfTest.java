@@ -225,11 +225,11 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         for (long i = 0; i < ENTRY_CNT; i++) {
             cache.localEvict(Collections.singleton(i));
 
-            assertEquals(ENTRY_CNT - i - 1, cache.size());
+            assertEquals(ENTRY_CNT - i - 1, cache.localSize(CachePeekMode.ONHEAP));
         }
 
         // Ensure that part of entries located in off-heap memory and part is swapped.
-        assertEquals(0, cache.size());
+        assertEquals(0, cache.localSize(CachePeekMode.ONHEAP));
         assertTrue(cache.localSize(CachePeekMode.OFFHEAP) > 0);
         assertTrue(cache.localSize(CachePeekMode.OFFHEAP) < ENTRY_CNT);
 
@@ -238,7 +238,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         to = (ENTRY_CNT + cache.localSize(CachePeekMode.OFFHEAP)) / 2;
 
         for (long i = 0; i < ENTRY_CNT; i++)
-            assertNull(cache.localPeek(i));
+            assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
         assertEquals(ENTRY_CNT, offheapedCnt.get());
         assertEquals(0, onheapedCnt.get());
@@ -247,7 +247,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         resetCounters();
 
-        return cache;
+        return grid(0).cache(null);
     }
 
     /**
@@ -479,7 +479,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         IgniteCache<Long, Long> cache = populate();
 
         for (long i = from; i < to; i++) {
-            assertNull(cache.localPeek(i));
+            assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
             Long val = cache.localPeek(i, CachePeekMode.SWAP);
 
