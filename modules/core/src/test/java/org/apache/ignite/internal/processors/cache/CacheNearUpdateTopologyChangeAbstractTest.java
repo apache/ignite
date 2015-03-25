@@ -119,11 +119,13 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return aff.isPrimary(primaryIgnite.cluster().localNode(), key);
             }
         }, 10_000);
+
+        assertTrue(wait);
 
         log.info("Primary node: " + primaryNode(key, null).name());
 

@@ -221,9 +221,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         int val = 4;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            delay();
-
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
+
+            atomicClockModeDelay(cache);
 
             for (Integer key : nearKeys.keySet())
                 nearKeys.put(key, val);
@@ -307,9 +307,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         int val = nearKey + 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            delay();
-
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
+
+            atomicClockModeDelay(cache);
 
             log.info("Transform [grid=" + grid(i).name() + ", val=" + val + ']');
 
@@ -400,9 +400,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         int val = 4;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            delay();
-
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
+
+            atomicClockModeDelay(cache);
 
             for (Integer key : nearKeys)
                 nearKeys.add(key);
@@ -521,9 +521,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         int val = nearKey + 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            delay();
-
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
+
+            atomicClockModeDelay(cache);
 
             log.info("Put [grid=" + grid(i).name() + ", val=" + val + ']');
 
@@ -626,7 +626,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> primaryCache = G.ignite(
             (String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME)).cache(null);
 
-        delay();
+        atomicClockModeDelay(cache0);
 
         primaryCache.put(nearKey, 2); // This put should see that near entry evicted on grid0 and remove reader.
 
@@ -672,9 +672,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite primaryNode = G.ignite((String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
 
-        delay();
-
         IgniteCache<Integer, Integer> primaryCache = primaryNode.cache(null);
+
+        atomicClockModeDelay(primaryCache);
 
         primaryCache.put(nearKey, 2); // Put from primary, check there are no readers.
 
@@ -780,14 +780,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         assertNotNull(key);
 
         return key;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void delay() throws IgniteCheckedException {
-        if (writeOrderMode == CLOCK)
-            U.sleep(100);
     }
 
     /**

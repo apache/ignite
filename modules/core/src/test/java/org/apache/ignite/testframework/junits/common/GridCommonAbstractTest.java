@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits.common;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -783,5 +784,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertNotNull("There are no cache affinity nodes", node);
 
         return grid(node);
+    }
+
+    /**
+     * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
+     * only one update wins others are ignored (can happen in test event when updates are executed from
+     * different nodes sequentially), this delay is used to avoid lost updates.
+     *
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
+        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        if (ccfg.getCacheMode() != LOCAL &&
+            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
+            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
+            U.sleep(100);
     }
 }
