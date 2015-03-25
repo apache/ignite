@@ -40,11 +40,11 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Hash ID resolver. */
-    private CacheAffinityNodeHashResolver rslvr;
+    private AffinityNodeHashResolver rslvr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
         aff.setHashIdResolver(rslvr);
 
@@ -93,7 +93,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
     /**
      *
      */
-    private static class BogusHashResolver implements CacheAffinityNodeHashResolver {
+    private static class BogusHashResolver implements AffinityNodeHashResolver {
         /** {@inheritDoc} */
         @Override public Object resolve(ClusterNode node) {
             return 1;

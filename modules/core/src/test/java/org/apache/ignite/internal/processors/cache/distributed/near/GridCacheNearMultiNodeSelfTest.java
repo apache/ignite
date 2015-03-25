@@ -68,7 +68,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Affinity based on node index mode. */
-    private CacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
+    private AffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
 
     /** Debug flag for mappings. */
     private boolean mapDebug = true;
@@ -198,13 +198,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Affinity.
      */
-    private CacheAffinity<Object> affinity(int idx) {
+    private Affinity<Object> affinity(int idx) {
         return grid(idx).affinity(null);
     }
 
     /** @param cnt Count. */
     private Map<UUID, T2<Set<Integer>, Set<Integer>>> mapKeys(int cnt) {
-        CacheAffinity<Object> aff = affinity(0);
+        Affinity<Object> aff = affinity(0);
 
         //Mapping primary and backup keys on node
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();

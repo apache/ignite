@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
  * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
  */
-public class CacheAffinityNodeIdHashResolver implements CacheAffinityNodeHashResolver {
+public class AffinityNodeIdHashResolver implements AffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,6 +35,6 @@ public class CacheAffinityNodeIdHashResolver implements CacheAffinityNodeHashRes
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheAffinityNodeIdHashResolver.class, this);
+        return S.toString(AffinityNodeIdHashResolver.class, this);
     }
 }

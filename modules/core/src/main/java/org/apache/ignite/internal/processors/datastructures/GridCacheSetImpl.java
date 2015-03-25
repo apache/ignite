@@ -571,7 +571,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         /**
          * @return Item affinity key.
          */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         public Object affinityKey() {
             return setName;
         }

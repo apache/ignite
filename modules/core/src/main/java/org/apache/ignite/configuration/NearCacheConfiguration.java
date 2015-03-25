@@ -33,7 +33,7 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** Near cache eviction policy. */
-    private CacheEvictionPolicy<K, V> nearEvictPlc;
+    private EvictionPolicy<K, V> nearEvictPlc;
 
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
@@ -58,14 +58,14 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return Near eviction policy.
      */
-    public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
+    public EvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
     /**
      * @param nearEvictPlc Near eviction policy.
      */
-    public void setNearEvictionPolicy(CacheEvictionPolicy<K, V> nearEvictPlc) {
+    public void setNearEvictionPolicy(EvictionPolicy<K, V> nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
     }
 

@@ -15,36 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.fifo;
+package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.mxbean.*;
+import java.lang.annotation.*;
 
 /**
- * MBean for {@code FIFO} eviction policy.
+ * Annotation marker which identifies affinity function that must be calculated on one centralized node
+ * instead of independently on each node. In many cases it happens because it requires previous affinity state
+ * in order to calculate new one.
  */
-@MXBeanDescription("MBean for FIFO cache eviction policy.")
-public interface CacheFifoEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface CentralizedAffinityFunction {
 
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @MXBeanDescription("Set maximum allowed cache size.")
-    public void setMaxSize(int max);
-
-    /**
-     * Gets current queue size.
-     *
-     * @return Current queue size.
-     */
-    @MXBeanDescription("Current FIFO queue size.")
-    public int getCurrentSize();
 }

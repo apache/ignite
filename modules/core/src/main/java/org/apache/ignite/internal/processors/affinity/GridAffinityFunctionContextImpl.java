@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Cache affinity function context implementation. Simple bean that holds all required fields.
  */
-public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFunctionContext {
+public class GridAffinityFunctionContextImpl implements AffinityFunctionContext {
     /** Topology snapshot. */
     private final List<ClusterNode> topSnapshot;
 
@@ -47,7 +47,7 @@ public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFuncti
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
-    public GridCacheAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
+    public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
         DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;

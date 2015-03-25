@@ -98,7 +98,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             cacheCfg.setRebalanceBatchSize(preloadBatchSize);
             cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             cacheCfg.setRebalanceMode(preloadMode);
-            cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+            cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
             cacheCfg.setBackups(backups);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -210,7 +210,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             for (IgniteInternalFuture<?> fut : exchMgr.exchangeFutures())
                 fut.get();
 
-            CacheAffinity<Integer> aff = affinity(c1);
+            Affinity<Integer> aff = affinity(c1);
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
@@ -240,7 +240,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cnt Key count.
      */
     private void checkKeys(IgniteCache<Integer, String> c, int cnt) {
-        CacheAffinity<Integer> aff = affinity(c);
+        Affinity<Integer> aff = affinity(c);
 
         boolean sync = isSync(c);
 

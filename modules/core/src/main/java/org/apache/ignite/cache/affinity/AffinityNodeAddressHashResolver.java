@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.igfs;
+package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.igfs.*;
-
-import javax.cache.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * IGFS eviction filter which will not evict blocks of particular files.
+ * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.
  */
-public class CacheIgfsEvictionFilter implements CacheEvictionFilter {
+public class AffinityNodeAddressHashResolver implements AffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public boolean evictAllowed(Cache.Entry entry) {
-        Object key = entry.getKey();
+    @Override public Object resolve(ClusterNode node) {
+        return node.consistentId();
+    }
 
-        return !(key instanceof IgfsBlockKey && ((IgfsBlockKey)key).evictExclude());
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AffinityNodeAddressHashResolver.class, this);
     }
 }

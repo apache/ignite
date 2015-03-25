@@ -162,7 +162,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -264,7 +264,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Object> aff = ignite0.affinity(null);
+        Affinity<Object> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -341,7 +341,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Object> aff = ignite0.affinity(null);
+        Affinity<Object> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -478,7 +478,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -601,7 +601,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -651,7 +651,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -740,8 +740,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             assertNull("Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name(), dhtEntry);
 
         if (!expectNear && !expectDht) {
-            assertNull("Unexpected peek value for grid: " + ignite.name(),
-                ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
+            assertNull("Unexpected peek value for grid: " + ignite.name(), ignite.cache(near.name()).localPeek(key,
+                CachePeekMode.ONHEAP));
         }
     }
 
@@ -751,7 +751,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @return Key with properties specified by the given mode.
      */
     private Integer key(Ignite ignite, int mode) {
-        CacheAffinity<Integer> aff = ignite.affinity(null);
+        Affinity<Integer> aff = ignite.affinity(null);
 
         Integer key = null;
 

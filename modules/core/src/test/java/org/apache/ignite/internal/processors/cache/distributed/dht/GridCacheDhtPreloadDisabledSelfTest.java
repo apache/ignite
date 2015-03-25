@@ -83,7 +83,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
         cacheCfg.setRebalanceMode(NONE);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         //cacheCfg.setRebalanceThreadPoolSize(1);

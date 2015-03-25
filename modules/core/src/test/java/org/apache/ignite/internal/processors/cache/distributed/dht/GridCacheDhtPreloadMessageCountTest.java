@@ -63,7 +63,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 521));
+        cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

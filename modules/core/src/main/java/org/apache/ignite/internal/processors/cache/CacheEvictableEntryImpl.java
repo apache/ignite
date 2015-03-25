@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
-public class CacheEvictableEntryImpl<K, V> implements CacheEvictableEntry<K, V> {
+public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /** */
     private static final UUID META_KEY = UUID.randomUUID();
 

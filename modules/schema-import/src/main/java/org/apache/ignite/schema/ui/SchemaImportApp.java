@@ -885,8 +885,8 @@ public class SchemaImportApp extends Application {
             "Check to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only ONE key field annotated with @CacheAffinityKeyMapped annotation");
+            "Check to annotate key filed with @AffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 

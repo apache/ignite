@@ -52,7 +52,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
      * @throws Exception If failed.
      */
     public void testNearUpdateTopologyChange() throws Exception {
-        final CacheAffinity<Integer> aff = grid(0).affinity(null);
+        final Affinity<Integer> aff = grid(0).affinity(null);
 
         final Integer key = 9;
 
