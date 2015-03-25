@@ -156,8 +156,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     private static <K, V> GridDhtCacheAdapter<K, V> dht(Ignite ignite, CacheConfiguration cfg) {
-        GridNearCacheAdapter<K, V> adapter = near(ignite, cfg.getName());
-        return nearEnabled(cfg) ? adapter.dht() :
+        return nearEnabled(cfg) ? ((GridNearCacheAdapter)near(ignite, cfg.getName())).dht() :
             ((IgniteKernal)ignite).<K, V>internalCache(cfg.getName()).context().dht();
     }
 
