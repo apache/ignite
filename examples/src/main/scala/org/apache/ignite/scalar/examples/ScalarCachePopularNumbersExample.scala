@@ -35,13 +35,13 @@ import scala.util.Random
 
 /**
  * Real time popular number counter.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
- * <p>
+ * <p/>
  * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-ignite.xml` configuration.
- * <p>
+ * <p/>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the ignite.
  */

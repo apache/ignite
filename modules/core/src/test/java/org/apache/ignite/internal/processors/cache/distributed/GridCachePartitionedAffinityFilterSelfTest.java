@@ -66,7 +66,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
         aff.setBackupFilter(backupFilter);
 
@@ -121,9 +121,9 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void checkPartitions() throws Exception {
-        int partCnt = CacheRendezvousAffinityFunction.DFLT_PARTITION_COUNT;
+        int partCnt = RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
-        CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
         IgniteCache<Object, Object> cache = grid(0).cache(null);
 

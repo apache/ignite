@@ -32,19 +32,6 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="partitioned"/>
-
-                    <property name="cacheMode" value="PARTITIONED"/>
-
-                    <property name="swapEnabled" value="false"/>
-
-                    <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
-
-                    <property name="startSize" value="400000"/>
-
-                    <property name="distributionMode" value="CLIENT_ONLY"/>
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="local"/>
 
                     <property name="cacheMode" value="LOCAL"/>

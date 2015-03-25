@@ -331,7 +331,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 if (cache0.isNear())
                     cache0 = ((GridNearCacheAdapter<Integer, Integer>)cache0).dht();
 
-                CacheAffinity<Integer> aff = cache0.affinity();
+                Affinity<Integer> aff = cache0.affinity();
 
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {

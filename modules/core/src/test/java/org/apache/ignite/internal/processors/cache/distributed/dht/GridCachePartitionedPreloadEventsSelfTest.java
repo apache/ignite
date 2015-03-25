@@ -48,7 +48,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         if (replicatedAffinity)
             // replicate entries to all nodes
-            cacheCfg.setAffinity(notSerializableProxy(new CacheAffinityFunction() {
+            cacheCfg.setAffinity(notSerializableProxy(new AffinityFunction() {
                 /** {@inheritDoc} */
                 @Override public void reset() {
                 }
@@ -64,7 +64,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+                @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
                     List<ClusterNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
 
                     return Collections.singletonList(nodes);
@@ -73,7 +73,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 /** {@inheritDoc} */
                 @Override public void removeNode(UUID nodeId) {
                 }
-            }, CacheAffinityFunction.class));
+            }, AffinityFunction.class));
 
         cacheCfg.setRebalanceDelay(rebalanceDelay);
 

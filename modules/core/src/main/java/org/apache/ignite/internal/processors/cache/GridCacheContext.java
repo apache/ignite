@@ -364,7 +364,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * 
+     *
      */
     public void onStarted() {
         startLatch.countDown();
@@ -1062,7 +1062,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Default affinity key mapper.
      */
-    public CacheAffinityKeyMapper defaultAffMapper() {
+    public AffinityKeyMapper defaultAffMapper() {
         return cacheObjCtx.defaultAffMapper();
     }
 
@@ -1074,7 +1074,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
         this.cacheObjCtx = cacheObjCtx;
     }
-    
+
     /**
      * @param p Single predicate.
      * @return Array containing single predicate.
@@ -1596,9 +1596,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws GridCacheEntryRemovedException If reader for entry is removed.
      */
     public boolean dhtMap(
-        UUID nearNodeId, 
-        AffinityTopologyVersion topVer, 
-        GridDhtCacheEntry entry, 
+        UUID nearNodeId,
+        AffinityTopologyVersion topVer,
+        GridDhtCacheEntry entry,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap

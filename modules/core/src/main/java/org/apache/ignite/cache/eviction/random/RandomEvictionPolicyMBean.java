@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema;
+package org.apache.ignite.cache.eviction.random;
+
+import org.apache.ignite.mxbean.*;
 
 /**
- * PersonKey definition.
+ * MBean for {@code random} eviction policy.
  */
-public class PersonKey {
+@MXBeanDescription("MBean for random cache eviction policy.")
+public interface RandomEvictionPolicyMBean {
     /**
-     * Full constructor.
+     * Gets maximum allowed cache size.
+     *
+     * @return Maximum allowed cache size.
      */
-    public PersonKey(int id) {
-        throw new IllegalStateException("Please run Ignite Schema Import Utility as described in README.txt");
-    }
+    @MXBeanDescription("Maximum allowed cache size.")
+    public int getMaxSize();
 
     /**
-     * @return Person ID.
+     * Sets maximum allowed cache size.
+     *
+     * @param max Maximum allowed cache size.
      */
-    public int getId() {
-        throw new IllegalStateException("Please run Ignite Schema Import Utility as described in README.txt");
-    }
+    @MXBeanDescription("Sets maximum allowed cache size.")
+    public void setMaxSize(int max);
 }
-

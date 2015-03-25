@@ -89,14 +89,14 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     /**
      * @return Affinity function for test.
      */
-    protected abstract CacheAffinityFunction affinityFunction();
+    protected abstract AffinityFunction affinityFunction();
 
     /**
      * @param aff Affinity.
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -116,7 +116,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                CacheAffinity<Object> aff = g.affinity(null);
+                Affinity<Object> aff = g.affinity(null);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 

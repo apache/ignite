@@ -76,7 +76,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         cacheCfg.setStartSize(startSize);
 
         if (onheap > 0) {
-            cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(onheap));
+            cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(onheap));
 
             cacheCfg.setOffHeapMaxMemory(80 * 1024L * 1024L * 1024L); // 10GB
         }

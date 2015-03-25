@@ -800,6 +800,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         // Put from grid 1 to be sure grid 0 does not have value for near key.
         jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
 
+        atomicClockModeDelay(jcache(1));
+
         interceptor.disabled = false;
 
         log.info("Update [op=" + op + ", key1=" + key1 + ", key2=" + key2 + ", key3=" + key3 +
@@ -1264,7 +1266,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1289,7 +1291,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1311,7 +1313,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 

@@ -235,7 +235,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug()) {
                 info("Started transaction.");
 
-                CacheAffinity<Integer> aff = affinity(cache);
+                Affinity<Integer> aff = affinity(cache);
 
                 int part = aff.partition(key);
 

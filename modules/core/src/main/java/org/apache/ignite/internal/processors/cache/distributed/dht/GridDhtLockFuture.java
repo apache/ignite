@@ -129,6 +129,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Need return value flag. */
+    private boolean needReturnValue;
+
     /**
      * @param cctx Cache context.
      * @param nearNodeId Near node ID.
@@ -149,6 +152,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
+        boolean needReturnValue,
         long timeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
@@ -165,6 +169,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.nearLockVer = nearLockVer;
         this.topVer = topVer;
         this.read = read;
+        this.needReturnValue = needReturnValue;
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
@@ -929,7 +934,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      */
     private void loadMissingFromStore() {
-        if (cctx.loadPreviousValue() && cctx.readThrough() && read) {
+        if (cctx.loadPreviousValue() && cctx.readThrough() && (needReturnValue || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();
@@ -941,7 +946,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             try {
                 cctx.store().loadAllFromStore(
-                    tx,
+                    null,
                     loadMap.keySet(),
                     new CI2<KeyCacheObject, Object>() {
                         @Override public void apply(KeyCacheObject key, Object val) {

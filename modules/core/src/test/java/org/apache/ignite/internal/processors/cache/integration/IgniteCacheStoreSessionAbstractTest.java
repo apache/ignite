@@ -253,9 +253,11 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-            log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
+            if (session().isWithinTransaction()) {
+                log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
 
-            checkSession("sessionEnd");
+                checkSession("sessionEnd");
+            }
         }
 
         /** {@inheritDoc} */

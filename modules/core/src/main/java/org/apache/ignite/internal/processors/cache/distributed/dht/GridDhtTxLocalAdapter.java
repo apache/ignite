@@ -508,6 +508,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean onePhaseCommit,
         long msgId,
         final boolean read,
+        final boolean needRetVal,
         long accessTtl
     ) {
         try {
@@ -589,7 +590,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
 
-            return obtainLockAsync(cacheCtx, ret, passedKeys, read, skipped, accessTtl, null);
+            return obtainLockAsync(cacheCtx, ret, passedKeys, read, needRetVal, skipped, accessTtl, null);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -613,6 +614,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         GridCacheReturn ret,
         final Collection<KeyCacheObject> passedKeys,
         final boolean read,
+        final boolean needRetVal,
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter) {
@@ -630,7 +632,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             this,
             isInvalidate(),
             read,
-            /*retval*/false,
+            needRetVal,
             isolation,
             accessTtl,
             CU.empty0());

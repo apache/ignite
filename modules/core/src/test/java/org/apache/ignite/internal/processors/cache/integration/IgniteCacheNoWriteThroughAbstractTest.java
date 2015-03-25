@@ -225,7 +225,8 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
                         storeMap.put(key, key);
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            assertEquals(key, cache.getAndPut(key, -1));
+                            assertEquals("For concurrency=" + concurrency +
+                                ", isolation=" + isolation + ']', key, cache.getAndPut(key, -1));
 
                             tx.commit();
                         }

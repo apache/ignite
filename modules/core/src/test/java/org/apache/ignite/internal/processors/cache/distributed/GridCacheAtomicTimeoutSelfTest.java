@@ -267,7 +267,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     private int keyForTest() {
         int i = 0;
 
-        CacheAffinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(null);
 
         while (!aff.isPrimary(grid(1).localNode(), i) || !aff.isBackup(grid(2).localNode(), i))
             i++;

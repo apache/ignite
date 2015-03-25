@@ -87,17 +87,17 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
             assertEquals("Row size", 3, row.size());
 
             if (cnt == 0 || cnt == 1) {
-                assertEquals("Key", new CacheAffinityKey<>("p1", "o1"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p1", "o1"), row.get(0));
                 assertEquals("Name", "John White", row.get(1));
                 assertEquals("Age", 25, row.get(2));
             }
             else if (cnt == 2 || cnt == 3) {
-                assertEquals("Key", new CacheAffinityKey<>("p2", "o1"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p2", "o1"), row.get(0));
                 assertEquals("Name", "Joe Black", row.get(1));
                 assertEquals("Age", 35, row.get(2));
             }
             else if (cnt == 4 || cnt == 5) {
-                assertEquals("Key", new CacheAffinityKey<>("p3", "o2"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p3", "o2"), row.get(0));
                 assertEquals("Name", "Mike Green", row.get(1));
                 assertEquals("Age", 40, row.get(2));
             }

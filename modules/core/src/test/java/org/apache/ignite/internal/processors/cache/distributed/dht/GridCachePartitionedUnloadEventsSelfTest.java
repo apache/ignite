@@ -61,7 +61,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setRebalanceMode(SYNC);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         return cacheCfg;
     }

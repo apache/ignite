@@ -98,7 +98,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
-        
+
         IgniteConfiguration gridCfg = ctx.config();
 
         // Node doesn't have IGFS if it:
@@ -127,7 +127,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (cacheCfg == null)
                 continue; // No cache for the given IGFS configuration.
 
-            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
+            AffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
             if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
                 // Do not create IGFS attributes for such a node nor throw error about invalid configuration.

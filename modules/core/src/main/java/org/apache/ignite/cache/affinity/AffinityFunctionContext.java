@@ -25,10 +25,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Affinity function context. This context is passed to {@link CacheAffinityFunction} for
+ * Affinity function context. This context is passed to {@link AffinityFunction} for
  * partition reassignment on every topology change event.
  */
-public interface CacheAffinityFunctionContext {
+public interface AffinityFunctionContext {
     /**
      * Gets affinity assignment for given partition on previous topology version. First node in returned list is
      * a primary node, other nodes are backups.

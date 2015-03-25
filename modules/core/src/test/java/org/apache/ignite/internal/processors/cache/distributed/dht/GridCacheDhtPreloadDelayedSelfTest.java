@@ -74,7 +74,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceDelay(delay);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
+        cc.setAffinity(new RendezvousAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -371,7 +371,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Affinity.
      */
-    private CacheAffinity<Object> affinity(Ignite g) {
+    private Affinity<Object> affinity(Ignite g) {
         return g.affinity(null);
     }
 

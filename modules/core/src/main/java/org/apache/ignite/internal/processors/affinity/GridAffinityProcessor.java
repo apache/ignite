@@ -381,8 +381,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link CacheAffinityFunction} and
-     * {@link CacheAffinityKeyMapper} from remote node.
+     * Requests {@link AffinityFunction} and
+     * {@link AffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param topVer Topology version.
@@ -395,8 +395,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
 
-        CacheAffinityFunction f = (CacheAffinityFunction)unmarshall(ctx, n.id(), t.get1());
-        CacheAffinityKeyMapper m = (CacheAffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
+        AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
+        AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
 
         assert m != null;
 
@@ -492,10 +492,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private static class AffinityInfo {
         /** Affinity function. */
-        private CacheAffinityFunction affFunc;
+        private AffinityFunction affFunc;
 
         /** Mapper */
-        private CacheAffinityKeyMapper mapper;
+        private AffinityKeyMapper mapper;
 
         /** Assignment. */
         private GridAffinityAssignment assignment;
@@ -509,8 +509,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @param assignment Partition assignment.
          * @param cacheObjCtx Cache objects context.
          */
-        private AffinityInfo(CacheAffinityFunction affFunc,
-            CacheAffinityKeyMapper mapper,
+        private AffinityInfo(AffinityFunction affFunc,
+            AffinityKeyMapper mapper,
             GridAffinityAssignment assignment,
             CacheObjectContext cacheObjCtx) {
             this.affFunc = affFunc;
@@ -522,7 +522,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /**
          * @return Cache affinity function.
          */
-        private CacheAffinityFunction affinityFunction() {
+        private AffinityFunction affinityFunction() {
             return affFunc;
         }
 
@@ -533,7 +533,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return assignment;
         }
 
-        private CacheAffinityKeyMapper keyMapper() {
+        private AffinityKeyMapper keyMapper() {
             return mapper;
         }
 
@@ -593,7 +593,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /**
      * Grid cache affinity.
      */
-    private class CacheAffinityProxy<K> implements CacheAffinity<K> {
+    private class CacheAffinityProxy<K> implements Affinity<K> {
         /** Cache name. */
         private final String cacheName;
 

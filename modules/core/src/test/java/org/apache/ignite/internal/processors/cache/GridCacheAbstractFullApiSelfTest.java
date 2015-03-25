@@ -3076,7 +3076,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         load(cache, key, true);
 
-        CacheAffinity<String> aff = ignite(0).affinity(null);
+        Affinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimary(grid(i).cluster().localNode(), key))
@@ -3453,7 +3453,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         loadAll(cache, ImmutableSet.of(key1, key2), true);
 
-        CacheAffinity<String> aff = ignite(0).affinity(null);
+        Affinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
@@ -3919,7 +3919,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         List<String> found = new ArrayList<>(cnt);
 
         Ignite ignite = cache.unwrap(Ignite.class);
-        CacheAffinity<Object> affinity = ignite.affinity(cache.getName());
+        Affinity<Object> affinity = ignite.affinity(cache.getName());
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             String key = "key" + i;
@@ -4141,19 +4141,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 Thread.sleep(500);
             }
         }
-    }
-
-    /**
-     * @param cache Cache.
-     * @throws Exception If failed.
-     */
-    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
-        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
-
-        if (ccfg.getCacheMode() != LOCAL &&
-            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
-            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(100);
     }
 
     /**
