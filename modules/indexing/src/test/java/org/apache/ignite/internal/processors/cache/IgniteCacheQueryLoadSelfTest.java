@@ -212,7 +212,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
 
-        assert asyncCache.get(1).value() == 1;
+        asyncCache.get(1);
+
+        assert ((ValueObject)asyncCache.future().get()).value() == 1;
 
         assert cache.size() == 1;
 
