@@ -91,7 +91,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @return Value.
      * @throws IgniteSpiException If failed.
      */
-    private static Value wrap(Object obj, int type) throws IgniteSpiException {
+    public static Value wrap(Object obj, int type) throws IgniteSpiException {
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);

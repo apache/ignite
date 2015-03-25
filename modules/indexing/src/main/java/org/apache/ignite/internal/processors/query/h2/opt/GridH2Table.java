@@ -139,7 +139,7 @@ public class GridH2Table extends TableBase {
 
         assert desc != null;
 
-        GridH2AbstractKeyValueRow row = desc.createRow(key, null, 0); // Create search row.
+        GridH2Row searchRow = desc.createRow(key, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -149,7 +149,7 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            row = pk.findOne(row);
+            GridH2AbstractKeyValueRow row = (GridH2AbstractKeyValueRow)pk.findOne(searchRow);
 
             if (row == null)
                 return false;

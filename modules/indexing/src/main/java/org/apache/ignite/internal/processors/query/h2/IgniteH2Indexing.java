@@ -1891,9 +1891,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
+        @Override public GridH2Row createRow(Object key, @Nullable Object val, long expirationTime)
             throws IgniteCheckedException {
             try {
+                if (val == null) // Only can happen for remove operation, can create simple search row.
+                    return new GridH2Row(wrap(key, keyType), null);
+
                 return schema.offheap == null ?
                     new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
                     new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
