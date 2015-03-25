@@ -59,7 +59,7 @@ public class Demo {
         System.out.println(">>> Start demo...");
 
         // Start Ignite node.
-        try (Ignite ignite = Ignition.start()) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // Configure cache store.
             CacheConfiguration<PersonKey, Person> cfg =
                 CacheConfig.cache("PersonCache", new H2DemoStoreFactory<PersonKey, Person>());

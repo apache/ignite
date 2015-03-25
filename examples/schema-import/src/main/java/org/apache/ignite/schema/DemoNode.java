@@ -32,6 +32,6 @@ public class DemoNode {
     public static void main(String[] args) throws IgniteException {
         System.out.println(">>> Start demo node...");
 
-        Ignition.start();
+        Ignition.start("examples/config/example-ignite.xml");
     }
 }
