@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -33,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -439,6 +441,10 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                                 updateLocal(p, loc.id(), locPart.state(), updateSeq);
 
                                 changed = true;
+
+                                cctx.events().addEvent(p, null, cctx.localNodeId(), (IgniteUuid)null,
+                                    null, EVT_CACHE_PARTITION_NOT_FULLY_LOADED, null, false, null,
+                                    false, null, null, null);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Owned partition: " + locPart);
