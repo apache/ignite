@@ -605,11 +605,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 asyncCache.putIfAbsent(key, val);
 
-                assert asyncCache.future().get() == true;
+                assert asyncCache.future().get() == new Boolean(true);
 
                 asyncCache.putIfAbsent(key, val);
 
-                assert asyncCache.future().get() == false;
+                assert asyncCache.future().get() == new Boolean(false);
 
                 assert cache.containsKey(key);
             }
@@ -653,11 +653,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                     asyncCache.putIfAbsent(key, val);
 
-                    assert asyncCache.future().get() == true;
+                    assert asyncCache.future().get() == new Boolean(true);
 
                     asyncCache.putIfAbsent(key, val);
 
-                    assert asyncCache.future().get() == false;
+                    assert asyncCache.future().get() == new Boolean(false);
 
                     assert cache.containsKey(key);
 
