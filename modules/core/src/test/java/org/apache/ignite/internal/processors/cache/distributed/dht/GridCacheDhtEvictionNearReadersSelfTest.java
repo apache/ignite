@@ -77,11 +77,11 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // Set eviction queue size explicitly.
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setEvictMaxOverflowRatio(0);
-        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10));
+        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(10));
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        nearCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10));
+        nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10));
 
         cfg.setNearCacheConfiguration(nearCfg);
 
@@ -136,14 +136,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
             assert near(grid(i)).isEmpty() : "Near cache is not empty [idx=" + i + "]";
             assert dht(grid(i)).isEmpty() : "Dht cache is not empty [idx=" + i + "]";
         }
-    }
-
-    /**
-     * @param node Node.
-     * @return Grid for the given node.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
     }
 
     /**

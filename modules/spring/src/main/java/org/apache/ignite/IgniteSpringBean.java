@@ -388,7 +388,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+    @Override public <K> Affinity<K> affinity(String cacheName) {
         return g.affinity(cacheName);
     }
 

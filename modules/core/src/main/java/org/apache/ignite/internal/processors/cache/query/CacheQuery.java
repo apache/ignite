@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
@@ -83,7 +84,7 @@ import org.jetbrains.annotations.*;
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode or at least one side of the join is stored in
  *         {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache. Refer to
- *         {@link org.apache.ignite.cache.affinity.CacheAffinityKey} javadoc for more information about colocation.
+ *         {@link AffinityKey} javadoc for more information about colocation.
  *     </li>
  * </ul>
  * <h1 class="header">Query usage</h1>

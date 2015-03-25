@@ -58,7 +58,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(REPLICATED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
-        ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 100));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -78,7 +78,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     public void testTxNoWrite() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        CacheAffinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(null);
 
         IgniteCache<Integer, Object> cache0 = ignite0.cache(null);
 

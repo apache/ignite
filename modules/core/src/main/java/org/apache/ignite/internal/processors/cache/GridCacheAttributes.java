@@ -119,10 +119,10 @@ public class GridCacheAttributes implements Serializable {
      * @return Affinity include neighbors.
      */
     public boolean affinityIncludeNeighbors() {
-        CacheAffinityFunction aff = ccfg.getAffinity();
+        AffinityFunction aff = ccfg.getAffinity();
 
-        return aff instanceof CacheRendezvousAffinityFunction
-            && !((CacheRendezvousAffinityFunction)aff).isExcludeNeighbors();
+        return aff instanceof RendezvousAffinityFunction
+            && !((RendezvousAffinityFunction)aff).isExcludeNeighbors();
     }
 
     /**
@@ -143,10 +143,10 @@ public class GridCacheAttributes implements Serializable {
      * @return Affinity hash ID resolver class name.
      */
     public String affinityHashIdResolverClassName() {
-        CacheAffinityFunction aff = ccfg.getAffinity();
+        AffinityFunction aff = ccfg.getAffinity();
 
-        if (aff instanceof CacheRendezvousAffinityFunction)
-            return className(((CacheRendezvousAffinityFunction)aff).getHashIdResolver());
+        if (aff instanceof RendezvousAffinityFunction)
+            return className(((RendezvousAffinityFunction)aff).getHashIdResolver());
 
         return null;
     }

@@ -142,7 +142,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         load(cache, key, true);
 
-        CacheAffinity<String> aff = ignite(0).affinity(null);
+        Affinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))

@@ -66,7 +66,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(1000));
+        cc.setEvictionPolicy(new FifoEvictionPolicy<>(1000));
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setEvictSynchronized(false);

@@ -92,7 +92,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setBackups(1);
-        cacheCfg.setEvictionPolicy(evictsEnabled() ? new CacheLruEvictionPolicy(100) : null);
+        cacheCfg.setEvictionPolicy(evictsEnabled() ? new LruEvictionPolicy(100) : null);
         cacheCfg.setSqlOnheapRowCacheSize(128);
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class,

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
@@ -65,7 +64,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setRebalanceMode(SYNC);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 2));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -180,7 +179,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(String key) {
-        CacheAffinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(null);
 
         ClusterNode primary = aff.mapKeyToNode(key);
 
@@ -197,13 +196,5 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         assert !F.eqNodes(primary, other);
 
         return F.t(primary, other);
-    }
-
-    /**
-     * @param node Node.
-     * @return Grid.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
     }
 }

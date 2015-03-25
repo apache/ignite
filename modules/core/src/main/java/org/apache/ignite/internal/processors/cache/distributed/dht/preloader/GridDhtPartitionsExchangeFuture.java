@@ -343,10 +343,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
     private boolean canCalculateAffinity(GridCacheContext cacheCtx) {
-        CacheAffinityFunction affFunc = cacheCtx.config().getAffinity();
+        AffinityFunction affFunc = cacheCtx.config().getAffinity();
 
         // Do not request affinity from remote nodes if affinity function is not centralized.
-        if (!U.hasAnnotation(affFunc, CacheCentralizedAffinityFunction.class))
+        if (!U.hasAnnotation(affFunc, AffinityCentralizedFunction.class))
             return true;
 
         // If local node did not initiate exchange or local node is the only cache node in grid.

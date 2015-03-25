@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * Random eviction policy test.
  */
 public class GridCacheRandomEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<CacheRandomEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<RandomEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -120,7 +120,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
 
             MockEntry e5 = new MockEntry("5", c);
 
-            CacheRandomEvictionPolicy<String, String> p = policy();
+            RandomEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -237,13 +237,13 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheRandomEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new CacheRandomEvictionPolicy<>(plcMax);
+    @Override protected RandomEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new RandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheRandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new CacheRandomEvictionPolicy<>(plcMax);
+    @Override protected RandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new RandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */

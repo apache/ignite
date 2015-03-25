@@ -30,8 +30,7 @@ import java.util.*;
 /**
  * Mock cache entry.
  */
-public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>,
-    EvictableEntry<K, V> {
+public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
     private static final UUID META_KEY = UUID.randomUUID();
 

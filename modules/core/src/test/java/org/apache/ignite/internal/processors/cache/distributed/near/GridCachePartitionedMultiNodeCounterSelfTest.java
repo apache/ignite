@@ -232,7 +232,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         X.println("*** Retries: " + RETRIES);
         X.println("*** Log frequency: " + LOG_FREQ);
 
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
+        Affinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
@@ -534,7 +534,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void checkNearAndPrimaryMultiNode(int gridCnt) throws Exception {
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
+        Affinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 

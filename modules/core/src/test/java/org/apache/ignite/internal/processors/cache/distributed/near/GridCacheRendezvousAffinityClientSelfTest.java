@@ -42,7 +42,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setAffinity(new CacheRendezvousAffinityFunction());
+        ccfg.setAffinity(new RendezvousAffinityFunction());
 
         if (client)
             cfg.setClientMode(true);
@@ -72,7 +72,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             for (int i = 0; i < 4; i++) {
                 IgniteCache<Object, Object> cache = grid(i).cache(null);
 
-                CacheAffinity<Object> aff = affinity(cache);
+                Affinity<Object> aff = affinity(cache);
 
                 int parts = aff.partitions();
 

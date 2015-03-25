@@ -83,7 +83,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
+        dfltCacheCfg.setAffinity(new RendezvousAffinityFunction());
         dfltCacheCfg.setIndexedTypes(
             Integer.class, String.class
         );
@@ -95,7 +95,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
-        namedCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
+        namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
@@ -193,7 +193,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /**
      *
      */
-    private static class TestRendezvousAffinityFunction extends CacheRendezvousAffinityFunction {
+    private static class TestRendezvousAffinityFunction extends RendezvousAffinityFunction {
         // No-op. Just to have another class name.
 
         /**

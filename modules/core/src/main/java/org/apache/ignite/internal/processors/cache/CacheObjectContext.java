@@ -34,7 +34,7 @@ public class CacheObjectContext {
     private IgniteCacheObjectProcessor proc;
 
     /** */
-    private CacheAffinityKeyMapper dfltAffMapper;
+    private AffinityKeyMapper dfltAffMapper;
 
     /** */
     private boolean cpyOnGet;
@@ -52,7 +52,7 @@ public class CacheObjectContext {
      * @param unmarshalVals Unmarshal values flag.
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
-        CacheAffinityKeyMapper dfltAffMapper,
+        AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
         boolean unmarshalVals) {
         this.kernalCtx = kernalCtx;
@@ -88,7 +88,7 @@ public class CacheObjectContext {
     /**
      * @return Default affinity mapper.
      */
-    public CacheAffinityKeyMapper defaultAffMapper() {
+    public AffinityKeyMapper defaultAffMapper() {
         return dfltAffMapper;
     }
 

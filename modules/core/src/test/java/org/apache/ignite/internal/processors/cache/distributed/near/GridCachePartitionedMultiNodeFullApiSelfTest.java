@@ -238,7 +238,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            CacheAffinity<Object> aff = ignite(i).affinity(null);
+            Affinity<Object> aff = ignite(i).affinity(null);
 
             info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
                 ", locNode=" + ignite(i).cluster().localNode().id() + ']');
@@ -353,7 +353,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         Object key = new Object() {
             /** */
             @SuppressWarnings("UnusedDeclaration")
-            @CacheAffinityKeyMapped
+            @AffinityKeyMapped
             private final Object key0 = affKey;
 
             @Override public boolean equals(Object obj) {
@@ -371,7 +371,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
-        CacheAffinity<Object> aff = affinity(cache);
+        Affinity<Object> aff = affinity(cache);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 

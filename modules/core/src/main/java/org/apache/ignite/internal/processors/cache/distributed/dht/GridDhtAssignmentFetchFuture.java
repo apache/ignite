@@ -71,7 +71,12 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
         this.topVer = topVer;
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
-        tmp.addAll(availableNodes);
+
+        for (ClusterNode node : availableNodes) {
+            if (!node.isLocal())
+                tmp.add(node);
+        }
+
         Collections.sort(tmp, GridNodeOrderComparator.INSTANCE);
 
         this.availableNodes = tmp;

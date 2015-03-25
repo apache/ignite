@@ -604,7 +604,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (mapAsPrimary(keys, topVer))
                 return;
 
-            ConcurrentLinkedDeque8<GridNearLockMapping> mappings = new ConcurrentLinkedDeque8<>();
+            Deque<GridNearLockMapping> mappings = new ConcurrentLinkedDeque8<>();
 
             // Assign keys to primary nodes.
             GridNearLockMapping map = null;
@@ -699,6 +699,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         implicitTx(),
                                         implicitSingleTx(),
                                         read,
+                                        retval,
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
@@ -872,6 +873,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             topVer,
             keys,
             read,
+            retval,
             timeout,
             accessTtl,
             filter);

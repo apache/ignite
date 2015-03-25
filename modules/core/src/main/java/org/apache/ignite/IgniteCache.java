@@ -507,7 +507,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure

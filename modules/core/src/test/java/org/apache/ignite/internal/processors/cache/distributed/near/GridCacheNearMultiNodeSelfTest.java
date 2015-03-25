@@ -68,7 +68,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Affinity based on node index mode. */
-    private CacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
+    private AffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
 
     /** Debug flag for mappings. */
     private boolean mapDebug = true;
@@ -198,13 +198,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Affinity.
      */
-    private CacheAffinity<Object> affinity(int idx) {
+    private Affinity<Object> affinity(int idx) {
         return grid(idx).affinity(null);
     }
 
     /** @param cnt Count. */
     private Map<UUID, T2<Set<Integer>, Set<Integer>>> mapKeys(int cnt) {
-        CacheAffinity<Object> aff = affinity(0);
+        Affinity<Object> aff = affinity(0);
 
         //Mapping primary and backup keys on node
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();
@@ -516,14 +516,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 assertEquals("3", s);
 
-                assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
+                assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
                 assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
-
-                // This assertion no longer makes sense as we bring the value over whenever
-                // there is a version mismatch.
-                // assertNull(dht(primaryGrid(2)).peek(2, new GridCachePeekMode[]{GLOBAL}));
 
                 tx.commit();
             }

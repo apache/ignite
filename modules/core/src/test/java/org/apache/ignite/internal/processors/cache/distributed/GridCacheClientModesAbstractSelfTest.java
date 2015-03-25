@@ -75,7 +75,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
         cfg.setWriteThrough(false);
-        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 32));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         cfg.setBackups(1);
 
         return cfg;

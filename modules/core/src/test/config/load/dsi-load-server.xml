@@ -57,10 +57,9 @@
                     <!--Eviction settings-->
                     <property name="evictSynchronizedConcurrencyLevel" value="4"/>
                     <property name="evictSynchronized" value="false"/>
-                    <property name="evictNearSynchronized" value="false"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
                             <property name="maxSize" value="5000"/>
                         </bean>
                     </property>
@@ -70,8 +69,10 @@
                     <property name="swapEnabled" value="false"/>
                     <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
                     <property name="defaultTxIsolation" value="REPEATABLE_READ"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
                     <property name="dgcSuspectLockTimeout" value="60000"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
                 </bean>
             </util:list>
         </property>

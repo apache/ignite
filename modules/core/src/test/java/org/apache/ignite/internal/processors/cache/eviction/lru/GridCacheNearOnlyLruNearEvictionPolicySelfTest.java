@@ -137,7 +137,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
 
         try {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-            nearCfg.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+            nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
 
             grid(0).createNearCache(null, nearCfg);
 

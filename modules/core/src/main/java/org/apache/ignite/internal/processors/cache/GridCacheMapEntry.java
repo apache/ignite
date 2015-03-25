@@ -3798,7 +3798,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> EvictableEntry<K, V> wrapEviction() {
-        return new EvictableEntryImpl<>(this);
+        return new CacheEvictableEntryImpl<>(this);
     }
 
     /** {@inheritDoc} */

@@ -169,7 +169,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** Eviction policy. */
-    private static class EvictionPolicy implements CacheEvictionPolicy<Object, Object>, Serializable {
+    private static class EvictionPolicy implements org.apache.ignite.cache.eviction.EvictionPolicy<Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry<Object, Object> entry) {
             touchCnt.incrementAndGet();

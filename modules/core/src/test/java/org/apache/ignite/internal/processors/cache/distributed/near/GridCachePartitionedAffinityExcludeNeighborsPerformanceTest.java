@@ -69,7 +69,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
 
         cc.setBackups(2);
 
-        CacheAffinityFunction aff = new CacheRendezvousAffinityFunction(excNeighbores);
+        AffinityFunction aff = new RendezvousAffinityFunction(excNeighbores);
 
         cc.setAffinity(aff);
 
@@ -89,7 +89,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param ignite Grid.
      * @return Affinity.
      */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
+    static Affinity<Object> affinity(Ignite ignite) {
         return ignite.affinity(null);
     }
 
@@ -98,7 +98,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -166,7 +166,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @throws Exception If failed.
      */
     private long checkCountPerformance0(Ignite g, int cnt) throws Exception {
-        CacheAffinity<Object> aff = affinity(g);
+        Affinity<Object> aff = affinity(g);
 
         GridTimer timer = new GridTimer("test");
 
@@ -217,7 +217,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         try {
             Ignite g = grid(0);
 
-            CacheAffinity<Object> aff = affinity(g);
+            Affinity<Object> aff = affinity(g);
 
             // Warmup.
             checkCountPerformance0(g, 10000);

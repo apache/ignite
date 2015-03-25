@@ -56,9 +56,9 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
             ccfg.setNearConfiguration(null);
 
             if (aff == 0)
-                ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, PARTS));
+                ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
             else
-                ccfg.setAffinity(new CachePartitionFairAffinity(PARTS));
+                ccfg.setAffinity(new FairAffinityFunction(PARTS));
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -132,14 +132,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkAffinity() throws Exception {
-        CacheAffinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(null);
 
         for (Ignite grid : Ignition.allGrids()) {
             try {
                 if (grid.cluster().localNode().id().equals(grid(0).localNode().id()))
                     continue;
 
-                CacheAffinity<Object> checkAff = grid.affinity(null);
+                Affinity<Object> checkAff = grid.affinity(null);
 
                 for (int p = 0; p < PARTS; p++)
                     assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));
