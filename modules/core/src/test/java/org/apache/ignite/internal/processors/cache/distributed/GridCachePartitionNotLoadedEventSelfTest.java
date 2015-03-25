@@ -20,13 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.eclipse.jetty.util.*;
 
@@ -61,8 +57,6 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         cacheCfg.setBackups(backupCnt);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setCommunicationSpi(new FilteredCommunicationSpi());
 
         return cfg;
     }
@@ -101,13 +95,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         assert jcache(0).containsKey(key);
         assert jcache(1).containsKey(key);
 
-//        ((FilteredCommunicationSpi)ignite(0).configuration().getCommunicationSpi()).stop(true);
-//        ((FilteredCommunicationSpi)ignite(1).configuration().getCommunicationSpi()).stop(true);
-
-        stopGrid(0, false);
-        stopGrid(1, false);
-
-        //startGrid(4);
+        stopGrid(0);
+        stopGrid(1);
 
         awaitPartitionMapExchange();
 
@@ -133,14 +122,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert jcache(0).containsKey(key);
 
-//        ((FilteredCommunicationSpi)ignite(0).configuration().getCommunicationSpi()).stop(true);
-//        ((FilteredCommunicationSpi)ignite(1).configuration().getCommunicationSpi()).stop(true);
-
         stopGrid(0, true);
-
-        awaitPartitionMapExchange();
-
-       // startGrid(4);
 
         awaitPartitionMapExchange();
 
@@ -161,27 +143,6 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
             lostParts.add(((CacheEvent)evt).partition());
 
             return true;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FilteredCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private volatile boolean stop;
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            if (!stop)
-                super.sendMessage(node, msg);
-        }
-
-        /**
-         * @param stop Filter.
-         */
-        public void stop(boolean stop) {
-            this.stop = stop;
         }
     }
 }
