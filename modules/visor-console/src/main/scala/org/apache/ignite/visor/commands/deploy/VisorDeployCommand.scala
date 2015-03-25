@@ -414,7 +414,7 @@ class VisorDeployCommand {
 
             val port =
                 try
-                    if (hostPort.size > 1) hostPort(1).toInt else DFLT_PORT
+                    if (hostPort.length > 1) hostPort(1).toInt else DFLT_PORT
                 catch {
                     case e: NumberFormatException =>
                         scold("Invalid port number: " + hostPort(1)).^^
@@ -429,7 +429,7 @@ class VisorDeployCommand {
             (hosts, port)
         }
 
-        if (arr.size == 1) {
+        if (arr.length == 1) {
             val (hosts, port) = extractHostsPort(arr(0))
 
             val uname = dfltUname getOrElse System.getProperty("user.name")
@@ -437,7 +437,7 @@ class VisorDeployCommand {
 
             hosts.map(VisorHost(_, port, uname, passwd))
         }
-        else if (arr.size == 2) {
+        else if (arr.length == 2) {
             val (hosts, port) = extractHostsPort(arr(1))
 
             arr = arr(0).split(':')
@@ -445,7 +445,7 @@ class VisorDeployCommand {
             val uname = arr(0)
 
             val passwd =
-                if (arr.size > 1)
+                if (arr.length > 1)
                     Some(arr(1))
                 else if (!hasKey)
                     Some(dfltPasswd getOrElse askPassword(uname))
