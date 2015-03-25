@@ -48,13 +48,15 @@ public class ComputeScheduleExample {
             SchedulerFuture<?> fut = ignite.scheduler().scheduleLocal(() ->
                 ignite.compute().broadcast(() -> {
                     System.out.println();
-                    System.out.println("Howdy! :) ");
+                    System.out.println("Howdy! :)");
+
+                    return "Howdy! :)";
                 }),
                 "{5, 3} * * * * *" // Cron expression.
             );
 
             while (!fut.isDone())
-                System.out.println(">>> Invocation #: " + fut.get());
+                System.out.println(">>> Invocation result: " + fut.get());
 
             System.out.println();
             System.out.println(">>> Schedule future is done and has been unscheduled.");
