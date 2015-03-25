@@ -29,7 +29,7 @@ import javax.cache.configuration.*;
 
 /**
  * This demo demonstrates the use of cache with {@link CacheJdbcPojoStore}
- * together with automatic Ignite shema-import utility.
+ * together with automatic Ignite schema-import utility.
  * <p>
  * This Demo can work stand-alone. You can also choose to start
  * several {@link DemoNode} instances as well to form a cluster.
