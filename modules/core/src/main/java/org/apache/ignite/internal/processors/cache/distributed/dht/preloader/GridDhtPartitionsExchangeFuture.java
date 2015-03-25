@@ -346,7 +346,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         AffinityFunction affFunc = cacheCtx.config().getAffinity();
 
         // Do not request affinity from remote nodes if affinity function is not centralized.
-        if (!U.hasAnnotation(affFunc, CentralizedAffinityFunction.class))
+        if (!U.hasAnnotation(affFunc, AffinityCentralizedFunction.class))
             return true;
 
         // If local node did not initiate exchange or local node is the only cache node in grid.

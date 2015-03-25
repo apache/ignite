@@ -33,7 +33,7 @@ import java.util.*;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-@CentralizedAffinityFunction
+@AffinityCentralizedFunction
 public class FairAffinityFunction implements AffinityFunction {
     /** Default partition count. */
     public static final int DFLT_PART_CNT = 256;
