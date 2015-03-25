@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -90,19 +91,24 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite.cache(null);
+        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).getCache(null);
 
         int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            cache.put(i, new ObjectValue("test" + i, i));
+            cache.putx(i, new ObjectValue("test" + i, i));
 
         for (int i = 0; i < cnt; i++) {
-            assertNotNull(cache.localPeek(i));
+            assertNotNull(cache.peek(i));
 
-            cache.localEvict(Collections.singleton(i)); // Swap.
+            cache.evict(i); // Swap.
         }
 
-        assertEquals(0, cache.query(new SqlQuery(ObjectValue.class, "intVal >= ? order by intVal")).getAll().size());
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
+            cache.queries().createSqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
+
+        qry.enableDedup(true);
+
+        assertEquals(0, qry.execute(0).get().size());
     }
 }
