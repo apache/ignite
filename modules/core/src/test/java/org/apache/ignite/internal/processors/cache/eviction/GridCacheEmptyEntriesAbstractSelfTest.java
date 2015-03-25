@@ -44,10 +44,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private CacheEvictionPolicy<?, ?> plc;
+    private EvictionPolicy<?, ?> plc;
 
     /** */
-    private CacheEvictionPolicy<?, ?> nearPlc;
+    private EvictionPolicy<?, ?> nearPlc;
 
     /** Test store. */
     private CacheStore<String, String> testStore;
@@ -120,8 +120,8 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testFifo() throws Exception {
-        plc = new CacheFifoEvictionPolicy(50);
-        nearPlc = new CacheFifoEvictionPolicy(50);
+        plc = new FifoEvictionPolicy(50);
+        nearPlc = new FifoEvictionPolicy(50);
 
         checkPolicy();
     }

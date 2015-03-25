@@ -79,7 +79,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @return Affinity function.
      */
-    protected abstract CacheAffinityFunction affinityFunction();
+    protected abstract AffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})

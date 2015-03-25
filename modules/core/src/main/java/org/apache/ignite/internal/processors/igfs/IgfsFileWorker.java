@@ -119,8 +119,6 @@ public class IgfsFileWorker extends IgfsThread {
 
     /** {@inheritDoc} */
     @Override protected void cleanup() {
-        assert cancelled; // Cleanup can only be performed on a cancelled worker.
-
         // Clear interrupted flag.
         boolean interrupted = interrupted();
 

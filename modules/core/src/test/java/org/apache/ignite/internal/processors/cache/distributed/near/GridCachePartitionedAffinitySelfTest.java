@@ -94,7 +94,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param ignite Grid.
      * @return Affinity.
      */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
+    static Affinity<Object> affinity(Ignite ignite) {
         return ignite.affinity(null);
     }
 
@@ -103,7 +103,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -135,7 +135,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         X.println(">>>");
         X.println(">>> Printing affinity for node: " + g.name());
 
-        CacheAffinity<Object> aff = affinity(g);
+        Affinity<Object> aff = affinity(g);
 
         for (int i = 0; i < keyCnt; i++) {
             Collection<? extends ClusterNode> affNodes = nodes(aff, i);

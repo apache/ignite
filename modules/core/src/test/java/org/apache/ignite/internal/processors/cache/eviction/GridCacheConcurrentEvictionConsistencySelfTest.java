@@ -53,7 +53,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     private static final int POLICY_QUEUE_SIZE = 50;
 
     /** Tested policy. */
-    private CacheEvictionPolicy<?, ?> plc;
+    private EvictionPolicy<?, ?> plc;
 
     /** Key count to put into the cache. */
     private int keyCnt;
@@ -100,7 +100,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocalTwoKeys() throws Exception {
-        plc = new CacheFifoEvictionPolicy<Object, Object>(1);
+        plc = new FifoEvictionPolicy<Object, Object>(1);
 
         keyCnt = 2;
         threadCnt = Runtime.getRuntime().availableProcessors() / 2;
@@ -112,7 +112,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocalTwoKeys() throws Exception {
-        plc = new CacheLruEvictionPolicy<Object, Object>(1);
+        plc = new LruEvictionPolicy<Object, Object>(1);
 
         keyCnt = 2;
         threadCnt = Runtime.getRuntime().availableProcessors() / 2;
@@ -124,7 +124,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocalFewKeys() throws Exception {
-        plc = new CacheFifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        plc = new FifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
 
         keyCnt = POLICY_QUEUE_SIZE + 5;
 
@@ -135,7 +135,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocalFewKeys() throws Exception {
-        plc = new CacheLruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        plc = new LruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
 
         keyCnt = POLICY_QUEUE_SIZE + 5;
 
@@ -146,7 +146,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocal() throws Exception {
-        plc = new CacheFifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        plc = new FifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
 
         keyCnt = POLICY_QUEUE_SIZE * 10;
 
@@ -157,7 +157,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocal() throws Exception {
-        plc = new CacheLruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        plc = new LruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
 
         keyCnt = POLICY_QUEUE_SIZE * 10;
 
@@ -207,7 +207,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             fut.get();
 
-            Collection<CacheEvictableEntry<Integer, Integer>> queue = internalQueue(plc);
+            Collection<EvictableEntry<Integer, Integer>> queue = internalQueue(plc);
 
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
@@ -247,14 +247,14 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @param plc Policy to get queue from.
      * @return Internal entries collection.
      */
-    private Collection<CacheEvictableEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
-        if (plc instanceof CacheFifoEvictionPolicy) {
-            CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>)plc;
+    private Collection<EvictableEntry<Integer, Integer>> internalQueue(EvictionPolicy<?, ?> plc) {
+        if (plc instanceof FifoEvictionPolicy) {
+            FifoEvictionPolicy<Integer, Integer> plc0 = (FifoEvictionPolicy<Integer, Integer>)plc;
 
             return plc0.queue();
         }
-        else if (plc instanceof CacheLruEvictionPolicy) {
-            CacheLruEvictionPolicy<Integer, Integer> plc0 = (CacheLruEvictionPolicy<Integer, Integer>)plc;
+        else if (plc instanceof LruEvictionPolicy) {
+            LruEvictionPolicy<Integer, Integer> plc0 = (LruEvictionPolicy<Integer, Integer>)plc;
 
             return plc0.queue();
         }

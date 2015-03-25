@@ -85,7 +85,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

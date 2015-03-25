@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Affinity which controls where nodes end up using mod operation.
  */
-public class GridCacheModuloAffinityFunction implements CacheAffinityFunction {
+public class GridCacheModuloAffinityFunction implements AffinityFunction {
     /** Node attribute for index. */
     public static final String IDX_ATTR = "nodeIndex";
 
@@ -83,7 +83,7 @@ public class GridCacheModuloAffinityFunction implements CacheAffinityFunction {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext ctx) {
+    @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<List<ClusterNode>> res = new ArrayList<>(parts);
 
         Collection<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();

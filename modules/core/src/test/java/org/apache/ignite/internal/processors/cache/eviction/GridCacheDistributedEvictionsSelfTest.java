@@ -86,7 +86,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         // Set only DHT policy, leave default near policy.
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(10));
+        cc.setEvictionPolicy(new FifoEvictionPolicy<>(10));
         cc.setEvictSynchronized(evictSync);
         cc.setEvictSynchronizedKeyBufferSize(1);
 

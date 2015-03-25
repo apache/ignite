@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity;
+package org.apache.ignite.cache.eviction.random;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.mxbean.*;
 
 /**
- * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.
+ * MBean for {@code random} eviction policy.
  */
-public class CacheAffinityNodeAddressHashResolver implements CacheAffinityNodeHashResolver {
-    /** */
-    private static final long serialVersionUID = 0L;
+@MXBeanDescription("MBean for random cache eviction policy.")
+public interface RandomEvictionPolicyMBean {
+    /**
+     * Gets maximum allowed cache size.
+     *
+     * @return Maximum allowed cache size.
+     */
+    @MXBeanDescription("Maximum allowed cache size.")
+    public int getMaxSize();
 
-    /** {@inheritDoc} */
-    @Override public Object resolve(ClusterNode node) {
-        return node.consistentId();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheAffinityNodeAddressHashResolver.class, this);
-    }
+    /**
+     * Sets maximum allowed cache size.
+     *
+     * @param max Maximum allowed cache size.
+     */
+    @MXBeanDescription("Sets maximum allowed cache size.")
+    public void setMaxSize(int max);
 }

@@ -666,7 +666,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * @return Item affinity key.
          */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         public Object affinityKey() {
             return queueName();
         }

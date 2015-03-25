@@ -1264,7 +1264,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1289,7 +1289,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1311,7 +1311,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 

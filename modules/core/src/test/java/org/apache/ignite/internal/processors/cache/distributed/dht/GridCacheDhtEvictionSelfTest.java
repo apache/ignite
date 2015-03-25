@@ -76,13 +76,13 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(1);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-        nearCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10000));
+        nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10000));
         cacheCfg.setNearConfiguration(nearCfg);
 
         // Set eviction queue size explicitly.
         cacheCfg.setEvictMaxOverflowRatio(0);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10000));
+        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(10000));
 
 
         cfg.setCacheConfiguration(cacheCfg);

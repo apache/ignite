@@ -528,7 +528,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * Test affinity.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    private static class TestAffinityFunction implements CacheAffinityFunction {
+    private static class TestAffinityFunction implements AffinityFunction {
         /** {@inheritDoc} */
         @Override public int partitions() {
             return 2;
@@ -543,7 +543,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
             for (int part = 0; part < partitions(); part++)

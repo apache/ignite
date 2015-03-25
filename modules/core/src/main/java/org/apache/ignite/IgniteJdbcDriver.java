@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.jdbc.*;
 
 import java.sql.*;
@@ -40,7 +41,7 @@ import java.util.logging.*;
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode. Refer to
- *         {@link org.apache.ignite.cache.affinity.CacheAffinityKey}
+ *         {@link AffinityKey}
  *         javadoc for more details.
  *     </li>
  *     <li>
