@@ -38,8 +38,8 @@
                         <property name="bucketName" value="ignite-benchmark"/>
                         <property name="awsCredentials">
                             <bean class="com.amazonaws.auth.BasicAWSCredentials">
-                                <constructor-arg value="${amazon.access.key}"/>
-                                <constructor-arg value="${amazon.secret.key}"/>
+                                <constructor-arg value="${AWS_ACCESS_KEY}"/>
+                                <constructor-arg value="${AWS_SECRET_KEY}"/>
                             </bean>
                         </property>
                     </bean>
