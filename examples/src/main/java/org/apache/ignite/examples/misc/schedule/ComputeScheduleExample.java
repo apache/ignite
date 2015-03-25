@@ -59,7 +59,7 @@ public class ComputeScheduleExample {
                             new IgniteRunnable() {
                                 @Override public void run() {
                                     System.out.println();
-                                    System.out.println("Howdy! :) ");
+                                    System.out.println("Howdy! :)");
                                 }
                             }
                         );
