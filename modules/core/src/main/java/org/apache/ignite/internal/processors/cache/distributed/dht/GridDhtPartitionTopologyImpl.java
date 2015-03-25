@@ -442,10 +442,10 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
 
                                 changed = true;
 
-                                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_DATA_LOST)) {
                                     DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                                    cctx.events().addPreloadEvent(p, EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                                    cctx.events().addPreloadEvent(p, EVT_CACHE_REBALANCE_DATA_LOST, discoEvt.eventNode(),
                                         discoEvt.type(), discoEvt.timestamp());
                                 }
 
