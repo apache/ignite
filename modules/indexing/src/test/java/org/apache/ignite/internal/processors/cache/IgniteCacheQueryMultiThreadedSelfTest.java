@@ -370,12 +370,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Long>> res = c.query(new SqlQuery(Long.class,
-                                "_val between ? and ?").setArgs(from, from + 250)).getAll();
-
-                            for (Cache.Entry<Integer, Long> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(Long.class, "_val between ? and ?").setArgs(from, from + 250)).getAll();
                     }
                 }
             }
