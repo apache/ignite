@@ -40,11 +40,11 @@ import scala.collection.JavaConversions._
  * `CacheMode#REPLICATED REPLICATED` caches and <i>facts</i> in much larger
  * `CacheMode#PARTITIONED PARTITIONED` caches you can freely execute distributed joins across
  * your whole in-memory data ignite cluster, thus querying your in memory data without any limitations.
- * <p>
+ * <p/>
  * In this example we have two <i>dimensions</i>, `DimProduct` and `DimStore` and
  * one <i>fact</i> - `FactPurchase`. Queries are executed by joining dimensions and facts
  * in various ways.
- * <p>
+ * <p/>
  * Remote nodes should be started using `ExampleNodeStartup` which will
  * start node with `examples/config/example-ignite.xml` configuration.
  */
