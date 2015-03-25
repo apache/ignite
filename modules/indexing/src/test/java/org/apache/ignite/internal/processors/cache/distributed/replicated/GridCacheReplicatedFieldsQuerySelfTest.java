@@ -68,7 +68,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)g).getCache(null);
+            GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)g).internalCache(null);
 
             CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
                 "0 order by _key");

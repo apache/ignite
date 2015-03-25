@@ -471,7 +471,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link GridCache#peek(Object)} behavior on offheaped entries.
+     * Tests {@link IgniteCache#localPeek(Object, CachePeekMode...)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */
