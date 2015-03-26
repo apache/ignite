@@ -716,14 +716,6 @@ public interface EventType {
     public static final int EVT_CACHE_NODES_LEFT = 100;
 
     /**
-     * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     */
-    public static final int EVT_VISOR_EVENTS_LOST = 115;
-
-    /**
      * Built-in event type: IGFS file created.
      * <p>
      * Fired when IGFS component creates new file.
