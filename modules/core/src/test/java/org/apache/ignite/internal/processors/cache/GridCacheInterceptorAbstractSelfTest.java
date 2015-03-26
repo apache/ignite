@@ -1335,7 +1335,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expVal Expected value.
      * @throws Exception If failed.
      */
-    private void checkCacheValue(String key, @Nullable Object expVal) throws Exception {
+    private void checkCacheValue(Object key, @Nullable Object expVal) throws Exception {
         interceptor.disabled = true;
 
         if (storeEnabled())
