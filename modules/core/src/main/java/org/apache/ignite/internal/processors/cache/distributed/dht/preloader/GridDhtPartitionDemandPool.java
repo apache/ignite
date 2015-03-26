@@ -1041,6 +1041,13 @@ public class GridDhtPartitionDemandPool<K, V> {
                 if (picked.isEmpty()) {
                     top.own(part);
 
+                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_DATA_LOST)) {
+                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                        cctx.events().addPreloadEvent(p, EVT_CACHE_REBALANCE_DATA_LOST, discoEvt.eventNode(),
+                            discoEvt.type(), discoEvt.timestamp());
+                    }
+
                     if (log.isDebugEnabled())
                         log.debug("Owning partition as there are no other owners: " + part);
                 }
