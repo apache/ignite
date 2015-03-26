@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -606,12 +607,29 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
+            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
-            // Remap.
-            map(keys.keySet(), F.t(node, keys), updTopVer);
+            final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
+                cctx.kernalContext().config().getNetworkTimeout(),
+                updTopVer,
+                e);
 
-            onDone(Collections.<K, V>emptyMap());
+            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        if (timeout.finish()) {
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), updTopVer);
+
+                            onDone(Collections.<K, V>emptyMap());
+                        }
+                    }
+                }
+            );
+
+            cctx.kernalContext().timeout().addTimeoutObject(timeout);
         }
 
         /**

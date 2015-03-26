@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -41,22 +40,30 @@ import java.util.concurrent.locks.*;
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
- * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
- * and documentation. In addition to {@link CacheProjection} functionality this API provides:
+ * This API extends {@link javax.cache.Cache} API which contains {@code JCache (JSR107)} cache functionality
+ * and documentation. In addition to {@link javax.cache.Cache} functionality this API provides:
  * <ul>
- * <li>
- *  Various {@code 'loadCache(..)'} methods to load cache either synchronously or asynchronously.
- *  These methods don't specify any keys to load, and leave it to the underlying storage to load cache
- *  data based on the optionally passed in arguments.
- * </li>
- * <li>Various {@code 'query(..)'} methods to allow cache data querying.</li>
- * <li>
- *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
- *  This feature is very useful when integrating cache transactions with some other in-house transactions.
- * </li>
- * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration(Class)}} to provide cache configuration bean.</li>
+ * <li>Ability to perform basic atomic Map-like operations available on {@code JCache} API.</li>
+ * <li>Ability to bulk load cache via {@link #loadCache(IgniteBiPredicate, Object...)} method.
+ * <li>Distributed lock functionality via {@link #lock(Object)} methods.</li>
+ * <li>Ability to query cache using Predicate, SQL, and Text queries via {@link #query(Query)} method.</li>
+ * <li>Ability to collect cache and query metrics.</li>
+ * <li>Ability to force partition rebalancing via {@link #rebalance()} methopd
+ *  (in case if delayed rebalancing was configured.)</li>
+ * <li>Ability to peek into memory without doing actual {@code get(...)} from cache
+ *  via {@link #localPeek(Object, CachePeekMode...)} methods</li>
+ * <li>Ability to evict and promote entries from on-heap to off-heap or swap and back.</li>
+ * <li>Ability to atomically collocate compute and data via {@link #invoke(Object, CacheEntryProcessor, Object...)}
+ *  methods.</li>
  * </ul>
+ * <h1 class="header">Transactions</h1>
+ * Cache API supports transactions. You can group and set of cache methods within a transaction
+ * to provide ACID-compliant behavior. See {@link IgniteTransactions} for more information.
+ * <h1 class="header">Asynchronous Mode</h1>
+ * Cache API supports asynchronous mode via {@link IgniteAsyncSupport} functionality. To turn on
+ * asynchronous mode invoke {@link #withAsync()} method. Once asynchronous mode is enabled,
+ * all methods with {@link IgniteAsyncSupported @IgniteAsyncSupported} annotation will be executed
+ * asynchronously.
  *
  * @param <K> Cache key type.
  * @param <V> Cache value type.
@@ -141,9 +148,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -151,7 +155,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
@@ -227,27 +230,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
-     * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
-     * be swapped to offheap, and then to disk.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
-     * peek mode.
+     * Peeks at in-memory cached value using default optinal peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
-     * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
-     * semantics.
+     * This method does not participate in any transactions.
      *
      * @param key Entry key.
      * @return Peeked value, or {@code null} if not found.
@@ -260,13 +253,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}, {@link CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
