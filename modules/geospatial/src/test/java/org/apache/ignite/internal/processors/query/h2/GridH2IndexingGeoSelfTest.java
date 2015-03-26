@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -66,7 +64,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeo() throws Exception {
-        IgniteCache<Integer, EnemyCamp> cache = grid(0).cache(null);
+        GridCacheAdapter<Integer, EnemyCamp> cache = ((IgniteKernal)grid(0)).internalCache(null);
 
         WKTReader r = new WKTReader();
 
@@ -75,55 +73,46 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         cache.put(2, new EnemyCamp(r.read("POINT(70 30)"), "C"));
         cache.put(3, new EnemyCamp(r.read("POINT(75 25)"), "D"));
 
-        SqlQuery<Integer, EnemyCamp> query = new SqlQuery(EnemyCamp.class, "coords && ?");
+        CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(EnemyCamp.class,
+            "coords && ?");
 
-        Geometry geom = r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))");
-
-        query.setArgs(geom);
-
-        QueryCursor<Cache.Entry<Integer, EnemyCamp>> cursor = cache.query(query);
-
-        Collection<Cache.Entry<Integer, EnemyCamp>> res = cursor.getAll();
+        Collection<Map.Entry<Integer, EnemyCamp>> res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))"))
+            .get();
 
         checkPoints(res, "A");
 
-        res = cache.query(
-            query.setArgs(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))"))).getAll();
+        res = qry.execute(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))")).get();
 
         checkPoints(res, "C", "D");
 
         // Move B to the first polygon.
         cache.put(1, new EnemyCamp(r.read("POINT(20 75)"), "B"));
 
-        res = cache.query(
-            query.setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))"))).getAll();
+        res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).get();
 
         checkPoints(res, "A", "B");
 
         // Move B to the second polygon.
         cache.put(1, new EnemyCamp(r.read("POINT(30 30)"), "B"));
 
-        res = cache.query(
-            query.setArgs(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))"))).getAll();
+        res = qry.execute(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))")).get();
 
         checkPoints(res, "B", "C", "D");
 
         // Remove B.
-        cache.remove(1);
+        cache.remove(1, CU.empty0());
 
-        res = cache.query(
-            query.setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))"))).getAll();
+        res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).get();
 
         checkPoints(res, "A");
 
-        res = cache.query(
-            query.setArgs(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))"))).getAll();
+        res = qry.execute(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))")).get();
 
         checkPoints(res, "C", "D");
 
         // Check explaint request.
-        assertTrue(F.first(cache.query(new SqlFieldsQuery("explain select * from EnemyCamp " +
-            "where coords && 'POINT(25 75)'")).getAll()).get(0).toString().contains("coords_idx"));
+        assertTrue(F.first(cache.queries().createSqlFieldsQuery("explain select * from EnemyCamp " +
+            "where coords && 'POINT(25 75)'").execute().get()).get(0).toString().contains("coords_idx"));
     }
 
     /**
@@ -131,9 +120,9 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeoMultithreaded() throws Exception {
-        final IgniteCache<Integer, EnemyCamp> cache1 = grid(0).cache(null);
-        final IgniteCache<Integer, EnemyCamp> cache2 = grid(1).cache(null);
-        final IgniteCache<Integer, EnemyCamp> cache3 = grid(2).cache(null);
+        final GridCacheAdapter<Integer, EnemyCamp> cache1 = ((IgniteKernal)grid(0)).internalCache(null);
+        final GridCacheAdapter<Integer, EnemyCamp> cache2 = ((IgniteKernal)grid(1)).internalCache(null);
+        final GridCacheAdapter<Integer, EnemyCamp> cache3 = ((IgniteKernal)grid(2)).internalCache(null);
 
         final String[] points = new String[CNT];
 
@@ -164,7 +153,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                 while (!stop.get()) {
                     int cacheIdx = rnd.nextInt(0, 3);
 
-                    IgniteCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                    GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                     int idx = rnd.nextInt(CNT);
                     int x = rnd.nextInt(1, 100);
@@ -189,12 +178,13 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                     try {
                         int cacheIdx = rnd.nextInt(0, 3);
 
-                        IgniteCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                        GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
-                        SqlQuery<Integer, EnemyCamp> qry = new SqlQuery<>(EnemyCamp.class, "coords && ?");
+                        CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(
+                            EnemyCamp.class, "coords && ?");
 
-                        Collection<Cache.Entry<Integer, EnemyCamp>> res = cache.query(qry.setArgs(
-                            r.read("POLYGON((0 0, 0 100, 100 100, 100 0, 0 0))"))).getAll();
+                        Collection<Map.Entry<Integer, EnemyCamp>> res = qry.execute(
+                            r.read("POLYGON((0 0, 0 100, 100 100, 100 0, 0 0))")).get();
 
                         checkPoints(res, points);
 
@@ -232,12 +222,12 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @param res Result.
      * @param points Expected points.
      */
-    private void checkPoints( Collection<Cache.Entry<Integer, EnemyCamp>> res, String... points) {
+    private void checkPoints( Collection<Map.Entry<Integer, EnemyCamp>> res, String... points) {
         Set<String> set = new HashSet<>(Arrays.asList(points));
 
         assertEquals(set.size(), res.size());
 
-        for (Cache.Entry<Integer, EnemyCamp> e : res)
+        for (Map.Entry<Integer, EnemyCamp> e : res)
             assertTrue(set.remove(e.getValue().name));
     }
 
