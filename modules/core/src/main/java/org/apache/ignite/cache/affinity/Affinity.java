@@ -80,8 +80,7 @@ public interface Affinity<K> {
      * Returns {@code true} if local node is primary or one of the backup nodes
      * <p>
      * This method is essentially equivalent to calling
-     * <i>"{@link #isPrimary(org.apache.ignite.cluster.ClusterNode, Object)} ||
-     *      {@link #isBackup(org.apache.ignite.cluster.ClusterNode, Object)})"</i>,
+     * <i>"{@link #isPrimary(ClusterNode, Object)} || {@link #isBackup(ClusterNode, Object)})"</i>,
      * however it is more efficient as it makes both checks at once.
      *
      * @param n Node to check.
