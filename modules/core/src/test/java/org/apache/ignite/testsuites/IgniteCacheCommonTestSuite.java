@@ -35,7 +35,7 @@ public class IgniteCacheCommonTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite");
+        TestSuite suite = new TestSuite("Ignite Cache Common Test Suite");
 
         suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
