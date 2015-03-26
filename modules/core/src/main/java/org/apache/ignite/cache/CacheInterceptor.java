@@ -19,7 +19,6 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -51,7 +50,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * @param key Key.
      * @param val Value mapped to {@code key} at the moment of {@code get()} operation.
      * @return The new value to be returned as result of {@code get()} operation.
-     * @see CacheProjection#get(Object)
+     * @see Cache#get(Object)
      */
     @Nullable public V onGet(K key, @Nullable V val);
 

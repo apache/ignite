@@ -93,11 +93,9 @@ public class CacheTransactionExample {
      */
     private static void deposit(IgniteCache<Integer, Account> cache, int acctId, double amount) throws IgniteException {
         try (Transaction tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account acct0 = cache.get(acctId);
+            Account acct = cache.get(acctId);
 
-            assert acct0 != null;
-
-            Account acct = new Account(acct0.id, acct0.balance);
+            assert acct != null;
 
             // Deposit into account.
             acct.update(amount);

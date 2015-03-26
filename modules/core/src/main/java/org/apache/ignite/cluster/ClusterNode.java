@@ -24,23 +24,19 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Interface representing a single grid node. Use {@link #attribute(String)} or
- * {@link #metrics()} to get static and dynamic information about remote nodes.
- * {@code GridNode} list, which includes all nodes within task topology, is provided
- * to {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method. You can also get a handle on
- * discovered nodes by calling any of the following methods:
- * <ul>
- * <li>{@link IgniteCluster#localNode()}</li>
- * </ul>
+ * Interface representing a single cluster node. Use {@link #attribute(String)} or
+ * {@link #metrics()} to get static and dynamic information about cluster nodes.
+ * {@code ClusterNode} list, which includes all nodes within task topology, is provided
+ * to {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method.
  * <p>
- * <h1 class="header">Grid Node Attributes</h1>
- * You can use grid node attributes to provide static information about a node.
- * This information is initialized once within grid, during node startup, and
+ * <h1 class="header">Cluster Node Attributes</h1>
+ * You can use cluster node attributes to provide static information about a node.
+ * This information is initialized once within a cluster, during the node startup, and
  * remains the same throughout the lifetime of a node. Use
  * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+ * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration">
  *     ...
  *     &lt;property name="userAttributes">
  *         &lt;map>
@@ -59,7 +55,7 @@ import java.util.*;
  * <li>{@code org.apache.ignite.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.apache.ignite.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.apache.ignite.user.name} - Operating system user name.</li>
- * <li>{@code org.apache.ignite.ignite.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
+ * <li>{@code org.apache.ignite.ignite.name} - Ignite name (see {@link Ignite#name()}).</li>
  * <li>
  *      {@code spiName.org.apache.ignite.spi.class} - SPI implementation class for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
@@ -75,30 +71,25 @@ import java.util.*;
  * in {@link System#getProperties()} about any node. So for example, in order to print out
  * information about Operating System for all nodes you would do the following:
  * <pre name="code" class="java">
- * for (GridNode node : G.grid().nodes()) {
+ * for (ClusterNode node : ignite.cluster().nodes()) {
  *     System.out.println("Operating system name: " + node.getAttribute("os.name"));
  *     System.out.println("Operating system architecture: " + node.getAttribute("os.arch"));
  *     System.out.println("Operating system version: " + node.getAttribute("os.version"));
  * }
  * </pre>
  * <p>
- * This interface provide a system view on the node instance. All user-level APIs work with
- * {@link ClusterNode} interface that provides much more functionality and extends this
- * interface. Consult {@link ClusterNode} for more information.
- * <p>
- * <h1 class="header">Grid Node Metrics</h1>
- * Grid node metrics (see {@link #metrics()}) are updated frequently for all nodes
+ * <h1 class="header">Cluster Node Metrics</h1>
+ * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
  * is often directly related to the heartbeat exchange between nodes. So if, for example,
  * default {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} is used,
  * the metrics data will be updated every {@code 2} seconds by default.
  * <p>
- * Grid node metrics provide information about other nodes that can frequently change,
+ * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
  * grid jobs, etc... This information can become useful during job collision resolution or
- * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} operation when jobs are assigned to remote nodes
- * for execution. For example, you can only pick nodes that don't have any jobs waiting
- * to be executed.
+ * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} operation when jobs are
+ * assigned to remote nodes for execution.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from
  * any JMX management console. The simplest way is to use standard {@code jconsole}
@@ -231,14 +222,14 @@ public interface ClusterNode {
     /**
      * Tests whether or not this node is a daemon.
      * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any projections. The only
+     * Daemon nodes are the usual cluster nodes that participate in topology but are not
+     * visible on the main APIs, i.e. they are not part of any cluster group. The only
      * way to see daemon nodes is to use {@link IgniteCluster#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology but should be
-     * excluded from "normal" topology so that it won't participate in task execution
-     * or in-memory database.
+     * is build on Ignite and needs to participate in the topology, but should be
+     * excluded from the "normal" topology, so that they won't participate in the task execution
+     * or data grid operations.
      * <p>
      * Application code should never use daemon nodes.
      *

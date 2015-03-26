@@ -493,6 +493,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
