@@ -42,9 +42,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public ClusterNode localNode();
 
     /**
-     * Gets monadic projection consisting from the local node.
+     * Gets a cluster group consisting from the local node.
      *
-     * @return Monadic projection consisting from the local node.
+     * @return Cluster group consisting from the local node.
      */
     public ClusterGroup forLocal();
 

@@ -30,27 +30,27 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.checkpoint.noop.*;
-import org.apache.ignite.spi.collision.noop.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.spi.checkpoint.*;
+import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
+import org.apache.ignite.spi.collision.noop.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.deployment.*;
+import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.eventstorage.*;
+import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.failover.always.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
+import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.apache.ignite.spi.swapspace.file.*;
 
 import javax.cache.event.*;
 import javax.cache.expiry.*;
@@ -486,12 +486,12 @@ public class IgniteConfiguration {
      * Whether or not this node should be a daemon node.
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any projections. The only
+     * visible on the main APIs, i.e. they are not part of any cluster groups. The only
      * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology but also needs to be
-     * excluded from "normal" topology so that it won't participate in task execution
+     * is build on Ignite and needs to participate in the topology, but also needs to be
+     * excluded from the "normal" topology, so that it won't participate in the task execution
      * or in-memory data grid storage.
      *
      * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
@@ -505,12 +505,12 @@ public class IgniteConfiguration {
      * Sets daemon flag.
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any projections. The only
+     * visible on the main APIs, i.e. they are not part of any cluster group. The only
      * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology but also needs to be
-     * excluded from "normal" topology so that it won't participate in task execution
+     * is build on Ignite and needs to participate in the topology, but also needs to be
+     * excluded from the "normal" topology, so that it won't participate in the task execution
      * or in-memory data grid storage.
      *
      * @param daemon Daemon flag.
