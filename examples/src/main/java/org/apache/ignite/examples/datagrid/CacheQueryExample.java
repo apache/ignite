@@ -73,19 +73,19 @@ public class CacheQueryExample {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
-            CacheConfiguration<?, ?> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
+            CacheConfiguration<UUID, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             orgCacheCfg.setIndexedTypes(UUID.class, Organization.class);
 
-            CacheConfiguration<?, ?> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
+            CacheConfiguration<AffinityKey<UUID>, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
-                IgniteCache<?, ?> orgCache = ignite.createCache(orgCacheCfg);
-                IgniteCache<?, ?> personCache = ignite.createCache(personCacheCfg)
+                IgniteCache<UUID, Organization> orgCache = ignite.createCache(orgCacheCfg);
+                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.createCache(personCacheCfg)
             ) {
                 // Populate cache.
                 initialize();
@@ -219,7 +219,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQuery() {
-        IgniteCache<?, ?> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // Execute query to get names of all employees.
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(
@@ -237,7 +237,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQueryWithJoin() {
-        IgniteCache<?, ?> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // Execute query to get names of all employees.
         String sql =

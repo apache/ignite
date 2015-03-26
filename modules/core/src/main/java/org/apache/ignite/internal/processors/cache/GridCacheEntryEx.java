@@ -436,6 +436,7 @@ public interface GridCacheEntryEx {
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
