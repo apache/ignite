@@ -58,17 +58,24 @@ import java.util.*;
  * by using {@link IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
+ *
+ * @see EventType#EVT_CACHE_STARTED
+ * @see EventType#EVT_CACHE_STOPPED
+ * @see EventType#EVT_CACHE_NODES_LEFT
+ * @see EventType#EVTS_CACHE_LIFECYCLE
  * @see EventType#EVT_CACHE_ENTRY_CREATED
  * @see EventType#EVT_CACHE_ENTRY_DESTROYED
  * @see EventType#EVT_CACHE_ENTRY_EVICTED
+ * @see EventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see EventType#EVT_CACHE_OBJECT_FROM_OFFHEAP
+ * @see EventType#EVT_CACHE_OBJECT_LOCKED
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ
  * @see EventType#EVT_CACHE_OBJECT_REMOVED
- * @see EventType#EVT_CACHE_OBJECT_LOCKED
- * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
  * @see EventType#EVT_CACHE_OBJECT_SWAPPED
+ * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
  * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
- * @see EventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see EventType#EVTS_CACHE
  */
 public class CacheEvent extends EventAdapter {
     /** */
