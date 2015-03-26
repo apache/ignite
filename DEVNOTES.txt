@@ -28,3 +28,10 @@ To check license headers use:
 mvn clean validate -Pcheck-licenses
 
 For more information (e.g. exclude list) see "check-licenses" profile in pom.xml.
+
+IDE Tips
+===============
+
+Code Style
+----------
+IntellijIDEA(tm) users can import settings from PROJECT_ROOT/dev/intellijidea-settings.jar
