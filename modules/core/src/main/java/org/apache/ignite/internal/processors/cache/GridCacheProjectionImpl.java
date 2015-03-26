@@ -279,6 +279,65 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    public <K1, V1> CacheProjection<K1, V1> projection(
+        Class<? super K1> keyType,
+        Class<? super V1> valType
+    ) {
+        A.notNull(keyType, "keyType", valType, "valType");
+
+        if (cctx.deploymentEnabled()) {
+            try {
+                cctx.deploy().registerClasses(keyType, valType);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+            (CacheProjection<K1, V1>)this,
+            (GridCacheContext<K1, V1>)cctx,
+            CU.typeFilter0(keyType, valType),
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
+
+        return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
+    public CacheProjection<K, V> projection(CacheEntryPredicate filter) {
+        if (filter == null)
+            return new GridCacheProxyImpl<>(cctx, this, this);
+
+        if (this.filter != null)
+            filter = and(filter);
+
+        if (cctx.deploymentEnabled()) {
+            try {
+                cctx.deploy().registerClasses(filter);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            filter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
+
+        return new GridCacheProxyImpl<>(cctx, prj, prj);
+    }
+
+
+    /** {@inheritDoc} */
     @Override public CacheProjection<K, V> flagsOn(@Nullable CacheFlag[] flags) {
         if (F.isEmpty(flags))
             return new GridCacheProxyImpl<>(cctx, this, this);
