@@ -157,7 +157,7 @@ public class GridH2Table extends TableBase {
             if (val == null)
                 row.onSwap();
             else
-                row.onUnswap(val);
+                row.onUnswap(val, false);
 
             return true;
         }
@@ -382,7 +382,7 @@ public class GridH2Table extends TableBase {
                     Value v = row.getValue(GridH2AbstractKeyValueRow.VAL_COL);
 
                     if (v != null)
-                        ((GridH2AbstractKeyValueRow)old).unswapBeforeRemove(v.getObject());
+                        ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);
                 }
 
                 if (old != null) {

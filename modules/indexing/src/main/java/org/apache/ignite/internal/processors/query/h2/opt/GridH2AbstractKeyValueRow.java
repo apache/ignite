@@ -92,6 +92,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @throws IgniteSpiException If failed.
      */
     public static Value wrap(Object obj, int type) throws IgniteSpiException {
+        assert obj != null;
+
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);
@@ -169,61 +171,74 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
-     * @param val Value.
-     * @throws IgniteCheckedException
-     */
-    public synchronized void unswapBeforeRemove(Object val) throws IgniteCheckedException {
-        assert val != null;
-
-        Value oldVal = super.getValue(VAL_COL);
-
-        if (oldVal == null || oldVal instanceof WeakValue)
-            onUnswap(val);
-        // Else we would assert that val.equals(oldVal.getObject()) but value is not necessarily implements equals() correctly.
-    }
-
-    /**
      * Should be called when entry getting unswapped.
      *
      * @param val Value.
+     * @param beforeRmv If this is unswap before remove.
      * @throws IgniteCheckedException If failed.
      */
-    public synchronized void onUnswap(Object val) throws IgniteCheckedException {
+    public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
         setValue(VAL_COL, wrap(val, desc.valueType()));
+
+        notifyAll();
     }
 
     /**
      * Atomically updates weak value.
      *
-     * @param exp Expected value.
      * @param upd New value.
-     * @return Expected value if update succeeded, unexpected value otherwise.
+     * @return {@code null} If update succeeded, unexpected value otherwise.
      */
-    protected synchronized Value updateWeakValue(Value exp, Value upd) {
-        Value res = super.getValue(VAL_COL);
+    protected synchronized Value updateWeakValue(Value upd) {
+        Value res = peekValue(VAL_COL);
 
-        if (res != exp && !(res instanceof WeakValue))
+        if (res != null && !(res instanceof WeakValue))
             return res;
 
         setValue(VAL_COL, new WeakValue(upd));
 
-        return exp;
+        notifyAll();
+
+        return null;
     }
 
     /**
+     * @param attempt Attempt.
      * @return Synchronized value.
      */
-    protected synchronized Value syncValue() {
-        return super.getValue(VAL_COL);
+    protected synchronized Value syncValue(int attempt) {
+        Value v = peekValue(VAL_COL);
+
+        if (v == null && attempt != 0) {
+            try {
+                wait(attempt);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+
+            v = peekValue(VAL_COL);
+        }
+
+        return v;
+    }
+
+    /**
+     * @param col Column index.
+     * @return Value if exists.
+     */
+    protected final Value peekValue(int col) {
+        return getValueList()[col];
     }
 
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
         if (col < DEFAULT_COLUMNS_COUNT) {
-            Value v = super.getValue(col);
+            Value v = peekValue(col);
 
             if (col == VAL_COL) {
-                int loops = 0;
+                long start = 0;
+                int attempt = 0;
 
                 while ((v = WeakValue.unwrap(v)) == null) {
                     v = getOffheapValue(VAL_COL);
@@ -231,7 +246,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                     if (v != null) {
                         setValue(VAL_COL, v);
 
-                        if (super.getValue(KEY_COL) == null)
+                        if (peekValue(KEY_COL) == null)
                             cache();
 
                         return v;
@@ -245,28 +260,26 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         if (valObj != null) {
                             Value upd = wrap(valObj, desc.valueType());
 
-                            Value res = updateWeakValue(null, upd);
+                            v = updateWeakValue(upd);
 
-                            if (res == null) {
-                                if (super.getValue(KEY_COL) == null)
-                                    cache();
-
-                                return upd;
-                            }
-
-                            v = res;
+                            return v == null ? upd : v;
                         }
                         else {
                             // If nothing found in swap then we should be already unswapped.
-                            v = syncValue();
+                            v = syncValue(attempt);
                         }
-
-                        if (++loops == 1000_000)
-                            throw new IllegalStateException("Failed to get value for key: " + k);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
+
+                    attempt++;
+
+                    if (start == 0)
+                        start = U.currentTimeMillis();
+                    else if (U.currentTimeMillis() - start > 15_000) // Loop for at most 15 seconds.
+                        throw new IgniteException("Failed to get value for key: " + k +
+                            ". This can happen due to a long GC pause.");
                 }
             }
 
@@ -279,7 +292,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
                 setValue(KEY_COL, v);
 
-                if (super.getValue(VAL_COL) == null)
+                if (peekValue(VAL_COL) == null)
                     cache();
             }
 
@@ -337,10 +350,10 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
         addOffheapRowId(sb);
 
-        Value v = super.getValue(KEY_COL);
+        Value v = peekValue(KEY_COL);
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
-        v = WeakValue.unwrap(super.getValue(VAL_COL));
+        v = WeakValue.unwrap(peekValue(VAL_COL));
         sb.a(", val: ").a(v == null ? "nil" : v.getString());
 
         sb.a(" ][ ");

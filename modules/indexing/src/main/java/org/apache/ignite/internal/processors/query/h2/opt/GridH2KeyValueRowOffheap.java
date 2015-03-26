@@ -120,6 +120,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     private static Lock lock(long ptr) {
+        assert ptr > 0 : ptr;
         assert (ptr & 7) == 0 : ptr; // Unsafe allocated pointers aligned.
 
         Lock l = lock.getLock(ptr >>> 3);
@@ -198,13 +199,14 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
 
             final long valPtr = mem.readLongVolatile(p);
 
-            if (valPtr == 0)
-                return; // Nothing to swap.
+            if (valPtr <= 0)
+                throw new IllegalStateException("Already swapped: " + ptr);
+
+            if (!mem.casLong(p, valPtr, 0))
+                throw new IllegalStateException("Concurrent unswap: " + ptr);
 
             desc.guard().finalizeLater(new Runnable() {
                 @Override public void run() {
-                    mem.casLong(p, valPtr, 0); // If it was unswapped concurrently we will not update.
-
                     mem.release(valPtr, mem.readInt(valPtr) + OFFSET_VALUE);
                 }
             });
@@ -215,37 +217,40 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void unswapBeforeRemove(Object val) throws IgniteCheckedException {
-        assert val != null;
-
-        onUnswap(val);
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-    @Override protected Value updateWeakValue(Value exp, Value upd) {
+    @Override protected synchronized Value updateWeakValue(Value upd) {
         setValue(VAL_COL, upd);
 
-        return exp;
+        notifyAll();
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onUnswap(Object val) throws IgniteCheckedException {
-        super.onUnswap(val);
+    @Override public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
+        assert val != null;
 
-        long p = ptr;
-
-        assert p > 0 : p;
+        final long p = ptr;
 
         Lock l = lock(p);
 
         try {
             GridUnsafeMemory mem = desc.memory();
 
-            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0)
-                return; // The offheap value is in its place, nothing to do here.
+            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0) {
+                if (beforeRmv)
+                    return; // The offheap value is in its place, nothing to do here.
+                else
+                    throw new IllegalStateException("Unswap without swap: " + p);
+            }
 
-            Value v = getValue(VAL_COL); // We just set the value above, so it will be returned right away.
+            Value v = peekValue(VAL_COL);
+
+            if (v == null) {
+                setValue(VAL_COL, wrap(val, desc.valueType()));
+
+                v = peekValue(VAL_COL);
+            }
 
             byte[] bytes = new byte[SIZE_CALCULATOR.getValueLen(v)];
 
@@ -263,11 +268,13 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         finally {
             l.unlock();
         }
+
+        notifyAll();
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized Value syncValue() {
-        Value v = super.syncValue();
+    @Override protected Value syncValue(int attempt) {
+        Value v = super.syncValue(attempt);
 
         if (v != null)
             return v;
@@ -283,8 +290,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         GridUnsafeMemory mem = desc.memory();
 
         if (p == 0) { // Serialize data to offheap memory.
-            Value key = getValue(KEY_COL);
-            Value val = getValue(VAL_COL);
+            Value key = peekValue(KEY_COL);
+            Value val = peekValue(VAL_COL);
 
             assert key != null;
             assert val != null;
