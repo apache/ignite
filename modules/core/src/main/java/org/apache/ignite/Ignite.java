@@ -31,20 +31,31 @@ import java.util.concurrent.*;
 
 /**
  * Main entry-point for all Ignite APIs.
- * You can obtain an instance of {@code Grid} through {@link Ignition#ignite()},
+ * You can obtain an instance of {@code Ignite} through {@link Ignition#ignite()},
  * or for named grids you can use {@link Ignition#ignite(String)}. Note that you
- * can have multiple instances of {@code Grid} running in the same VM by giving
+ * can have multiple instances of {@code Ignite} running in the same VM by giving
  * each instance a different name.
  * <p>
- * In addition to {@link ClusterGroup} functionality, from here you can get the following:
+ * Ignite provides the following functionality:
  * <ul>
- * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
- * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
- * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link IgniteCluster} - clustering functionality.</li>
+ * <li>{@link IgniteCache} - functionality for in-memory distributed cache, including SQL, TEXT, and Predicate-based queries.</li>
+ * <li>{@link IgniteTransactions} - distributed ACID-compliant transactions.</li>
+ * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteServices} - distributed service grid functionality (e.g. singletons on the cluster).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link ExecutorService} - distributed thread pools.</li>
+ * <li>{@link IgniteAtomicLong} - distributed atomic long.</li>
+ * <li>{@link IgniteAtomicReference} - distributed atomic reference.</li>
+ * <li>{@link IgniteAtomicSequence} - distributed atomic sequence.</li>
+ * <li>{@link IgniteAtomicStamped} - distributed atomic stamped reference.</li>
+ * <li>{@link IgniteCountDownLatch} - distributed count down latch.</li>
+ * <li>{@link IgniteQueue} - distributed blocking queue.</li>
+ * <li>{@link IgniteSet} - distributed concurrent set.</li>
+ * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
