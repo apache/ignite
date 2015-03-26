@@ -369,7 +369,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     try {
-                        customEvtLsnr.apply(data);
+                        if (customEvtLsnr != null)
+                            customEvtLsnr.apply(data);
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to notify direct custom event listener: " + data, e);
