@@ -332,28 +332,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
         assertEquals(0, cache2.size() - cache2.nearSize());
-
-        CacheEntryPredicate prjFilter = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                try {
-                    Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);
-
-                    return val != null && val >= 1 && val <= 3;
-                }
-                catch (IgniteCheckedException err) {
-                    throw new IgniteException(err);
-                }
-            }
-        };
-
-        assertEquals(0, cache0.projection(prjFilter).nearSize());
-        assertEquals(3, cache0.projection(prjFilter).size() - cache0.projection(prjFilter).nearSize());
-
-        assertEquals(0, cache1.projection(prjFilter).nearSize());
-        assertEquals(3, cache1.projection(prjFilter).size() - cache1.projection(prjFilter).nearSize());
-
-        assertEquals(nearEnabled() ? 1 : 0, cache2.projection(prjFilter).nearSize());
-        assertEquals(0, cache2.projection(prjFilter).size() - cache2.projection(prjFilter).nearSize());
     }
 
     /**

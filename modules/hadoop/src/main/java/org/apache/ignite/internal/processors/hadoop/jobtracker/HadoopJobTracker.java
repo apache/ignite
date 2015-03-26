@@ -57,7 +57,7 @@ public class HadoopJobTracker extends HadoopComponent {
     private final GridMutex mux = new GridMutex();
 
     /** */
-    private volatile GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
+    private volatile GridCacheAdapter<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
 
     /** Projection with expiry policy for finished job updates. */
     private volatile GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> finishedJobMetaPrj;
@@ -108,13 +108,13 @@ public class HadoopJobTracker extends HadoopComponent {
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     private GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> jobMetaCache() {
-        GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
+        GridCacheAdapter<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
 
         if (prj == null) {
             synchronized (mux) {
                 if ((prj = jobMetaPrj) == null) {
-                    CacheProjection<Object, Object> sysCache = ctx.kernalContext().cache()
-                        .cache(CU.SYS_CACHE_HADOOP_MR);
+                    GridCacheAdapter<HadoopJobId, HadoopJobMetadata> sysCache = ctx.kernalContext().cache()
+                        .internalCache(CU.SYS_CACHE_HADOOP_MR);
 
                     assert sysCache != null;
 
@@ -129,8 +129,7 @@ public class HadoopJobTracker extends HadoopComponent {
                         throw new IllegalStateException(e);
                     }
 
-                    jobMetaPrj = prj = (GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata>)
-                        sysCache.projection(HadoopJobId.class, HadoopJobMetadata.class);
+                    jobMetaPrj = prj = sysCache;
 
                     if (ctx.configuration().getFinishedJobInfoTtl() > 0) {
                         ExpiryPolicy finishedJobPlc = new ModifiedExpiryPolicy(
