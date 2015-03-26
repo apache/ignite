@@ -446,8 +446,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void checkxEnabled() throws IgniteException {
         if (idx == null)
-            throw new IgniteException("Failed to execute query because indexing is disabled (consider adding " +
-                INDEXING.module() + "to classpath).");
+            throw new IgniteException("Failed to execute query because indexing is disabled (consider adding module " +
+                INDEXING.module() + " to classpath or moving it from 'optional' to 'libs' folder).");
     }
 
     /**
