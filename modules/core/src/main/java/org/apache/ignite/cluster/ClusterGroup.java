@@ -25,37 +25,32 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Defines grid projection which represents a common functionality over a group of nodes.
- * The {@link Ignite} interface itself also extends {@code GridProjection} which makes
- * an instance of {@link Ignite} a projection over all grid nodes.
+ * Defines a cluster group which contains all or a subset of cluster nodes.
+ * The {@link IgniteCluster} interface itself also extends {@code ClusterGroup} which makes
+ * an instance of {@link IgniteCluster} into a cluster group containing all cluster nodes.
  * <h1 class="header">Clustering</h1>
- * Grid projection allows to group grid nodes into various subgroups to perform distributed
- * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
- * from existing projection. If you create a new projection from current one, then the resulting
- * projection will include a subset of nodes from current projection. The following code snippet
- * shows how to create and nest grid projections:
+ * Cluster group allows to group cluster nodes into various subgroups to perform distributed
+ * operations on them. All {@code 'forXXX(...)'} methods will create a child cluster group
+ * from the existing cluster group. If you create a new cluster group from the current one, then
+ * the resulting cluster group will include a subset of nodes from the current one. The following
+ * code shows how to create and nest cluster groups:
  * <pre name="code" class="java">
- * Grid g = Ignition.ignite();
+ * Ignite ignite = Ignition.ignite();
  *
- * // Projection over remote nodes.
- * GridProjection remoteNodes = g.forRemotes();
+ * IgniteCluster cluster = ignite.cluster();
  *
- * // Projection over random remote node.
- * GridProjection randomNode = remoteNodes.forRandom();
+ * // Cluster group over remote nodes.
+ * ClusterGroup remoteNodes = cluster.forRemotes();
  *
- * // Projection over all nodes with cache named "myCache" enabled.
- * GridProjection cacheNodes = g.forCacheNodes("myCache");
+ * // Cluster group over random remote node.
+ * ClusterGroup randomNode = remoteNodes.forRandom();
  *
- * // Projection over all nodes that have user attribute "group" set to value "worker".
- * GridProjection workerNodes = g.forAttribute("group", "worker");
+ * // Cluster group over all nodes with cache named "myCache" enabled.
+ * ClusterGroup cacheNodes = cluster.forCacheNodes("myCache");
+ *
+ * // Cluster group over all nodes that have the user attribute "group" set to the value "worker".
+ * ClusterGroup workerNodes = cluster.forAttribute("group", "worker");
  * </pre>
- * <h1 class="header">Features</h1>
- * Grid projection provides the following functionality over the underlying group of nodes:
- * <ul>
- * <li>{@link IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
- * <li>{@link IgniteMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
- * <li>{@link IgniteEvents} - functionality for querying and listening to events on nodes in this projection.</li>
- * </ul>
  */
 public interface ClusterGroup {
     /**
