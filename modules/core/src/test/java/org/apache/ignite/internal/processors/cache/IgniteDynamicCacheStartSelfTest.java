@@ -62,6 +62,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean testAttribute = true;
 
+    /** */
+    private boolean daemon;
+
     /**
      * @return Number of nodes for this test.
      */
@@ -87,6 +90,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_STARTED, EventType.EVT_CACHE_STOPPED, EventType.EVT_CACHE_NODES_LEFT);
+
+        if (daemon)
+            cfg.setDaemon(true);
 
         return cfg;
     }
@@ -967,6 +973,33 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < nodeCount(); i++)
                 ignite(i).events().stopLocalListen(lsnrs[i]);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDaemonNode() throws Exception {
+        daemon = true;
+
+        Ignite dNode = startGrid(nodeCount());
+
+        try {
+            CacheConfiguration cfg = new CacheConfiguration(DYNAMIC_CACHE_NAME);
+
+            try (IgniteCache cache = ignite(0).createCache(cfg)) {
+                for (int i = 0; i < 100; i++) {
+                    assertFalse(ignite(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(i)
+                        .contains(dNode.cluster().localNode()));
+
+                    cache.put(i, i);
+                }
+            }
+        }
+        finally {
+            stopGrid(nodeCount());
+
+            daemon = false;
         }
     }
 }

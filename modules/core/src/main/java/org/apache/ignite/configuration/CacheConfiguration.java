@@ -1016,9 +1016,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating whether Ignite should use swap storage by default. By default
      * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
-     * <p>
-     * Note that this flag may be overridden for cache projection created with flag
-     * {@link CacheFlag#SKIP_SWAP}.
      *
      * @return {@code True} if swap storage is enabled.
      */

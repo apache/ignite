@@ -27,11 +27,23 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Defines functionality necessary to deploy distributed services on the grid. Instance of
- * {@code GridServices} is obtained from grid projection as follows:
- * <pre name="code" class="java">
- * GridServices svcs = Ignition.ignite().services();
+ * Defines functionality necessary to deploy distributed services on the grid.
+ * <p>
+ * Instance of {@code IgniteServices} which spans all cluster nodes can be obtained from Ignite as follows:
+ * <pre class="brush:java">
+ * Ignite ignite = Ignition.ignite();
+ *
+ * IgniteServices svcs = ignite.services();
  * </pre>
+ * You can also obtain an instance of the services facade over a specific cluster group:
+ * <pre class="brush:java">
+ * // Cluster group over remote nodes (excluding the local node).
+ * ClusterGroup remoteNodes = ignite.cluster().forRemotes();
+ *
+ * // Services instance spanning all remote cluster nodes.
+ * IgniteServices svcs = ignite.services(remoteNodes);
+ * </pre>
+ * <p>
  * With distributed services you can do the following:
  * <ul>
  * <li>Automatically deploy any number of service instances on the grid.</li>
@@ -122,9 +134,9 @@ import java.util.*;
  */
 public interface IgniteServices extends IgniteAsyncSupport {
     /**
-     * Gets grid projection to which this {@code GridServices} instance belongs.
+     * Gets the cluster group to which this {@code GridServices} instance belongs.
      *
-     * @return Grid projection to which this {@code GridServices} instance belongs.
+     * @return Cluster group to which this {@code GridServices} instance belongs.
      */
     public ClusterGroup clusterGroup();
 
@@ -140,8 +152,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * This method is analogous to calling
      * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 1, 1)} method.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -153,13 +163,11 @@ public interface IgniteServices extends IgniteAsyncSupport {
     /**
      * Deploys a per-node singleton service. Ignite will guarantee that there is always
      * one instance of the service running on each node. Whenever new nodes are started
-     * within this grid projection, Ignite will automatically deploy one instance of
+     * within the underlying cluster group, Ignite will automatically deploy one instance of
      * the service on every new node.
      * <p>
      * This method is analogous to calling
      * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 0, 1)} method.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -191,8 +199,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *
      *     grid.services().deploy(cfg);
      * </pre>
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -228,8 +234,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *
      *     grid.services().deploy(cfg);
      * </pre>
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Service name.
      * @param svc Service instance.
@@ -255,13 +259,11 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * If {@link org.apache.ignite.services.ServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
      * Ignite will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
-     * The node filter will be checked in addition to the underlying grid projection filter, or the
-     * whole grid, if the underlying grid projection includes all grid nodes.
+     * The node filter will be checked in addition to the underlying cluster group filter, or the
+     * whole grid, if the underlying cluster group includes all the cluster nodes.
      * <p>
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">

@@ -23,10 +23,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -512,9 +512,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     if (keys != null && keys.containsKey(key)) {
                         if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                            onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " + MAX_REMAP_CNT
-                                + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                                U.toShortString(primary) + ", mappings=" + mapped + ']'));
+                            onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                                MAX_REMAP_CNT + " attempts (key got remapped to the same node) " +
+                                "[key=" + key + ", node=" + U.toShortString(primary) + ", mappings=" + mapped + ']'));
 
                             return savedVers;
                         }
@@ -725,33 +725,29 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
+            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
-            if (updTopVer.compareTo(topVer) > 0) {
-                // Remap.
-                map(keys.keySet(), F.t(node, keys), updTopVer);
+            final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
+                cctx.kernalContext().config().getNetworkTimeout(),
+                updTopVer,
+                e);
 
-                onDone(Collections.<K, V>emptyMap());
-            }
-            else {
-                final RemapTimeoutObject timeout = new RemapTimeoutObject(
-                    cctx.kernalContext().config().getNetworkTimeout(), topVer, e);
-
-                cctx.discovery().topologyFuture(topVer.topologyVersion() + 1).listen(new CI1<IgniteInternalFuture<Long>>() {
-                    @Override public void apply(IgniteInternalFuture<Long> longIgniteFuture) {
+            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         if (timeout.finish()) {
                             cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
                             // Remap.
-                            map(keys.keySet(), F.t(node, keys), cctx.affinity().affinityTopologyVersion());
+                            map(keys.keySet(), F.t(node, keys), updTopVer);
 
                             onDone(Collections.<K, V>emptyMap());
                         }
                     }
-                });
+                }
+            );
 
-                cctx.kernalContext().timeout().addTimeoutObject(timeout);
-            }
+            cctx.kernalContext().timeout().addTimeoutObject(timeout);
         }
 
         /**
@@ -812,47 +808,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this);
-        }
-
-        /**
-         * Remap timeout object.
-         */
-        private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
-            /** Finished flag. */
-            private AtomicBoolean finished = new AtomicBoolean();
-
-            /** Topology version to wait. */
-            private AffinityTopologyVersion topVer;
-
-            /** Exception cause. */
-            private IgniteCheckedException e;
-
-            /**
-             * @param timeout Timeout.
-             * @param topVer Topology version timeout was created on.
-             */
-            private RemapTimeoutObject(long timeout, @NotNull AffinityTopologyVersion topVer, IgniteCheckedException e) {
-                super(timeout);
-
-                this.topVer = topVer;
-                this.e = e;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void onTimeout() {
-                if (finish())
-                    // Fail the whole get future.
-                    onDone(new IgniteCheckedException("Failed to wait for topology version to change: "
-                        + (topVer.topologyVersion() + 1), e));
-                // else remap happened concurrently.
-            }
-
-            /**
-             * @return Guard against concurrent completion.
-             */
-            public boolean finish() {
-                return finished.compareAndSet(false, true);
-            }
         }
     }
 }

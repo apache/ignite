@@ -20,6 +20,7 @@ package org.apache.ignite.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -193,7 +194,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessage() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -354,7 +355,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessageWithStringTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -477,7 +478,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessageWithEnumTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -601,7 +602,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testRemoteListen() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final CountDownLatch rcvLatch = new CountDownLatch(4);
 
@@ -736,7 +737,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
             new TestMessage(MSG_2, 3000),
             new TestMessage(MSG_3));
 
-        final Collection<Object> rcvMsgs = new ArrayList<>(msgs.size());
+        final Collection<Object> rcvMsgs = new ConcurrentLinkedDeque<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -785,7 +786,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testRemoteListenWithIntTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
