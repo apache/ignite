@@ -51,6 +51,7 @@
                         <excludes>
                             <exclude>scala-*.jar</exclude>
                             <exclude>spring-*.jar</exclude>
+                            <exclude>jsch-*.jar</exclude>
                         </excludes>
                     </fileSet>
 
@@ -60,6 +61,7 @@
                         <includes>
                             <include>scala-*.jar</include>
                             <include>spring-*.jar</include>
+                            <include>jsch-*.jar</include>
                         </includes>
                     </fileSet>
 
