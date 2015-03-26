@@ -236,6 +236,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     }
 
     /**
+     * @param fut Future.
      * @throws Exception if failed.
      */
     private void checkCancel(final IgniteInternalFuture<?> fut) throws Exception {
@@ -244,8 +245,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 fut.get();
                 return null;
             }
