@@ -2449,7 +2449,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /**
          * @param node Node to check.
-         * @return {@code True} if near cache is present on the given nodes.
+         * @return {@code True} if client cache is present on the given nodes.
          */
         public boolean clientNode(ClusterNode node) {
             if (node.isDaemon())
@@ -2457,7 +2457,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             Boolean near = clientNodes.get(node.id());
 
-            return near != null && !near;
+            return near == null || !near;
         }
     }
 }
