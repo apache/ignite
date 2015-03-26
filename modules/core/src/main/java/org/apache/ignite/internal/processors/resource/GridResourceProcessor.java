@@ -147,8 +147,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 Method mtd = rsrcMtd.getMethod();
 
                 try {
-                    mtd.setAccessible(true);
-
                     mtd.invoke(target);
                 }
                 catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
