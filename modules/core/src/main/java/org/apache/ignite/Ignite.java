@@ -36,9 +36,6 @@ import java.util.concurrent.*;
  * can have multiple instances of {@code Grid} running in the same VM by giving
  * each instance a different name.
  * <p>
- * Note that {@code Grid} extends {@link ClusterGroup} which means that it provides grid projection
- * functionality over the whole grid (instead of a subgroup of nodes).
- * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
@@ -95,77 +92,89 @@ public interface Ignite extends AutoCloseable {
     public IgniteCluster cluster();
 
     /**
-     * Gets {@code compute} functionality over this grid projection. All operations
-     * on the returned {@link IgniteCompute} instance will only include nodes from
-     * this projection.
+     * Gets {@code compute} facade over all cluster nodes.
      *
-     * @return Compute instance over this grid projection.
+     * @return Compute instance over all cluster nodes.
      */
     public IgniteCompute compute();
 
     /**
-     * @param grp Cluster group..
+     * Gets {@code compute} facade over the specified cluster group. All operations
+     * on the returned {@link IgniteCompute} instance will only include nodes from
+     * this cluster group.
+     *
+     * @param grp Cluster group.
      * @return Compute instance over given cluster group.
      */
     public IgniteCompute compute(ClusterGroup grp);
 
     /**
-     * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link IgniteMessaging} instance will only include nodes from
-     * this projection.
+     * Gets {@code messaging} facade over all cluster nodes.
      *
-     * @return Messaging instance over this grid projection.
+     * @return Messaging instance over all cluster nodes.
      */
     public IgniteMessaging message();
 
     /**
+     * Gets {@code messaging} facade over nodes within the cluster group.  All operations
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return Messaging instance over given cluster group.
      */
     public IgniteMessaging message(ClusterGroup grp);
 
     /**
-     * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link IgniteEvents} instance will only include nodes from
-     * this projection.
+     * Gets {@code events} facade over all cluster nodes.
      *
-     * @return Events instance over this grid projection.
+     * @return Events instance over all cluster nodes.
      */
     public IgniteEvents events();
 
     /**
+     * Gets {@code events} facade over nodes within the cluster group. All operations
+     * on the returned {@link IgniteEvents} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return Events instance over given cluster group.
      */
     public IgniteEvents events(ClusterGroup grp);
 
     /**
-     * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link IgniteMessaging} instance will only include nodes from
-     * this projection.
+     * Gets {@code services} facade over all cluster nodes.
      *
-     * @return Services instance over this grid projection.
+     * @return Services facade over all cluster nodes.
      */
     public IgniteServices services();
 
     /**
+     * Gets {@code services} facade over nodes within the cluster group. All operations
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return {@code Services} functionality over given cluster group.
      */
     public IgniteServices services(ClusterGroup grp);
 
     /**
-     * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link Callable} and {@link Runnable} jobs on nodes in this grid projection.
-     * This essentially
-     * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
-     * replacement for local thread pools.
+     * Creates a new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on all cluster nodes.
+     * This essentially creates a <b><i>Distributed Thread Pool</i></b> that can
+     * be used as a replacement for local thread pools.
      *
      * @return Grid-enabled {@code ExecutorService}.
      */
     public ExecutorService executorService();
 
     /**
+     * Creates a new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on nodes in the specified cluster group.
+     * This essentially creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
+     * replacement for local thread pools.
+     *
      * @param grp Cluster group.
      * @return {@link ExecutorService} which will execute jobs on nodes in given cluster group.
      */
