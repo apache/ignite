@@ -17,6 +17,7 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -30,16 +31,19 @@ import java.util.*;
  * individual type constants but arrays of types as well to be conveniently used with
  * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method:
  * <ul>
+ * <li>{@link #EVTS_CACHE}</li>
+ * <li>{@link #EVTS_CACHE_LIFECYCLE}</li>
+ * <li>{@link #EVTS_CACHE_REBALANCE}</li>
+ * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_CHECKPOINT}</li>
  * <li>{@link #EVTS_DEPLOYMENT}</li>
  * <li>{@link #EVTS_DISCOVERY}</li>
  * <li>{@link #EVTS_DISCOVERY_ALL}</li>
+ * <li>{@link #EVTS_ERROR}</li>
+ * <li>{@link #EVTS_IGFS}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
- * <li>{@link #EVTS_TASK_EXECUTION}</li>
- * <li>{@link #EVTS_CACHE}</li>
- * <li>{@link #EVTS_CACHE_REBALANCE}</li>
- * <li>{@link #EVTS_CACHE_QUERY}</li>
  * <li>{@link #EVTS_SWAPSPACE}</li>
+ * <li>{@link #EVTS_TASK_EXECUTION}</li>
  * </ul>
  * <p>
  * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -51,9 +55,9 @@ import java.util.*;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using either {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in Ignite configuration.
+ * by using either {@link IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be
+ * generated but not stored by event storage SPI if they are disabled in Ignite configuration.
  */
 public interface EventType {
     /**
@@ -155,11 +159,21 @@ public interface EventType {
 
     /**
      * Built-in event type: client node disconnected.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see DiscoveryEvent
      */
     public static final int EVT_CLIENT_NODE_DISCONNECTED = 16;
 
     /**
      * Built-in event type: client node reconnected.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see DiscoveryEvent
      */
     public static final int EVT_CLIENT_NODE_RECONNECTED = 17;
 
@@ -400,11 +414,13 @@ public interface EventType {
     public static final int EVT_JOB_CANCELLED = 50;
 
     /**
-      * Built-in event type: entry created.
-      * <p>
-      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal Ignite events and should not be used by user-defined events.
-      */
+     * Built-in event type: entry created.
+     * <p/>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
      public static final int EVT_CACHE_ENTRY_CREATED = 60;
 
      /**
@@ -412,6 +428,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
 
@@ -420,6 +438,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
      public static final int EVT_CACHE_ENTRY_EVICTED = 62;
 
@@ -428,6 +448,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_OBJECT_PUT = 63;
 
@@ -436,6 +458,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_OBJECT_READ = 64;
 
@@ -444,6 +468,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_OBJECT_REMOVED = 65;
 
@@ -452,6 +478,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_OBJECT_LOCKED = 66;
 
@@ -460,6 +488,8 @@ public interface EventType {
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
       * internal Ignite events and should not be used by user-defined events.
+      *
+      * @see CacheEvent
       */
      public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
@@ -468,6 +498,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_SWAPPED = 68;
 
@@ -476,6 +508,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_UNSWAPPED = 69;
 
@@ -484,6 +518,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_EXPIRED = 70;
 
@@ -542,6 +578,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_TO_OFFHEAP = 76;
 
@@ -550,6 +588,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_FROM_OFFHEAP = 77;
 
@@ -559,7 +599,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see SwapSpaceEvent
+     * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_STARTED = 80;
 
@@ -569,7 +609,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see SwapSpaceEvent
+     * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_STOPPED = 81;
 
@@ -579,7 +619,7 @@ public interface EventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
-     * @see SwapSpaceEvent
+     * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_PART_LOADED = 82;
 
@@ -588,6 +628,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_PART_UNLOADED = 83;
 
@@ -596,6 +638,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_REBALANCE_OBJECT_LOADED = 84;
 
@@ -604,6 +648,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_REBALANCE_OBJECT_UNLOADED = 85;
 
@@ -612,6 +658,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
      */
     public static final int EVT_CACHE_REBALANCE_DATA_LOST = 86;
 
@@ -620,6 +668,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheQueryExecutedEvent
      */
     public static final int EVT_CACHE_QUERY_EXECUTED = 96;
 
@@ -628,6 +678,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheQueryExecutedEvent
      */
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
@@ -636,6 +688,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_STARTED = 98;
 
@@ -644,6 +698,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_STOPPED = 99;
 
@@ -652,6 +708,8 @@ public interface EventType {
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
      */
     public static final int EVT_CACHE_NODES_LEFT = 100;
 
