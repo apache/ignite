@@ -732,18 +732,20 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 updTopVer,
                 e);
 
-            cctx.affinity().affinityReadyFuture(updTopVer).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    if (timeout.finish()) {
-                        cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        if (timeout.finish()) {
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
-                        // Remap.
-                        map(keys.keySet(), F.t(node, keys), updTopVer);
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), updTopVer);
 
-                        onDone(Collections.<K, V>emptyMap());
+                            onDone(Collections.<K, V>emptyMap());
+                        }
                     }
                 }
-            });
+            );
 
             cctx.kernalContext().timeout().addTimeoutObject(timeout);
         }
@@ -807,7 +809,5 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Override public String toString() {
             return S.toString(MiniFuture.class, this);
         }
-
     }
-
 }

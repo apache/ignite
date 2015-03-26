@@ -614,18 +614,20 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 updTopVer,
                 e);
 
-            cctx.affinity().affinityReadyFuture(updTopVer).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    if (timeout.finish()) {
-                        cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        if (timeout.finish()) {
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
-                        // Remap.
-                        map(keys.keySet(), F.t(node, keys), updTopVer);
+                            // Remap.
+                            map(keys.keySet(), F.t(node, keys), updTopVer);
 
-                        onDone(Collections.<K, V>emptyMap());
+                            onDone(Collections.<K, V>emptyMap());
+                        }
                     }
                 }
-            });
+            );
 
             cctx.kernalContext().timeout().addTimeoutObject(timeout);
         }
