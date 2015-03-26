@@ -663,7 +663,7 @@ public interface EventType {
      *
      * @see CacheRebalancingEvent
      */
-    public static final int EVT_CACHE_REBALANCE_DATA_LOST = 86;
+    public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
      * Built-in event type: query executed.
@@ -1012,7 +1012,7 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
         EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-        EVT_CACHE_REBALANCE_DATA_LOST
+        EVT_CACHE_REBALANCE_PART_DATA_LOST
     };
 
     /**
