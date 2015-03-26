@@ -51,7 +51,6 @@
                         <excludes>
                             <exclude>scala-*.jar</exclude>
                             <exclude>spring-*.jar</exclude>
-                            <exclude>jsch-*.jar</exclude>
                         </excludes>
                     </fileSet>
 
@@ -61,7 +60,6 @@
                         <includes>
                             <include>scala-*.jar</include>
                             <include>spring-*.jar</include>
-                            <include>jsch-*.jar</include>
                         </includes>
                     </fileSet>
 
@@ -89,6 +87,11 @@
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/visor-common</outputDirectory>
+                    </fileSet>
+
                     <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/visor-common</outputDirectory>
