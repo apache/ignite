@@ -2166,12 +2166,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param <K> type of keys.
-     * @param <V> type of values.
-     * @return Default cache.
+     * @return All configured cache instances.
      */
-    public <K, V> GridCache<K, V> publicCache() {
-        return publicCache(null);
+    public Collection<IgniteCacheProxy<?, ?>> jcaches() {
+        return jCacheProxies.values();
     }
 
     /**
