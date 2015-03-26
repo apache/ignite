@@ -91,18 +91,10 @@ public interface Affinity<K> {
     public boolean isPrimaryOrBackup(ClusterNode n, K key);
 
     /**
-     * Gets partition ids for which nodes of the given projection has primary
-     * ownership.
-     * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
-     * to find out primary partitions for a single node just pass
-     * a single node into this method.
-     * <p>
-     * This method may return an empty array if none of nodes in the projection
-     * have nearOnly disabled.
+     * Gets partition ids for which the given cluster node has primary ownership.
      *
-     * @param n Grid node.
-     * @return Partition ids for which given projection has primary ownership.
+     * @param n Cluster node.
+     * @return Partition ids for which given cluster node has primary ownership.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -110,21 +102,10 @@ public interface Affinity<K> {
     public int[] primaryPartitions(ClusterNode n);
 
     /**
-     * Gets partition ids for which nodes of the given projection has backup
-     * ownership. Note that you can find a back up at a certain level, e.g.
-     * {@code first} backup or {@code third} backup by specifying the
-     * {@code 'levels} parameter. If no {@code 'level'} is specified then
-     * all backup partitions are returned.
-     * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
-     * to find out backup partitions for a single node, just pass that single
-     * node into this method.
-     * <p>
-     * This method may return an empty array if none of nodes in the projection
-     * have nearOnly disabled.
+     * Gets partition ids for which given cluster node has backup ownership.
      *
-     * @param n Grid node.
-     * @return Partition ids for which given projection has backup ownership.
+     * @param n Cluster node.
+     * @return Partition ids for which given cluster node has backup ownership.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -132,18 +113,11 @@ public interface Affinity<K> {
     public int[] backupPartitions(ClusterNode n);
 
     /**
-     * Gets partition ids for which nodes of the given projection has ownership
+     * Gets partition ids for which given cluster node has any ownership
      * (either primary or backup).
-     * <p>
-     * Note that since {@link org.apache.ignite.cluster.ClusterNode} implements {@link org.apache.ignite.cluster.ClusterGroup},
-     * to find out all partitions for a single node, just pass that single
-     * node into this method.
-     * <p>
-     * This method may return an empty array if none of nodes in the projection
-     * have nearOnly disabled.
      *
-     * @param n Grid node.
-     * @return Partition ids for which given projection has ownership.
+     * @param n Cluster node.
+     * @return Partition ids for which given cluster node has any ownership, primary or backup.
      * @see AffinityFunction
      * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
      * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(AffinityFunction)
@@ -180,7 +154,7 @@ public interface Affinity<K> {
      * @param keys Keys to map to nodes.
      * @return Map of nodes to keys or empty map if there are no alive nodes for this cache.
      */
-    public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys);
+    public Map<ClusterNode, Collection<K>> mapKeysToNodes(Collection<? extends K> keys);
 
     /**
      * This method provides ability to detect to which primary node the given key
