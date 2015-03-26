@@ -17,6 +17,7 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -54,9 +55,9 @@ import java.util.*;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using either {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in Ignite configuration.
+ * by using either {@link IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be
+ * generated but not stored by event storage SPI if they are disabled in Ignite configuration.
  */
 public interface EventType {
     /**
