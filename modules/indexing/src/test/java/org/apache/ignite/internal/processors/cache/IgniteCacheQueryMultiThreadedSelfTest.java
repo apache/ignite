@@ -184,9 +184,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             // removeAll() removes mapping only when it presents at a primary node.
             // To remove all mappings used force remove by key.
             if (c.size() > 0) {
-                for (Cache.Entry<Object, Object> e : c.localEntries()) {
+                for (Cache.Entry<Object, Object> e : c.localEntries())
                     c.remove(e.getKey());
-                }
             }
 
             assertEquals("Swap keys: " + c.size(CachePeekMode.SWAP), 0, c.size(CachePeekMode.SWAP));

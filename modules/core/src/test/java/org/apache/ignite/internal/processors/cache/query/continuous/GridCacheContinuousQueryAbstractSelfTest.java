@@ -148,9 +148,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 try {
                     IgniteCache<Object, Object> cache = grid(i).cache(null);
 
-                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
+                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL}))
                         cache.remove(entry.getKey());
-                    }
 
                     break;
                 }
@@ -425,8 +424,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(1);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
-            @Override
-            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());

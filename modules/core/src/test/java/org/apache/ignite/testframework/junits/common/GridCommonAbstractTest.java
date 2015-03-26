@@ -109,6 +109,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @return Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
         return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
@@ -123,6 +124,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @return Cache.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected <K> Set<K> keySet(IgniteCache<K, ?> cache) {
@@ -351,7 +353,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
             for (GridCache<?, ?> c : ((IgniteEx)g).cachesx()) {
-
                 CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceMode() != NONE && g.cluster().nodes().size() > 1) {

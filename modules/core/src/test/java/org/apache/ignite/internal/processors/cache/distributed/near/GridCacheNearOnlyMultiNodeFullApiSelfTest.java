@@ -209,8 +209,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
-     *
-     * @throws Exception
+     * @param inTx If {@code true} starts explicit transaction.
+     * @throws Exception If failed.
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
         int ttl = 1000;

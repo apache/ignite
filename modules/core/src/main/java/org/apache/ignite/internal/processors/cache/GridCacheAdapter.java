@@ -4154,7 +4154,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             if (modes.heap)
                 size += size();
-            }
+        }
         else {
             if (modes.heap) {
                 if (modes.near)
@@ -4168,11 +4168,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                     if (modes.backup)
                         size += (cache.size() - cache.primarySize());
-                    }
+                }
                 else
                     size += cache.size();
-                }
             }
+        }
 
         // Swap and offheap are disabled for near cache.
         if (modes.primary || modes.backup) {
