@@ -2033,10 +2033,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             SB sb = new SB();
 
             for (CacheConfiguration c : cacheCfgs) {
-                String name = c.getName();
-
-                if (name == null)
-                    name = "<default>";
+                String name = U.maskName(c.getName());
 
                 sb.a("'").a(name).a("', ");
             }

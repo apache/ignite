@@ -166,6 +166,6 @@ public class DynamicCacheDescriptor {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", cacheCfg.getName());
+        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));
     }
 }

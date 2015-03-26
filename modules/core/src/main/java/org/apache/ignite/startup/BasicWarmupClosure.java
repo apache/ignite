@@ -303,7 +303,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
                         futs.add(svc.submit(call));
                     }
 
-                    out("Running warmup [cacheName=" + cc.getName() + ", method=" + warmupMethod + ']');
+                    out("Running warmup [cacheName=" + U.maskName(cc.getName()) + ", method=" + warmupMethod + ']');
 
                     for (Future fut : futs)
                         fut.get();

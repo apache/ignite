@@ -567,7 +567,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Startup info.
      */
     protected final String startInfo() {
-        return "Cache started: " + ctx.config().getName();
+        return "Cache started: " + U.maskName(ctx.config().getName());
     }
 
     /**
@@ -586,7 +586,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Stop info.
      */
     protected final String stopInfo() {
-        return "Cache stopped: " + ctx.config().getName();
+        return "Cache stopped: " + U.maskName(ctx.config().getName());
     }
 
     /**
