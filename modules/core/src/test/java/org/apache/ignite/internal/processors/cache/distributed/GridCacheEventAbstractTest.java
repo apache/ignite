@@ -237,7 +237,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 assert cache.getAndPut(key, val) == null;
 
@@ -269,7 +269,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 assert cache.getAndPut(key, val) == null;
 
@@ -345,7 +345,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 asyncCache.getAndPut(key, val);
 
@@ -385,7 +385,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 asyncCache.getAndPut(key, val);
 
@@ -453,7 +453,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 cache.put(key, val);
 
@@ -483,7 +483,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = grid(0).transactions().txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
                 cache.put(key, val);
 
@@ -630,7 +630,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
-                try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                     Map.Entry<String, Integer> e = iter.next();
 
                     String key = e.getKey();
