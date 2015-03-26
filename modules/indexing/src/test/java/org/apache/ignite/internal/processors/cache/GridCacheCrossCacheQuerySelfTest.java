@@ -322,8 +322,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         List<DimProduct> dimProds = new ArrayList<>(prods.values());
         Collections.sort(dimProds, new Comparator<DimProduct>() {
-            @Override
-            public int compare(DimProduct o1, DimProduct o2) {
+            @Override public int compare(DimProduct o1, DimProduct o2) {
                 return o1.getId() > o2.getId() ? 1 : o1.getId() < o2.getId() ? -1 : 0;
             }
         });

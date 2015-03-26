@@ -297,7 +297,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
                             for (GridDhtCacheEntry o : locPart.entries()) {
                                 if (!o.obsoleteOrDeleted())
-                                dataLdr.removeDataInternal(o.key());
+                                    dataLdr.removeDataInternal(o.key());
                             }
                         }
                     }
