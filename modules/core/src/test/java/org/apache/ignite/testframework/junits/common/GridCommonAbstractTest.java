@@ -145,19 +145,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return DHT cache.
      */
-    protected static <K, V> GridDhtCacheAdapter<K, V> dht(IgniteCache<K,V> cache) {
+    private static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K,V> cache) {
         return nearEnabled(cache) ? near(cache).dht() :
-            ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().dht();
+            ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
     }
 
     /**
-     * @param ignite Ignite.
-     * @param cfg Cache configuration.
+     * @param cache Cache.
      * @return DHT cache.
      */
-    private static <K, V> GridDhtCacheAdapter<K, V> dht(Ignite ignite, CacheConfiguration cfg) {
-        return nearEnabled(cfg) ? ((GridNearCacheAdapter)near(ignite, cfg.getName())).dht() :
-            ((IgniteKernal)ignite).<K, V>internalCache(cfg.getName()).context().dht();
+    protected static <K, V> GridDhtCacheAdapter<K, V> dht(IgniteCache<K,V> cache) {
+        return nearEnabled(cache) ? near(cache).dht() :
+            ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().dht();
     }
 
     /**
@@ -194,9 +193,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    private static <K, V> boolean nearEnabled(CacheConfiguration cfg) {
+    private static <K, V> boolean nearEnabled(GridCache<K,V> cache) {
+        CacheConfiguration cfg = ((IgniteKernal)cache.gridProjection().ignite()).
+            <K, V>internalCache(cache.name()).context().config();
+
         return isNearEnabled(cfg);
     }
 
@@ -215,15 +218,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Near cache.
      */
-    protected static <K, V> GridNearCacheAdapter<K, V> near(IgniteCache<K,V> cache) {
-        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().near();
+    private static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K,V> cache) {
+        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
     }
 
     /**
+     * @param cache Cache.
      * @return Near cache.
      */
-    private static <K, V> GridNearCacheAdapter<K, V> near(Ignite ignite, String cacheName) {
-        return ((IgniteKernal)ignite).<K, V>internalCache(cacheName).context().near();
+    protected static <K, V> GridNearCacheAdapter<K, V> near(IgniteCache<K,V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().near();
     }
 
     /**
@@ -346,11 +350,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
-            for (CacheConfiguration cfg : g.configuration().getCacheConfiguration()) {
+            for (GridCache<?, ?> c : ((IgniteEx)g).cachesx()) {
+
+                CacheConfiguration cfg = c.configuration();
+
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceMode() != NONE && g.cluster().nodes().size() > 1) {
                     AffinityFunction aff = cfg.getAffinity();
 
-                    GridDhtCacheAdapter<?, ?> dht = dht(g, cfg);
+                    GridDhtCacheAdapter<?, ?> dht = dht(c);
 
                     GridDhtPartitionTopology top = dht.topology();
 
@@ -359,7 +366,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                         for (int i = 0; ; i++) {
                             // Must map on updated version of topology.
-                            Collection<ClusterNode> affNodes = g.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
+                            Collection<ClusterNode> affNodes = c.affinity().mapPartitionToPrimaryAndBackups(p);
 
                             int exp = affNodes.size();
 
@@ -518,19 +525,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
-    }
-
-    /**
-     * @param key Key.
-     * @param cacheName Cache name.
-     * @return Cache.
-     */
-    protected <K, V> IgniteCache<K, V> primaryCache(Object key, @Nullable String cacheName) {
-        ClusterNode node = grid(0).affinity(cacheName).mapKeyToNode(key);
-
-        assertNotNull(node);
-
-        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).cache(cacheName);
     }
 
     /**

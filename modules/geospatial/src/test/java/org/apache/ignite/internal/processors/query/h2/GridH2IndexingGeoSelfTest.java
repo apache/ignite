@@ -153,7 +153,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                 while (!stop.get()) {
                     int cacheIdx = rnd.nextInt(0, 3);
 
-                    GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                    GridCacheAdapter<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                     int idx = rnd.nextInt(CNT);
                     int x = rnd.nextInt(1, 100);
@@ -178,7 +178,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                     try {
                         int cacheIdx = rnd.nextInt(0, 3);
 
-                        GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                        GridCacheAdapter<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                         CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(
                             EnemyCamp.class, "coords && ?");
