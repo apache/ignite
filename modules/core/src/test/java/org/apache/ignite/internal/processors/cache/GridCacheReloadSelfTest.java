@@ -74,7 +74,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
-        cacheCfg.setEvictionPolicy(new CacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
+        cacheCfg.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_ENTRIES));
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {

@@ -465,8 +465,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ServiceDescriptorImpl desc = new ServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagOn(CacheFlag.GET_PRIMARY).
-                    get(new GridServiceAssignmentsKey(dep.configuration().getName()));
+                GridServiceAssignments assigns = (GridServiceAssignments)cache.getForcePrimary(
+                    new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
                     desc.topologySnapshot(assigns.assigns());

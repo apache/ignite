@@ -186,7 +186,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     private List<Integer> generateKeys(ClusterNode node, IgniteCache<Object, Object> cache) {
         List<Integer> keys = new ArrayList<>(3);
 
-        CacheAffinity<Object> aff = affinity(cache);
+        Affinity<Object> aff = affinity(cache);
 
         int base = 0;
 

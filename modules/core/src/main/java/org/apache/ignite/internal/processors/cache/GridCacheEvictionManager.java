@@ -64,10 +64,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
     /** Eviction policy. */
-    private CacheEvictionPolicy plc;
+    private EvictionPolicy plc;
 
     /** Eviction filter. */
-    private CacheEvictionFilter filter;
+    private EvictionFilter filter;
 
     /** Eviction buffer. */
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();

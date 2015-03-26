@@ -176,7 +176,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private CacheQueries<K, V> qry;
 
     /** Affinity impl. */
-    private CacheAffinity<K> aff;
+    private Affinity<K> aff;
 
     /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
@@ -369,7 +369,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAffinity<K> affinity() {
+    @Override public Affinity<K> affinity() {
         return aff;
     }
 

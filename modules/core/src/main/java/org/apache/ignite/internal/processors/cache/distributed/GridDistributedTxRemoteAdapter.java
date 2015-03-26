@@ -571,7 +571,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }
@@ -582,7 +583,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)
-                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId);
+                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
                                     }
                                     else if (op == RELOAD) {
                                         CacheObject reloaded = cached.innerReload();
@@ -590,8 +591,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         if (nearCached != null) {
                                             nearCached.innerReload();
 
-                                            nearCached.updateOrEvict(cached.version(), reloaded,
-                                                cached.expireTime(), cached.ttl(), nodeId);
+                                            nearCached.updateOrEvict(cached.version(),
+                                                reloaded,
+                                                cached.expireTime(),
+                                                cached.ttl(),
+                                                nodeId,
+                                                topVer);
                                         }
                                     }
                                     else if (op == READ) {
@@ -617,7 +622,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }

@@ -118,7 +118,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheEvictableEntry wrapEviction() {
+    @Nullable @Override public EvictableEntry wrapEviction() {
         return null;
     }
 
@@ -493,6 +493,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,

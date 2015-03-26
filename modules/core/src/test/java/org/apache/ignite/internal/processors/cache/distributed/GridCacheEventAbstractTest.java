@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -107,7 +106,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
-                TestEventListener.waitForEventCount(((IgniteKernal)grid(0)).context(), evtCnts);
+                TestEventListener.waitForEventCount(evtCnts);
             }
             catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
@@ -821,12 +820,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          * Waits for event count.
          *
-         * @param ctx Kernal context.
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
          * @throws IgniteCheckedException If failed to wait.
          */
-        private static void waitForEventCount(GridKernalContext ctx,
-            IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException {
+        private static void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
+            throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;
 

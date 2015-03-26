@@ -156,7 +156,7 @@ public interface GridCacheEntryEx {
     /**
      * @return Entry which is safe to pass into eviction policy.
      */
-    public <K, V> CacheEvictableEntry<K, V> wrapEviction();
+    public <K, V> EvictableEntry<K, V> wrapEviction();
 
     /**
      * @return Entry which holds key and version (no value, since entry
@@ -436,6 +436,7 @@ public interface GridCacheEntryEx {
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,

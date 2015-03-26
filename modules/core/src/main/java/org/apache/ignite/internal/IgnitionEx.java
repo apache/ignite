@@ -1910,7 +1910,7 @@ public class IgnitionEx {
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+                cache.setAffinity(new RendezvousAffinityFunction(false, 100));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
                 return cache;
@@ -1935,7 +1935,7 @@ public class IgnitionEx {
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
+                cache.setAffinity(new RendezvousAffinityFunction(false, 100));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
                 return cache;

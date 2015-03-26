@@ -27,10 +27,10 @@ import scala.collection.JavaConversions._
  * This example demonstrates the simplest code that populates the distributed cache
  * and co-locates simple closure execution with each key. The goal of this particular
  * example is to provide the simplest code example of this logic.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
- * <p>
+ * <p/>
  * Alternatively you can run `ExampleNodeStartup` in another JVM which will
  * start node with `examples/config/example-ignite.xml` configuration.
  */
@@ -56,9 +56,9 @@ object ScalarCacheAffinityExample extends App {
 
         try {
             populate (cache)
-    
+
             visitUsingAffinityRun(cache)
-    
+
             visitUsingMapKeysToNodes(cache)
         }
         finally {

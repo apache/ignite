@@ -35,7 +35,7 @@
                 <property name="swapEnabled" value="true"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
                         <property name="maxSize" value="10000"/>
                     </bean>
                 </property>

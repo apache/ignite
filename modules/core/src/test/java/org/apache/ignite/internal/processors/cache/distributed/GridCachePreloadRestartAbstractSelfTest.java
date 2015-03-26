@@ -114,7 +114,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setStartSize(20);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceBatchSize(preloadBatchSize);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -211,7 +211,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @return Affinity.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheAffinityFunction affinity(GridCache<Integer, ?> cache) {
+    private AffinityFunction affinity(GridCache<Integer, ?> cache) {
         return cache.configuration().getAffinity();
     }
 

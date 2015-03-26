@@ -426,5 +426,5 @@ public interface Ignite extends AutoCloseable {
      * @param <K> Cache key type.
      * @return Affinity.
      */
-    public <K> CacheAffinity<K> affinity(String cacheName);
+    public <K> Affinity<K> affinity(String cacheName);
 }

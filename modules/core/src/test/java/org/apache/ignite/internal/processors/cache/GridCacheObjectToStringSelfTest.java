@@ -46,7 +46,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     private CacheMode cacheMode;
 
     /** Cache eviction policy. */
-    private CacheEvictionPolicy evictionPlc;
+    private EvictionPolicy evictionPlc;
 
     /** Near enabled flag. */
     private boolean nearEnabled;
@@ -81,7 +81,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testLocalCacheFifoEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
-        evictionPlc = new CacheFifoEvictionPolicy();
+        evictionPlc = new FifoEvictionPolicy();
 
         checkToString();
     }
@@ -89,7 +89,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testLocalCacheLruEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
-        evictionPlc = new CacheLruEvictionPolicy();
+        evictionPlc = new LruEvictionPolicy();
 
         checkToString();
     }
@@ -97,7 +97,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testReplicatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
-        evictionPlc = new CacheFifoEvictionPolicy();
+        evictionPlc = new FifoEvictionPolicy();
 
         checkToString();
     }
@@ -105,7 +105,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testReplicatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
-        evictionPlc = new CacheLruEvictionPolicy();
+        evictionPlc = new LruEvictionPolicy();
 
         checkToString();
     }
@@ -114,7 +114,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testPartitionedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
-        evictionPlc = new CacheFifoEvictionPolicy();
+        evictionPlc = new FifoEvictionPolicy();
 
         checkToString();
     }
@@ -123,7 +123,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testPartitionedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
-        evictionPlc = new CacheLruEvictionPolicy();
+        evictionPlc = new LruEvictionPolicy();
 
         checkToString();
     }
@@ -132,7 +132,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testColocatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
-        evictionPlc = new CacheFifoEvictionPolicy();
+        evictionPlc = new FifoEvictionPolicy();
 
         checkToString();
     }
@@ -141,7 +141,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testColocatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
-        evictionPlc = new CacheLruEvictionPolicy();
+        evictionPlc = new LruEvictionPolicy();
 
         checkToString();
     }

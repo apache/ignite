@@ -15,36 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.fifo;
+package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * MBean for {@code FIFO} eviction policy.
+ * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
+ * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
  */
-@MXBeanDescription("MBean for FIFO cache eviction policy.")
-public interface CacheFifoEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
+public class AffinityNodeIdHashResolver implements AffinityNodeHashResolver {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @MXBeanDescription("Set maximum allowed cache size.")
-    public void setMaxSize(int max);
+    /** {@inheritDoc} */
+    @Override public Object resolve(ClusterNode node) {
+        return node.id();
+    }
 
-    /**
-     * Gets current queue size.
-     *
-     * @return Current queue size.
-     */
-    @MXBeanDescription("Current FIFO queue size.")
-    public int getCurrentSize();
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AffinityNodeIdHashResolver.class, this);
+    }
 }

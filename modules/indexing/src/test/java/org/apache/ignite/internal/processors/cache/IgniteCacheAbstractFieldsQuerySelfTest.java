@@ -105,7 +105,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         }
         else {
             indexedTypes.addAll(F.<Class<?>>asList(
-                CacheAffinityKey.class, Person.class
+                AffinityKey.class, Person.class
             ));
         }
 
@@ -150,13 +150,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        personCache.put(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
         IgniteCache<String, String> strCache = grid(0).cache(null);
 
@@ -218,17 +218,17 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assert row.size() == 3;
 
             if (cnt == 0) {
-                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
+                assert new AffinityKey<>("p1", "o1").equals(row.get(0));
                 assert "John White".equals(row.get(1));
                 assert row.get(2).equals(25);
             }
             else if (cnt == 1) {
-                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new AffinityKey<>("p2", "o1").equals(row.get(0));
                 assert "Joe Black".equals(row.get(1));
                 assert row.get(2).equals(35);
             }
             if (cnt == 2) {
-                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new AffinityKey<>("p3", "o2").equals(row.get(0));
                 assert "Mike Green".equals(row.get(1));
                 assert row.get(2).equals(40);
             }
@@ -264,12 +264,12 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assert row.size() == 3;
 
             if (cnt == 0) {
-                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new AffinityKey<>("p2", "o1").equals(row.get(0));
                 assert "Joe Black".equals(row.get(1));
                 assert row.get(2).equals(35);
             }
             else if (cnt == 1) {
-                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new AffinityKey<>("p3", "o2").equals(row.get(0));
                 assert "Mike Green".equals(row.get(1));
                 assert row.get(2).equals(40);
             }
@@ -303,7 +303,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
             assert row.size() == 9;
 
             if (cnt == 0) {
-                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
+                assert new AffinityKey<>("p1", "o1").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "John White".equals(row.get(2));
                 assert row.get(3).equals(25);
@@ -314,7 +314,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 assert "A".equals(row.get(8));
             }
             else if (cnt == 1) {
-                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new AffinityKey<>("p2", "o1").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "Joe Black".equals(row.get(2));
                 assert row.get(3).equals(35);
@@ -325,7 +325,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 assert "A".equals(row.get(8));
             }
             if (cnt == 2) {
-                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new AffinityKey<>("p3", "o2").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "Mike Green".equals(row.get(2));
                 assert row.get(3).equals(40);

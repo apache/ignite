@@ -613,15 +613,15 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable CacheEvictionPolicy plc) {
-        if (plc instanceof CacheLruEvictionPolicyMBean)
-            return ((CacheLruEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
+        if (plc instanceof LruEvictionPolicyMBean)
+            return ((LruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (plc instanceof CacheRandomEvictionPolicyMBean)
-            return ((CacheRandomEvictionPolicyMBean)plc).getMaxSize();
+        if (plc instanceof RandomEvictionPolicyMBean)
+            return ((RandomEvictionPolicyMBean)plc).getMaxSize();
 
-        if (plc instanceof CacheFifoEvictionPolicyMBean)
-            return ((CacheFifoEvictionPolicyMBean)plc).getMaxSize();
+        if (plc instanceof FifoEvictionPolicyMBean)
+            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }

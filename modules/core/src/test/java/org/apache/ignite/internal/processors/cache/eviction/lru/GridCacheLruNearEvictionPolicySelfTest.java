@@ -63,7 +63,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         cc.setBackups(0);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-        nearCfg.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);

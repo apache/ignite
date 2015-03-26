@@ -150,16 +150,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAffinity() == null) {
             if (cfg.getCacheMode() == PARTITIONED) {
-                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction();
+                RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
-                aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
+                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
-                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction(false, 512);
+                RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
 
-                aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
+                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
 
@@ -170,11 +170,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             if (cfg.getCacheMode() == PARTITIONED) {
-                if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
-                    CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
+                    RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
                     if (aff.getHashIdResolver() == null)
-                        aff.setHashIdResolver(new CacheAffinityNodeAddressHashResolver());
+                        aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
                 }
             }
         }
@@ -282,16 +282,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cc,
         @Nullable CacheStore cfgStore) throws IgniteCheckedException {
         if (cc.getCacheMode() == REPLICATED) {
-            if (cc.getAffinity() instanceof CachePartitionFairAffinity)
-                throw new IgniteCheckedException("REPLICATED cache can not be started with CachePartitionFairAffinity" +
+            if (cc.getAffinity() instanceof FairAffinityFunction)
+                throw new IgniteCheckedException("REPLICATED cache can not be started with FairAffinityFunction" +
                     " [cacheName=" + cc.getName() + ']');
 
-            if (cc.getAffinity() instanceof CacheRendezvousAffinityFunction) {
-                CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cc.getAffinity();
+            if (cc.getAffinity() instanceof RendezvousAffinityFunction) {
+                RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cc.getAffinity();
 
                 if (aff.isExcludeNeighbors())
                     throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
-                        "CacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
+                        "RendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
             if (cc.getNearConfiguration() != null &&
@@ -304,7 +304,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
-            U.warn(log, "CacheAffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
+            U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 cc.getName() + ']');
 
         if (cc.getRebalanceMode() != CacheRebalanceMode.NONE) {
@@ -1863,10 +1863,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cfg.getAffinity() instanceof CacheRendezvousAffinityFunction) {
-                CacheRendezvousAffinityFunction aff = (CacheRendezvousAffinityFunction)cfg.getAffinity();
+            if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
+                RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
-                CacheAffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+                AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
                 assert hashIdRslvr != null;
 
@@ -2582,12 +2582,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class LocalAffinityFunction implements CacheAffinityFunction {
+    private static class LocalAffinityFunction implements AffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             ClusterNode locNode = null;
 
             for (ClusterNode n : affCtx.currentTopologySnapshot()) {

@@ -78,7 +78,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private GridStringLogger strLog;
 
     /** */
-    private CacheAffinityFunction aff;
+    private AffinityFunction aff;
 
     /** */
     private int backups;
@@ -315,7 +315,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setAffinity(new CacheRendezvousAffinityFunction());
+                    cfg.setAffinity(new RendezvousAffinityFunction());
                     return null;
                 }
             }
@@ -352,7 +352,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictionPolicy(new CacheFifoEvictionPolicy());
+                    cfg.setEvictionPolicy(new FifoEvictionPolicy());
                     return null;
                 }
             },
@@ -373,14 +373,14 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictionPolicy(new CacheRandomEvictionPolicy());
+                    cfg.setEvictionPolicy(new RandomEvictionPolicy());
                     return null;
                 }
             },
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictionPolicy(new CacheFifoEvictionPolicy());
+                    cfg.setEvictionPolicy(new FifoEvictionPolicy());
                     return null;
                 }
             }
@@ -442,7 +442,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(true);
-                    cfg.setEvictionPolicy(new CacheFifoEvictionPolicy(100));
+                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
                     return null;
                 }
             },
@@ -450,7 +450,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(false);
-                    cfg.setEvictionPolicy(new CacheFifoEvictionPolicy(100));
+                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
                     return null;
                 }
             }
@@ -516,13 +516,13 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         backups = 1;
 
-        aff = new CacheRendezvousAffinityFunction(false, 100);
+        aff = new RendezvousAffinityFunction(false, 100);
 
         startGrid(1);
 
         // 2nd grid with another affinity.
         // Check include neighbors.
-        aff = new CacheRendezvousAffinityFunction(true, 100);
+        aff = new RendezvousAffinityFunction(true, 100);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -533,7 +533,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         backups = 2;
 
         // Check backups.
-        aff = new CacheRendezvousAffinityFunction(false, 100);
+        aff = new RendezvousAffinityFunction(false, 100);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -544,7 +544,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         backups = 1;
 
         // Partitions count.
-        aff = new CacheRendezvousAffinityFunction(false, 1000);
+        aff = new RendezvousAffinityFunction(false, 1000);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -553,9 +553,9 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
 
         // Different hash ID resolver.
-        CacheRendezvousAffinityFunction aff0 = new CacheRendezvousAffinityFunction(false, 100);
+        RendezvousAffinityFunction aff0 = new RendezvousAffinityFunction(false, 100);
 
-        aff0.setHashIdResolver(new CacheAffinityNodeIdHashResolver());
+        aff0.setHashIdResolver(new AffinityNodeIdHashResolver());
 
         aff = aff0;
 
@@ -616,7 +616,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                nearCfg.setNearEvictionPolicy(new CacheRandomEvictionPolicy());
+                nearCfg.setNearEvictionPolicy(new RandomEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
 
@@ -630,7 +630,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                nearCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy());
+                nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
 
@@ -655,7 +655,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
-                cfg.setEvictionPolicy(new CacheFifoEvictionPolicy());
+                cfg.setEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
                 cfg.setReadThrough(true);
@@ -671,9 +671,9 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setAffinity(new CacheRendezvousAffinityFunction());
+                cfg.setAffinity(new RendezvousAffinityFunction());
 
-                cfg.setEvictionPolicy(new CacheLruEvictionPolicy());
+                cfg.setEvictionPolicy(new LruEvictionPolicy());
 
                 cfg.setCacheStoreFactory(null);
 
@@ -782,7 +782,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
-        aff = new CachePartitionFairAffinity(); // Check cannot use CachePartitionFairAffinity.
+        aff = new FairAffinityFunction(); // Check cannot use FairAffinityFunction.
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -790,7 +790,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         }, IgniteCheckedException.class, null);
 
-        aff = new CacheRendezvousAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
+        aff = new RendezvousAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
         backups = Integer.MAX_VALUE;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -799,12 +799,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             }
         }, IgniteCheckedException.class, null);
 
-        aff = new CacheRendezvousAffinityFunction(false, 100);
+        aff = new RendezvousAffinityFunction(false, 100);
 
         startGrid(1);
 
         // Try to start node with  different number of partitions.
-        aff = new CacheRendezvousAffinityFunction(false, 200);
+        aff = new RendezvousAffinityFunction(false, 200);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -819,15 +819,13 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testDifferentInterceptors() throws Exception {
         cacheMode = PARTITIONED;
 
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
+        checkSecondGridStartFails(new C1<CacheConfiguration, Void>() {
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setInterceptor(new TestCacheInterceptor());
 
                     return null;
                 }
-            },
-            new C1<CacheConfiguration, Void>() {
+            }, new C1<CacheConfiguration, Void>() {
                 @Override public Void apply(CacheConfiguration cfg) {
                     return null;
                 }
@@ -900,7 +898,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }
     }
 
-    private static class TestRendezvousAffinityFunction extends CacheRendezvousAffinityFunction {
+    private static class TestRendezvousAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Empty constructor required by {@link Externalizable}.
          */
@@ -912,7 +910,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class FirstCacheEvictionFilter implements CacheEvictionFilter<Object, Object> {
+    private static class FirstCacheEvictionFilter implements EvictionFilter<Object, Object> {
         /** {@inheritDoc} */
         @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
             return false;
@@ -922,7 +920,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class SecondCacheEvictionFilter implements CacheEvictionFilter<Object, Object> {
+    private static class SecondCacheEvictionFilter implements EvictionFilter<Object, Object> {
         /** {@inheritDoc} */
         @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
             return true;
