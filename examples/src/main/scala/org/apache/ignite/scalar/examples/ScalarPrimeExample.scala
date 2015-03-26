@@ -31,13 +31,13 @@ import scala.util.control.Breaks._
  * To try this example you should (but don't have to) start remote ignite instances.
  * You can start as many as you like by executing the following script:
  * `{IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-ignite.xml`
- *
+ * <p/>
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
  * button. You will see that all nodes discover each other and
  * all of the nodes will participate in task execution (check node
  * output).
- *
+ * <p/>
  * Note that when running this example on a multi-core box, simply
  * starting additional cluster node on the same box will speed up
  * prime number calculation by a factor of 2.

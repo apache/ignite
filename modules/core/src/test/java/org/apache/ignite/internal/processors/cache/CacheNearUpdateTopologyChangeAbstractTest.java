@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 
 /**
  *
@@ -70,6 +71,8 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
         assertEquals((Object)1, nearCache.get(key));
 
+        assertEquals((Object)1, nearCache.localPeek(key, ONHEAP));
+
         boolean gotNewPrimary = false;
 
         List<Ignite> newNodes = new ArrayList<>();
@@ -102,6 +105,8 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
                 break;
             }
+            else
+                assertEquals((Object)1, nearCache.localPeek(key, ONHEAP));
         }
 
         assertTrue(gotNewPrimary);
@@ -114,16 +119,22 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return aff.isPrimary(primaryIgnite.cluster().localNode(), key);
             }
         }, 10_000);
 
+        assertTrue(wait);
+
         log.info("Primary node: " + primaryNode(key, null).name());
 
         assertTrue(aff.isPrimary(primaryIgnite.cluster().localNode(), key));
 
+        assertFalse(aff.isPrimaryOrBackup(nearCache.unwrap(Ignite.class).cluster().localNode(), key));
+
         assertEquals((Object)2, nearCache.get(key));
+
+        assertEquals((Object)2, nearCache.localPeek(key, ONHEAP));
     }
 }
