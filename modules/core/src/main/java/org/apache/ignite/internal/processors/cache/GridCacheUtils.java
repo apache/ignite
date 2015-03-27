@@ -1549,25 +1549,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets cache ID by cache name.
-     *
-     * @param cacheName Cache name.
-     * @return Cache ID.
-     */
-    public static int cacheId(String cacheName) {
-        if (cacheName != null) {
-            int hash = cacheName.hashCode();
-
-            if (hash == 0)
-                hash = 1;
-
-            return hash;
-        }
-        else
-            return 1;
-    }
-
-    /**
      * Validates that cache key or cache value implements {@link Externalizable}
      *
      * @param log Logger used to log warning message.
