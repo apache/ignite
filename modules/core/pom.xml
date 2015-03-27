@@ -245,12 +245,12 @@
                                 <configuration>
                                     <target>
                                         <exec executable="${git.exec}" outputproperty="ignite.build"
-                                              failonerror="yes">
+                                              failonerror="no">
                                             <arg line="log -1 --format=%ct"/>
                                         </exec>
 
                                         <exec executable="${git.exec}" outputproperty="ignite.revision"
-                                              failonerror="yes">
+                                              failonerror="no">
                                             <arg line="log -1 --format=%H"/>
                                         </exec>
 
@@ -285,6 +285,16 @@
                                             <regexp pattern="ignite.update.status.params=.*"/>
                                             <substitution
                                                     expression="ignite.update.status.params=ver=${ignite.version}"/>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.build=fatal:.*" />
+                                            <substitution expression="ignite.build=0" />
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.revision=fatal:.*" />
+                                            <substitution expression="ignite.revision=n/a" />
                                         </replaceregexp>
                                     </target>
                                 </configuration>

@@ -176,6 +176,23 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRehash() throws Exception {
+        Map<Integer, Date> map = new ConcurrentLinkedHashMap<>(10);
+
+        for (int i = 0; i < 100; i++)
+            // Will initiate rehash in the middle.
+            map.put(i, new Date(0));
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, new Date(1));
+
+        for (Date date : map.values())
+            assertEquals(1L, date.getTime());
+    }
+
+    /**
      *
      */
     public void testDescendingMethods() {
