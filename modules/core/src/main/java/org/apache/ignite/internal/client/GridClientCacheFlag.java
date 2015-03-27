@@ -26,9 +26,6 @@ public enum GridClientCacheFlag {
     /** Skips store, i.e. no read-through and no write-through behavior. */
     SKIP_STORE,
 
-    /** Skip swap space for reads and writes. */
-    SKIP_SWAP,
-
     /**
      * Disable deserialization of portable objects on get operations.
      * If set and portable marshaller is used, {@link GridClientData#get(Object)}

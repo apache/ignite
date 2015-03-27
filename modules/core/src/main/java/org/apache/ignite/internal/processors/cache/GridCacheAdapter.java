@@ -4205,8 +4205,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     @SuppressWarnings("IfMayBeConditional")
     @Nullable public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(SKIP_SWAP));
-
         A.notNull(key, "key");
 
         if (keyCheck)
@@ -4241,8 +4239,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(SKIP_SWAP));
-
         if (F.isEmpty(keys))
             return;
 
@@ -4289,8 +4285,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(SKIP_SWAP));
-
         return ctx.swap().lazySwapIterator();
     }
 

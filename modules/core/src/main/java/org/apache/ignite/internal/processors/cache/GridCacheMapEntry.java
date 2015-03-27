@@ -427,7 +427,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable @Override public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
-        boolean swapEnabled = cctx.swap().swapEnabled() && (ignoreFlags || !cctx.hasFlag(SKIP_SWAP));
+        boolean swapEnabled = cctx.swap().swapEnabled();
 
         if (!swapEnabled && !cctx.isOffHeapEnabled())
             return null;

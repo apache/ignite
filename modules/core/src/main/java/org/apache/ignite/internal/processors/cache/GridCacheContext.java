@@ -1489,7 +1489,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
-        return (swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP)) || isOffHeapEnabled();
+        return swapMgr.swapEnabled() || isOffHeapEnabled();
     }
 
     /**

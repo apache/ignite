@@ -44,10 +44,7 @@ public enum CacheFlag {
     CLONE,
 
     /** Skips store, i.e. no read-through and no write-through behavior. */
-    SKIP_STORE,
-
-    /** Skip swap space for reads and writes. */
-    SKIP_SWAP;
+    SKIP_STORE;
 
     /** */
     private static final CacheFlag[] VALS = values();

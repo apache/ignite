@@ -106,9 +106,6 @@ public abstract class GridClientConnection {
         if (flagSet.contains(GridClientCacheFlag.SKIP_STORE))
             bits |= 1;
 
-        if (flagSet.contains(GridClientCacheFlag.SKIP_SWAP))
-            bits |= 1 << 1;
-
         return bits;
     }
 

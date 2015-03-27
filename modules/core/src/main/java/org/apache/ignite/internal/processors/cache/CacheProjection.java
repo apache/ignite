@@ -1114,8 +1114,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
      * be swapped to offheap, and then to disk.
      *
      * @param key Key to evict from cache.
@@ -1128,8 +1127,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * evicted only if it's not used (not participating in any locks or
      * transactions).
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
      * be swapped to offheap, and then to disk.
      * */
     public void evictAll();
@@ -1139,8 +1137,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
      * be swapped to offheap, and then to disk.
      *
      * @param keys Keys to evict.
@@ -1151,8 +1148,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -1165,8 +1161,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -1184,8 +1179,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Clears entries from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -1725,9 +1719,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}
      *
      * @param keys Keys to promote entries for.
      * @throws IgniteCheckedException If promote failed.
