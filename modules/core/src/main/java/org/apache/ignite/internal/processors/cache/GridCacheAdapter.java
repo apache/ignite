@@ -464,7 +464,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             plc);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets cache projection only for given key and value type. Only {@code non-null} key-value
+     * pairs that have matching key and value pairs will be used in this projection.
+     *
+     * @param keyType Key type.
+     * @param valType Value type.
+     * @param <K1> Key type.
+     * @param <V1> Value type.
+     * @return Cache projection for given key and value types.
+     */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     public <K1, V1> CacheProjection<K1, V1> projection(
         Class<? super K1> keyType,
@@ -490,7 +499,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets cache projection based on given entry filter. This filter will be simply passed through
+     * to all cache operations on this projection. Unlike <code>projection(org.apache.ignite.lang.IgniteBiPredicate)</code>
+     * method, this filter will <b>not</b> be used for pre-filtering.
+     *
+     * @param filter Filter to be passed through to all cache operations. If {@code null}, then the
+     *      same projection is returned.  If cache operation receives its own filter, then filters
+     *      will be {@code 'anded'}.
+     * @return Projection based on given filter.
+     */
     public CacheProjection<K, V> projection(CacheEntryPredicate filter) {
         if (filter == null)
             return this;
