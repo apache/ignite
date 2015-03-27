@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -38,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -615,7 +617,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -626,9 +628,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(String.valueOf(i)));
 
-            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
-
-            Collection<Map.Entry<String, Integer>> entries = qry.execute().get();
+            Collection<Cache.Entry<String, Integer>> entries =
+                cache.query(new SqlQuery<String, Integer>(Integer.class, " _val >= 0")).getAll();
 
             assertFalse(entries.isEmpty());
 
@@ -656,7 +657,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -667,9 +668,8 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(Integer.toString(i)));
 
-            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
-
-            Collection<Map.Entry<String, Integer>> entries = qry.execute().get();
+            Collection<Cache.Entry<String, Integer>> entries =
+                cache.query(new SqlQuery<String, Integer>(Integer.class, " _val >= 0")).getAll();
 
             assertFalse(entries.isEmpty());
 
@@ -683,7 +683,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                     assertEquals(null, grid(ii).cache(null).get(Integer.toString(i)));
 
             // Check using query.
-            entries = qry.execute().get();
+            entries = cache.query(new SqlQuery<String, Integer>(Integer.class, " _val >= 0")).getAll();
 
             assertTrue(entries.isEmpty());
 
@@ -707,7 +707,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCache<String, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
+            GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache(null);
 
             // Store counter.
             cache.put(RMVD_CNTR_KEY, 0);

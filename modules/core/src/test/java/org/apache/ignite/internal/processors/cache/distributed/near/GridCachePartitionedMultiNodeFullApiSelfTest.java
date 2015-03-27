@@ -24,7 +24,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
@@ -36,7 +35,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -205,13 +203,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            if (cache(i).affinity().isBackup(grid(i).localNode(), "key")) {
-                assert cache(i).evict("key") : "Entry was not evicted [idx=" + i + ", entry=" +
-                    (nearEnabled() ? dht(i).entryEx("key") : colocated(i).entryEx("key")) + ']';
+            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
+                jcache(i).localEvict(Collections.singleton("key"));
 
-                assert cache(i).peek("key") == null;
+                assert jcache(i).localPeek("key", ONHEAP) == null;
 
-                assert cache(i).get("key") == 1;
+                assert jcache(i).get("key") == 1;
 
                 assert swapEvts.get() == 1 : "Swap events: " + swapEvts.get();
 
@@ -272,20 +269,20 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            GridCache<String, Integer> c = cache(i);
+            IgniteCache<String, Integer> c = jcache(i);
 
-            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
-                assert c.peek("key", Arrays.asList(NEAR_ONLY)) == null;
+            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
+                assert c.localPeek("key", NEAR) == null;
 
-                assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == 1;
+                assert c.localPeek("key", PRIMARY, BACKUP) == 1;
             }
-            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
+            else if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
                 // Initialize near reader.
                 assertEquals((Integer)1, jcache(i).get("key"));
 
-                assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
+                assertEquals(nearPeekVal, c.localPeek("key", NEAR));
 
-                assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;
+                assert c.localPeek("key", PRIMARY, BACKUP) == null;
             }
         }
     }
