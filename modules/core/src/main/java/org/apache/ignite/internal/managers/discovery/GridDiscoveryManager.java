@@ -1207,6 +1207,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return predicate != null && predicate.nearNode(node);
     }
 
+    /**
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return {@code True} if node has client cache (without near cache).
+     */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
         CachePredicate predicate = registeredCaches.get(cacheName);
 
@@ -2457,7 +2462,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             Boolean near = clientNodes.get(node.id());
 
-            return near == null || !near;
+            return near != null && !near;
         }
     }
 }
