@@ -292,7 +292,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                         boolean primary = aff.isPrimary(ignite.cluster().localNode(), i);
                         boolean backup = aff.isBackup(ignite.cluster().localNode(), i);
 
-                        log.error("Invalid value detected [val=" + val +
+                        log.error("Invalid value detected [key=" + i +
+                            ", val=" + val +
                             ", firstVal=" + firstVal +
                             ", node=" + g +
                             ", primary=" + primary +
