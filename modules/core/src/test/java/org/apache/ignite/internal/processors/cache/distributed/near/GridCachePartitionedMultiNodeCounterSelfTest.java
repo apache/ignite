@@ -116,14 +116,6 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /**
-     * @param cache Cache.
-     * @return Affinity.
-     */
-    private static Affinity<String> affinity(GridCache<String, Integer> cache) {
-        return cache.affinity();
-    }
-
-    /**
      * @param g Grid.
      * @return Near cache.
      */

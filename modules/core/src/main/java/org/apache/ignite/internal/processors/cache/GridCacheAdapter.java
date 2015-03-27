@@ -708,7 +708,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
         else if (modes.heap) {
             if (modes.near && ctx.isNear())
-                its.add(ctx.near().nearEntriesIterator());
+                its.add(ctx.near().nearEntries().iterator());
 
             if (modes.primary || modes.backup) {
                 GridDhtCacheAdapter<K, V> cache = ctx.isNear() ? ctx.near().dht() : ctx.dht();
@@ -1350,7 +1350,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocallyAll(Set<K> keys) {
+    @Override public void clearLocallyAll(Set<? extends K> keys) {
         clearLocally0(keys);
     }
 
@@ -1458,7 +1458,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
+    @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
         // Clear local cache synchronously.
         clearLocallyAll(keys);
 
@@ -1471,7 +1471,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
+    @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
         return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
     }
 
@@ -5640,7 +5640,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         private static final long serialVersionUID = 0L;
 
         /** Keys to remove. */
-        private Set<K> keys;
+        private Set<? extends K> keys;
 
         /**
          * Empty constructor for serialization.
@@ -5653,7 +5653,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param cacheName Cache name.
          * @param keys Keys to clear.
          */
-        private GlobalClearKeySetCallable(String cacheName, Set<K> keys) {
+        private GlobalClearKeySetCallable(String cacheName, Set<? extends K> keys) {
             super(cacheName);
 
             this.keys = keys;

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -152,8 +153,8 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException In case of exception.
      */
     public void testConfiguration() throws IgniteCheckedException {
-        GridCache metaCache = getFieldValue(fs, "meta", "metaCache");
-        GridCache dataCache = getFieldValue(fs, "data", "dataCache");
+        GridCacheProxyImpl metaCache = getFieldValue(fs, "meta", "metaCache");
+        GridCacheAdapter dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);
         assertEquals(META_CACHE_NAME, metaCache.name());
@@ -255,7 +256,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
             IgfsFileImpl fileImpl = (IgfsFileImpl)fs.info(path);
 
-            GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
+            GridCacheAdapter<Object, Object> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
 
             IgfsFileInfo fileInfo = (IgfsFileInfo)metaCache.get(fileImpl.fileId());
 
