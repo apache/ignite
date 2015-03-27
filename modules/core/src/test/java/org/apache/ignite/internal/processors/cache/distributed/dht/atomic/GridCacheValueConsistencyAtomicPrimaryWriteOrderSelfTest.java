@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
 /**
- * Tests cache values consistency for transactional cache.
+ *
  */
-public class GridCacheValueConsistencyTransactionalSelfTest extends GridCacheValueConsistencyAbstractSelfTest {
+public class GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest extends GridCacheValueConsistencyAtomicSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int iterationCount() {
-        return 50_000;
+    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
+        return PRIMARY;
     }
 }
