@@ -53,7 +53,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -238,7 +238,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -289,15 +289,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            QueryCursor<Cache.Entry<Integer, String>> qry = c.query(
-                                new SqlQuery(String.class, "_val between ? and ?").setArgs(
-                                    String.valueOf(from), String.valueOf(from + 250)));
-
-                            Collection<Cache.Entry<Integer, String>> res = qry.getAll();
-
-                            for (Cache.Entry<Integer, String> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(String.class, "_val between ? and ?").setArgs(
+                                    String.valueOf(from), String.valueOf(from + 250))).getAll();
                     }
                 }
             }
@@ -317,7 +310,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLong() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -370,12 +363,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Long>> res = c.query(new SqlQuery(Long.class,
-                                "_val between ? and ?").setArgs(from, from + 250)).getAll();
-
-                            for (Cache.Entry<Integer, Long> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(Long.class, "_val between ? and ?").setArgs(from, from + 250)).getAll();
                     }
                 }
             }
@@ -395,7 +383,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLongString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -447,13 +435,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Object>> res = c.query(
-                                new SqlQuery(Object.class, "_val between ? and ?").setArgs(from, from + 250))
+                            c.query(new SqlQuery(Object.class, "_val between ? and ?").setArgs(from, from + 250))
                                 .getAll();
-
-                            for (Cache.Entry<Integer, Object> ignored : res) {
-                                //No-op.
-                            }
                     }
                 }
             }
@@ -522,13 +505,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, TestValue>> res =
-                                c.query(new SqlQuery(TestValue.class, "TestValue.val between ? and ?").setArgs(
-                                    from, from + 250)).getAll();
-
-                            for (Cache.Entry<Integer, TestValue> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(TestValue.class, "TestValue.val between ? and ?")
+                                .setArgs(from, from + 250)).getAll();
                     }
                 }
             }

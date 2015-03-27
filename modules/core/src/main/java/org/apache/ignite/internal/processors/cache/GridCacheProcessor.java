@@ -2064,11 +2064,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param spaceName Space name.
      * @param keyBytes Key bytes.
+     * @param valBytes Value bytes.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onEvictFromSwap(String spaceName, byte[] keyBytes) {
+    public void onEvictFromSwap(String spaceName, byte[] keyBytes, byte[] valBytes) {
         assert spaceName != null;
         assert keyBytes != null;
+        assert valBytes != null;
 
         /*
          * NOTE: this method should not have any synchronization because
@@ -2089,7 +2091,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false));
+                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes);
+
+                    CacheObject val = swapEntry.value();
+
+                    if (val == null)
+                        val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), swapEntry.type(),
+                            swapEntry.valueBytes());
+
+                    assert val != null;
+
+                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false),
+                        val.value(cctx.cacheObjectContext(), false));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
