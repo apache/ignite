@@ -21,7 +21,8 @@
 #
 
 #
-# Define functions.
+# Doc
+# Parameters
 #
 formatPatch () {
     GIT_HOME=$1
@@ -33,9 +34,9 @@ formatPatch () {
 
     git checkout ${DEFAULT_BRANCH}
     git checkout -b tmppatch
-    
+
     git merge --no-edit ${PATCHED_BRANCH}
-#    Or we can 'squashe' merge to make only one commit.
+#    Or we can 'squash' merge to make only one commit.
 #    git merge --squash ${PATCHED_BRANCH}
 #    git commit -a -m "# PATCHED_BRANCH"
 
@@ -45,23 +46,31 @@ formatPatch () {
     echo "Patch file created."
 
     git checkout ${PATCHED_BRANCH}
-    
+
     git branch -D tmppatch # Delete tmp branch.
-    
-    echo 
+
+    echo
     echo "Patch created: ${PATCH_FILE}"
 }
 
+#
+# Doc
+# Parameters
+#
 determineCurrentBranch () {
     GIT_HOME=$1
-    
+
     cd ${GIT_HOME}
-    
+
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
-    
+
     echo "$CURRENT_BRANCH"
 }
 
+#
+# Doc
+# Parameters
+#
 requireCleanWorkTree () {
     cd $1 # At git home.
 
@@ -100,12 +109,12 @@ applyPatch () {
     PATCH_FILE=$3
 
     cd ${GIT_HOME}
-    
+
     if [ ! -f ${PATCH_FILE} ]
     then
         echo $0", ERROR:"
         echo "Expected patch file not found: $PATCH_FILE."
-        
+
         exit 1
     fi
 
@@ -121,12 +130,12 @@ currentAndDefaultBranchesShouldBeEqual () {
     cd ${GIT_HOME}
 
     CURRENT_BRANCH=$( determineCurrentBranch ${GIT_HOME} )
-    
+
     if [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
-    then 
+    then
         echo $0", ERROR:"
         echo "You are not on an expected branch. Your current branch at $GIT_HOME is $CURRENT_BRANCH, should be $DEFAULT_BRANCH."
-        
+
         exit 1
     fi
 }

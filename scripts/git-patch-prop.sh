@@ -17,8 +17,11 @@
 #
 
 #
-# Git patch-file maker/applyer properties.
+# Git patch-file formatter and applier properties.
 #
+
+#IGNITE_DEFAULT_BRANCH='sprint-2'
+#BATCHES_HOME=${GG_HOME}
 if [ "${IGNITE_DEFAULT_BRANCH}" = "" ]
     then IGNITE_DEFAULT_BRANCH='sprint-2'
 fi
