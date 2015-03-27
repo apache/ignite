@@ -333,27 +333,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
         assertEquals(0, cache2.localSize() - cache2.localSize(NEAR));
-
-
-        assertEquals(0, projectionSize(cache0, NEAR));
-        assertEquals(3, projectionSize(cache0) - projectionSize(cache0, NEAR));
-
-        assertEquals(0, projectionSize(cache1, NEAR));
-        assertEquals(3, projectionSize(cache1) - projectionSize(cache1, NEAR));
-
-        assertEquals(nearEnabled() ? 1 : 0, projectionSize(cache2, NEAR));
-        assertEquals(0, projectionSize(cache2) - projectionSize(cache2, NEAR));
-    }
-
-    private int projectionSize(IgniteCache<String, Integer> cache, CachePeekMode... modes) {
-        int size = 0;
-
-        for (Cache.Entry<String, Integer> e : cache.localEntries(modes)) {
-            if (e.getValue() != null && e.getValue() >= 1 && e.getValue() <= 3)
-                size++;
-        }
-
-        return size;
     }
 
     /**

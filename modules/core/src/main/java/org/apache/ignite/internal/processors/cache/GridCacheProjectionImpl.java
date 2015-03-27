@@ -83,8 +83,10 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param parent Parent projection.
      * @param cctx Cache context.
      * @param flags Flags for new projection
+     * @param subjId Subject ID.
+     * @param keepPortable Keep portable flag.
+     * @param expiryPlc Expiry policy.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     public GridCacheProjectionImpl(
         CacheProjection<K, V> parent,
         GridCacheContext<K, V> cctx,
@@ -140,53 +142,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         return !keepPortable;
     }
 
-    /**
-     * @param k Key.
-     * @param v Value.
-     * @return {@code True} if filter passed.
-     */
-    boolean isAll(K k, V v) {
-        return !(k == null || v == null);
-    }
-
-    /**
-     * @param map Map.
-     * @return {@code True} if filter passed.
-     */
-    Map<? extends K, ? extends V> isAll(Map<? extends K, ? extends V> map) {
-        if (F.isEmpty(map))
-            return Collections.<K, V>emptyMap();
-
-        boolean failed = false;
-
-        // Optimize for passing.
-        for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
-            K k = e.getKey();
-            V v = e.getValue();
-
-            if (!isAll(k, v)) {
-                failed = true;
-
-                break;
-            }
-        }
-
-        if (!failed)
-            return map;
-
-        Map<K, V> cp = new HashMap<>(map.size(), 1.0f);
-
-        for (Map.Entry<? extends K, ? extends V> e : map.entrySet()) {
-            K k = e.getKey();
-            V v = e.getValue();
-
-            if (isAll(k, v))
-                cp.put(k, v);
-        }
-
-        return cp;
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public <K1, V1> GridCache<K1, V1> cache() {
@@ -220,7 +175,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Nullable public UUID subjectId() {
         return subjId;
     }
-
 
     /** {@inheritDoc} */
     @Override public CacheProjection<K, V> flagsOn(@Nullable CacheFlag[] flags) {
@@ -454,10 +408,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         @Nullable CacheEntryPredicate[] filter) {
         A.notNull(key, "key", val, "val");
 
-        // Check k-v predicate first.
-        if (!isAll(key, val))
-            return new GridFinishedFuture<>();
-
         return cache.putAsync(key, val, entry, ttl, filter);
     }
 
@@ -536,10 +486,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         long ttl, @Nullable CacheEntryPredicate[] filter) {
         A.notNull(key, "key", val, "val");
 
-        // Check k-v predicate first.
-        if (!isAll(key, val))
-            return new GridFinishedFuture<>(false);
-
         return cache.putxAsync(key, val, entry, ttl, filter);
     }
 
@@ -604,11 +550,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable CacheEntryPredicate[] filter) {
-        m = isAll(m);
-
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<>();
-
         return cache.putAllAsync(m, filter);
     }
 
@@ -710,18 +651,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-        V val = cache.peek(key, modes);
-
-        return isAll(key, val) ? val : null;
+        return cache.peek(key, modes);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> entry(K key) {
-        V val = peek(key);
-
-        if (!isAll(key, val))
-            return null;
-
         return cache.entry(key);
     }
 
@@ -852,10 +786,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        // Check k-v predicate first.
-        if (!isAll(key, newVal))
-            return new GridFinishedFuture<>(new GridCacheReturn(false));
-
         return cache.replacexAsync(key, oldVal, newVal);
     }
 
@@ -871,8 +801,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val) {
-        return !isAll(key, val) ? new GridFinishedFuture<>(
-            new GridCacheReturn(true, false)) : cache.removexAsync(key, val);
+        return cache.removexAsync(key, val);
     }
 
     /** {@inheritDoc} */
@@ -882,8 +811,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return !isAll(key, val) ? new GridFinishedFuture<>(false) :
-            cache.removeAsync(key, val);
+        return cache.removeAsync(key, val);
     }
 
     /** {@inheritDoc} */

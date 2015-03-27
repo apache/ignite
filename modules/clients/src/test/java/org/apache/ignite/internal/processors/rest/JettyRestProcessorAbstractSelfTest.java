@@ -50,11 +50,6 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("See https://issues.apache.org/jira/browse/IGNITE-572");
-    }
-
-    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
     }

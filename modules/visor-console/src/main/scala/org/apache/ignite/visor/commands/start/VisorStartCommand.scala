@@ -19,13 +19,12 @@ package org.apache.ignite.visor.commands.start
 
 import org.apache.ignite._
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-
-import java.io._
-import java.util.concurrent._
-
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
+
+import java.io._
+import java.util.concurrent._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -310,7 +309,15 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
+                val ue = "java.lang.UnsupportedOperationException: "
+
+                res.filter(!_.ok).groupBy(r => r).foreach {
+                    case (r, _) if r.errMsg.lines.next().startsWith(ue)  =>
+                        errT += (r.host, r.errMsg.lines.next().replace(ue, ""))
+
+                    case (r, _) =>
+                        errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq)
+                }
 
                 errT.render()
             }

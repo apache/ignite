@@ -21,6 +21,7 @@ import net.sf.json.*;
 import net.sf.json.processors.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.rest.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -278,6 +279,11 @@ public class GridJettyRestHandler extends AbstractHandler {
         // Workaround for not needed transformation of string into JSON object.
         if (cmdRes.getResponse() instanceof String)
             cfg.registerJsonValueProcessor(cmdRes.getClass(), "response", SKIP_STR_VAL_PROC);
+
+        // Workaround for not needed transformation of result field string into JSON object at GridClientTaskResultBean.
+        if (cmdRes.getResponse() instanceof GridClientTaskResultBean
+            && ((GridClientTaskResultBean)cmdRes.getResponse()).getResult() instanceof String)
+            cfg.registerJsonValueProcessor(cmdRes.getResponse().getClass(), "result", SKIP_STR_VAL_PROC);
 
         JSON json;
 
