@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractQuerySelfTest.*;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * GG-4368
@@ -58,23 +58,19 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
-        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
-        cc.setEvictNearSynchronized(false);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
+        cc.setNearConfiguration(new NearCacheConfiguration());
+        cc.setEvictionPolicy(new FifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cc.setQueryConfiguration(qcfg);
+        cc.setIndexedTypes(
+            Integer.class, ObjectValue.class
+        );
 
         c.setCacheConfiguration(cc);
 
@@ -95,7 +91,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).cache(null);
+        GridCache<Integer, ObjectValue> cache = ((IgniteKernal)ignite).getCache(null);
 
         int cnt = 10;
 

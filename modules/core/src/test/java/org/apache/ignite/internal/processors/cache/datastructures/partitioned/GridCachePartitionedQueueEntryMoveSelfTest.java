@@ -195,8 +195,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
      * @throws Exception If failed.
      */
     private void startAdditionalNodes(int cnt, String queueName) throws Exception {
-        CacheAffinityFunction aff = jcache(0).getConfiguration(CacheConfiguration.class).getAffinity();
-        CacheAffinityKeyMapper mapper = jcache(0).getConfiguration(CacheConfiguration.class).getAffinityMapper();
+        AffinityFunction aff = jcache(0).getConfiguration(CacheConfiguration.class).getAffinity();
+        AffinityKeyMapper mapper = jcache(0).getConfiguration(CacheConfiguration.class).getAffinityMapper();
 
         assertNotNull(aff);
         assertNotNull(mapper);
@@ -248,9 +248,10 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
      * @param nodes Topology nodes.
      * @return Affinity nodes for partition.
      */
-    private Collection<ClusterNode> nodes(CacheAffinityFunction aff, int part, Collection<ClusterNode> nodes) {
+    private Collection<ClusterNode> nodes(AffinityFunction aff, int part, Collection<ClusterNode> nodes) {
         List<List<ClusterNode>> assignment = aff.assignPartitions(
-            new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, 1, BACKUP_CNT));
+            new GridAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, new AffinityTopologyVersion(1),
+                BACKUP_CNT));
 
         return assignment.get(part);
     }

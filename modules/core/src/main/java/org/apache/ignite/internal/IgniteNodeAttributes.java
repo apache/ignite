@@ -130,7 +130,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
 
     /** Cache interceptors. */
-    public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
+    public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";
 
     /**
      * Enforces singleton.

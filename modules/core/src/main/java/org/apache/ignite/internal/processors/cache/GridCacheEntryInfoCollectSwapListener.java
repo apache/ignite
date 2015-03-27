@@ -18,71 +18,53 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
 /**
  *
  */
-public class GridCacheEntryInfoCollectSwapListener<K, V> implements GridCacheSwapListener<K, V> {
+public class GridCacheEntryInfoCollectSwapListener implements GridCacheSwapListener {
     /** */
-    private final Map<K, GridCacheEntryInfo<K, V>> swappedEntries = new ConcurrentHashMap8<>();
+    private final Map<KeyCacheObject, GridCacheEntryInfo> swappedEntries = new ConcurrentHashMap8<>();
 
     /** */
     private final IgniteLogger log;
 
-    /** */
-    private final GridCacheContext<K, V> ctx;
-
     /**
      * @param log Logger.
-     * @param ctx Context.
      */
-    public GridCacheEntryInfoCollectSwapListener(IgniteLogger log, GridCacheContext<K, V> ctx) {
+    public GridCacheEntryInfoCollectSwapListener(IgniteLogger log) {
         this.log = log;
-        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryUnswapped(int part, K key, byte[] keyBytes, GridCacheSwapEntry<V> swapEntry) {
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Received unswapped event for key: " + key);
+    @Override public void onEntryUnswapped(int part,
+        KeyCacheObject key,
+        GridCacheSwapEntry swapEntry)
+    {
+        if (log.isDebugEnabled())
+            log.debug("Received unswapped event for key: " + key);
 
-            assert key != null;
-            assert swapEntry != null;
+        assert key != null;
+        assert swapEntry != null;
 
-            GridCacheEntryInfo<K, V> info = new GridCacheEntryInfo<>();
+        GridCacheEntryInfo info = new GridCacheEntryInfo();
 
-            info.keyBytes(keyBytes);
-            info.ttl(swapEntry.ttl());
-            info.expireTime(swapEntry.expireTime());
-            info.version(swapEntry.version());
+        info.key(key);
+        info.ttl(swapEntry.ttl());
+        info.expireTime(swapEntry.expireTime());
+        info.version(swapEntry.version());
+        info.value(swapEntry.value());
 
-            if (!swapEntry.valueIsByteArray()) {
-                boolean convertPortable = ctx.portableEnabled() && ctx.offheapTiered();
-
-                if (convertPortable)
-                    info.valueBytes(ctx.convertPortableBytes(swapEntry.valueBytes()));
-                else
-                    info.valueBytes(swapEntry.valueBytes());
-            }
-            else
-                swapEntry.value(swapEntry.value());
-
-            swappedEntries.put(key, info);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to process unswapped entry", e);
-        }
+        swappedEntries.put(key, info);
     }
 
     /**
      * @return Entries, received by listener.
      */
-    public Collection<GridCacheEntryInfo<K, V>> entries() {
+    public Collection<GridCacheEntryInfo> entries() {
         return swappedEntries.values();
     }
 }

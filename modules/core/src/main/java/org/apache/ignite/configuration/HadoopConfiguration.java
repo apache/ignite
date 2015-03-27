@@ -65,7 +65,8 @@ public class HadoopConfiguration {
      */
     public HadoopConfiguration(HadoopConfiguration cfg) {
         // Preserve alphabetic order.
-        extExecution = cfg.isExternalExecution();
+        // TODO: IGNITE-404: Uncomment when fixed.
+        //extExecution = cfg.isExternalExecution();
         finishedJobInfoTtl = cfg.getFinishedJobInfoTtl();
         planner = cfg.getMapReducePlanner();
         maxParallelTasks = cfg.getMaxParallelTasks();
@@ -132,9 +133,10 @@ public class HadoopConfiguration {
      *
      * @return {@code True} if external execution.
      */
-    public boolean isExternalExecution() {
-        return extExecution;
-    }
+    // TODO: IGNITE-404: Uncomment when fixed.
+//    public boolean isExternalExecution() {
+//        return extExecution;
+//    }
 
     /**
      * Sets external task execution flag.
@@ -142,9 +144,10 @@ public class HadoopConfiguration {
      * @param extExecution {@code True} if tasks should be executed in an external process.
      * @see #isExternalExecution()
      */
-    public void setExternalExecution(boolean extExecution) {
-        this.extExecution = extExecution;
-    }
+    // TODO: IGNITE-404: Uncomment when fixed.
+//    public void setExternalExecution(boolean extExecution) {
+//        this.extExecution = extExecution;
+//    }
 
     /**
      * Gets Hadoop map-reduce planner, a component which defines job execution plan based on job

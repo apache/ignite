@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.spi.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.management.*;
 import java.util.*;

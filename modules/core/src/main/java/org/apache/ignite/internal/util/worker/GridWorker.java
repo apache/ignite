@@ -19,11 +19,9 @@ package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -31,8 +29,8 @@ import java.util.concurrent.*;
  * with {@link Executor} implementations. Only for internal use.
  */
 public abstract class GridWorker implements Runnable {
-    /** Grid logger. */
-    protected static volatile IgniteLogger log;
+    /** Ignite logger. */
+    protected final IgniteLogger log;
 
     /** Thread name. */
     private final String name;
@@ -52,12 +50,6 @@ public abstract class GridWorker implements Runnable {
     /** Actual thread runner. */
     private volatile Thread runner;
 
-    /** Parent thread. */
-    private final Thread parent;
-
-    /** Inherited thread locals. */
-    private final Map<GridThreadLocalEx<?>, ?> inherited;
-
     /** */
     private final Object mux = new Object();
 
@@ -75,20 +67,10 @@ public abstract class GridWorker implements Runnable {
         assert name != null;
         assert log != null;
 
-        parent = Thread.currentThread();
-
         this.gridName = gridName;
         this.name = name;
         this.lsnr = lsnr;
-
-        if (GridWorker.log == null) {
-            synchronized (GridWorker.class) {
-                if (GridWorker.log == null)
-                    GridWorker.log = log.getLogger(GridWorker.class);
-            }
-        }
-
-        inherited = GridThreadLocalEx.inherit();
+        this.log = log;
     }
 
     /**
@@ -104,31 +86,11 @@ public abstract class GridWorker implements Runnable {
         this(gridName, name, log, null);
     }
 
-    /**
-     * Enter thread locals.
-     */
-    private void enterThreadLocals() {
-        GridThreadLocal.enter();
-        GridThreadLocalEx.enter(inherited);
-    }
-
-    /**
-     * Leave thread locals.
-     */
-    private void leaveThreadLocals() {
-        GridThreadLocalEx.leave();
-        GridThreadLocal.leave();
-    }
-
     /** {@inheritDoc} */
     @Override public final void run() {
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
-
-        enterThreadLocals();
-
-        IgniteLogger log = GridWorker.log;
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);
@@ -179,8 +141,6 @@ public abstract class GridWorker implements Runnable {
                 else
                     log.debug("Grid runnable finished normally: " + name);
 
-            leaveThreadLocals();
-
             // Need to set runner to null, to make sure that
             // further operations on this runnable won't
             // affect the thread which could have been recycled
@@ -203,13 +163,6 @@ public abstract class GridWorker implements Runnable {
      */
     protected void cleanup() {
         /* No-op. */
-    }
-
-    /**
-     * @return Parent thread.
-     */
-    public Thread parent() {
-        return parent;
     }
 
     /**

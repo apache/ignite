@@ -19,87 +19,66 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Future that is completed at creation time.
  */
-public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externalizable {
+public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final byte ERR = 1;
 
-    /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
+    /** */
+    private static final byte RES = 2;
+
+    /** */
+    private final byte resFlag;
 
     /** Complete value. */
-    private T t;
-
-    /** Error. */
-    private Throwable err;
-
-    /** Context. */
-    protected GridKernalContext ctx;
+    private final Object res;
 
     /** Start time. */
     private final long startTime = U.currentTimeMillis();
 
-    /** Synchronous notification flag. */
-    private volatile boolean syncNotify = SYNC_NOTIFY;
-
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Creates finished future with complete value.
      */
     public GridFinishedFuture() {
-        // No-op.
+        res = null;
+        resFlag = RES;
     }
 
     /**
      * Creates finished future with complete value.
      *
-     * @param ctx Context.
-     */
-    public GridFinishedFuture(GridKernalContext ctx) {
-        assert ctx != null;
-
-        this.ctx = ctx;
-
-        t = null;
-        err = null;
-    }
-
-    /**
-     * Creates finished future with complete value.
-     *
-     * @param ctx Context.
      * @param t Finished value.
      */
-    public GridFinishedFuture(GridKernalContext ctx, T t) {
-        assert ctx != null;
-
-        this.ctx = ctx;
-        this.t = t;
-
-        err = null;
+    public GridFinishedFuture(T t) {
+        res = t;
+        resFlag = RES;
     }
 
     /**
-     * @param ctx Context.
      * @param err Future error.
      */
-    public GridFinishedFuture(GridKernalContext ctx, Throwable err) {
-        assert ctx != null;
+    public GridFinishedFuture(Throwable err) {
+        res = err;
+        resFlag = ERR;
+    }
 
-        this.ctx = ctx;
-        this.err = err;
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
+        return (resFlag == ERR) ? (Throwable)res : null;
+    }
 
-        t = null;
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public T result() {
+        return resFlag == RES ? (T)res : null;
     }
 
     /** {@inheritDoc} */
@@ -110,26 +89,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externali
     /** {@inheritDoc} */
     @Override public long duration() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean concurrentNotify() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void concurrentNotify(boolean concurNotify) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void syncNotify(boolean syncNotify) {
-        this.syncNotify = syncNotify;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncNotify() {
-        return syncNotify;
     }
 
     /** {@inheritDoc} */
@@ -148,11 +107,12 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externali
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public T get() throws IgniteCheckedException {
-        if (err != null)
-            throw U.cast(err);
+        if (resFlag == ERR)
+            throw U.cast((Throwable)res);
 
-        return t;
+        return (T)res;
     }
 
     /** {@inheritDoc} */
@@ -166,55 +126,23 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(final IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
-        if (ctx == null)
-            throw new IllegalStateException("Cannot attach listener to deserialized future (context is null): " + this);
+    @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
+        assert lsnr != null;
 
-        if (lsnr != null) {
-            if (syncNotify)
-                lsnr.apply(this);
-            else
-                ctx.closure().runLocalSafe(new GPR() {
-                    @Override public void run() {
-                        lsnr.apply(GridFinishedFuture.this);
-                    }
-                }, true);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<T>>... lsnr) {
-        // No-op.
+        lsnr.apply(this);
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteInternalFuture<R> chain(final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
-        GridFutureAdapter<R> fut = new GridFutureAdapter<R>(ctx, syncNotify) {
-            @Override public String toString() {
-                return "ChainFuture[orig=" + GridFinishedFuture.this + ", doneCb=" + doneCb + ']';
-            }
-        };
-
-        listenAsync(new GridFutureChainListener<>(ctx, fut, doneCb));
-
-        return fut;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(t);
-        out.writeObject(err);
-        out.writeObject(ctx);
-        out.writeBoolean(syncNotify);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        t = (T)in.readObject();
-        err = (Throwable)in.readObject();
-        ctx = (GridKernalContext)in.readObject();
-        syncNotify = in.readBoolean();
+        try {
+            return new GridFinishedFuture<>(doneCb.apply(this));
+        }
+        catch (GridClosureException e) {
+            return new GridFinishedFuture<>(e.unwrap());
+        }
+        catch (RuntimeException | Error e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /** {@inheritDoc} */

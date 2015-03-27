@@ -313,6 +313,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public int getTotalNodes() {
+        return node.metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClusterLocalNodeMetricsMXBeanImpl.class, this);
     }

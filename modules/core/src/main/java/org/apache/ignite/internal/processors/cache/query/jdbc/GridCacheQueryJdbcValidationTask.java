@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache.query.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -43,8 +44,10 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
             private Ignite ignite;
 
             @Override public Object execute() {
+                GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+
                 for (ClusterNode n : ignite.cluster().nodes())
-                    if (U.hasCache(n, cacheName))
+                    if (discoMgr.cacheNode(n, cacheName))
                         return true;
 
                 return false;

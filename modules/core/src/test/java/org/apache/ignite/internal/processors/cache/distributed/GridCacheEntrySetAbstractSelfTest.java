@@ -72,7 +72,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
                     log.info("Use cache " + idx);
 
-                    IgniteCache<Object, Object> cache = grid(idx).jcache(null);
+                    IgniteCache<Object, Object> cache = grid(idx).cache(null);
 
                     for (int i = 0; i < 100; i++)
                         putAndCheckEntrySet(cache);

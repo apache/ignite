@@ -36,7 +36,6 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -59,6 +58,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(nodeCount());
+
+        grid(0).createNearCache("data", new NearCacheConfiguration());
+
+        grid(0).createNearCache("meta", new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -77,22 +80,27 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("partitioned");
+        igfsCfg.setDataCacheName("data");
+        igfsCfg.setMetaCacheName("meta");
         igfsCfg.setName("igfs");
 
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "shmem");
-            put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
-        }});
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(gridName, "data"), cacheConfiguration(gridName, "meta"));
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
+
+        if (cnt == 0)
+            cfg.setClientMode(true);
 
         cnt++;
 
@@ -110,16 +118,14 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String gridName, String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
+        cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(cnt == 0 ? NEAR_ONLY : PARTITIONED_ONLY);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return cacheCfg;

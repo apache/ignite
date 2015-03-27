@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -93,18 +94,19 @@ public class VisorCache implements Serializable {
 
     /**
      * @param ignite Grid.
-     * @param c Actual cache.
+     * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
-        assert c != null;
-
-        String cacheName = c.name();
 
         GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
+
+        // Cache was not started.
+        if (ca == null || !ca.context().started())
+            return null;
 
         long swapSize;
         long swapKeys;
@@ -126,8 +128,9 @@ public class VisorCache implements Serializable {
 
         CacheMode mode = cfg.getCacheMode();
 
+
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY;
+            && ca.context().affinityNode();
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;
@@ -153,7 +156,7 @@ public class VisorCache implements Serializable {
 
                     int sz = part.size();
 
-                    if (part.primary(-1)) // Pass -1 as topology version in order not to wait for topology version.
+                    if (part.primary(AffinityTopologyVersion.NONE)) // Pass -1 as topology version in order not to wait for topology version.
                         pps.add(new IgnitePair<>(p, sz));
                     else
                         bps.add(new IgnitePair<>(p, sz));

@@ -50,10 +50,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private static final String IGFS_SECONDARY = "igfs-secondary";
 
     /** Secondary file system REST endpoint configuration map. */
-    private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
-        put("type", "tcp");
-        put("port", "11500");
-    }};
+    private static final IgfsIpcEndpointConfiguration SECONDARY_REST_CFG;
 
     /** File working in PRIMARY mode. */
     public static final IgfsPath FILE = new IgfsPath("/file");
@@ -71,7 +68,14 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private static GridCacheAdapter<IgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheIgfsPerBlockLruEvictionPolicy evictPlc;
+    private static IgfsPerBlockLruEvictionPolicy evictPlc;
+
+    static {
+        SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
+
+        SECONDARY_REST_CFG.setType(IgfsIpcEndpointType.TCP);
+        SECONDARY_REST_CFG.setPort(11500);
+    }
 
     /**
      * Start a grid with the primary file system.
@@ -100,24 +104,22 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheIgfsPerBlockLruEvictionPolicy();
+        evictPlc = new IgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -162,20 +164,18 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();

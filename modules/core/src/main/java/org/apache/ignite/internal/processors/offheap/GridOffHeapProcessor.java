@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -130,7 +130,8 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return {@code true} If offheap space contains value for the given key.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean contains(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws IgniteCheckedException {
+    public boolean contains(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+        throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m != null && m.contains(part, U.hash(key), keyBytes(key, keyBytes));
@@ -146,7 +147,8 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] get(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws IgniteCheckedException {
+    @Nullable public byte[] get(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+        throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? null : m.get(part, U.hash(key), keyBytes(key, keyBytes));
@@ -180,7 +182,8 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param keyBytes Key bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void enableEviction(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws IgniteCheckedException {
+    public void enableEviction(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+        throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         if (m != null)

@@ -34,13 +34,13 @@ import java.util.concurrent.*;
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
  * numbers on the cluster. Continuations
  * functionality is exposed via {@link ComputeJobContext#holdcc()} and
- * {@link ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * {@link ComputeJobContext#callcc()} method calls in {@link ComputeFibonacciContinuationExample.FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-compute.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
+ * with {@code examples/config/example-ignite.xml} configuration.
  */
 public final class ComputeFibonacciContinuationExample {
     /**
@@ -50,7 +50,7 @@ public final class ComputeFibonacciContinuationExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println("Compute Fibonacci continuation example started.");
 
@@ -138,9 +138,9 @@ public final class ComputeFibonacciContinuationExample {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 1);
 
                     ComputeTaskFuture<BigInteger> futVal = compute.future();
-                    
+
                     fut1 = locMap.putIfAbsent(n - 1, futVal);
-                    
+
                     if (fut1 == null)
                         fut1 = futVal;
                 }
@@ -150,9 +150,9 @@ public final class ComputeFibonacciContinuationExample {
                     compute.apply(new FibonacciClosure(nodeFilter), n - 2);
 
                     ComputeTaskFuture<BigInteger> futVal = compute.<BigInteger>future();
-                    
+
                     fut2 = locMap.putIfAbsent(n - 2, futVal);
-                    
+
                     if (fut2 == null)
                         fut2 = futVal;
                 }
@@ -178,8 +178,8 @@ public final class ComputeFibonacciContinuationExample {
                     jobCtx.holdcc();
 
                     // Attach the same listener to both futures.
-                    fut1.listenAsync(lsnr);
-                    fut2.listenAsync(lsnr);
+                    fut1.listen(lsnr);
+                    fut2.listen(lsnr);
 
                     return null;
                 }

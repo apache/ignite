@@ -28,12 +28,10 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -64,24 +62,13 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+        if (nearEnabled)
+            cc.setNearConfiguration(new NearCacheConfiguration());
+
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheStore store = new CacheStoreAdapter<Object, Object>() {
-            @Override public Object load(Object key) {
-                throw new IgniteException("Failed to get key from store: " + key);
-            }
-
-            @Override public void write(Cache.Entry<?, ?> entry) {
-                // No-op.
-            }
-
-            @Override public void delete(Object key) {
-                // No-op.
-            }
-        };
-
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -123,7 +110,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).jcache(null).get(nearKey());
+                    grid(0).cache(null).get(nearKey());
 
                     return null;
                 }
@@ -146,5 +133,23 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         }
 
         return key;
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        @Override public Object load(Object key) {
+            throw new IgniteException("Failed to get key from store: " + key);
+        }
+
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            // No-op.
+        }
+
+        @Override public void delete(Object key) {
+            // No-op.
+        }
     }
 }

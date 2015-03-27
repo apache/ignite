@@ -33,17 +33,20 @@ import java.util
  * (a.k.a. nested) tasks or closures with continuations. This example also shows
  * usage of `continuations`, which allows us to wait for results from remote nodes
  * without blocking threads.
- * <p>
+ * <p/>
  * Note that because this example utilizes local node storage via `NodeLocal`,
  * it gets faster if you execute it multiple times, as the more you execute it,
  * the more values it will be cached on remote nodes.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
+ * <p/>
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-compute.xml") {
+        scalar("examples/config/example-ignite.xml") {
             // Calculate fibonacci for N.
             val N: Long = 100
 
@@ -122,9 +125,9 @@ class FibonacciClosure (
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 
                 val futVal = comp.future[BigInteger]()
-                
+
                 fut1 = store.putIfAbsent(n - 1, futVal)
-                
+
                 if (fut1 == null)
                     fut1 = futVal
             }
@@ -134,9 +137,9 @@ class FibonacciClosure (
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
 
                 val futVal = comp.future[BigInteger]()
-                
+
                 fut2 = store.putIfAbsent(n - 2, futVal)
-                
+
                 if (fut2 == null)
                     fut2 = futVal
             }
@@ -152,8 +155,8 @@ class FibonacciClosure (
                 }
 
                 // Attach the same listener to both futures.
-                fut1.listenAsync(lsnr)
-                fut2.listenAsync(lsnr)
+                fut1.listen(lsnr)
+                fut2.listen(lsnr)
 
                 // Hold (suspend) job execution.
                 // It will be resumed in listener above via 'callcc()' call

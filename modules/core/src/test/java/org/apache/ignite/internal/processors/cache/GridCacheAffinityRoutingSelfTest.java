@@ -18,14 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
@@ -33,8 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -110,9 +104,9 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).jcache(null).put(i, i);
+            grid(0).cache(null).put(i, i);
 
-            grid(0).jcache(NON_DFLT_CACHE_NAME).put(i, i);
+            grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
         }
     }
 
@@ -179,7 +173,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     private static class AffinityTestKey {
         /** Affinity key. */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private final int affKey;
 
         /**

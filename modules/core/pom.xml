@@ -20,20 +20,18 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-core</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -126,6 +124,40 @@
             <classifier>jdk15</classifier>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>ignite-shmem</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -155,12 +187,60 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.2</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.3.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.ignite</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <mainClass>org.apache.ignite.tools.classgen.ClassesGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/target/classes</argument>
+                                <argument>
+                                    <![CDATA[
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+                                    ]]>
+                                </argument>
+                                <argument>org.apache.ignite:org.jdk8.backport</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -180,13 +260,6 @@
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
                         <inherited>false</inherited>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${ignite.version}</version>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
                                 <id>properties-augmentation</id>
@@ -196,52 +269,153 @@
                                 <phase>process-resources</phase>
                                 <configuration>
                                     <target>
-                                        <exec executable="${git.exec}" outputproperty="ignite.build"
-                                              failonerror="yes">
-                                            <arg line="log -1 --format=%ct"/>
+                                        <exec executable="${git.exec}" outputproperty="ignite.build" failonerror="yes">
+                                            <arg line="log -1 --format=%ct" />
                                         </exec>
 
-                                        <exec executable="${git.exec}" outputproperty="ignite.revision"
-                                              failonerror="yes">
-                                            <arg line="log -1 --format=%H"/>
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision" failonerror="yes">
+                                            <arg line="log -1 --format=%H" />
                                         </exec>
 
                                         <tstamp>
-                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en"/>
+                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en" />
                                         </tstamp>
 
-                                        <property name="props.file"
-                                                  value="../../modules/core/target/classes/ignite.properties"/>
+                                        <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.version=.*"/>
-                                            <substitution expression="ignite.version=${ignite.version}"/>
+                                            <regexp pattern="ignite.version=.*" />
+                                            <substitution expression="ignite.version=${project.version}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.build=.*"/>
-                                            <substitution expression="ignite.build=${ignite.build}"/>
+                                            <regexp pattern="ignite.build=.*" />
+                                            <substitution expression="ignite.build=${ignite.build}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.revision=.*"/>
-                                            <substitution expression="ignite.revision=${ignite.revision}"/>
+                                            <regexp pattern="ignite.revision=.*" />
+                                            <substitution expression="ignite.revision=${ignite.revision}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.rel.date=.*"/>
-                                            <substitution expression="ignite.rel.date=${ignite.rel.date}"/>
+                                            <regexp pattern="ignite.rel.date=.*" />
+                                            <substitution expression="ignite.rel.date=${ignite.rel.date}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.update.status.params=.*"/>
-                                            <substitution
-                                                    expression="ignite.update.status.params=ver=${ignite.version}"/>
+                                            <regexp pattern="ignite.update.status.params=.*" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
                                         </replaceregexp>
                                     </target>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>jcache-tck</id>
+
+            <properties>
+                <domain-lib-dir>${project.build.directory}/domainlib</domain-lib-dir>
+                <domain-jar>domain.jar</domain-jar>
+
+                <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>javax.cache</groupId>
+                    <artifactId>cache-tests</artifactId>
+                    <version>${javax.cache.tck.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>javax.cache</groupId>
+                    <artifactId>cache-tests</artifactId>
+                    <classifier>tests</classifier>
+                    <version>${javax.cache.tck.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-library</artifactId>
+                    <version>1.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.8</version>
+                        <executions>
+                            <!--Required because JUnit will not detect tests simply included in a dep-->
+                            <execution>
+                                <id>copy-cache-tests</id>
+                                <goals>
+                                    <goal>unpack-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                                    <includeArtifactIds>cache-tests</includeArtifactIds>
+                                    <includeScope>test</includeScope>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-domain</id>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>javax.cache</groupId>
+                                            <artifactId>app-domain</artifactId>
+                                            <version>${javax.cache.tck.version}</version>
+                                            <outputDirectory>${domain-lib-dir}</outputDirectory>
+                                            <destFileName>${domain-jar}</destFileName>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <domainJar>${domain-lib-dir}/${domain-jar}</domainJar>
+                                <javax.management.builder.initial>org.apache.ignite.internal.tck.TCKMBeanServerBuilder</javax.management.builder.initial>
+                                <org.jsr107.tck.management.agentId>IgniteMBeanServer</org.jsr107.tck.management.agentId>
+                                <javax.cache.CacheManager>org.apache.ignite.cache.CacheManager</javax.cache.CacheManager>
+                                <javax.cache.Cache>org.apache.ignite.IgniteCache</javax.cache.Cache>
+                                <javax.cache.Cache.Entry>org.apache.ignite.internal.processors.cache.CacheEntryImpl</javax.cache.Cache.Entry>
+                                <javax.cache.annotation.CacheInvocationContext>javax.cache.annotation.impl.cdi.CdiCacheKeyInvocationContextImpl</javax.cache.annotation.CacheInvocationContext>
+                                <IGNITE_QUIET>false</IGNITE_QUIET>
+                            </systemPropertyVariables>
+                            <excludes>
+                                <exclude>**/org/apache/ignite/**/*Test.java</exclude>
+                                <exclude>**/annotation/*Test.java</exclude>
+                                <exclude>**/ClientServerTest.java</exclude>
+                            </excludes>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

@@ -100,7 +100,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
             jobCtx.holdcc();
 
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             return true;
         }
@@ -108,7 +108,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
-                IgniteCache cache = ignite.jcache(cacheName);
+                IgniteCache cache = ignite.cache(cacheName);
 
                 if (futs[0] == null && callAsync(new VisorCacheSizeCallable(cache), 0))
                     return null;
@@ -137,6 +137,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
     @GridInternal
     private static class VisorCacheSizeCallable implements IgniteCallable<Integer> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteCache cache;
 
         /**
@@ -157,6 +160,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
      */
     @GridInternal
     private static class VisorCacheClearCallable implements IgniteCallable<Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteCache cache;
 

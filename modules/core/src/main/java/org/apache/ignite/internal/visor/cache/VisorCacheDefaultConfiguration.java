@@ -47,7 +47,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
 
         cfg.ttl = ccfg.getDefaultTimeToLive();
         cfg.txLockTimeout = ccfg.getDefaultLockTimeout();
-        cfg.qryTimeout = ccfg.getDefaultQueryTimeout();
 
         return cfg;
     }

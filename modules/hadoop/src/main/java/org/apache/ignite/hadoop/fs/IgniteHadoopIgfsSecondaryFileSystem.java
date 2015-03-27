@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
  * Adapter to use any Hadoop file system {@link FileSystem} as  {@link IgfsSecondaryFileSystem}.
  */
 public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, AutoCloseable {
-
     /** Hadoop file system. */
     private final FileSystem fileSys;
 
@@ -54,7 +53,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @throws IgniteCheckedException In case of error.
      */
     public IgniteHadoopIgfsSecondaryFileSystem(String uri) throws IgniteCheckedException {
-        this(uri, null);
+        this(uri, null, null);
     }
 
     /**
@@ -64,9 +63,31 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      * @param cfgPath Additional path to Hadoop configuration.
      * @throws IgniteCheckedException In case of error.
      */
-    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath) throws IgniteCheckedException {
+    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath)
+        throws IgniteCheckedException {
+        this(uri, cfgPath, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param uri URI of file system.
+     * @param cfgPath Additional path to Hadoop configuration.
+     * @param userName User name.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
+        @Nullable String userName)
+            throws IgniteCheckedException {
+        // Treat empty uri and userName arguments as nulls to improve configuration usability:
+        if (F.isEmpty(uri))
+            uri = null;
+
+        if (F.isEmpty(userName))
+            userName = null;
+
         try {
-            SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(uri, cfgPath);
+            SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(uri, cfgPath, userName);
 
             fileSys = secProvider.createFileSystem();
 
@@ -75,7 +96,12 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             if (!uri.endsWith("/"))
                 uri += "/";
 
-            props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);
+            if (cfgPath != null)
+                props.put(SECONDARY_FS_CONFIG_PATH, cfgPath);
+
+            if (userName != null)
+                props.put(SECONDARY_FS_USER_NAME, userName);
+
             props.put(SECONDARY_FS_URI, uri);
         }
         catch (IOException e) {
@@ -119,7 +145,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      */
     public static IgfsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
-            return new IgfsFileNotFoundException(e);
+            return new IgfsPathNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
             return new IgfsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
@@ -226,7 +252,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgfsPath> res = new ArrayList<>(statuses.length);
 
@@ -236,7 +262,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -249,7 +275,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
-                throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+                throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
 
             Collection<IgfsFile> res = new ArrayList<>(statuses.length);
 
@@ -264,7 +290,7 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             return res;
         }
         catch (FileNotFoundException ignored) {
-            throw new IgfsFileNotFoundException("Failed to list files (path not found): " + path);
+            throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to list statuses due to secondary file system exception: " + path);
@@ -338,7 +364,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
                 }
 
                 @Override public int blockSize() {
-                    return (int)status.getBlockSize();
+                    // By convention directory has blockSize == 0, while file has blockSize > 0:
+                    return isDirectory() ? 0 : (int)status.getBlockSize();
                 }
 
                 @Override public long groupBlockSize() {
@@ -377,7 +404,6 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
                     return props;
                 }
             };
-
         }
         catch (FileNotFoundException ignore) {
             return null;
@@ -412,5 +438,13 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Gets the underlying {@link FileSystem}.
+     * @return the underlying Hadoop {@link FileSystem}.
+     */
+    public FileSystem fileSystem() {
+        return fileSys;
     }
 }

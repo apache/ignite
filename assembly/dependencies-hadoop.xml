@@ -42,7 +42,7 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>readme.txt</include>
+                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
@@ -77,7 +77,7 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>readme.txt</include>
+                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
@@ -112,16 +112,17 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>readme.txt</include>
+                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
-                        <includes>
-                            <include>*asm*.jar</include>
-                        </includes>
+                        <excludes>
+                            <exclude>hadoop*.jar</exclude>
+                            <exclude>log4j*.jar</exclude>
+                        </excludes>
                     </fileSet>
                     <fileSet>
                         <directory>target</directory>

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
@@ -60,13 +61,13 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -109,10 +110,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadBatchSize(preloadBatchSize);
+        cacheCfg.setRebalanceBatchSize(preloadBatchSize);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(preloadMode);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cacheCfg.setRebalanceMode(preloadMode);
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
 
         return cacheCfg;
@@ -145,7 +146,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if synchronous preloading.
      */
     private boolean isSync(GridCache<?, ?> c) {
-        return c.configuration().getPreloadMode() == SYNC;
+        return c.configuration().getRebalanceMode() == SYNC;
     }
 
     /**
@@ -214,7 +215,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -225,7 +226,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.jcache(null);
+                IgniteCache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -269,14 +270,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 futs.add(waitForLocalEvent(last.events(), new P1<Event>() {
                     @Override public boolean apply(Event e) {
-                        CachePreloadingEvent evt = (CachePreloadingEvent)e;
+                        CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
 
                         ClusterNode node = evt.discoveryNode();
 
-                        return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
+                        return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
                             evt.discoveryEventType() == EVT_NODE_LEFT;
                     }
-                }, EVT_CACHE_PRELOAD_STOPPED));
+                }, EVT_CACHE_REBALANCE_STOPPED));
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
@@ -300,19 +301,19 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.jcache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
-            CacheAffinity<Integer> aff = affinity(lastCache);
+            Affinity<Integer> aff = affinity(lastCache);
 
             info("Finished waiting for all exchange futures...");
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
-                    for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
+                    for (GridDhtLocalPartition p : top.localPartitions()) {
                         Collection<ClusterNode> moving = top.moving(p.id());
 
                         assert moving.isEmpty() : "Nodes with partition in moving state [part=" + p +
@@ -341,7 +342,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private void checkActiveState(Iterable<Ignite> grids) {
         // Check that nodes don't have non-active information about other nodes.
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.jcache(null);
+            IgniteCache<Integer, String> c = g.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 
@@ -452,7 +453,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                         return true;
                     }
-                }, EVTS_CACHE_PRELOAD);
+                }, EVTS_CACHE_REBALANCE);
 
             list.add(g);
         }
@@ -484,7 +485,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -495,7 +496,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.jcache(null);
+                IgniteCache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -536,14 +537,14 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<Event>() {
                             @Override public boolean apply(Event e) {
-                                CachePreloadingEvent evt = (CachePreloadingEvent)e;
+                                CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
 
                                 ClusterNode node = evt.discoveryNode();
 
-                                return evt.type() == EVT_CACHE_PRELOAD_STOPPED && node.id().equals(nodeId) &&
+                                return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
                                     evt.discoveryEventType() == EVT_NODE_LEFT;
                             }
-                        }, EVT_CACHE_PRELOAD_STOPPED));
+                        }, EVT_CACHE_REBALANCE_STOPPED));
 
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
@@ -558,7 +559,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 // Check all left nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.jcache(null);
+                    IgniteCache<Integer, String> c = gg.cache(null);
 
                     checkKeys(c, keyCnt, ignites);
                 }
@@ -566,17 +567,17 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.jcache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
-            CacheAffinity<Integer> aff = affinity(lastCache);
+            Affinity<Integer> aff = affinity(lastCache);
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(last.cluster().localNode())) {
-                    GridDhtPartitionTopology<Integer, String> top = dht.topology();
+                    GridDhtPartitionTopology top = dht.topology();
 
-                    for (GridDhtLocalPartition<Integer, String> p : top.localPartitions()) {
+                    for (GridDhtLocalPartition p : top.localPartitions()) {
                         Collection<ClusterNode> moving = top.moving(p.id());
 
                         assert moving.isEmpty() : "Nodes with partition in moving state [part=" + p +
@@ -612,13 +613,13 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids.
      */
     private void checkKeys(IgniteCache<Integer, String> cache, int cnt, Iterable<Ignite> grids) {
-        CacheAffinity<Integer> aff = affinity(cache);
+        Affinity<Integer> aff = affinity(cache);
 
         Ignite ignite = cache.unwrap(Ignite.class);
 
         ClusterNode loc = ignite.cluster().localNode();
 
-        boolean sync = cache.getConfiguration(CacheConfiguration.class).getPreloadMode() == SYNC;
+        boolean sync = cache.getConfiguration(CacheConfiguration.class).getRebalanceMode() == SYNC;
 
         for (int i = 0; i < cnt; i++) {
             Collection<ClusterNode> nodes = ignite.cluster().nodes();
@@ -653,7 +654,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         Map<String, String> map = new HashMap<>();
 
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.jcache(null);
+            IgniteCache<Integer, String> c = g.cache(null);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 

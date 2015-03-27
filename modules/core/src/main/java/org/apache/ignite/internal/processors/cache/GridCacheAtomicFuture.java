@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.*;
+
 import java.util.*;
 
 /**
  * Update future for atomic cache.
  */
-public interface GridCacheAtomicFuture<K, R> extends GridCacheFuture<R> {
+public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return {@code True} if partition exchange should wait for this future to complete.
      */
@@ -31,12 +33,12 @@ public interface GridCacheAtomicFuture<K, R> extends GridCacheFuture<R> {
     /**
      * @return Future topology version.
      */
-    public long topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * @return Future keys.
      */
-    public Collection<? extends K> keys();
+    public Collection<?> keys();
 
     /**
      * Checks if timeout occurred.

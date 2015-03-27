@@ -54,6 +54,9 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setIndexedTypes(
+            Byte.class, Byte.class
+        );
 
         cfg.setCacheConfiguration(cache);
 
@@ -119,7 +122,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testSelectString() throws Exception {
+    public void testSelectString() throws Exception {
         ResultSet rs = stmt.executeQuery("select 'str'");
 
         int cnt = 0;

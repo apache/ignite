@@ -51,7 +51,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         if (gridName.endsWith("1"))
-            cfg.setCacheConfiguration(); // Empty cache configuration.
+            cfg.setClientMode(true);
         else {
             assert gridName.endsWith("2");
 
@@ -110,7 +110,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     private Collection<CacheConfiguration> caches(Ignite g) {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
-                return !CU.UTILITY_CACHE_NAME.equals(c.getName()) && !CU.ATOMICS_CACHE_NAME.equals(c.getName());
+                return !CU.MARSH_CACHE_NAME.equals(c.getName()) && !CU.UTILITY_CACHE_NAME.equals(c.getName()) &&
+                    !CU.ATOMICS_CACHE_NAME.equals(c.getName());
             }
         });
     }

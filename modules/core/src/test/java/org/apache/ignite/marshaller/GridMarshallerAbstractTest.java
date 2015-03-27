@@ -27,14 +27,10 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.p2p.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -101,56 +97,28 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
-        namedCache.setQueryIndexEnabled(true);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-        cfg.setStreamerConfiguration(streamerConfiguration());
+        cfg.setMarshaller(marshaller());
         cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
         return cfg;
     }
 
     /**
-     * @return Streamer configuration.
+     * @return Marshaller.
      */
-    private static StreamerConfiguration streamerConfiguration() {
-        Collection<StreamerStage> stages = F.<StreamerStage>asList(new StreamerStage() {
-            @Override
-            public String name() {
-                return "name";
-            }
-
-            @Nullable
-            @Override
-            public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
-                return null;
-            }
-        });
-
-        StreamerConfiguration cfg = new StreamerConfiguration();
-
-        cfg.setAtLeastOnce(true);
-        cfg.setWindows(F.asList((StreamerWindow) new StreamerUnboundedWindow()));
-        cfg.setStages(stages);
-
-        return cfg;
-    }
-
-    /**
-     * @return Grid marshaller.
-     */
-    protected abstract Marshaller createMarshaller();
+    protected abstract Marshaller marshaller();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        marsh = createMarshaller();
+        marsh = grid().configuration().getMarshaller();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().jcache(null);
+        IgniteCache<String, String> cache = grid().cache(null);
 
         cache.put("key", "val");
 
@@ -180,7 +148,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testNamedCache() throws Exception {
-        IgniteCache<String, String> cache = grid().jcache(CACHE_NAME);
+        IgniteCache<String, String> cache = grid().cache(CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -699,7 +667,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().jcache(null).put(1, 1);
+            grid().cache(null).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 
@@ -796,32 +764,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
             outBean.checkNullResources();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStreamer() throws Exception {
-        IgniteStreamer streamer = grid().streamer(null);
-
-        streamer.addEvent("test");
-
-        GridMarshallerTestBean inBean = newTestBean(streamer);
-
-        byte[] buf = marshal(inBean);
-
-        GridMarshallerTestBean outBean = unmarshal(buf);
-
-        assert inBean.getObjectField() != null;
-        assert outBean.getObjectField() != null;
-
-        assert inBean.getObjectField().getClass().equals(IgniteStreamerImpl.class);
-        assert outBean.getObjectField().getClass().equals(IgniteStreamerImpl.class);
-
-        assert inBean != outBean;
-        assert inBean.equals(outBean);
-
-        outBean.checkNullResources();
     }
 
     /**

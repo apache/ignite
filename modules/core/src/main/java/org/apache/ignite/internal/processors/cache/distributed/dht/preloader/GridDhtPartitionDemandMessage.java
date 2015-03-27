@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -31,7 +33,7 @@ import java.util.*;
 /**
  * Partition demand request.
  */
-public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> {
+public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,13 +59,13 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     private int workerId = -1;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param updateSeq Update sequence for this node.
      * @param topVer Topology version.
      */
-    GridDhtPartitionDemandMessage(long updateSeq, long topVer, int cacheId) {
+    GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int cacheId) {
         assert updateSeq > 0;
 
         this.cacheId = cacheId;
@@ -74,7 +76,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @param cp Message to copy from.
      */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage<K, V> cp, Collection<Integer> parts) {
+    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts) {
         cacheId = cp.cacheId;
         updateSeq = cp.updateSeq;
         topic = cp.topic;
@@ -168,13 +170,13 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Topology version for which demand message is sent.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (topic != null)
@@ -182,7 +184,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (topicBytes != null)
@@ -217,7 +219,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -273,7 +275,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 reader.incrementState();
 
             case 5:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -494,10 +494,10 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                 ClassLoader ldr = classLoader();
 
                 ctx.cache().onUndeployed(ldr);
-                ctx.stream().onUndeployed(ldr);
 
-                // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
-                OptimizedMarshaller.onUndeploy(ldr);
+                // Clear optimized marshaller's cache.
+                if (ctx.config().getMarshaller() instanceof OptimizedMarshaller)
+                    ((OptimizedMarshaller)ctx.config().getMarshaller()).onUndeploy(ldr);
 
                 clearSerializationCaches();
 

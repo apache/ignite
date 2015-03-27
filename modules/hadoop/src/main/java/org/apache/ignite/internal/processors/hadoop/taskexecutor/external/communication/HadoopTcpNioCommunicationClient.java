@@ -23,8 +23,6 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Grid client for NIO server.
  */
@@ -73,14 +71,8 @@ public class HadoopTcpNioCommunicationClient extends HadoopAbstractCommunication
 
         GridNioFuture<?> fut = ses.send(msg);
 
-        if (fut.isDone()) {
-            try {
-                fut.get();
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
-            }
-        }
+        if (fut.isDone())
+            fut.get();
     }
 
     /** {@inheritDoc} */

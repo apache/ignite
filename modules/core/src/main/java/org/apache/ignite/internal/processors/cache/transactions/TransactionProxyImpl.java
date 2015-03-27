@@ -39,7 +39,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private IgniteInternalTx<K, V> tx;
+    private IgniteInternalTx tx;
 
     /** Gateway. */
     @GridToStringExclude
@@ -63,7 +63,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * @param cctx Shared context.
      * @param async Async flag.
      */
-    public TransactionProxyImpl(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
+    public TransactionProxyImpl(IgniteInternalTx tx, GridCacheSharedContext<K, V> cctx, boolean async) {
         assert tx != null;
         assert cctx != null;
 
@@ -75,7 +75,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     /**
      * @return Transaction.
      */
-    public IgniteInternalTx<K, V> tx() {
+    public IgniteInternalTx tx() {
         return tx;
     }
 
@@ -295,24 +295,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * @param res Result to convert to finished future.
      */
     private void save(Object res) {
-        asyncRes = new IgniteFinishedFutureImplEx<>(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMeta(String name, V1 val) {
-        return tx.addMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 meta(String name) {
-        return tx.<V1>meta(name);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> V1 removeMeta(String name) {
-        return tx.<V1>removeMeta(name);
+        asyncRes = new IgniteFinishedFutureImpl<>(res);
     }
 
     /**
@@ -335,7 +318,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (IgniteInternalTx<K, V>)in.readObject();
+        tx = (IgniteInternalTx)in.readObject();
     }
 
     /** {@inheritDoc} */

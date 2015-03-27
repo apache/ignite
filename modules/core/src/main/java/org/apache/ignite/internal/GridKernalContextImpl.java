@@ -33,12 +33,12 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
-import org.apache.ignite.internal.processors.cache.serialization.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -47,8 +47,6 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.internal.processors.portable.os.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -57,10 +55,9 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.spring.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -202,7 +199,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridDataLoaderProcessor dataLdrProc;
+    private DataStreamProcessor dataLdrProc;
 
     /** */
     @GridToStringInclude
@@ -221,10 +218,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridAffinityProcessor affProc;
 
     /** */
-    @GridToStringInclude
-    private GridStreamProcessor streamProc;
-
-    /** */
     @GridToStringExclude
     private GridContinuousProcessor contProc;
 
@@ -238,11 +231,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridPortableProcessor portableProc;
+    private IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
     @GridToStringExclude
-    private IgniteSpringProcessor spring;
+    private IgniteSpringHelper spring;
 
     /** */
     @GridToStringExclude
@@ -291,6 +284,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private ExecutorService utilityCachePool;
 
     /** */
+    private ExecutorService marshCachePool;
+
+    /** */
     private IgniteConfiguration cfg;
 
     /** */
@@ -305,8 +301,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
-    /** Exception registry. */
-    private IgniteExceptionRegistry registry;
+    /** Marshaller context. */
+    private MarshallerContextImpl marshCtx;
 
     /**
      * No-arg constructor is required by externalization.
@@ -318,17 +314,17 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * Creates new kernal context.
      *
-     *  @param log Logger.
-     *  @param grid Grid instance managed by kernal.
-     *  @param cfg Grid configuration.
-     *  @param gw Kernal gateway.
-     *  @param utilityCachePool Utility cache pool.
-     *  @param execSvc Public executor service.
-     *  @param sysExecSvc System executor service.
-     *  @param p2pExecSvc P2P executor service.
-     *  @param mgmtExecSvc Management executor service.
-     *  @param igfsExecSvc IGFS executor service.
-     *  @param restExecSvc REST executor service.
+     * @param log Logger.
+     * @param grid Grid instance managed by kernal.
+     * @param cfg Grid configuration.
+     * @param gw Kernal gateway.
+     * @param utilityCachePool Utility cache pool.
+     * @param execSvc Public executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param igfsExecSvc IGFS executor service.
+     * @param restExecSvc REST executor service.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -336,8 +332,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
-        IgniteExceptionRegistry registry,
         ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -351,14 +347,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.registry = registry;
         this.utilityCachePool = utilityCachePool;
+        this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
+
+        marshCtx = new MarshallerContextImpl();
 
         try {
             spring = SPRING.create(false);
@@ -384,6 +382,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param comp Manager to add.
      */
     public void add(GridComponent comp) {
+        add(comp, true);
+    }
+
+    /**
+     * @param comp Manager to add.
+     */
+    public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
 
         /*
@@ -449,20 +454,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             affProc = (GridAffinityProcessor)comp;
         else if (comp instanceof GridRestProcessor)
             restProc = (GridRestProcessor)comp;
-        else if (comp instanceof GridDataLoaderProcessor)
-            dataLdrProc = (GridDataLoaderProcessor)comp;
+        else if (comp instanceof DataStreamProcessor)
+            dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
-        else if (comp instanceof GridStreamProcessor)
-            streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
             hadoopProc = (HadoopProcessorAdapter)comp;
-        else if (comp instanceof GridPortableProcessor)
-            portableProc = (GridPortableProcessor)comp;
+        else if (comp instanceof IgniteCacheObjectProcessor)
+            cacheObjProc = (IgniteCacheObjectProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
@@ -474,7 +477,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
-        comps.add(comp);
+        if (addToList)
+            comps.add(comp);
     }
 
     /**
@@ -587,11 +591,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamProcessor stream() {
-        return streamProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDeploymentManager deploy() {
         return depMgr;
     }
@@ -663,8 +662,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridDataLoaderProcessor<K, V> dataLoad() {
-        return (GridDataLoaderProcessor<K, V>)dataLdrProc;
+    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+        return (DataStreamProcessor<K, V>)dataLdrProc;
     }
 
     /** {@inheritDoc} */
@@ -693,8 +692,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridPortableProcessor portable() {
-        return portableProc;
+    @Override public ExecutorService marshallerCachePool() {
+        return marshCachePool;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCacheObjectProcessor cacheObjects() {
+        return cacheObjProc;
     }
 
     /** {@inheritDoc} */
@@ -785,10 +789,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
-        else if (cls.equals(GridPortableProcessor.class))
-            return (T)new GridOsPortableProcessor(this);
-        else if (cls.equals(IgniteCacheSerializationManager.class))
-            return (T)new IgniteCacheOsSerializationManager();
+        else if (cls.equals(IgniteCacheObjectProcessor.class))
+            return (T)new IgniteCacheObjectProcessorImpl(this);
 
         throw new IgniteException("Unsupported component type: " + cls);
     }
@@ -860,7 +862,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public IgniteExceptionRegistry exceptionRegistry() {
-        return registry;
+        return IgniteExceptionRegistry.get();
     }
 
     /** {@inheritDoc} */
@@ -886,6 +888,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return cluster;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MarshallerContextImpl marshallerContext() {
+        return marshCtx;
     }
 
     /** {@inheritDoc} */

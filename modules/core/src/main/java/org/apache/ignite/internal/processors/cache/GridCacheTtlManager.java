@@ -32,9 +32,9 @@ import java.util.*;
  * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
-public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
-    private final GridConcurrentSkipListSet<EntryWrapper<K, V>> pendingEntries = new GridConcurrentSkipListSet<>();
+    private final GridConcurrentSkipListSet<EntryWrapper> pendingEntries = new GridConcurrentSkipListSet<>();
 
     /** Cleanup worker thread. */
     private CleanupWorker cleanupWorker;
@@ -67,8 +67,8 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      * @param entry Entry to add.
      */
-    public void addTrackedEntry(GridCacheMapEntry<K, V> entry) {
-        EntryWrapper<K, V> wrapper = new EntryWrapper<>(entry);
+    public void addTrackedEntry(GridCacheMapEntry entry) {
+        EntryWrapper wrapper = new EntryWrapper(entry);
 
         pendingEntries.add(wrapper);
 
@@ -83,10 +83,10 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param entry Entry to remove.
      */
-    public void removeTrackedEntry(GridCacheMapEntry<K, V> entry) {
+    public void removeTrackedEntry(GridCacheMapEntry entry) {
         // Remove must be called while holding lock on entry before updating expire time.
         // No need to wake up waiting thread in this case.
-        pendingEntries.remove(new EntryWrapper<>(entry));
+        pendingEntries.remove(new EntryWrapper(entry));
     }
 
     /** {@inheritDoc} */
@@ -114,8 +114,8 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 GridCacheVersion obsoleteVer = null;
 
-                for (Iterator<EntryWrapper<K, V>> it = pendingEntries.iterator(); it.hasNext(); ) {
-                    EntryWrapper<K, V> wrapper = it.next();
+                for (Iterator<EntryWrapper> it = pendingEntries.iterator(); it.hasNext(); ) {
+                    EntryWrapper wrapper = it.next();
 
                     if (wrapper.expireTime <= now) {
                         if (log.isDebugEnabled())
@@ -142,7 +142,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from
                         // 'addTrackedEntry(..)' method.
-                        EntryWrapper<K, V> first = pendingEntries.firstx();
+                        EntryWrapper first = pendingEntries.firstx();
 
                         if (first != null) {
                             long waitTime = first.expireTime - U.currentTimeMillis();
@@ -163,17 +163,17 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Entry wrapper.
      */
-    private static class EntryWrapper<K, V> implements Comparable<EntryWrapper<K, V>> {
+    private static class EntryWrapper implements Comparable<EntryWrapper> {
         /** Entry expire time. */
         private final long expireTime;
 
         /** Entry. */
-        private final GridCacheMapEntry<K, V> entry;
+        private final GridCacheMapEntry entry;
 
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheMapEntry<K, V> entry) {
+        private EntryWrapper(GridCacheMapEntry entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;
@@ -182,15 +182,13 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(EntryWrapper<K, V> o) {
-            if (expireTime == o.expireTime) {
-                if (entry.startVersion() == o.entry.startVersion())
-                    return 0;
+        @Override public int compareTo(EntryWrapper o) {
+            int res = Long.compare(expireTime, o.expireTime);
 
-                return entry.startVersion() < o.entry.startVersion() ? -1 : 1;
-            }
-            else
-                return expireTime < o.expireTime ? -1 : 1;
+            if (res == 0)
+                res = Long.compare(entry.startVersion(), o.entry.startVersion());
+
+            return res;
         }
 
         /** {@inheritDoc} */

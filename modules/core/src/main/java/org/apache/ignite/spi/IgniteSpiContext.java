@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
@@ -277,49 +276,6 @@ public interface IgniteSpiContext {
     @Nullable public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
         throws IgniteException;
 
-
-    /**
-     * Reads object from off-heap.
-     *
-     * @param spaceName Off-heap space name.
-     * @param part Partition.
-     * @param key Key.
-     * @param keyBytes Key bytes.
-     * @param ldr Class loader for unmarshalling.
-     * @return Value.
-     * @throws IgniteException If failed.
-     */
-    @Nullable public <T> T readFromOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes,
-        @Nullable ClassLoader ldr) throws IgniteException;
-
-    /**
-     * Writes data to off-heap memory.
-     *
-     * @param spaceName Off-heap space name.
-     * @param part Partition.
-     * @param key Key.
-     * @param keyBytes Optional key bytes.
-     * @param val Value.
-     * @param valBytes Optional value bytes.
-     * @param ldr Class loader.
-     * @throws IgniteException If failed.
-     */
-    public void writeToOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes, Object val,
-        @Nullable byte[] valBytes, @Nullable ClassLoader ldr) throws IgniteException;
-
-    /**
-     * Removes data from off-heap memory.
-     *
-     * @param spaceName Off-heap space name.
-     * @param part Partition.
-     * @param key Key.
-     * @param keyBytes Optional key bytes.
-     * @return {@code true} If succeeded.
-     * @throws IgniteException If failed.
-     */
-    public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes)
-        throws IgniteException;
-
     /**
      * Calculates partition number for given key.
      *
@@ -390,11 +346,4 @@ public interface IgniteSpiContext {
      * @return Message factory.
      */
     public MessageFactory messageFactory();
-
-    /**
-     * Gets exception registry.
-     *
-     * @return Exception registry.
-     */
-    public IgniteExceptionRegistry exceptionRegistry();
 }

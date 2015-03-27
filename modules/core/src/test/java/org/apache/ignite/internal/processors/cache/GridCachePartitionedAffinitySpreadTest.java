@@ -42,7 +42,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
             for (int replicas = 128; replicas <= 4096; replicas*=2) {
                 Collection<ClusterNode> nodes = createNodes(i, replicas);
 
-                CacheRendezvousAffinityFunction aff = new CacheRendezvousAffinityFunction(false, 10000);
+                RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 10000);
 
                 checkDistribution(aff, nodes);
             }
@@ -69,7 +69,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param aff Affinity to check.
      * @param nodes Collection of nodes to test on.
      */
-    private void checkDistribution(CacheRendezvousAffinityFunction aff, Collection<ClusterNode> nodes) {
+    private void checkDistribution(RendezvousAffinityFunction aff, Collection<ClusterNode> nodes) {
         Map<ClusterNode, Integer> parts = new HashMap<>(nodes.size());
 
         for (int part = 0; part < aff.getPartitions(); part++) {

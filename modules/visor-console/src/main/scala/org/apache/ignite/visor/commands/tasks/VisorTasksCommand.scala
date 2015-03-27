@@ -536,13 +536,7 @@ class VisorTasksCommand {
             })
         }
 
-        /**
-         * If task name is task class name, show simple class name.
-         *
-         * @param taskName Task name.
-         * @param taskClsName Task class name.
-         * @return Simple class name.
-         */
+        // If task name is task class name, show simple class name.
         def taskSimpleName(taskName: String, taskClsName: String) =  {
             if (taskName == taskClsName || taskName == null) {
                 val idx = taskClsName.lastIndexOf('.')

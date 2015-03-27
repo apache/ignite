@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey<K> implements Externalizable {
+public class IgniteTxKey implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Key. */
     @GridToStringInclude
-    private K key;
+    private KeyCacheObject key;
 
     /** Cache ID. */
     private int cacheId;
@@ -48,7 +52,7 @@ public class IgniteTxKey<K> implements Externalizable {
      * @param key User key.
      * @param cacheId Cache ID.
      */
-    public IgniteTxKey(K key, int cacheId) {
+    public IgniteTxKey(KeyCacheObject key, int cacheId) {
         this.key = key;
         this.cacheId = cacheId;
     }
@@ -56,7 +60,7 @@ public class IgniteTxKey<K> implements Externalizable {
     /**
      * @return User key.
      */
-    public K key() {
+    public KeyCacheObject key() {
         return key;
     }
 
@@ -65,6 +69,25 @@ public class IgniteTxKey<K> implements Externalizable {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+        key.prepareMarshal(ctx.cacheObjectContext());
+    }
+
+    /**
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert key != null;
+
+        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */
@@ -90,15 +113,71 @@ public class IgniteTxKey<K> implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
-        out.writeObject(key);
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
-        key = (K)in.readObject();
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 94;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 
     /** {@inheritDoc} */

@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -43,12 +42,14 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        if (cfg.getDistributionMode() == NEAR_ONLY)
-            cfg.setDistributionMode(CLIENT_ONLY);
-        else
-            cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean clientHasNearCache() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -67,8 +68,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -144,6 +145,37 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Override public void testLocalClearKeys() throws Exception {
+        IgniteCache<String, Integer> nearCache = jcache();
+        IgniteCache<String, Integer> primary = fullCache();
+
+        Collection<String> keys = primaryKeysForCache(primary, 3);
+
+        int i = 0;
+
+        for (String key : keys)
+            nearCache.put(key, i++);
+
+        String lastKey = F.last(keys);
+
+        Set<String> keysToRmv = new HashSet<>(keys);
+
+        keysToRmv.remove(lastKey);
+
+        assert keysToRmv.size() > 1;
+
+        nearCache.localClearAll(keysToRmv);
+
+        for (String key : keys) {
+            if (keysToRmv.contains(key)) {
+                assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
+
+                assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -155,7 +187,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         long ttl = 500;
 
-        grid(0).jcache(null).
+        grid(0).cache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);
@@ -246,7 +278,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         long ttl = 500;
 
-        grid(0).jcache(null).
+        grid(0).cache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);

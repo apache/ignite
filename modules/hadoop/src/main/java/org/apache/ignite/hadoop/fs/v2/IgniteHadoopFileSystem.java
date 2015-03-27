@@ -284,9 +284,11 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                 String secUri = props.get(SECONDARY_FS_URI);
                 String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
+                String secUserName = props.get(SECONDARY_FS_USER_NAME);
 
                 try {
-                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
+                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath,
+                        secUserName);
 
                     secondaryFs = secProvider.createAbstractFileSystem();
                     secondaryUri = secProvider.uri();
@@ -587,11 +589,13 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
                 secondaryFs.renameInternal(toSecondary(src), toSecondary(dst));
             }
+            else {
+                if (clientLog.isLogEnabled())
+                    clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
 
-            rmtClient.rename(srcPath, dstPath);
+                rmtClient.rename(srcPath, dstPath);
+            }
 
-            if (clientLog.isLogEnabled())
-                clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
         }
         finally {
             leaveBusy();

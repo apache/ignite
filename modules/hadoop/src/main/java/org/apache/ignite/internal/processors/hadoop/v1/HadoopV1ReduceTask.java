@@ -58,7 +58,10 @@ public class HadoopV1ReduceTask extends HadoopV1Task {
         try {
             collector = collector(jobConf, ctx, reduce || !job.info().hasReducer(), fileName(), ctx.attemptId());
 
-            Reducer reducer = ReflectionUtils.newInstance(reduce ? jobConf.getReducerClass() : jobConf.getCombinerClass(),
+            Reducer reducer;
+            if (reduce) reducer = ReflectionUtils.newInstance(jobConf.getReducerClass(),
+                jobConf);
+            else reducer = ReflectionUtils.newInstance(jobConf.getCombinerClass(),
                 jobConf);
 
             assert reducer != null;

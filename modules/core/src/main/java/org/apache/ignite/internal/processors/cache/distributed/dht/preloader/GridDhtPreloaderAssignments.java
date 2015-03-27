@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -27,24 +28,24 @@ import java.util.concurrent.*;
  * Partition to node assignments.
  */
 public class GridDhtPreloaderAssignments<K, V> extends
-    ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage<K, V>> {
+    ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Exchange future. */
     @GridToStringExclude
-    private final GridDhtPartitionsExchangeFuture<K, V> exchFut;
+    private final GridDhtPartitionsExchangeFuture exchFut;
 
     /** Last join order. */
-    private final long topVer;
+    private final AffinityTopologyVersion topVer;
 
     /**
      * @param exchFut Exchange future.
      * @param topVer Last join order.
      */
-    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture<K, V> exchFut, long topVer) {
+    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture exchFut, AffinityTopologyVersion topVer) {
         assert exchFut != null;
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         this.exchFut = exchFut;
         this.topVer = topVer;
@@ -53,14 +54,14 @@ public class GridDhtPreloaderAssignments<K, V> extends
     /**
      * @return Exchange future.
      */
-    GridDhtPartitionsExchangeFuture<K, V> exchangeFuture() {
+    GridDhtPartitionsExchangeFuture exchangeFuture() {
         return exchFut;
     }
 
     /**
      * @return Topology version.
      */
-    long topologyVersion() {
+    AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 

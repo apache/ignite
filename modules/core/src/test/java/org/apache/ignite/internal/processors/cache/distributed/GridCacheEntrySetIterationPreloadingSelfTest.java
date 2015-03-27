@@ -40,8 +40,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setPreloadMode(CachePreloadMode.SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
     }

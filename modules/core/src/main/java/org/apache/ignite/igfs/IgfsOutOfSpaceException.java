@@ -29,30 +29,30 @@ public class IgfsOutOfSpaceException extends IgfsException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with given error message.
+     * Constructor.
      *
-     * @param msg Error message.
+     * @param msg Message.
      */
     public IgfsOutOfSpaceException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of exception with given exception cause.
+     * Constructor.
      *
-     * @param cause Exception cause.
+     * @param cause Cause.
      */
     public IgfsOutOfSpaceException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates an instance of IGFS exception with given error message and given exception cause.
+     * Constructor.
      *
-     * @param msg Error message.
-     * @param cause Exception cause.
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public IgfsOutOfSpaceException(String msg, @Nullable Throwable cause) {
+    public IgfsOutOfSpaceException(@Nullable String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

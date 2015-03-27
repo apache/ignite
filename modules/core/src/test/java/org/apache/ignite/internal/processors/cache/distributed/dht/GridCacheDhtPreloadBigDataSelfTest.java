@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -48,13 +48,13 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -82,10 +82,10 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setPreloadBatchSize(preloadBatchSize);
+        cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setRebalanceMode(preloadMode);
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -128,7 +128,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
             int cnt = 10000;
 
-            populate(grid(0).<Integer, byte[]>jcache(null), cnt, KBSIZE);
+            populate(grid(0).<Integer, byte[]>cache(null), cnt, KBSIZE);
 
             int gridCnt = 3;
 
@@ -138,7 +138,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt : "Cache size: " + c.localSize();
@@ -167,7 +167,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
                     if (evt == LifecycleEventType.AFTER_NODE_START) {
-                        IgniteCache<Integer, byte[]> c = ignite.jcache(null);
+                        IgniteCache<Integer, byte[]> c = ignite.cache(null);
 
                         if (c.putIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);
@@ -184,12 +184,12 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).jcache(null).size() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
 
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt;

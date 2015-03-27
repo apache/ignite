@@ -22,11 +22,11 @@ import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
@@ -65,6 +65,9 @@ public class VisorIgfsConfiguration implements Serializable {
 
     /** Path for the secondary hadoop file system config. */
     private String secondaryHadoopFileSysCfgPath;
+
+    /** User name for the secondary hadoop file system config. */
+    private String secondaryHadoopFileSysUserName;
 
     /** IGFS instance mode. */
     private IgfsMode dfltMode;
@@ -140,6 +143,7 @@ public class VisorIgfsConfiguration implements Serializable {
 
             cfg.secondaryHadoopFileSysUri = props.get(SECONDARY_FS_URI);
             cfg.secondaryHadoopFileSysCfgPath = props.get(SECONDARY_FS_CONFIG_PATH);
+            cfg.secondaryHadoopFileSysUserName = props.get(SECONDARY_FS_USER_NAME);
         }
 
         cfg.dfltMode = igfs.getDefaultMode();
@@ -154,7 +158,8 @@ public class VisorIgfsConfiguration implements Serializable {
         cfg.fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
         cfg.fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
 
-        Map<String, String> endpointCfg = igfs.getIpcEndpointConfiguration();
+        IgfsIpcEndpointConfiguration  endpointCfg = igfs.getIpcEndpointConfiguration();
+
         cfg.ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
         cfg.ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
@@ -248,6 +253,13 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
+     * @return User name of the secondary Hadoop file system.
+     */
+    @Nullable public String secondaryHadoopFileSystemUserName() {
+        return secondaryHadoopFileSysUserName;
+    }
+
+    /**
      * @return Path for the secondary hadoop file system config.
      */
     @Nullable public String secondaryHadoopFileSystemConfigPath() {
@@ -332,7 +344,7 @@ public class VisorIgfsConfiguration implements Serializable {
     }
 
     /**
-     * @return IPC endpoint config (in JSON format) to publish IGFS over.
+     * @return IPC endpoint config to publish IGFS over.
      */
     @Nullable public String ipcEndpointConfiguration() {
         return ipcEndpointCfg;

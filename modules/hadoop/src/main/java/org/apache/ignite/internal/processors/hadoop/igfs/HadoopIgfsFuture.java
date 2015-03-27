@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.future.*;
 import org.jetbrains.annotations.*;
 
 /**
  * IGFS client future that holds response parse closure.
  */
-public class HadoopIgfsFuture<T> extends GridPlainFutureAdapter<T> {
+public class HadoopIgfsFuture<T> extends GridFutureAdapter<T> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Output buffer. */
     private byte[] outBuf;
 

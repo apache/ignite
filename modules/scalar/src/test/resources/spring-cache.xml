@@ -24,15 +24,41 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                <property name="cacheMode" value="PARTITIONED"/>
-                <property name="atomicityMode" value="TRANSACTIONAL"/>
-                <property name="distributionMode" value="NEAR_PARTITIONED"/>
-                <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                <property name="queryIndexEnabled" value="true"/>
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+                    <property name="indexedTypes">
+                        <list>
+                            <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.scalar.tests.ObjectValue</value>
+                        </list>
+                    </property>
 
-                <property name="backups" value="1"/>
-            </bean>
+                    <property name="backups" value="1"/>
+                </bean>
+
+                <!-- Partitioned cache example configuration (Atomic mode). -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="backups" value="1"/>
+                </bean>
+
+                <!-- Partitioned cache example configuration (Transactional mode). -->
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_tx"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="backups" value="1"/>
+                </bean>
+
+            </list>
         </property>
 
         <property name="discoverySpi">
@@ -41,21 +67,24 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>127.0.0.1:47500</value>
-                                <value>127.0.0.1:47501</value>
-                                <value>127.0.0.1:47502</value>
-                                <value>127.0.0.1:47503</value>
-                                <value>127.0.0.1:47504</value>
-                                <value>127.0.0.1:47505</value>
-                                <value>127.0.0.1:47506</value>
-                                <value>127.0.0.1:47507</value>
-                                <value>127.0.0.1:47508</value>
-                                <value>127.0.0.1:47509</value>
+                                <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>
                 </property>
             </bean>
         </property>
+    </bean>
+
+    <!-- Template for all example cache configurations. -->
+    <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
+        <!-- Initial cache size. -->
+        <property name="startSize" value="3000000"/>
+
+        <!-- Set synchronous rebalancing (default is asynchronous). -->
+        <property name="rebalanceMode" value="SYNC"/>
+
+        <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
     </bean>
 </beans>

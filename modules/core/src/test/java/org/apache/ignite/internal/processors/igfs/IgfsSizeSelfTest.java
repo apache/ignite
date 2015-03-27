@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -33,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,10 +40,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -128,14 +125,15 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         dataCfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED) {
-            dataCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+            if (nearEnabled)
+                dataCfg.setNearConfiguration(new NearCacheConfiguration());
+
             dataCfg.setBackups(0);
         }
 
         dataCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        dataCfg.setPreloadMode(SYNC);
+        dataCfg.setRebalanceMode(SYNC);
         dataCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
@@ -144,8 +142,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         metaCfg.setCacheMode(REPLICATED);
 
         metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCfg.setPreloadMode(SYNC);
-        metaCfg.setQueryIndexEnabled(false);
+        metaCfg.setRebalanceMode(SYNC);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -600,24 +597,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             assertEquals(expSize, cache.igfsDataSpaceUsed());
         }
 
-        // Start a node.
-        final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
-
-        for (int i = 0; i < GRID_CNT - 1; i++) {
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    latch.countDown();
-
-                    return true;
-                }
-            }, EVT_CACHE_PRELOAD_STOPPED);
-        }
-
         Ignite g = startGrid(GRID_CNT);
 
         info("Started grid: " + g.cluster().localNode().id());
-
-        U.awaitQuiet(latch);
 
         // Wait partitions are evicted.
         awaitPartitionMapExchange();

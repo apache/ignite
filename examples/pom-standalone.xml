@@ -28,12 +28,12 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <ignite.version>1.0.0-RC2-SNAPSHOT</ignite.version>
+        <ignite.version>1.0.0</ignite.version>
     </properties>
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-examples</artifactId>
-    <version>${ignite.version}</version>
+    <version>to_be_replaced_by_ignite_version</version>
 
     <dependencies>
         <dependency>
@@ -45,37 +45,37 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-hibernate</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-schedule</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
@@ -118,7 +118,7 @@
 
     <profiles>
         <profile>
-            <id>java8</id>
+            <id>java8-examples</id>
 
             <activation>
                 <jdk>[1.8,)</jdk>
@@ -141,11 +141,27 @@
                         <version>1.9.1</version>
                         <executions>
                             <execution>
+                                <id>add-sources</id>
                                 <phase>generate-sources</phase>
-                                <goals><goal>add-source</goal></goals>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
                                 <configuration>
                                     <sources>
                                         <source>src/main/java8</source>
+                                        <source>schema-import/src/main/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>add-tests</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/test/java8</source>
                                     </sources>
                                 </configuration>
                             </execution>
@@ -162,7 +178,7 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-scalar</artifactId>
-                    <version>${ignite.version}</version>
+                    <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
 

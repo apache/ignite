@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -58,7 +57,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
@@ -109,7 +108,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
             else
                 cache.localLoadCache(null, PUT_CNT);
 
-            CacheAffinity<Integer> aff = grid(0).affinity(null);
+            Affinity<Integer> aff = grid(0).affinity(null);
 
             int[] parts = aff.allPartitions(grid(0).localNode());
 

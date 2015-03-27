@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -33,11 +34,9 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -49,6 +48,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Base class for transactional DHT caches.
  */
+@SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -73,7 +73,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    protected GridDhtTransactionalCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap<K, V> map) {
+    protected GridDhtTransactionalCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
     }
 
@@ -85,38 +85,38 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         preldr.start();
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearGetRequest<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest>() {
+            @Override public void apply(UUID nodeId, GridNearGetRequest req) {
                 processNearGetRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearLockRequest<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest>() {
+            @Override public void apply(UUID nodeId, GridNearLockRequest req) {
                 processNearLockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtLockRequest<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtLockRequest req) {
                 processDhtLockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtLockResponse<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtLockResponse req) {
                 processDhtLockResponse(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearUnlockRequest<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest>() {
+            @Override public void apply(UUID nodeId, GridNearUnlockRequest req) {
                 processNearUnlockRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridDhtUnlockRequest<K, V> req) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtUnlockRequest req) {
                 processDhtUnlockRequest(nodeId, req);
             }
         });
@@ -134,35 +134,35 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable GridDhtTxRemote<K, V> startRemoteTx(UUID nodeId,
-        GridDhtLockRequest<K, V> req,
-        GridDhtLockResponse<K, V> res)
+    @Nullable GridDhtTxRemote startRemoteTx(UUID nodeId,
+        GridDhtLockRequest req,
+        GridDhtLockResponse res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
-        List<K> keys = req.keys();
-        GridDhtTxRemote<K, V> tx = null;
+        List<KeyCacheObject> keys = req.keys();
+        GridDhtTxRemote tx = null;
 
         int size = F.size(keys);
 
         for (int i = 0; i < size; i++) {
-            K key = keys.get(i);
+            KeyCacheObject key = keys.get(i);
 
             if (key == null)
                 continue;
 
-            IgniteTxKey<K> txKey = ctx.txKey(key);
+            IgniteTxKey txKey = ctx.txKey(key);
 
             assert F.isEmpty(req.candidatesByIndex(i));
 
             if (log.isDebugEnabled())
                 log.debug("Unmarshalled key: " + key);
 
-            GridDistributedCacheEntry<K, V> entry = null;
+            GridDistributedCacheEntry entry = null;
 
             while (true) {
                 try {
                     int part = ctx.affinity().partition(key);
 
-                    GridDhtLocalPartition<K, V> locPart = ctx.topology().localPartition(part, req.topologyVersion(),
+                    GridDhtLocalPartition locPart = ctx.topology().localPartition(part, req.topologyVersion(),
                         false);
 
                     if (locPart == null || !locPart.reserve()) {
@@ -186,7 +186,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = ctx.tm().tx(req.version());
 
                             if (tx == null) {
-                                tx = new GridDhtTxRemote<>(
+                                tx = new GridDhtTxRemote(
                                     ctx.shared(),
                                     req.nodeId(),
                                     req.futureId(),
@@ -197,6 +197,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.version(),
                                     /*commitVer*/null,
                                     ctx.system(),
+                                    ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.isInvalidate(),
@@ -206,7 +207,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.subjectId(),
                                     req.taskNameHash());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
                                     throw new IgniteTxRollbackCheckedException("Failed to acquire lock (transaction " +
@@ -217,8 +218,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 ctx,
                                 NOOP,
                                 txKey,
-                                req.keyBytes() != null ? req.keyBytes().get(i) : null,
-                                null,
                                 null,
                                 null,
                                 req.accessTtl());
@@ -249,7 +248,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (req.needPreloadKey(i)) {
                             entry.unswap();
 
-                            GridCacheEntryInfo<K, V> info = entry.info();
+                            GridCacheEntryInfo info = entry.info();
 
                             if (info != null && !info.isNew() && !info.isDeleted())
                                 res.addPreloadEntry(info);
@@ -337,14 +336,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest<K, V> req) {
+    protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest req) {
         IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
             ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
 
         if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            keyFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            keyFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> t) {
                     processDhtLockRequest0(nodeId, req);
                 }
@@ -356,7 +355,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected final void processDhtLockRequest0(UUID nodeId, GridDhtLockRequest<K, V> req) {
+    protected final void processDhtLockRequest0(UUID nodeId, GridDhtLockRequest req) {
         assert nodeId != null;
         assert req != null;
         assert !nodeId.equals(locNodeId);
@@ -367,16 +366,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         int cnt = F.size(req.keys());
 
-        GridDhtLockResponse<K, V> res;
+        GridDhtLockResponse res;
 
-        GridDhtTxRemote<K, V> dhtTx = null;
-        GridNearTxRemote<K, V> nearTx = null;
+        GridDhtTxRemote dhtTx = null;
+        GridNearTxRemote nearTx = null;
 
         boolean fail = false;
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
 
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
@@ -385,10 +384,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 res.nearEvicted(nearTx.evicted());
             else {
                 if (!F.isEmpty(req.nearKeys())) {
-                    Collection<IgniteTxKey<K>> nearEvicted = new ArrayList<>(req.nearKeys().size());
+                    Collection<IgniteTxKey> nearEvicted = new ArrayList<>(req.nearKeys().size());
 
-                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<K, IgniteTxKey<K>>() {
-                        @Override public IgniteTxKey<K> apply(K k) {
+                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<KeyCacheObject, IgniteTxKey>() {
+                        @Override public IgniteTxKey apply(KeyCacheObject k) {
                             return ctx.txKey(k);
                         }
                     }));
@@ -402,7 +401,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
                 new IgniteTxRollbackCheckedException(err, e));
 
             fail = true;
@@ -412,7 +411,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), new IgniteCheckedException(err, e));
+            res = new GridDhtLockResponse(ctx.cacheId(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                new IgniteCheckedException(err, e));
 
             fail = true;
         }
@@ -454,12 +457,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
                 nearTx.rollback();
 
-            List<K> keys = req.keys();
+            List<KeyCacheObject> keys = req.keys();
 
             if (keys != null) {
-                for (K key : keys) {
+                for (KeyCacheObject key : keys) {
                     while (true) {
-                        GridDistributedCacheEntry<K, V> entry = peekExx(key);
+                        GridDistributedCacheEntry entry = peekExx(key);
 
                         try {
                             if (entry != null) {
@@ -486,8 +489,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
     }
 
-    /** {@inheritDoc} */
-    protected void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest<K, V> req) {
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    protected void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
 
         if (isNearEnabled(cacheCfg))
@@ -498,8 +504,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processNearLockRequest(UUID nodeId, GridNearLockRequest<K, V> req) {
-        assert isAffinityNode(cacheCfg);
+    private void processNearLockRequest(UUID nodeId, GridNearLockRequest req) {
+        assert ctx.affinityNode();
         assert nodeId != null;
         assert req != null;
 
@@ -520,7 +526,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
-        f.listenAsync(CU.errorLogger(log, GridCacheLockTimeoutException.class,
+        f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class));
     }
 
@@ -528,7 +534,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processDhtLockResponse(UUID nodeId, GridDhtLockResponse<K, V> res) {
+    private void processDhtLockResponse(UUID nodeId, GridDhtLockResponse res) {
         assert nodeId != null;
         assert res != null;
         GridDhtLockFuture<K, V> fut = (GridDhtLockFuture<K, V>)ctx.mvcc().<Boolean>future(res.version(),
@@ -546,15 +552,15 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
-        @Nullable Collection<? extends K> keys,
+        @Nullable Collection<KeyCacheObject> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> txx,
+        IgniteTxLocalEx txx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         return lockAllAsyncInternal(
             keys,
             timeout,
@@ -581,19 +587,19 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param filter Optional filter.
      * @return Lock future.
      */
-    public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys,
+    public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> txx,
+        IgniteTxLocalEx txx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        CacheEntryPredicate[] filter) {
         if (keys == null || keys.isEmpty())
-            return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
+            return new GridDhtFinishedFuture<>(true);
 
-        GridDhtTxLocalAdapter<K, V> tx = (GridDhtTxLocalAdapter<K, V>)txx;
+        GridDhtTxLocalAdapter tx = (GridDhtTxLocalAdapter)txx;
 
         assert tx != null;
 
@@ -604,19 +610,17 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.topologyVersion(),
             keys.size(),
             isRead,
+            retval,
             timeout,
             tx,
             tx.threadId(),
             accessTtl,
             filter);
 
-        for (K key : keys) {
-            if (key == null)
-                continue;
-
+        for (KeyCacheObject key : keys) {
             try {
                 while (true) {
-                    GridDhtCacheEntry<K, V> entry = entryExx(key, tx.topologyVersion());
+                    GridDhtCacheEntry entry = entryExx(key, tx.topologyVersion());
 
                     try {
                         fut.addEntry(entry);
@@ -635,7 +639,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (log.isDebugEnabled())
                             log.debug("Got lock request for cancelled lock (will fail): " + entry);
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                        return new GridDhtFinishedFuture<>(e);
                     }
                 }
             }
@@ -662,12 +666,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param filter0 Filter.
      * @return Future.
      */
-    public IgniteInternalFuture<GridNearLockResponse<K, V>> lockAllAsync(
+    public IgniteInternalFuture<GridNearLockResponse> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
-        final GridNearLockRequest<K, V> req,
-        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter0) {
-        final List<K> keys = req.keys();
+        final GridNearLockRequest req,
+        @Nullable final CacheEntryPredicate[] filter0) {
+        final List<KeyCacheObject> keys = req.keys();
 
         IgniteInternalFuture<Object> keyFut = null;
 
@@ -684,18 +688,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         if (keyFut == null)
-            keyFut = new GridFinishedFutureEx<>();
+            keyFut = new GridFinishedFuture<>();
 
-        return new GridEmbeddedFuture<>(true, keyFut,
-            new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse<K,V>>>() {
-                @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
+        return new GridEmbeddedFuture<>(keyFut,
+            new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
+                @Override public IgniteInternalFuture<GridNearLockResponse> apply(Object o, Exception exx) {
                     if (exx != null)
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
+                        return new GridDhtFinishedFuture<>(exx);
 
-                    IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
+                    CacheEntryPredicate[] filter = filter0;
 
                     // Set message into thread context.
-                    GridDhtTxLocal<K, V> tx = null;
+                    GridDhtTxLocal tx = null;
 
                     try {
                         int cnt = keys.size();
@@ -707,7 +711,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = ctx.tm().tx(dhtVer);
                         }
 
-                        final List<GridCacheEntryEx<K, V>> entries = new ArrayList<>(cnt);
+                        final List<GridCacheEntryEx> entries = new ArrayList<>(cnt);
 
                         // Unmarshal filter first.
                         if (filter == null)
@@ -722,6 +726,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.topologyVersion(),
                                 cnt,
                                 req.txRead(),
+                                req.needReturnValue(),
                                 req.timeout(),
                                 tx,
                                 req.threadId(),
@@ -735,14 +740,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         boolean timedout = false;
 
-                        for (K key : keys) {
+                        for (KeyCacheObject key : keys) {
                             if (timedout)
                                 break;
 
                             while (true) {
                                 // Specify topology version to make sure containment is checked
                                 // based on the requested version, not the latest.
-                                GridDhtCacheEntry<K, V> entry = entryExx(key, req.topologyVersion());
+                                GridDhtCacheEntry entry = entryExx(key, req.topologyVersion());
 
                                 try {
                                     if (fut != null) {
@@ -772,7 +777,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                     fut.onError(e);
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), e);
+                                    return new GridDhtFinishedFuture<>(e);
                                 }
                             }
                         }
@@ -780,7 +785,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         // Handle implicit locks for pessimistic transactions.
                         if (req.inTx()) {
                             if (tx == null) {
-                                tx = new GridDhtTxLocal<>(
+                                tx = new GridDhtTxLocal(
                                     ctx.shared(),
                                     nearNode.id(),
                                     req.version(),
@@ -790,6 +795,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
                                     ctx.system(),
+                                    ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.timeout(),
@@ -804,7 +810,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 tx.syncCommit(req.syncCommit());
 
-                                tx = ctx.tm().onCreated(tx);
+                                tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !tx.init()) {
                                     String msg = "Failed to acquire lock (transaction has been completed): " +
@@ -815,7 +821,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (tx != null)
                                         tx.rollback();
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), new IgniteCheckedException(msg));
+                                    return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
                                 }
 
                                 tx.topologyVersion(req.topologyVersion());
@@ -826,28 +832,29 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (log.isDebugEnabled())
                                 log.debug("Performing DHT lock [tx=" + tx + ", entries=" + entries + ']');
 
-                            IgniteInternalFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
+                            IgniteInternalFuture<GridCacheReturn> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
                                 req.onePhaseCommit(),
                                 req.messageId(),
                                 req.txRead(),
+                                req.needReturnValue(),
                                 req.accessTtl());
 
-                            final GridDhtTxLocal<K, V> t = tx;
+                            final GridDhtTxLocal t = tx;
 
-                            return new GridDhtEmbeddedFuture<>(
+                            return new GridDhtEmbeddedFuture(
                                 txFut,
-                                new C2<GridCacheReturn<V>, Exception, IgniteInternalFuture<GridNearLockResponse<K, V>>>() {
-                                    @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(
-                                        GridCacheReturn<V> o, Exception e) {
+                                new C2<GridCacheReturn, Exception, IgniteInternalFuture<GridNearLockResponse>>() {
+                                    @Override public IgniteInternalFuture<GridNearLockResponse> apply(
+                                        GridCacheReturn o, Exception e) {
                                         if (e != null)
                                             e = U.unwrap(e);
 
                                         assert !t.empty();
 
                                         // Create response while holding locks.
-                                        final GridNearLockResponse<K, V> resp = createLockReply(nearNode,
+                                        final GridNearLockResponse resp = createLockReply(nearNode,
                                             entries,
                                             req,
                                             t,
@@ -858,8 +865,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             assert t.implicit();
 
                                             return t.commitAsync().chain(
-                                                new C1<IgniteInternalFuture<IgniteInternalTx>, GridNearLockResponse<K, V>>() {
-                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteInternalTx> f) {
+                                                new C1<IgniteInternalFuture<IgniteInternalTx>, GridNearLockResponse>() {
+                                                    @Override public GridNearLockResponse apply(IgniteInternalFuture<IgniteInternalTx> f) {
                                                         try {
                                                             // Check for error.
                                                             f.get();
@@ -877,11 +884,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         else {
                                             sendLockReply(nearNode, t, req, resp);
 
-                                            return new GridFinishedFutureEx<>(resp);
+                                            return new GridFinishedFuture<>(resp);
                                         }
                                     }
-                                },
-                                ctx.kernalContext());
+                                }
+                            );
                         }
                         else {
                             assert fut != null;
@@ -892,16 +899,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             final GridCacheVersion mappedVer = fut.version();
 
                             return new GridDhtEmbeddedFuture<>(
-                                ctx.kernalContext(),
-                                fut,
-                                new C2<Boolean, Exception, GridNearLockResponse<K, V>>() {
-                                    @Override public GridNearLockResponse<K, V> apply(Boolean b, Exception e) {
+                                new C2<Boolean, Exception, GridNearLockResponse>() {
+                                    @Override public GridNearLockResponse apply(Boolean b, Exception e) {
                                         if (e != null)
                                             e = U.unwrap(e);
                                         else if (!b)
                                             e = new GridCacheLockTimeoutException(req.version());
 
-                                        GridNearLockResponse<K, V> res = createLockReply(nearNode,
+                                        GridNearLockResponse res = createLockReply(nearNode,
                                             entries,
                                             req,
                                             null,
@@ -912,7 +917,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                         return res;
                                     }
-                                });
+                                },
+                                fut);
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -929,12 +935,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             }
                         }
 
-                        return new GridDhtFinishedFuture<>(ctx.kernalContext(),
+                        return new GridDhtFinishedFuture<>(
                             new IgniteCheckedException(err, e));
                     }
                 }
-            },
-            ctx.kernalContext());
+            }
+        );
     }
 
     /**
@@ -946,11 +952,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param err Error.
      * @return Response.
      */
-    private GridNearLockResponse<K, V> createLockReply(
+    private GridNearLockResponse createLockReply(
         ClusterNode nearNode,
-        List<GridCacheEntryEx<K, V>> entries,
-        GridNearLockRequest<K, V> req,
-        @Nullable GridDhtTxLocalAdapter<K,V> tx,
+        List<GridCacheEntryEx> entries,
+        GridNearLockRequest req,
+        @Nullable GridDhtTxLocalAdapter tx,
         GridCacheVersion mappedVer,
         Throwable err) {
         assert mappedVer != null;
@@ -958,7 +964,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         try {
             // Send reply back to originating near node.
-            GridNearLockResponse<K, V> res = new GridNearLockResponse<>(ctx.cacheId(),
+            GridNearLockResponse res = new GridNearLockResponse(ctx.cacheId(),
                 req.version(), req.futureId(), req.miniId(), tx != null && tx.onePhaseCommit(), entries.size(), err);
 
             if (err == null) {
@@ -971,8 +977,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 int i = 0;
 
-                for (ListIterator<GridCacheEntryEx<K, V>> it = entries.listIterator(); it.hasNext();) {
-                    GridCacheEntryEx<K, V> e = it.next();
+                for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext();) {
+                    GridCacheEntryEx e = it.next();
 
                     assert e != null;
 
@@ -987,12 +993,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                     boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
 
-                                    V val = null;
+                                    CacheObject val = null;
 
                                     if (ret)
                                         val = e.innerGet(tx,
                                             /*swap*/true,
-                                            /*read-through*/ctx.loadPreviousValue(),
+                                            /*read-through*/false,
                                             /*fail-fast.*/false,
                                             /*unmarshal*/false,
                                             /*update-metrics*/true,
@@ -1014,7 +1020,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     boolean filterPassed = false;
 
                                     if (tx != null && tx.onePhaseCommit()) {
-                                        IgniteTxEntry<K, V> writeEntry = tx.entry(ctx.txKey(e.key()));
+                                        IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
 
                                         assert writeEntry != null :
                                             "Missing tx entry for locked cache entry: " + e;
@@ -1022,17 +1028,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         filterPassed = writeEntry.filtersPassed();
                                     }
 
-                                    GridCacheValueBytes valBytes = ret ? e.valueBytes(null) : GridCacheValueBytes.nil();
+                                    if (ret && val == null)
+                                        val = e.valueBytes(null);
 
                                     // We include values into response since they are required for local
                                     // calls and won't be serialized. We are also including DHT version.
                                     res.addValueBytes(
-                                        val != null ? val : (V)valBytes.getIfPlain(),
-                                        ret ? valBytes.getIfMarshaled() : null,
+                                        ret ? val : null,
                                         filterPassed,
                                         ver,
-                                        mappedVer,
-                                        ctx);
+                                        mappedVer);
                                 }
                                 catch (GridCacheFilterFailedException ex) {
                                     assert false : "Filter should never fail if fail-fast is false.";
@@ -1043,7 +1048,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             else {
                                 // We include values into response since they are required for local
                                 // calls and won't be serialized. We are also including DHT version.
-                                res.addValueBytes(null, null, false, e.version(), mappedVer, ctx);
+                                res.addValueBytes(null, false, e.version(), mappedVer);
                             }
 
                             break;
@@ -1069,7 +1074,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, "Failed to get value for lock reply message for node [node=" +
                 U.toShortString(nearNode) + ", req=" + req + ']', e);
 
-            return new GridNearLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), false,
+            return new GridNearLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), false,
                 entries.size(), e);
         }
     }
@@ -1084,9 +1089,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void sendLockReply(
         ClusterNode nearNode,
-        @Nullable IgniteInternalTx<K,V> tx,
-        GridNearLockRequest<K, V> req,
-        GridNearLockResponse<K, V> res
+        @Nullable IgniteInternalTx tx,
+        GridNearLockRequest req,
+        GridNearLockResponse res
     ) {
         Throwable err = res.error();
 
@@ -1118,11 +1123,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx<K, V>> entries,
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx> entries,
         GridCacheVersion baseVer) {
         Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
 
-        for (GridCacheEntryEx<K, V> entry : entries) {
+        for (GridCacheEntryEx entry : entries) {
             // Since entries were collected before locks are added, some of them may become obsolete.
             while (true) {
                 try {
@@ -1150,15 +1155,15 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    private void clearLocks(UUID nodeId, GridDistributedUnlockRequest<K, V> req) {
+    private void clearLocks(UUID nodeId, GridDistributedUnlockRequest req) {
         assert nodeId != null;
 
-        List<K> keys = req.keys();
+        List<KeyCacheObject> keys = req.keys();
 
         if (keys != null) {
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 while (true) {
-                    GridDistributedCacheEntry<K, V> entry = peekExx(key);
+                    GridDistributedCacheEntry entry = peekExx(key);
 
                     boolean created = false;
 
@@ -1212,8 +1217,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     @SuppressWarnings({"RedundantTypeArguments", "TypeMayBeWeakened"})
-    private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest<K, V> req) {
-        assert isAffinityNode(cacheCfg);
+    private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
+        assert ctx.affinityNode();
         assert nodeId != null;
 
         removeLocks(nodeId, req.version(), req.keys(), true);
@@ -1229,11 +1234,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws IgniteCheckedException If failed.
      */
     private void map(UUID nodeId,
-        long topVer,
-        GridCacheEntryEx<K,V> cached,
+        AffinityTopologyVersion topVer,
+        GridCacheEntryEx cached,
         Collection<UUID> readers,
-        Map<ClusterNode, List<T2<K, byte[]>>> dhtMap,
-        Map<ClusterNode, List<T2<K, byte[]>>> nearMap)
+        Map<ClusterNode, List<KeyCacheObject>> dhtMap,
+        Map<ClusterNode, List<KeyCacheObject>> nearMap)
         throws IgniteCheckedException {
         Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
@@ -1274,20 +1279,19 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param entry Entry.
      * @param nodes Nodes.
      * @param map Map.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
-    private void map(GridCacheEntryEx<K, V> entry,
+    private void map(GridCacheEntryEx entry,
         @Nullable Iterable<? extends ClusterNode> nodes,
-        Map<ClusterNode, List<T2<K, byte[]>>> map) throws IgniteCheckedException {
+        Map<ClusterNode, List<KeyCacheObject>> map) {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
-                List<T2<K, byte[]>> keys = map.get(n);
+                List<KeyCacheObject> keys = map.get(n);
 
                 if (keys == null)
                     map.put(n, keys = new LinkedList<>());
 
-                keys.add(new T2<>(entry.key(), entry.getOrMarshalKeyBytes()));
+                keys.add(entry.key());
             }
         }
     }
@@ -1298,7 +1302,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param keys Keys.
      * @param unmap Flag for un-mapping version.
      */
-    public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<? extends K> keys, boolean unmap) {
+    public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1308,16 +1312,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        Map<ClusterNode, List<T2<K, byte[]>>> dhtMap = new HashMap<>();
-        Map<ClusterNode, List<T2<K, byte[]>>> nearMap = new HashMap<>();
+        Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
+        Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
 
         GridCacheVersion obsoleteVer = null;
 
-        for (K key : keys) {
+        for (KeyCacheObject key : keys) {
             while (true) {
                 boolean created = false;
 
-                GridDhtCacheEntry<K, V> entry = peekExx(key);
+                GridDhtCacheEntry entry = peekExx(key);
 
                 if (entry == null) {
                     entry = entryExx(key);
@@ -1326,7 +1330,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
 
                 try {
-                    GridCacheMvccCandidate<K> cand = null;
+                    GridCacheMvccCandidate cand = null;
 
                     if (dhtVer == null) {
                         cand = entry.localCandidateByNearVersion(ver, true);
@@ -1355,7 +1359,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (cand == null)
                         cand = entry.candidate(dhtVer);
 
-                    long topVer = cand == null ? -1 : cand.topologyVersion();
+                    AffinityTopologyVersion topVer = cand == null
+                        ? AffinityTopologyVersion.NONE
+                        : cand.topologyVersion();
 
                     // Note that we obtain readers before lock is removed.
                     // Even in case if entry would be removed just after lock is removed,
@@ -1397,24 +1403,24 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
 
         // Backups.
-        for (Map.Entry<ClusterNode, List<T2<K, byte[]>>> entry : dhtMap.entrySet()) {
+        for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : dhtMap.entrySet()) {
             ClusterNode n = entry.getKey();
 
-            List<T2<K, byte[]>> keyBytes = entry.getValue();
+            List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest<K, V> req = new GridDhtUnlockRequest<>(ctx.cacheId(), keyBytes.size());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
             req.version(dhtVer);
 
             try {
-                for (T2<K, byte[]> key : keyBytes)
-                    req.addKey(key.get1(), key.get2(), ctx);
+                for (KeyCacheObject key : keyBytes)
+                    req.addKey(key, ctx);
 
                 keyBytes = nearMap.get(n);
 
                 if (keyBytes != null)
-                    for (T2<K, byte[]> key : keyBytes)
-                        req.addNearKey(key.get1(), key.get2(), ctx.shared());
+                    for (KeyCacheObject key : keyBytes)
+                        req.addNearKey(key, ctx.shared());
 
                 req.completedVersions(committed, rolledback);
 
@@ -1430,19 +1436,19 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         // Readers.
-        for (Map.Entry<ClusterNode, List<T2<K, byte[]>>> entry : nearMap.entrySet()) {
+        for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : nearMap.entrySet()) {
             ClusterNode n = entry.getKey();
 
             if (!dhtMap.containsKey(n)) {
-                List<T2<K, byte[]>> keyBytes = entry.getValue();
+                List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest<K, V> req = new GridDhtUnlockRequest<>(ctx.cacheId(), keyBytes.size());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
                 req.version(dhtVer);
 
                 try {
-                    for (T2<K, byte[]> key : keyBytes)
-                        req.addNearKey(key.get1(), key.get2(), ctx.shared());
+                    for (KeyCacheObject key : keyBytes)
+                        req.addNearKey(key, ctx.shared());
 
                     req.completedVersions(committed, rolledback);
 
@@ -1464,8 +1470,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param ver Version.
      * @throws IgniteCheckedException If invalidate failed.
      */
-    private void invalidateNearEntry(K key, GridCacheVersion ver) throws IgniteCheckedException {
-        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+    private void invalidateNearEntry(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
+        GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
             nearEntry.invalidate(null, ver);
@@ -1475,8 +1481,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param key Key
      * @param ver Version.
      */
-    private void obsoleteNearEntry(K key, GridCacheVersion ver) {
-        GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
+    private void obsoleteNearEntry(KeyCacheObject key, GridCacheVersion ver) {
+        GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
             nearEntry.markObsolete(ver);

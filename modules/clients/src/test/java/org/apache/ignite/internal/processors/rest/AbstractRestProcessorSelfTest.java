@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -72,6 +72,8 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
         ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
+        clientCfg.setJettyPath("modules/clients/src/test/resources/jetty/rest-jetty.xml");
+
         cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -101,6 +103,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).jcache(null);
+        return grid(0).cache(null);
     }
 }

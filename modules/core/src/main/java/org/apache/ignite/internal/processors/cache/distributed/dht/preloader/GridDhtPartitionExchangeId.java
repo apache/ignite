@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Exchange ID.
@@ -43,17 +46,18 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     private int evt;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param nodeId Node ID.
      * @param evt Event.
      * @param topVer Topology version.
      */
-    public GridDhtPartitionExchangeId(UUID nodeId, int evt, long topVer) {
+    public GridDhtPartitionExchangeId(UUID nodeId, int evt, @NotNull AffinityTopologyVersion topVer) {
         assert nodeId != null;
-        assert evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED || evt == EVT_NODE_JOINED;
-        assert topVer > 0;
+        assert evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED || evt == EVT_NODE_JOINED ||
+            evt == EVT_DISCOVERY_CUSTOM_EVT;
+        assert topVer.topologyVersion() > 0;
 
         this.nodeId = nodeId;
         this.evt = evt;
@@ -84,7 +88,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     /**
      * @return Order.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -105,14 +109,14 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
-        out.writeLong(topVer);
+        out.writeObject(topVer);
         out.writeInt(evt);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
-        topVer = in.readLong();
+        topVer = (AffinityTopologyVersion)in.readObject();
         evt = in.readInt();
     }
 
@@ -121,7 +125,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         if (o == this)
             return 0;
 
-        return topVer < o.topVer ? -1 : topVer == o.topVer ? 0 : 1;
+        return topVer.compareTo(o.topVer);
     }
 
     /** {@inheritDoc} */
@@ -129,7 +133,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         int res = nodeId.hashCode();
 
         res = 31 * res + evt;
-        res = 31 * res + (int)(topVer ^ (topVer >>> 32));
+        res = 31 * res + topVer.hashCode();
 
         return res;
     }
@@ -141,7 +145,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;
 
-        return evt == id.evt && topVer == id.topVer && nodeId.equals(id.nodeId);
+        return evt == id.evt && topVer.equals(id.topVer) && nodeId.equals(id.nodeId);
     }
 
     /** {@inheritDoc} */
@@ -169,7 +173,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -204,7 +208,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

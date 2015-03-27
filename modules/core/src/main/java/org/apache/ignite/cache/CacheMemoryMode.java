@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.eviction.*;
+
 /**
  * Defines set of memory modes. Memory modes help control whether cache entries are
  * stored on heap memory, offheap memory, or in swap space.
@@ -37,7 +39,7 @@ public enum CacheMemoryMode {
      * </li>
      * </nl>
      * <p>
-     * <b>Note</b> that heap memory evictions are handled by configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}
+     * <b>Note</b> that heap memory evictions are handled by configured {@link EvictionPolicy}
      * implementation. By default, no eviction policy is enabled, so entries never leave heap
      * memory space unless explicitly removed.
      */
@@ -53,7 +55,7 @@ public enum CacheMemoryMode {
     /**
      * Entry keys will be stored on heap memory, and values will be stored in offheap memory. Note
      * that in this mode entries can be evicted only to swap. The evictions will happen according
-     * to configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
+     * to configured {@link EvictionPolicy}.
      */
     OFFHEAP_VALUES,
 }

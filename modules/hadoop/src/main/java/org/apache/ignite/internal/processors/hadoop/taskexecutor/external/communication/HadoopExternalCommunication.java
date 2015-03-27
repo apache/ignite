@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.*;
@@ -29,8 +30,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.net.*;
@@ -1094,7 +1095,7 @@ public class HadoopExternalCommunication {
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", log);
+            super(gridName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
 
             this.srv = srv;
         }
@@ -1141,7 +1142,7 @@ public class HadoopExternalCommunication {
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
-            super(gridName, "shmem-worker", log);
+            super(gridName, "shmem-worker", HadoopExternalCommunication.this.log);
 
             this.endpoint = endpoint;
 
@@ -1243,13 +1244,13 @@ public class HadoopExternalCommunication {
                     log.debug("Accepted connection, initiating handshake: " + ses);
 
                 // Server initiates handshake.
-                ses.send(locIdMsg).listenAsync(new CI1<GridNioFuture<?>>() {
-                    @Override public void apply(GridNioFuture<?> fut) {
+                ses.send(locIdMsg).listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             // Make sure there were no errors.
                             fut.get();
                         }
-                        catch (IgniteCheckedException | IOException e) {
+                        catch (IgniteCheckedException e) {
                             log.warning("Failed to send handshake message, will close session: " + ses, e);
 
                             ses.close();

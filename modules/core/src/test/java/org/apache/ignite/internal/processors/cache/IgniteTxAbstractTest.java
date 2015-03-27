@@ -175,7 +175,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     assert key >= prevKey : "key: " + key + ", prevKey: " + prevKey;
 
                     if (isTestDebug()) {
-                        CacheAffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
+                        AffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
 
                         int part = aff.partition(key);
 
@@ -307,7 +307,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             try {
                 for (Integer key : getKeys()) {
                     if (isTestDebug()) {
-                        CacheAffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
+                        AffinityFunction aff = cache.getConfiguration(CacheConfiguration.class).getAffinity();
 
                         int part = aff.partition(key);
 

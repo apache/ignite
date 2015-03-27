@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.hadoop.mapreduce.*;
@@ -1000,6 +999,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
 
         /** {@inheritDoc} */
         @Override public String latestVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridKernalContext context() {
             return null;
         }
     }

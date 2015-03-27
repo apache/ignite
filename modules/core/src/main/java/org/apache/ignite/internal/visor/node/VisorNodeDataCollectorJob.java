@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -28,8 +27,6 @@ import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
 import org.apache.ignite.internal.visor.igfs.*;
-import org.apache.ignite.internal.visor.streamer.*;
-import org.apache.ignite.streamer.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -121,18 +118,21 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgniteConfiguration cfg = ignite.configuration();
 
-            for (GridCache cache : ignite.cachesx()) {
-                String cacheName = cache.name();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
+            for (String cacheName : cacheProc.cacheNames()) {
                 if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        res.caches().add(VisorCache.from(ignite, cache, arg.sample()));
+                        VisorCache cache = VisorCache.from(ignite, cacheName, arg.sample());
+
+                        if (cache != null)
+                            res.caches().add(cache);
                     }
                     finally {
                         if (debug)
-                            log(ignite.log(), "Collected cache: " + cache.name(), getClass(), start0);
+                            log(ignite.log(), "Collected cache: " + cacheName, getClass(), start0);
                     }
                 }
             }
@@ -149,7 +149,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void igfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgfsProcessorAdapter igfsProc = ((IgniteKernal)ignite).context().igfs();
+            IgfsProcessorAdapter igfsProc = ignite.context().igfs();
 
             for (IgniteFileSystem igfs : igfsProc.igfss()) {
                 long start0 = U.currentTimeMillis();
@@ -174,34 +174,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
         catch (Throwable igfssEx) {
             res.igfssEx(igfssEx);
-        }
-    }
-
-    /**
-     * Collect streamers.
-     *
-     * @param res Job result.
-     */
-    protected void streamers(VisorNodeDataCollectorJobResult res) {
-        try {
-            StreamerConfiguration[] cfgs = ignite.configuration().getStreamerConfiguration();
-
-            if (cfgs != null) {
-                for (StreamerConfiguration cfg : cfgs) {
-                    long start0 = U.currentTimeMillis();
-
-                    try {
-                        res.streamers().add(VisorStreamer.from(ignite.streamer(cfg.getName())));
-                    }
-                    finally {
-                        if (debug)
-                            log(ignite.log(), "Collected streamer: " + cfg.getName(), getClass(), start0);
-                    }
-                }
-            }
-        }
-        catch (Throwable streamersEx) {
-            res.streamersEx(streamersEx);
         }
     }
 
@@ -238,12 +210,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         igfs(res);
 
         if (debug)
-            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
+            log(ignite.log(), "Collected igfs", getClass(), start0);
 
-        streamers(res);
-
-        if (debug)
-            log(ignite.log(), "Collected streamers", getClass(), start0);
+        res.errorCount(ignite.context().exceptionRegistry().errorCount());
 
         return res;
     }

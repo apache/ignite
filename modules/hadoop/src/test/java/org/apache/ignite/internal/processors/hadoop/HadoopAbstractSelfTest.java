@@ -94,12 +94,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
-
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);

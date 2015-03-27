@@ -27,7 +27,6 @@ import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -58,7 +57,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
 
-        ccfg0.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg0.setCacheStoreFactory(singletonFactory(store));
 
         CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
@@ -67,7 +66,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         ccfg1.setName(CACHE_NAME1);
 
-        ccfg1.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg1.setCacheStoreFactory(singletonFactory(store));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
@@ -104,11 +103,11 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     public void testStoreSession() throws Exception {
         assertNull(jcache(0).getName());
 
-        assertEquals(CACHE_NAME1, ignite(0).jcache(CACHE_NAME1).getName());
+        assertEquals(CACHE_NAME1, ignite(0).cache(CACHE_NAME1).getName());
 
         testStoreSession(jcache(0));
 
-        testStoreSession(ignite(0).jcache(CACHE_NAME1));
+        testStoreSession(ignite(0).cache(CACHE_NAME1));
     }
 
     /**
@@ -191,7 +190,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         expData.add(new ExpectedData(tx, expMtd, new HashMap<>(), expCacheName));
 
         if (tx)
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
     }
 
     /**
@@ -216,7 +215,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
          * @param expProps Expected properties.
          * @param expCacheName Expected cache name.
          */
-        public ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, String expCacheName) {
+        ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, String expCacheName) {
             this.tx = tx;
             this.expMtd = expMtd;
             this.expProps = expProps;
@@ -227,7 +226,16 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private class TestStore implements CacheStore<Object, Object> {
+    private static class AbstractStore {
+        /** */
+        @CacheStoreSessionResource
+        protected CacheStoreSession sesInParent;
+    }
+
+    /**
+     *
+     */
+    private class TestStore extends AbstractStore implements CacheStore<Object, Object> {
         /** Auto-injected store session. */
         @CacheStoreSessionResource
         private CacheStoreSession ses;
@@ -244,10 +252,12 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
-            log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
+            if (session().isWithinTransaction()) {
+                log.info("Tx end [commit=" + commit + ", tx=" + session().transaction() + ']');
 
-            checkSession("txEnd");
+                checkSession("sessionEnd");
+            }
         }
 
         /** {@inheritDoc} */
@@ -323,6 +333,8 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
             CacheStoreSession ses = session();
 
             assertNotNull(ses);
+
+            assertSame(ses, sesInParent);
 
             if (exp.tx)
                 assertNotNull(ses.transaction());

@@ -125,6 +125,17 @@ public interface MessageWriter {
     public boolean writeByteArray(String name, byte[] val);
 
     /**
+     * Writes {@code byte} array.
+     *
+     * @param name Field name.
+     * @param val {@code byte} array.
+     * @param off Offset.
+     * @param len Length.
+     * @return Whether array was fully written.
+     */
+    public boolean writeByteArray(String name, byte[] val, long off, int len);
+
+    /**
      * Writes {@code short} array.
      *
      * @param name Field name.

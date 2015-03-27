@@ -31,7 +31,7 @@ import java.util.*;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC
- * transaction with cache transactions and maps {@link UUID} to {@link Person}.
+ * transaction with cache transactions and maps {@link Long} to {@link Person}.
  *
  */
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
@@ -70,7 +70,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         Map<String, Connection> props = ses.properties();
 
         try (Connection conn = props.remove(ATTR_NAME)) {

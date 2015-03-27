@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -26,25 +25,26 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.misc.*;
 
 import javax.management.*;
@@ -289,17 +289,24 @@ public abstract class IgniteUtils {
     private static Thread timer;
 
     /** Grid counter. */
-    private static int gridCnt;
+    static int gridCnt;
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    static final Object mux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
 
     /** */
-    private volatile static IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+    private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
+
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap8<>();
+
+    /** */
+    private static volatile Boolean hasShmem;
 
     /**
      * Initializes enterprise check.
@@ -452,22 +459,25 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        for (Field field : EventType.class.getFields()) {
-            if (field.getType().equals(int.class)) {
-                try {
-                    assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
-                        field.getName();
+        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
 
-                    int type = field.getInt(null);
+        for (Class<?> cls : evtHolderClasses) {
+            for (Field field : cls.getFields()) {
+                if (Modifier.isStatic(field.getModifiers()) && field.getType().equals(int.class)) {
+                    if (field.getName().startsWith("EVT_")) {
+                        try {
+                            int type = field.getInt(null);
 
-                    String prev = GRID_EVT_NAMES.put(type, field.getName().substring(4));
+                            String prev = GRID_EVT_NAMES.put(type, field.getName().substring("EVT_".length()));
 
-                    // Check for duplicate event types.
-                    assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
-                        ", name2=" + field.getName() + ']';
-                }
-                catch (IllegalAccessException e) {
-                    throw new IgniteException(e);
+                            // Check for duplicate event types.
+                            assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
+                                ", name2=" + field.getName() + ']';
+                        }
+                        catch (IllegalAccessException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
                 }
             }
         }
@@ -516,6 +526,9 @@ public abstract class IgniteUtils {
         }
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+
+        // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
+        System.setProperty("http.strictPostRedirect", "true");
     }
 
     /**
@@ -610,6 +623,25 @@ public abstract class IgniteUtils {
         });
 
         return m;
+    }
+
+    /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
     }
 
     /**
@@ -743,7 +775,7 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void debug(Object msg) {
-        X.println(debugPrefix() + msg);
+        X.error(debugPrefix() + msg);
     }
 
     /**
@@ -1035,6 +1067,22 @@ public abstract class IgniteUtils {
         }
 
         return ctor;
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or default given class.
+     *
+     * @param cls Class.
+     * @param dflt Default class to return.
+     * @return Class or default given class if it can't be found.
+     */
+    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+        try {
+            return Class.forName(cls);
+        }
+        catch (ClassNotFoundException e) {
+            return dflt;
+        }
     }
 
     /**
@@ -2736,6 +2784,8 @@ public abstract class IgniteUtils {
     public static void onGridStart() {
         synchronized (mux) {
             if (gridCnt == 0) {
+                assert timer == null;
+
                 timer = new Thread(new Runnable() {
                     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
                     @Override public void run() {
@@ -2765,17 +2815,24 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     * @throws InterruptedException If interrupted.
      */
-    public static void onGridStop(){
+    public static void onGridStop() throws InterruptedException {
         synchronized (mux) {
-            assert gridCnt > 0 : gridCnt;
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
 
             --gridCnt;
 
-            if (gridCnt == 0 && timer != null) {
-                timer.interrupt();
+            Thread timer0 = timer;
 
+            if (gridCnt == 0 && timer0 != null) {
                 timer = null;
+
+                timer0.interrupt();
+
+                timer0.join();
             }
         }
     }
@@ -3025,7 +3082,6 @@ public abstract class IgniteUtils {
         for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
             // Check 'cur' is project home directory.
             if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "libs").isDirectory() ||
                 !new File(cur, "config").isDirectory())
                 continue;
 
@@ -3149,14 +3205,7 @@ public abstract class IgniteUtils {
         if (file.exists())
             return file;
 
-        /*
-         * 3. Check development path.
-         */
-
-        if (home != null)
-            file = new File(home, "os/" + path);
-
-        return file.exists() ? file : null;
+        return null;
     }
 
     /**
@@ -3177,6 +3226,33 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Resolve Spring configuration URL.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @return URL.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
+        A.notNull(springCfgPath, "springCfgPath");
+
+        URL url;
+
+        try {
+            url = new URL(springCfgPath);
+        }
+        catch (MalformedURLException e) {
+            url = U.resolveIgniteUrl(springCfgPath);
+
+            if (url == null)
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
+                    ". Note that this path should be either absolute or a relative local file system path, " +
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
+        }
+
+        return url;
+    }
+
+    /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
      * If not, then the check is made if path is relative to ${IGNITE_HOME}.
@@ -3194,9 +3270,6 @@ public abstract class IgniteUtils {
     @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
         File f = resolveIgnitePath(path);
 
-        if (f == null)
-            f = resolveIgnitePath("os/" + path);
-
         if (f != null) {
             try {
                 // Note: we use that method's chain instead of File.getURL() with due
@@ -3208,9 +3281,15 @@ public abstract class IgniteUtils {
             }
         }
 
-        String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
 
-        return Thread.currentThread().getContextClassLoader().getResource(locPath);
+        if (clsLdr != null) {
+            String locPath = (metaInf ? "META-INF/" : "") + path.replaceAll("\\\\", "/");
+
+            return clsLdr.getResource(locPath);
+        }
+        else
+            return null;
     }
 
     /**
@@ -4152,8 +4231,7 @@ public abstract class IgniteUtils {
      * @return Empty projection exception.
      */
     public static ClusterGroupEmptyCheckedException emptyTopologyException() {
-        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
-            "cluster group can be empty from call to call.");
+        return new ClusterGroupEmptyCheckedException("Cluster group is empty.");
     }
 
     /**
@@ -4544,8 +4622,8 @@ public abstract class IgniteUtils {
             out.writeInt(map.size());
 
             for (Map.Entry<String, String> e : map.entrySet()) {
-                out.writeUTF(e.getKey());
-                out.writeUTF(e.getValue());
+                writeUTFStringNullable(out, e.getKey());
+                writeUTFStringNullable(out, e.getValue());
             }
         }
         else
@@ -4568,10 +4646,38 @@ public abstract class IgniteUtils {
             Map<String, String> map = U.newHashMap(size);
 
             for (int i = 0; i < size; i++)
-                map.put(in.readUTF(), in.readUTF());
+                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
 
             return map;
         }
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeUTF(val);
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTFStringNullable(DataInput in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
     }
 
     /**
@@ -5317,7 +5423,7 @@ public abstract class IgniteUtils {
      * @return Top level user class.
      */
     public static GridPeerDeployAware detectPeerDeployAware(GridPeerDeployAware obj) {
-        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridIdentityHashSet<>(3));
+        GridPeerDeployAware p = nestedPeerDeployAware(obj, true, new GridLeanIdentitySet<>());
 
         // Pass in obj.getClass() to avoid infinite recursion.
         return p != null ? p : peerDeployAware(obj.getClass());
@@ -6936,151 +7042,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets cache attributes from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Attributes.
-     */
-    @Nullable public static GridCacheAttributes cacheAttributes(ClusterNode n, @Nullable String cacheName) {
-        for (GridCacheAttributes a : cacheAttributes(n)) {
-            if (F.eq(a.cacheName(), cacheName))
-                return a;
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets view on all cache names started on the node.
-     *
-     * @param n Node to get cache names for.
-     * @return Cache names for the node.
-     */
-    public static Collection<String> cacheNames(ClusterNode n) {
-        return F.viewReadOnly(
-            F.asList(n.<GridCacheAttributes[]>attribute(ATTR_CACHE)),
-            new C1<GridCacheAttributes, String>() {
-                @Override public String apply(GridCacheAttributes attrs) {
-                    return attrs.cacheName();
-                }
-            });
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache name to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCache(ClusterNode n, @Nullable String cacheName) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if given node has at least one cache.
-     *
-     * @param n Node to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCaches(ClusterNode n) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        return !F.isEmpty(caches);
-    }
-
-    /**
-     * Checks if given node has specified streamer started.
-     *
-     * @param n Node to check.
-     * @param streamerName Streamer name to check.
-     * @return {@code True} if given node has specified streamer started.
-     */
-    public static boolean hasStreamer(ClusterNode n, @Nullable String streamerName) {
-        assert n != null;
-
-        GridStreamerAttributes[] attrs = n.attribute(ATTR_STREAMER);
-
-        if (attrs != null) {
-            for (GridStreamerAttributes attr : attrs) {
-                if (F.eq(streamerName, attr.name()))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheMode cacheMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.cacheMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.atomicityMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache distribution mode on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache distribution mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.partitionedTaxonomy();
-
-        return null;
-    }
-
-    /**
      * Checks if given node has near cache enabled for the specified
      * partitioned cache.
      *
@@ -7108,7 +7069,7 @@ public abstract class IgniteUtils {
      */
     public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            f.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();
@@ -7442,8 +7403,6 @@ public abstract class IgniteUtils {
 
         try {
             for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
-                Method[] mtds = c.getDeclaredMethods();
-
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {
@@ -7850,14 +7809,49 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    @Nullable public static Class<?> forName(@Nullable String clsName, @Nullable ClassLoader ldr)
-        throws ClassNotFoundException {
-        if (clsName == null)
-            return null;
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
 
-        return cls != null ? cls : Class.forName(clsName, true, ldr);
+        if (cls != null)
+            return cls;
+
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap8<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        cls = ldrMap.get(clsName);
+
+        if (cls == null) {
+            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
+    }
+
+    /**
+     * Clears class cache for provided loader.
+     *
+     * @param ldr Class loader.
+     */
+    public static void clearClassCache(ClassLoader ldr) {
+        classCache.remove(ldr);
+    }
+
+    /**
+     * Completely clears class cache.
+     */
+    public static void clearClassCache() {
+        classCache.clear();
     }
 
     /**
@@ -8832,7 +8826,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.arrayList(c, c.size(), p);
     }
 
     /**
@@ -8950,5 +8944,27 @@ public abstract class IgniteUtils {
     public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
         if (!cond)
             throw new IgniteException("Parameter failed condition check: " + condDesc);
+    }
+
+    /**
+     * @return Whether shared memory libraries exist.
+     */
+    public static boolean hasSharedMemory() {
+        if (hasShmem == null) {
+            if (isWindows())
+                hasShmem = false;
+            else {
+                try {
+                    IpcSharedMemoryNativeLoader.load();
+
+                    hasShmem = true;
+                }
+                catch (IgniteCheckedException e) {
+                    hasShmem = false;
+                }
+            }
+        }
+
+        return hasShmem;
     }
 }

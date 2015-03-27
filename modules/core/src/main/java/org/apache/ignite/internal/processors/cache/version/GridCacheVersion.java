@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
@@ -29,13 +28,9 @@ import java.util.*;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable, OptimizedMarshallable {
+public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
 
     /** Node order mask. */
     private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
@@ -185,11 +180,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         return compareTo(ver) <= 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
-    }
-
     /**
      * @return Version represented as {@code GridUuid}
      */
@@ -240,14 +230,17 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
-        if (topologyVersion() == other.topologyVersion()) {
-            if (order == other.order)
-                return nodeOrder() == other.nodeOrder() ? 0 : nodeOrder() < other.nodeOrder() ? -1 : 1;
-            else
-                return order < other.order ? -1 : 1;
-        }
-        else
-            return topologyVersion() < other.topologyVersion() ? -1 : 1;
+        int res = Integer.compare(topologyVersion(), other.topologyVersion());
+
+        if (res != 0)
+            return res;
+
+        res = Long.compare(order, other.order);
+
+        if (res != 0)
+            return res;
+
+        return Integer.compare(nodeOrder(), other.nodeOrder());
     }
 
     /** {@inheritDoc} */

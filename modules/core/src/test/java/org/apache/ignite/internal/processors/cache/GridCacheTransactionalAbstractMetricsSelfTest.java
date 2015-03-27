@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -207,7 +208,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testCommits(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
             Transaction tx = grid(0).transactions().txStart(concurrency, isolation);
@@ -216,12 +217,15 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                 for (int j = 0; j < keyCount(); j++)
                     cache.put(j, j);
 
+            // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
+            U.sleep(30);
+
             tx.commit();
         }
 
         for (int i = 0; i < gridCount(); i++) {
             TransactionMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).jcache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
@@ -249,7 +253,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testRollbacks(TransactionConcurrency concurrency, TransactionIsolation isolation,
         boolean put) throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
             Transaction tx = grid(0).transactions().txStart(concurrency, isolation);
@@ -258,12 +262,15 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                 for (int j = 0; j < keyCount(); j++)
                     cache.put(j, j);
 
+            // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
+            U.sleep(30);
+
             tx.rollback();
         }
 
         for (int i = 0; i < gridCount(); i++) {
             TransactionMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).jcache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
             assertEquals(0, cacheMetrics.getCacheTxCommits());

@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
+ * Tests {@link CacheInterceptor}.
  */
 public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
@@ -34,8 +34,8 @@ public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

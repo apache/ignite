@@ -19,8 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -30,40 +29,40 @@ import java.lang.annotation.*;
 import java.lang.reflect.*;
 
 /**
- * Default key affinity mapper. If key class has annotation {@link CacheAffinityKeyMapped},
+ * Default key affinity mapper. If key class has annotation {@link AffinityKeyMapped},
  * then the value of annotated method or field will be used to get affinity value instead
  * of the key itself. If there is no annotation, then the key is used as is.
  * <p>
- * Convenience affinity key adapter, {@link CacheAffinityKey} can be used in
+ * Convenience affinity key adapter, {@link AffinityKey} can be used in
  * conjunction with this mapper to automatically provide custom affinity keys for cache keys.
  * <p>
  * If non-default affinity mapper is used, is should be provided via
  * {@link CacheConfiguration#getAffinityMapper()} configuration property.
  */
-public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper {
+public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Injected ignite instance. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    protected transient Ignite ignite;
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
         new P1<Field>() {
             @Override public boolean apply(Field f) {
                 // Account for anonymous inner classes.
-                return f.getAnnotation(CacheAffinityKeyMapped.class) != null;
+                return f.getAnnotation(AffinityKeyMapped.class) != null;
             }
         },
         new P1<Method>() {
             @Override public boolean apply(Method m) {
                 // Account for anonymous inner classes.
-                Annotation ann = m.getAnnotation(CacheAffinityKeyMapped.class);
+                Annotation ann = m.getAnnotation(AffinityKeyMapped.class);
 
                 if (ann != null) {
                     if (!F.isEmpty(m.getParameterTypes()))
-                        throw new IllegalStateException("Method annotated with @CacheAffinityKey annotation " +
+                        throw new IllegalStateException("Method annotated with @AffinityKeyMapped annotation " +
                             "cannot have parameters: " + m);
 
                     return true;
@@ -76,10 +75,10 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
 
     /** Logger. */
     @LoggerResource
-    private transient IgniteLogger log;
+    protected transient IgniteLogger log;
 
     /**
-     * If key class has annotation {@link CacheAffinityKeyMapped},
+     * If key class has annotation {@link AffinityKeyMapped},
      * then the value of annotated method or field will be used to get affinity value instead
      * of the key itself. If there is no annotation, then the key is returned as is.
      *
@@ -89,32 +88,26 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        IgniteKernal kernal = (IgniteKernal)ignite;
+        try {
+            Object o = reflectCache.firstFieldValue(key);
 
-        if (kernal.context().portable().isPortableObject(key))
-            return kernal.context().portable().affinityKey(key);
-        else {
-            try {
-                Object o = reflectCache.firstFieldValue(key);
+            if (o != null)
+                return o;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to access affinity field for key [field=" +
+                reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
+        }
 
-                if (o != null)
-                    return o;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to access affinity field for key [field=" +
-                    reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
-            }
+        try {
+            Object o = reflectCache.firstMethodValue(key);
 
-            try {
-                Object o = reflectCache.firstMethodValue(key);
-
-                if (o != null)
-                    return o;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to invoke affinity method for key [mtd=" +
-                    reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
-            }
+            if (o != null)
+                return o;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to invoke affinity method for key [mtd=" +
+                reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
         }
 
         return key;

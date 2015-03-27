@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -34,7 +36,7 @@ import java.util.*;
 /**
  * Get response.
  */
-public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable,
+public class GridNearGetResponse extends GridCacheMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -50,11 +52,8 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** Result. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<GridCacheEntryInfo<K, V>> entries;
-
-    /** */
-    private byte[] entriesBytes;
+    @GridDirectCollection(GridCacheEntryInfo.class)
+    private Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
@@ -62,7 +61,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     private Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Error. */
     @GridDirectTransient
@@ -122,14 +121,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /**
      * @return Entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> entries() {
-        return entries;
+    public Collection<GridCacheEntryInfo> entries() {
+        return entries != null ? entries : Collections.<GridCacheEntryInfo>emptyList();
     }
 
     /**
      * @param entries Entries.
      */
-    public void entries(Collection<GridCacheEntryInfo<K, V>> entries) {
+    public void entries(Collection<GridCacheEntryInfo> entries) {
         this.entries = entries;
     }
 
@@ -144,7 +143,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
      * @param invalidParts Partitions to retry due to ownership shift.
      * @param topVer Topology version.
      */
-    public void invalidPartitions(Collection<Integer> invalidParts, long topVer) {
+    public void invalidPartitions(Collection<Integer> invalidParts, @NotNull AffinityTopologyVersion topVer) {
         this.invalidParts = invalidParts;
         this.topVer = topVer;
     }
@@ -152,7 +151,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     /**
      * @return Topology version if this response has invalid partitions.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -172,13 +171,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (entries != null) {
-            marshalInfos(entries, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            entriesBytes = ctx.marshaller().marshal(entries);
+        if (entries != null) {
+            for (GridCacheEntryInfo info : entries)
+                info.marshal(cctx);
         }
 
         if (err != null)
@@ -186,13 +186,14 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entriesBytes != null) {
-            entries = ctx.marshaller().unmarshal(entriesBytes, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId());
 
-            unmarshalInfos(entries, ctx.cacheContext(cacheId()), ldr);
+        if (entries != null) {
+            for (GridCacheEntryInfo info : entries)
+                info.unmarshal(cctx, ldr);
         }
 
         if (errBytes != null)
@@ -215,7 +216,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("entriesBytes", entriesBytes))
+                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -245,7 +246,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -273,7 +274,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (reader.state()) {
             case 3:
-                entriesBytes = reader.readByteArray("entriesBytes");
+                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -313,7 +314,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

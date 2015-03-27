@@ -24,12 +24,15 @@ import org.apache.ignite.scalar.scalar._
  * Demonstrates a cron-based `Runnable` execution scheduling.
  * Test runnable object broadcasts a phrase to all cluster nodes every minute
  * three times with initial scheduling delay equal to five seconds.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
+ * <p/>
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarScheduleExample extends App {
-    scalar("examples/config/example-compute.xml") {
+    scalar("examples/config/example-ignite.xml") {
         println()
         println("Compute schedule example started.")
 

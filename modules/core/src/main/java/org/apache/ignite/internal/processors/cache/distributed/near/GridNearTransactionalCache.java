@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -29,12 +30,10 @@ import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -69,14 +68,14 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse<K, V> res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
+            @Override public void apply(UUID nodeId, GridNearGetResponse res) {
                 processGetResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse<K, V>>() {
-            @Override public void apply(UUID nodeId, GridNearLockResponse<K, V> res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
+            @Override public void apply(UUID nodeId, GridNearLockResponse res) {
                 processLockResponse(nodeId, res);
             }
         });
@@ -99,7 +98,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx<K, V> entry,
+        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
@@ -109,14 +108,22 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
+            return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        if (keyCheck)
+            validateCacheKeys(keys);
+
+        IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, skipVals));
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
+                    return tx.getAllAsync(ctx,
+                        ctx.cacheKeysView(keys),
+                        entry,
+                        deserializePortable,
+                        skipVals,
+                        false);
                 }
             });
         }
@@ -126,7 +133,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(null,
-            keys,
+            ctx.cacheKeysView(keys),
             false,
             forcePrimary,
             subjId,
@@ -144,8 +151,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param expiryPlc Expiry policy.
      * @return Future.
      */
-    IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
-        @Nullable Collection<? extends K> keys,
+    IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
+        @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -175,19 +182,19 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param req Request.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public void clearLocks(UUID nodeId, GridDhtUnlockRequest<K, V> req) {
+    public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        List<K> keys = req.nearKeys();
+        List<KeyCacheObject> keys = req.nearKeys();
 
         if (keys != null) {
-            long topVer = ctx.affinity().affinityTopologyVersion();
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 while (true) {
-                    GridDistributedCacheEntry<K, V> entry = peekExx(key);
+                    GridDistributedCacheEntry entry = peekExx(key);
 
                     try {
                         if (entry != null) {
@@ -240,50 +247,43 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable public GridNearTxRemote<K, V> startRemoteTx(UUID nodeId, GridDhtLockRequest<K, V> req)
+    @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
-        List<K> nearKeys = req.nearKeys();
-        List<byte[]> keyBytes = req.nearKeyBytes();
+        List<KeyCacheObject> nearKeys = req.nearKeys();
 
-        assert keyBytes != null;
-
-        GridNearTxRemote<K, V> tx = null;
+        GridNearTxRemote tx = null;
 
         ClassLoader ldr = ctx.deploy().globalLoader();
 
         if (ldr != null) {
-            Collection<IgniteTxKey<K>> evicted = null;
+            Collection<IgniteTxKey> evicted = null;
 
             for (int i = 0; i < nearKeys.size(); i++) {
-                K key = nearKeys.get(i);
+                KeyCacheObject key = nearKeys.get(i);
 
                 if (key == null)
                     continue;
 
-                IgniteTxKey<K> txKey = ctx.txKey(key);
+                IgniteTxKey txKey = ctx.txKey(key);
 
-                byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
-
-                Collection<GridCacheMvccCandidate<K>> cands = req.candidatesByIndex(i);
+                Collection<GridCacheMvccCandidate> cands = req.candidatesByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
 
-                GridNearCacheEntry<K, V> entry = null;
+                GridNearCacheEntry entry = null;
 
                 while (true) {
                     try {
                         entry = peekExx(key);
 
                         if (entry != null) {
-                            entry.keyBytes(bytes);
-
                             // Handle implicit locks for pessimistic transactions.
                             if (req.inTx()) {
                                 tx = ctx.tm().nearTx(req.version());
 
                                 if (tx == null) {
-                                    tx = new GridNearTxRemote<>(
+                                    tx = new GridNearTxRemote(
                                         ctx.shared(),
                                         nodeId,
                                         req.nearNodeId(),
@@ -292,6 +292,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.version(),
                                         null,
                                         ctx.system(),
+                                        ctx.ioPolicy(),
                                         PESSIMISTIC,
                                         req.isolation(),
                                         req.isInvalidate(),
@@ -305,15 +306,14 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     if (req.groupLock())
                                         tx.groupLockKey(txKey);
 
-                                    tx = ctx.tm().onCreated(tx);
+                                    tx = ctx.tm().onCreated(null, tx);
 
                                     if (tx == null || !ctx.tm().onStarted(tx))
                                         throw new IgniteTxRollbackCheckedException("Failed to acquire lock " +
                                             "(transaction has been completed): " + req.version());
                                 }
 
-                                tx.addEntry(ctx, txKey, bytes, GridCacheOperation.NOOP, /*Value.*/null,
-                                    /*Value byts.*/null, /*dr version*/null);
+                                tx.addEntry(ctx, txKey, GridCacheOperation.NOOP, /*Value.*/null, /*dr version*/null);
                             }
 
                             // Add remote candidate before reordering.
@@ -376,7 +376,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (tx != null && evicted != null) {
                 assert !evicted.isEmpty();
 
-                for (IgniteTxKey<K> evict : evicted)
+                for (IgniteTxKey evict : evicted)
                     tx.addEvicted(evict);
             }
         }
@@ -395,7 +395,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processLockResponse(UUID nodeId, GridNearLockResponse<K, V> res) {
+    private void processLockResponse(UUID nodeId, GridNearLockResponse res) {
         assert nodeId != null;
         assert res != null;
 
@@ -408,19 +408,19 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(
-        Collection<? extends K> keys,
+        Collection<KeyCacheObject> keys,
         long timeout,
-        IgniteTxLocalEx<K, V> tx,
+        IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Cache.Entry<K, V>>[] filter
+        CacheEntryPredicate[] filter
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
-            (GridNearTxLocal<K, V>)tx,
+            (GridNearTxLocal)tx,
             isRead,
             retval,
             timeout,
@@ -440,7 +440,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
-    protected boolean isNearLocallyMapped(GridCacheEntryEx<K, V> e, long topVer) {
+    protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
         return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
     }
 
@@ -451,7 +451,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if attempt was made to evict the entry.
      */
-    protected boolean evictNearEntry(GridCacheEntryEx<K, V> e, GridCacheVersion obsoleteVer, long topVer) {
+    protected boolean evictNearEntry(GridCacheEntryEx e, GridCacheVersion obsoleteVer, AffinityTopologyVersion topVer) {
         assert e != null;
         assert obsoleteVer != null;
 
@@ -467,7 +467,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, CacheEntryPredicate[] filter) {
         if (keys.isEmpty())
             return;
 
@@ -476,21 +476,23 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
             int keyCnt = -1;
 
-            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest> map = null;
 
-            Collection<K> locKeys = new LinkedList<>();
+            Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
             for (K key : keys) {
                 while (true) {
-                    GridDistributedCacheEntry<K, V> entry = peekExx(key);
+                    KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-                    if (entry == null || !ctx.isAll(entry.wrapLazyValue(), filter))
+                    GridDistributedCacheEntry entry = peekExx(cacheKey);
+
+                    if (entry == null || !ctx.isAll(entry, filter))
                         break; // While.
 
                     try {
-                        GridCacheMvccCandidate<K> cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
+                        GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
 
-                        long topVer = -1;
+                        AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
                         if (cand != null) {
                             assert cand.nearLocal() : "Got non-near-local candidate in near cache: " + cand;
@@ -513,16 +515,16 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             // Send request to remove from remote nodes.
                             ClusterNode primary = ctx.affinity().primary(key, topVer);
 
-                            GridNearUnlockRequest<K, V> req = map.get(primary);
+                            GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest<>(ctx.cacheId(), keyCnt));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                 req.version(ver);
                             }
 
                             // Remove candidate from local node first.
-                            GridCacheMvccCandidate<K> rmv = entry.removeLock();
+                            GridCacheMvccCandidate rmv = entry.removeLock();
 
                             if (rmv != null) {
                                 if (!rmv.reentry()) {
@@ -535,11 +537,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                         req.addKey(
                                             entry.key(),
-                                            entry.getOrMarshalKeyBytes(),
                                             ctx);
                                     }
                                     else
-                                        locKeys.add(key);
+                                        locKeys.add(cacheKey);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Removed lock (will distribute): " + rmv);
@@ -550,9 +551,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             }
                         }
 
-                        assert topVer != -1 || cand == null;
+                        assert !topVer.equals(AffinityTopologyVersion.NONE) || cand == null;
 
-                        if (topVer == -1)
+                        if (topVer.equals(AffinityTopologyVersion.NONE))
                             topVer = ctx.affinity().affinityTopologyVersion();
 
                         ctx.evicts().touch(entry, topVer);
@@ -569,14 +570,14 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (ver == null)
                 return;
 
-            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest<K, V> req = mapping.getValue();
+                GridDistributedUnlockRequest req = mapping.getValue();
 
                 if (n.isLocal())
                     dht.removeLocks(ctx.nodeId(), req.version(), locKeys, true);
-                else if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys()))
+                else if (!F.isEmpty(req.keys()))
                     // We don't wait for reply to this message.
                     ctx.io().send(n, req, ctx.ioPolicy());
             }
@@ -594,25 +595,25 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     @SuppressWarnings({"unchecked"})
-    public void removeLocks(GridCacheVersion ver, Collection<? extends K> keys) {
+    public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;
 
         try {
             int keyCnt = -1;
 
-            Map<ClusterNode, GridNearUnlockRequest<K, V>> map = null;
+            Map<ClusterNode, GridNearUnlockRequest> map = null;
 
-            for (K key : keys) {
+            for (KeyCacheObject key : keys) {
                 // Send request to remove from remote nodes.
-                GridNearUnlockRequest<K, V> req = null;
+                GridNearUnlockRequest req = null;
 
                 while (true) {
-                    GridDistributedCacheEntry<K, V> entry = peekExx(key);
+                    GridDistributedCacheEntry entry = peekExx(key);
 
                     try {
                         if (entry != null) {
-                            GridCacheMvccCandidate<K> cand = entry.candidate(ver);
+                            GridCacheMvccCandidate cand = entry.candidate(ver);
 
                             if (cand != null) {
                                 if (map == null) {
@@ -632,7 +633,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     req = map.get(primary);
 
                                     if (req == null) {
-                                        map.put(primary, req = new GridNearUnlockRequest<>(ctx.cacheId(), keyCnt));
+                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                         req.version(ver);
                                     }
@@ -650,7 +651,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                     req.addKey(
                                         entry.key(),
-                                        entry.getOrMarshalKeyBytes(),
                                         ctx);
                                 }
                             }
@@ -672,12 +672,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
             Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
 
-            for (Map.Entry<ClusterNode, GridNearUnlockRequest<K, V>> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest<K, V> req = mapping.getValue();
+                GridDistributedUnlockRequest req = mapping.getValue();
 
-                if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys())) {
+                if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);
 
                     // We don't wait for reply to this message.
@@ -691,7 +691,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx<K, V> entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert false : "Should not be called";
     }
 

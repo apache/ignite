@@ -22,12 +22,14 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
  * Extras where MVCC and obsolete version are set.
  */
-public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAdapter<K> {
+public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapter {
     /** MVCC. */
-    private GridCacheMvcc<K> mvcc;
+    private GridCacheMvcc mvcc;
 
     /** Obsolete version. */
     private GridCacheVersion obsoleteVer;
@@ -38,7 +40,7 @@ public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAda
      * @param mvcc MVCC.
      * @param obsoleteVer Obsolete version.
      */
-    public GridCacheMvccObsoleteEntryExtras(GridCacheMvcc<K> mvcc, GridCacheVersion obsoleteVer) {
+    public GridCacheMvccObsoleteEntryExtras(GridCacheMvcc mvcc, GridCacheVersion obsoleteVer) {
         assert mvcc != null;
         assert obsoleteVer != null;
 
@@ -47,24 +49,24 @@ public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> attributesData(GridLeanMap<String, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesMvccObsoleteEntryExtras<>(attrData, mvcc, obsoleteVer) : this;
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+        return attrData != null ? new GridCacheAttributesMvccObsoleteEntryExtras(attrData, mvcc, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMvcc<K> mvcc() {
+    @Override public GridCacheMvcc mvcc() {
         return mvcc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> mvcc(GridCacheMvcc<K> mvcc) {
+    @Override public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc) {
         if (mvcc != null) {
             this.mvcc = mvcc;
 
             return this;
         }
         else
-            return new GridCacheObsoleteEntryExtras<>(obsoleteVer);
+            return new GridCacheObsoleteEntryExtras(obsoleteVer);
     }
 
     /** {@inheritDoc} */
@@ -73,19 +75,19 @@ public class GridCacheMvccObsoleteEntryExtras<K> extends GridCacheEntryExtrasAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
         if (obsoleteVer != null) {
             this.obsoleteVer = obsoleteVer;
 
             return this;
         }
         else
-            return new GridCacheMvccEntryExtras<>(mvcc);
+            return new GridCacheMvccEntryExtras(mvcc);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras<K> ttlAndExpireTime(long ttl, long expireTime) {
-        return ttl != 0 ? new GridCacheMvccObsoleteTtlEntryExtras<>(mvcc, obsoleteVer, ttl, expireTime) : this;
+    @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
+        return ttl != 0 ? new GridCacheMvccObsoleteTtlEntryExtras(mvcc, obsoleteVer, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

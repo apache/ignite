@@ -68,14 +68,12 @@ public class GridClockDeltaVersion implements Message, Comparable<GridClockDelta
 
     /** {@inheritDoc} */
     @Override public int compareTo(GridClockDeltaVersion o) {
-        if (topVer == o.topVer) {
-            if (ver == o.ver)
-                return 0;
+        int res = Long.compare(topVer, o.topVer);
 
-            return ver > o.ver ? 1 : -1;
-        }
+        if (res == 0)
+            res = Long.compare(ver, o.ver);
 
-        return topVer > o.topVer ? 1 : -1;
+        return res;
     }
 
     /** {@inheritDoc} */

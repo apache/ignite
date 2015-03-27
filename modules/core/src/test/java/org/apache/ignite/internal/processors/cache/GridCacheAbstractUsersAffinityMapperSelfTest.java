@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+
 /**
  * Test affinity mapper.
  */
@@ -41,10 +43,10 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final CacheAffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
+    public static final AffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
 
     /** */
-    public GridCacheAbstractUsersAffinityMapperSelfTest() {
+    protected GridCacheAbstractUsersAffinityMapperSelfTest() {
         super(false /* doesn't start grid */);
     }
 
@@ -64,9 +66,9 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         cacheCfg.setName(null);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDistributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAffinityMapper(AFFINITY_MAPPER);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -83,7 +85,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Cache atomicity mode.
@@ -99,7 +101,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
      * @throws Exception If failed.
      */
     public void testAffinityMapper() throws Exception {
-        IgniteCache<Object, Object> cache = startGrid(0).jcache(null);
+        IgniteCache<Object, Object> cache = startGrid(0).cache(null);
 
         for (int i = 0; i < KEY_CNT; i++) {
             cache.put(String.valueOf(i), String.valueOf(i));
@@ -123,7 +125,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         private int key;
 
         /** Affinity key. */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private String affKey;
 
         /**

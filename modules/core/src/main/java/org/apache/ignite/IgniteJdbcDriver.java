@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.jdbc.*;
 
 import java.sql.*;
@@ -38,19 +39,9 @@ import java.util.logging.*;
  * or data is fully co-located or fully replicated on multiple nodes):
  * <ul>
  *     <li>
- *         {@code Group by} and {@code sort by} statements are applied separately
- *         on each node, so result set will likely be incorrectly grouped or sorted
- *         after results from multiple remote nodes are grouped together.
- *     </li>
- *     <li>
- *         Aggregation functions like {@code sum}, {@code max}, {@code avg}, etc.
- *         are also applied on each node. Therefore you will get several results
- *         containing aggregated values, one for each node.
- *     </li>
- *     <li>
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode. Refer to
- *         {@link org.apache.ignite.cache.affinity.CacheAffinityKey}
+ *         {@link AffinityKey}
  *         javadoc for more details.
  *     </li>
  *     <li>

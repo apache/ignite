@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
@@ -63,11 +62,10 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        dataCacheCfg.setNearConfiguration(new NearCacheConfiguration());
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
-        dataCacheCfg.setQueryIndexEnabled(false);
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
@@ -75,7 +73,6 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 

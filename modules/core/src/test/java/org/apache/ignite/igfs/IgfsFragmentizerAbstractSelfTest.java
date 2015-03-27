@@ -93,7 +93,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheMode(REPLICATED);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         return cfg;
@@ -112,9 +111,8 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
         cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(IGFS_GROUP_SIZE));
-        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         return cfg;
@@ -133,13 +131,13 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         IgniteUuid fileId = meta.fileId(path);
 
         if (fileId == null)
-            throw new IgfsFileNotFoundException("File not found: " + path);
+            throw new IgfsPathNotFoundException("File not found: " + path);
 
         IgfsFileInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)
-                throw new IgfsFileNotFoundException("File not found: " + path);
+                throw new IgfsPathNotFoundException("File not found: " + path);
 
             if (fileInfo.fileMap().ranges().isEmpty())
                 return;

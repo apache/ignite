@@ -69,12 +69,6 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
-
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;

@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
  * <pre name="code" class="xml">
  *  &lt;property&gt;
  *      &lt;name&gt;fs.default.name&lt;/name&gt;
- *      &lt;value&gt;igfs://ipc&lt;/value&gt;
+ *      &lt;value&gt;igfs:///&lt;/value&gt;
  *  &lt;/property&gt;
  *
  *  &lt;property&gt;
@@ -289,9 +289,11 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
                 String secUri = props.get(SECONDARY_FS_URI);
                 String secConfPath = props.get(SECONDARY_FS_CONFIG_PATH);
+                String secUserName = props.get(SECONDARY_FS_USER_NAME);
 
                 try {
-                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath);
+                    SecondaryFileSystemProvider secProvider = new SecondaryFileSystemProvider(secUri, secConfPath,
+                        secUserName);
 
                     secondaryFs = secProvider.createFileSystem();
                     secondaryUri = secProvider.uri();
@@ -524,7 +526,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public FSDataOutputStream create(Path f, FsPermission perm, boolean overwrite, int bufSize,
+    @Override public FSDataOutputStream create(Path f, final FsPermission perm, boolean overwrite, int bufSize,
         short replication, long blockSize, Progressable progress) throws IOException {
         A.notNull(f, "f");
 
@@ -561,10 +563,13 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     return os;
             }
             else {
+                Map<String,String> propMap = permission(perm);
+
+                propMap.put(PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
+
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 HadoopIgfsStreamDelegate stream = rmtClient.create(path, overwrite, colocateFileWrites,
-                    replication, blockSize, F.asMap(PROP_PERMISSION, toString(perm),
-                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites)));
+                    replication, blockSize, propMap);
 
                 assert stream != null;
 
@@ -694,11 +699,19 @@ public class IgniteHadoopFileSystem extends FileSystem {
                 return secondaryFs.rename(toSecondary(src), toSecondary(dst));
             }
             else {
-                // Will throw exception if failed.
-                rmtClient.rename(srcPath, dstPath);
-
                 if (clientLog.isLogEnabled())
                     clientLog.logRename(srcPath, mode, dstPath);
+
+                try {
+                    rmtClient.rename(srcPath, dstPath);
+                }
+                catch (IOException ioe) {
+                    // Log the exception before rethrowing since it may be ignored:
+                    LOG.warn("Failed to rename [srcPath=" + srcPath + ", dstPath=" + dstPath + ", mode=" + mode + ']',
+                        ioe);
+
+                    throw ioe;
+                }
 
                 return true;
             }

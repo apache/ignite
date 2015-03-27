@@ -52,7 +52,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
-    @CacheAffinityKeyMapped
+    @AffinityKeyMapped
     @Override public String name() {
         return name;
     }

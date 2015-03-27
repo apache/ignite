@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -30,9 +31,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
@@ -56,7 +56,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
@@ -74,7 +74,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private static volatile int idx = -1;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -112,13 +112,14 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setStartSize(20);
-        cc.setPreloadMode(preloadMode);
-        cc.setPreloadBatchSize(preloadBatchSize);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setRebalanceMode(preloadMode);
+        cc.setRebalanceBatchSize(preloadBatchSize);
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (!nearEnabled())
+            cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 
@@ -210,7 +211,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @return Affinity.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheAffinityFunction affinity(GridCache<Integer, ?> cache) {
+    private AffinityFunction affinity(GridCache<Integer, ?> cache) {
         return cache.configuration().getAffinity();
     }
 
@@ -249,7 +250,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         startGrids();
 
         try {
-            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -269,7 +270,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.jcache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 affinityAfterStart(c);
 

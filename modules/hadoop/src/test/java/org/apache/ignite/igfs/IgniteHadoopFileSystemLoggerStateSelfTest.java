@@ -33,7 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.*;
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -82,20 +81,22 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
-        igfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
-            put("type", "tcp");
-            put("port", "10500");
-        }});
+
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
+
+        endpointCfg.setType(IgfsIpcEndpointType.TCP);
+        endpointCfg.setPort(10500);
+
+        igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -103,7 +104,6 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();

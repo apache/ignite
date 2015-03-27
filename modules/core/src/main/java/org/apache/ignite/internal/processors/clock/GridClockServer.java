@@ -170,7 +170,7 @@ public class GridClockServer {
          * Creates read worker.
          */
         protected ReadWorker() {
-            super(ctx.gridName(), "grid-time-server-reader", log);
+            super(ctx.gridName(), "grid-time-server-reader", GridClockServer.this.log);
         }
 
         /** {@inheritDoc} */

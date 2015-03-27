@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -35,7 +36,7 @@ import java.util.*;
 /**
  * Near transaction prepare request.
  */
-public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequest<K, V> {
+public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +50,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     private boolean near;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** {@code True} if this last prepare request for node. */
     private boolean last;
@@ -95,10 +96,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
-        long topVer,
-        IgniteInternalTx<K, V> tx,
-        Collection<IgniteTxEntry<K, V>> reads,
-        Collection<IgniteTxEntry<K, V>> writes,
+        AffinityTopologyVersion topVer,
+        IgniteInternalTx tx,
+        Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes,
         IgniteTxKey grpLockKey,
         boolean partLock,
         boolean near,
@@ -199,7 +200,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -218,14 +219,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<IgniteTxEntry<K, V>> cloneEntries(Collection<IgniteTxEntry<K, V>> c) {
+    private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
             return c;
 
-        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(c.size());
+        Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
-        for (IgniteTxEntry<K, V> e : c) {
-            GridCacheContext<K, V> cacheCtx = e.context();
+        for (IgniteTxEntry e : c) {
+            GridCacheContext cacheCtx = e.context();
 
             // Clone only if it is a near cache.
             if (cacheCtx.isNear())
@@ -257,62 +258,62 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         switch (writer.state()) {
-            case 23:
+            case 25:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 26:
                 if (!writer.writeBoolean("implicitSingle", implicitSingle))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 27:
                 if (!writer.writeBoolean("last", last))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 28:
                 if (!writer.writeCollection("lastBackups", lastBackups, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 29:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 30:
                 if (!writer.writeBoolean("near", near))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 31:
                 if (!writer.writeBoolean("retVal", retVal))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
+            case 32:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 31:
+            case 33:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 32:
-                if (!writer.writeLong("topVer", topVer))
+            case 34:
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -333,7 +334,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (reader.state()) {
-            case 23:
+            case 25:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -341,7 +342,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 24:
+            case 26:
                 implicitSingle = reader.readBoolean("implicitSingle");
 
                 if (!reader.isLastRead())
@@ -349,7 +350,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 25:
+            case 27:
                 last = reader.readBoolean("last");
 
                 if (!reader.isLastRead())
@@ -357,7 +358,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 26:
+            case 28:
                 lastBackups = reader.readCollection("lastBackups", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
@@ -365,7 +366,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 27:
+            case 29:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -373,7 +374,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 28:
+            case 30:
                 near = reader.readBoolean("near");
 
                 if (!reader.isLastRead())
@@ -381,7 +382,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 29:
+            case 31:
                 retVal = reader.readBoolean("retVal");
 
                 if (!reader.isLastRead())
@@ -389,7 +390,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 30:
+            case 32:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -397,7 +398,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 31:
+            case 33:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -405,8 +406,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 reader.incrementState();
 
-            case 32:
-                topVer = reader.readLong("topVer");
+            case 34:
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -425,7 +426,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 33;
+        return 35;
     }
 
     /** {@inheritDoc} */

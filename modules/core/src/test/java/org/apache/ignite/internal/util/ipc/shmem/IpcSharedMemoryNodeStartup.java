@@ -19,13 +19,11 @@ package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -49,10 +47,10 @@ public class IpcSharedMemoryNodeStartup {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        Map<String, String> endpointCfg = new HashMap<>();
+        IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
-        endpointCfg.put("type", "shmem");
-        endpointCfg.put("port", "10500");
+        endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
+        endpointCfg.setPort(10500);
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
@@ -66,11 +64,10 @@ public class IpcSharedMemoryNodeStartup {
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);
 
