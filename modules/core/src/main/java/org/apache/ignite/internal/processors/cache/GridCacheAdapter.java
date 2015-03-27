@@ -1597,8 +1597,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public V getForcePrimary(K key) throws IgniteCheckedException {
-        ctx.denyOnFlag(LOCAL);
-
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null, taskName, true, false)
@@ -1607,8 +1605,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getForcePrimaryAsync(final K key) {
-        ctx.denyOnFlag(LOCAL);
-
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
@@ -2040,9 +2036,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     ) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        ctx.denyOnFlag(LOCAL);
-
-        if (keyCheck)
+       if (keyCheck)
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
@@ -5023,8 +5017,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Read operation future.
      */
     public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
-        ctx.denyOnFlag(LOCAL);
-
         try {
             checkJta();
         }
@@ -5051,8 +5043,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If read failed.
      */
     public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlag(LOCAL);
-
         checkJta();
 
         return getAllAsync(keys, deserializePortable).get();
@@ -5064,7 +5054,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     @Override @Nullable public V reload(K key) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(LOCAL, READ));
+        ctx.denyOnFlags(F.asList(READ));
 
         A.notNull(key, "key");
 
@@ -5097,7 +5087,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Reload future.
      */
     @Override public IgniteInternalFuture<V> reloadAsync(final K key) {
-        ctx.denyOnFlags(F.asList(LOCAL, READ));
+        ctx.denyOnFlags(F.asList(READ));
 
         return ctx.closures().callLocalSafe(ctx.projectSafe(new Callable<V>() {
             @Nullable @Override public V call() throws IgniteCheckedException {

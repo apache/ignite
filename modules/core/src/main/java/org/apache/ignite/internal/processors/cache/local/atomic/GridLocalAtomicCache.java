@@ -482,8 +482,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     @SuppressWarnings("unchecked")
     @Override @Nullable public V get(K key, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlag(LOCAL);
-
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
@@ -503,8 +501,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public final Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable)
         throws IgniteCheckedException {
-        ctx.denyOnFlag(LOCAL);
-
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -531,8 +527,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
-
         A.notNull(keys, "keys");
 
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();

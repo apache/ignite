@@ -215,7 +215,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @return `True` if value was stored in cache, `false` otherwise.
@@ -237,7 +237,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @return Previous value associated with specified key, or `null`
@@ -261,7 +261,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @return Previous value associated with specified key as an option.
@@ -291,7 +291,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param kv1 Key-value pair to store in cache.
      * @param kv2 Key-value pair to store in cache.
@@ -321,7 +321,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param kvs Key-value pairs to store in cache. If `null` this function is no-op.
      * @see `IgniteCache#putAll(...)`
@@ -343,7 +343,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param ks Sequence of additional keys to remove. If `null` - this function is no-op.
      * @see `IgniteCache#removeAll(...)`
@@ -388,7 +388,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param k Key whose mapping is to be removed from cache.
      * @return Previous value associated with specified key, or `null`
@@ -420,7 +420,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param k Key whose mapping is to be removed from cache.
      * @return Previous value associated with specified key as an option.
@@ -451,7 +451,7 @@ with Iterable[Cache.Entry[K, V]] with Ordered[IgniteCache[K, V]] {
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
+     * `CacheFlag#READ`.
      *
      * @param k1 1st key to remove.
      * @param k2 2nd key to remove.

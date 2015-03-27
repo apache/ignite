@@ -609,8 +609,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        cctx.denyOnFlag(LOCAL);
-
         return innerGet0(tx,
             readSwap,
             readThrough,

@@ -104,7 +104,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
