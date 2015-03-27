@@ -114,9 +114,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if ((cacheFlagsBits & (1 << 1)) != 0)
             flagSet.add(CacheFlag.SKIP_SWAP);
 
-        if ((cacheFlagsBits & (1 << 4)) != 0)
-            flagSet.add(CacheFlag.INVALIDATE);
-
         return flagSet.toArray(new CacheFlag[flagSet.size()]);
     }
 

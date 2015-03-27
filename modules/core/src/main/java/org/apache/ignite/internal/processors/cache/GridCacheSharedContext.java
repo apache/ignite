@@ -463,9 +463,6 @@ public class GridCacheSharedContext<K, V> {
             return;
 
         assert flags != null;
-
-        if (flags.contains(INVALIDATE) && !tx.isInvalidate())
-            throw new CacheFlagException(INVALIDATE);
     }
 
     /**

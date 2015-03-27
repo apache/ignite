@@ -1524,7 +1524,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if invalidation is enabled.
      */
     public boolean isInvalidate() {
-        return cacheCfg.isInvalidate() || hasFlag(INVALIDATE);
+        return cacheCfg.isInvalidate();
     }
 
     /**
