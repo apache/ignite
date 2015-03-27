@@ -52,7 +52,8 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         getSpi().setListener(new SwapSpaceSpiListener() {
-            @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
+            @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes,
+                @Nullable byte[] valBytes) {
                 if (ctx.event().isRecordable(evtType)) {
                     String msg = null;
 
@@ -98,9 +99,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
                 // Always notify grid cache processor.
                 if (evtType == EVT_SWAP_SPACE_DATA_EVICTED && spaceName != null) {
                     assert keyBytes != null;
+                    assert valBytes != null;
 
                     // Cache cannot use default swap space.
-                    ctx.cache().onEvictFromSwap(spaceName, keyBytes);
+                    ctx.cache().onEvictFromSwap(spaceName, keyBytes, valBytes);
                 }
             }
         });

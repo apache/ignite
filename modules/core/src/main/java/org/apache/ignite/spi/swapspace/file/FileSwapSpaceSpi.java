@@ -581,7 +581,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         SwapSpaceSpiListener lsnr = evictLsnr;
 
         if (lsnr != null)
-            lsnr.onSwapEvent(evtType, spaceName, null);
+            lsnr.onSwapEvent(evtType, spaceName, null, null);
     }
 
     /**

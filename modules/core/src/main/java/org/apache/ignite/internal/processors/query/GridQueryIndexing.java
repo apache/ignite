@@ -184,9 +184,10 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param key Key.
+     * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
