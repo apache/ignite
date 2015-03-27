@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -39,7 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -131,8 +129,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             seqView = atomicsCache;
 
             dsCacheCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
-
-            CacheConfiguration cfg = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).configuration();
         }
     }
 
