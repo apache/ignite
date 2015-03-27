@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -1919,6 +1919,20 @@ public class GridFunc {
         }
 
         return newArr;
+    }
+
+    /**
+     * Concatenates multiple iterators as single one.
+     *
+     * @param iters Iterators.
+     * @return Single iterator.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+        if (iters.length == 1)
+            return iters[0];
+
+        return concat(asList(iters).iterator());
     }
 
     /**
@@ -5779,7 +5793,7 @@ public class GridFunc {
     public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
         A.notNull(c, "c");
 
-        return viewReadOnly(c, IDENTITY);
+        return (Collection<R>)c;
     }
 
     /**
@@ -7668,7 +7682,7 @@ public class GridFunc {
 
     /**
      * Gets closure that returns key for an entry. The closure internally
-     * delegates to {@link Map.Entry#getKey()} method.
+     * delegates to {@link java.util.Map.Entry#getKey()} method.
      *
      * @param <K> Key type.
      * @return Closure that returns key for an entry.

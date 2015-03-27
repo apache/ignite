@@ -32,8 +32,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,7 +41,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * This class defines a checkpoint manager.

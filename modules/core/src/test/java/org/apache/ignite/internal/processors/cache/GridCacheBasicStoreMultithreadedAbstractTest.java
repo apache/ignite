@@ -77,7 +77,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

@@ -19,10 +19,10 @@ package org.apache.ignite.testframework;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -39,6 +39,7 @@ import javax.cache.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
+import java.lang.ref.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.attribute.*;
@@ -836,14 +837,6 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
-        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Cache context.
-     */
     public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
         return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
     }
@@ -852,7 +845,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(IgniteCache<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -860,7 +853,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(IgniteCache<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -874,7 +867,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
+            IgniteCache<K, V> cache = ((IgniteEx)g).cache(cacheName);
 
             GridDhtPartitionTopology top = dht(cache).topology();
 
@@ -882,7 +875,7 @@ public final class GridTestUtils {
                 boolean wait = false;
 
                 for (int p = 0; p < g.affinity(cacheName).partitions(); p++) {
-                    Collection<ClusterNode> nodes = top.nodes(p, -1);
+                    Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +
@@ -1470,6 +1463,30 @@ public final class GridTestUtils {
 
         System.out.printf("%s:\n operations:%d, duration=%fs, op/s=%d, latency=%fms\n", name, cnt, dur,
             (long)(cnt / dur), dur / cnt);
+    }
+
+    /**
+     * Prompt to execute garbage collector.
+     * {@code System.gc();} is not guaranteed to garbage collection, this method try to fill memory to crowd out dead
+     * objects.
+     */
+    public static void runGC() {
+        System.gc();
+
+        ReferenceQueue<byte[]> queue = new ReferenceQueue<>();
+
+        Collection<SoftReference<byte[]>> refs = new ArrayList<>();
+
+        while (true) {
+            byte[] bytes = new byte[128 * 1024];
+
+            refs.add(new SoftReference<>(bytes, queue));
+
+            if (queue.poll() != null)
+                break;
+        }
+
+        System.gc();
     }
 
     /**

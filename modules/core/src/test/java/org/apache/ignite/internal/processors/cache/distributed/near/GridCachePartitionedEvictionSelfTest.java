@@ -78,8 +78,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
-        cc.setNearEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
+        cc.setEvictionPolicy(new FifoEvictionPolicy(EVICT_CACHE_SIZE));
+        cc.getNearConfiguration().setNearEvictionPolicy(new FifoEvictionPolicy(EVICT_CACHE_SIZE));
         cc.setSwapEnabled(false);
 
         // We set 1 backup explicitly.
@@ -95,7 +95,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @return Cache.
      */
     private IgniteCache<String, Integer> cache(ClusterNode node) {
-        return G.ignite(node.id()).jcache(null);
+        return G.ignite(node.id()).cache(null);
     }
 
     /**
@@ -168,7 +168,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         GridDhtCacheAdapter<String, Integer> dht0 = dht(jcache(0));
         GridDhtCacheAdapter<String, Integer> dht1 = dht(jcache(1));
 
-        CacheAffinity<String> aff = dht0.affinity();
+        Affinity<String> aff = dht0.affinity();
 
         TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
 

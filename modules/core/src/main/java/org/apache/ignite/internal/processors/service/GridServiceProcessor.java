@@ -25,6 +25,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -36,8 +37,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.event.*;
@@ -464,8 +465,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ServiceDescriptorImpl desc = new ServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagOn(CacheFlag.GET_PRIMARY).
-                    get(new GridServiceAssignmentsKey(dep.configuration().getName()));
+                GridServiceAssignments assigns = (GridServiceAssignments)cache.getForcePrimary(
+                    new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
                     desc.topologySnapshot(assigns.assigns());
@@ -620,7 +621,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 Map<UUID, Integer> cnts = new HashMap<>();
 
                 if (affKey != null) {
-                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
+                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, new AffinityTopologyVersion(topVer));
 
                     if (n != null) {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
@@ -822,13 +823,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             finally {
                                 // Suicide.
                                 exe.shutdownNow();
-
-                                try {
-                                    ctx.resource().cleanup(cp);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
-                                }
                             }
                         }
                     });
@@ -866,29 +860,37 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private void cancel(Iterable<ServiceContextImpl> ctxs, int cancelCnt) {
         for (Iterator<ServiceContextImpl> it = ctxs.iterator(); it.hasNext();) {
-            ServiceContextImpl ctx = it.next();
+            ServiceContextImpl svcCtx = it.next();
 
             // Flip cancelled flag.
-            ctx.setCancelled(true);
+            svcCtx.setCancelled(true);
 
             // Notify service about cancellation.
             try {
-                ctx.service().cancel(ctx);
+                svcCtx.service().cancel(svcCtx);
             }
             catch (Throwable e) {
-                log.error("Failed to cancel service (ignoring) [name=" + ctx.name() +
-                    ", execId=" + ctx.executionId() + ']', e);
+                log.error("Failed to cancel service (ignoring) [name=" + svcCtx.name() +
+                    ", execId=" + svcCtx.executionId() + ']', e);
+            }
+            finally {
+                try {
+                    ctx.resource().cleanup(svcCtx.service());
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
+                }
             }
 
             // Close out executor thread for the service.
             // This will cause the thread to be interrupted.
-            ctx.executor().shutdownNow();
+            svcCtx.executor().shutdownNow();
 
             it.remove();
 
             if (log.isInfoEnabled())
-                log.info("Cancelled service instance [name=" + ctx.name() + ", execId=" +
-                    ctx.executionId() + ']');
+                log.info("Cancelled service instance [name=" + svcCtx.name() + ", execId=" +
+                    svcCtx.executionId() + ']');
 
             if (--cancelCnt == 0)
                 break;

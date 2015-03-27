@@ -1,32 +1,12 @@
 Apache Ignite (incubating)
-Copyright [2015] The Apache Software Foundation
+Copyright 2015 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
 
-This software has a dependency on Java port of a concurrent trie hash
-map implementation from the Scala collections library, licensed
-under Apache License, Version 2.0.
-https://github.com/romix/java-concurrent-hash-trie-map
-
-
-This software has a dependency on JetBrains Annotations licensed under
-Apache License, Version 2.0.
+This software includes code from IntelliJ IDEA Community Edition
+Copyright (C) JetBrains s.r.o.
+https://www.jetbrains.com/idea/
+Licensed under Apache License, Version 2.0.
 http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7Cjar
-
-
-This software has a dependency on Persistent Collections library,
-licensed under MIT license.
-https://github.com/blackdrag/pcollections
-
-
-This software has a dependency on snaptree library,
-licensed under BSD 3-clause license.
-https://github.com/nbronson/snaptree/
-
-
-This software, specifically package "org.jdk8.backport", has a dependency on
-concurrency libraries written by Doug Lea with assistance from members of JCP JSR-166
-Expert Group and released to the public domain, as explained at
-http://creativecommons.org/publicdomain/zero/1.0/.

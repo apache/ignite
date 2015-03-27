@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,7 +28,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -42,8 +42,8 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -55,7 +55,11 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     @Override protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
         CacheConfiguration cc = super.cache(name, spiName);
 
-        cc.setDistributionMode(distributionMode());
+        cc.setNearConfiguration(nearConfiguration());
+
+        cc.setIndexedTypes(String.class, Organization.class,
+            Integer.class, Integer.class,
+            AffinityKey.class, Person.class);
 
         return cc;
     }
@@ -64,7 +68,7 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).internalCache(null).queries().createSqlFieldsQuery(
             "select _KEY, name, age from Person");
 
         qry.includeBackups(true);
@@ -88,17 +92,17 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
             assertEquals("Row size", 3, row.size());
 
             if (cnt == 0 || cnt == 1) {
-                assertEquals("Key", new CacheAffinityKey<>("p1", "o1"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p1", "o1"), row.get(0));
                 assertEquals("Name", "John White", row.get(1));
                 assertEquals("Age", 25, row.get(2));
             }
             else if (cnt == 2 || cnt == 3) {
-                assertEquals("Key", new CacheAffinityKey<>("p2", "o1"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p2", "o1"), row.get(0));
                 assertEquals("Name", "Joe Black", row.get(1));
                 assertEquals("Age", 35, row.get(2));
             }
             else if (cnt == 4 || cnt == 5) {
-                assertEquals("Key", new CacheAffinityKey<>("p3", "o2"), row.get(0));
+                assertEquals("Key", new AffinityKey<>("p3", "o2"), row.get(0));
                 assertEquals("Name", "Mike Green", row.get(1));
                 assertEquals("Age", 40, row.get(2));
             }

@@ -30,7 +30,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Base class for {@link CacheStore} that implementation backed by JDBC and POJO via reflection.
+ * Implementation of {@link CacheStore} backed by JDBC and POJO via reflection.
  *
  * This implementation stores objects in underlying database using java beans mapping description via reflection.
  *
@@ -62,13 +62,14 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param clsName Class name.
          * @param fields Fields.
+         *
+         * @throws CacheException If failed to construct type cache.
          */
         public PojoMethodsCache(String clsName, Collection<CacheTypeFieldMetadata> fields) throws CacheException {
             try {
                 cls = Class.forName(clsName);
 
-                if (simple = (Number.class.isAssignableFrom(cls) || String.class.isAssignableFrom(cls) ||
-                    java.util.Date.class.isAssignableFrom(cls)) || Boolean.class.isAssignableFrom(cls))
+                if (simple = simpleType(cls))
                     return;
 
                 ctor = cls.getDeclaredConstructor();
@@ -188,7 +189,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object extractField(String cacheName, String typeName, String fieldName, Object obj)
+    @Nullable @Override protected Object extractParameter(String cacheName, String typeName, String fieldName,
+        Object obj)
         throws CacheException {
         try {
             PojoMethodsCache mc = mtdsCache.get(cacheName).get(typeName);

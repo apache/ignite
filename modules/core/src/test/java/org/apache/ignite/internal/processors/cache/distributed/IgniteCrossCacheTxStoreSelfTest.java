@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -40,17 +38,20 @@ import java.util.concurrent.*;
  *
  */
 public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static Map<String, CacheStore> firstStores = new ConcurrentHashMap<>();
+
+    /** */
+    private static Map<String, CacheStore> secondStores = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        TestStore firstStore = new TestStore();
-        TestStore secondStore = new TestStore();
-
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cfg1 = cacheConfiguration("cacheA", firstStore);
-        CacheConfiguration cfg2 = cacheConfiguration("cacheB", firstStore);
+        CacheConfiguration cfg1 = cacheConfiguration("cacheA", new FirstStoreFactory());
+        CacheConfiguration cfg2 = cacheConfiguration("cacheB", new FirstStoreFactory());
 
-        CacheConfiguration cfg3 = cacheConfiguration("cacheC", secondStore);
+        CacheConfiguration cfg3 = cacheConfiguration("cacheC", new SecondStoreFactory());
         CacheConfiguration cfg4 = cacheConfiguration("cacheD", null);
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4);
@@ -60,20 +61,19 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cacheName Cache name.
-     * @param store Cache store.
+     * @param factory Factory to use.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String cacheName, CacheStore<Object, Object> store) {
+    private CacheConfiguration cacheConfiguration(String cacheName, Factory<CacheStore> factory) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
         cfg.setName(cacheName);
 
         cfg.setBackups(1);
 
-        if (store != null) {
-            cfg.setCacheStoreFactory(
-                new FactoryBuilder.SingletonFactory<CacheStore<? super Object, ? super Object>>(store));
+        if (factory != null) {
+            cfg.setCacheStoreFactory(factory);
 
             cfg.setWriteThrough(true);
         }
@@ -91,13 +91,16 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        firstStores.clear();
+        secondStores.clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).jcache("cacheA").removeAll();
-        grid(0).jcache("cacheB").removeAll();
-        grid(0).jcache("cacheC").removeAll();
+        grid(0).cache("cacheA").removeAll();
+        grid(0).cache("cacheB").removeAll();
+        grid(0).cache("cacheC").removeAll();
     }
 
     /**
@@ -106,23 +109,15 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testWriteThrough() throws Exception {
         IgniteEx grid = grid(0);
 
-        TestStore firstStore = null;
-
-        for (CacheConfiguration ccfg : grid(0).configuration().getCacheConfiguration()) {
-            if (ccfg.getCacheStoreFactory() != null) {
-                firstStore = (TestStore)ccfg.getCacheStoreFactory().create();
-
-                break;
-            }
-        }
+        TestStore firstStore = (TestStore)firstStores.get(grid.name());
 
         assertNotNull(firstStore);
 
         Collection<String> evts = firstStore.events();
 
         try (Transaction tx = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheB = grid.jcache("cacheB");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheB = grid.cache("cacheB");
 
             cacheA.put("1", "1");
             cacheA.put("2", "2");
@@ -150,7 +145,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
                 "write cacheA",
                 "delete cacheA",
                 "write cacheB",
-                "txEnd true"
+                "sessionEnd true"
             ),
             evts);
     }
@@ -162,8 +157,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (Transaction ignored = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheC = grid.jcache("cacheC");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.cache("cacheC");
 
             cacheA.put("1", "2");
 
@@ -183,8 +178,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (Transaction ignored = grid.transactions().txStart()) {
-            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
-            IgniteCache<Object, Object> cacheC = grid.jcache("cacheD");
+            IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.cache("cacheD");
 
             cacheA.put("1", "2");
 
@@ -251,8 +246,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             throws CacheLoaderException {
         }
 
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
-            evts.offer("txEnd " + commit);
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
+            evts.offer("sessionEnd " + commit);
         }
 
         /** {@inheritDoc} */
@@ -300,6 +295,40 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
          */
         private CacheStoreSession session() {
             return ses;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FirstStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            String gridName = startingGrid.get();
+
+            CacheStore store = firstStores.get(gridName);
+
+            if (store == null)
+                store = F.addIfAbsent(firstStores, gridName, new TestStore());
+
+            return store;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SecondStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            String gridName = startingGrid.get();
+
+            CacheStore store = secondStores.get(gridName);
+
+            if (store == null)
+                store = F.addIfAbsent(secondStores, gridName, new TestStore());
+
+            return store;
         }
     }
 }

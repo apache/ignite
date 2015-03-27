@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.services.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -104,6 +104,7 @@ public class DummyService implements Service {
     }
 
     /**
+     * @param name Service name.
      * @return Cancelled flag.
      */
     public static int cancelled(String name) {
@@ -113,6 +114,7 @@ public class DummyService implements Service {
     }
 
     /**
+     * @param name Service name.
      * @return Started counter.
      */
     public static int started(String name) {
@@ -133,6 +135,7 @@ public class DummyService implements Service {
     }
 
     /**
+     * @param name Service name.
      * @param latch Count down latch.
      */
     public static void exeLatch(String name, CountDownLatch latch) {
@@ -140,6 +143,7 @@ public class DummyService implements Service {
     }
 
     /**
+     * @param name Service name.
      * @param latch Cancel latch.
      */
     public static void cancelLatch(String name, CountDownLatch latch) {

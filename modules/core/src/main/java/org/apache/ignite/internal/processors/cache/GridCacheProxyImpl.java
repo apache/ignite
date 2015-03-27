@@ -71,7 +71,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     private CacheQueries<K, V> qry;
 
     /** Affinity. */
-    private CacheAffinity<K> aff;
+    private Affinity<K> aff;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -143,7 +143,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAffinity<K> affinity() {
+    @Override public Affinity<K> affinity() {
         return aff;
     }
 
@@ -254,6 +254,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return cache.randomEntry();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean affinityNode() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return cache.affinityNode();
         }
         finally {
             gate.leave(prev);
@@ -1276,7 +1288,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(Set<K> keys) {
+    @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1312,7 +1324,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocallyAll(Set<K> keys) {
+    @Override public void clearLocallyAll(Set<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1336,7 +1348,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll(Set<K> keys) throws IgniteCheckedException {
+    @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

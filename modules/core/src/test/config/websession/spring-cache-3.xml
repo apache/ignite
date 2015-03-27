@@ -40,8 +40,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
                     <property name="backups" value="1"/>
@@ -57,8 +55,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 

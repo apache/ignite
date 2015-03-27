@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -47,11 +46,9 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -180,7 +177,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
 
         if (cacheName == null)
             cfg.setCacheMode(LOCAL);
@@ -196,7 +192,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
 
-        cfg.setAffinity(new CacheRendezvousAffinityFunction());
+        cfg.setAffinity(new RendezvousAffinityFunction());
 
         return cfg;
     }
@@ -224,36 +220,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             GridClientFactory.stop(client.id(), false);
 
             client = null;
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSyncCommitRollbackFlags() throws Exception {
-        commSpiEnabled = true;
-
-        try {
-            GridClientData data = client.data(REPLICATED_ASYNC_CACHE_NAME);
-
-            info("Before put x1");
-
-            data.put("x1", "y1");
-
-            info("Before put x2");
-
-            data.flagsOn(GridClientCacheFlag.SYNC_COMMIT).put("x2", "y2");
-
-            info("Before put x3");
-
-            data.put("x3", "y3");
-
-            info("Before put x4");
-
-            data.flagsOn(GridClientCacheFlag.SYNC_COMMIT).put("x4", "y4");
-        }
-        finally {
-            commSpiEnabled = false;
         }
     }
 
@@ -331,85 +297,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testAffinityExecute() throws Exception {
-        GridClientCompute dflt = client.compute();
-
-        GridClientData data = client.data(PARTITIONED_CACHE_NAME);
-
-        Collection<? extends GridClientNode> nodes = dflt.nodes();
-
-        assertEquals(NODES_CNT, nodes.size());
-
-        for (int i = 0; i < NODES_CNT; i++) {
-            Ignite g = grid(i);
-
-            assert g != null;
-
-            int affinityKey = -1;
-
-            for (int key = 0; key < 10000; key++) {
-                if (g.cluster().localNode().id().equals(data.affinity(key))) {
-                    affinityKey = key;
-
-                    break;
-                }
-            }
-
-            if (affinityKey == -1)
-                throw new Exception("Unable to found key for which node is primary: " + g.cluster().localNode().id());
-
-            GridClientNode clientNode = dflt.node(g.cluster().localNode().id());
-
-            assertNotNull("Client node for " + g.cluster().localNode().id() + " was not found", clientNode);
-
-            String res = dflt.affinityExecute(TestTask.class.getName(), PARTITIONED_CACHE_NAME, affinityKey, null);
-
-            assertNotNull(res);
-
-            assertEquals(g.cluster().localNode().id().toString(), res);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvalidateFlag() throws Exception {
-        IgniteEx g0 = grid(0);
-
-        IgniteCache<String, String> cache = g0.jcache(PARTITIONED_CACHE_NAME);
-
-        String key = null;
-
-        for (int i = 0; i < 10_000; i++) {
-            if (!affinity(cache).isPrimaryOrBackup(g0.localNode(), String.valueOf(i))) {
-                key = String.valueOf(i);
-
-                break;
-            }
-        }
-
-        assertNotNull(key);
-
-        cache.put(key, key); // Create entry in near cache, it is invalidated if INVALIDATE flag is set.
-
-        assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-        GridClientData d = client.data(PARTITIONED_CACHE_NAME);
-
-        d.flagsOn(GridClientCacheFlag.INVALIDATE).put(key, "zzz");
-
-        for (Ignite g : G.allGrids()) {
-            cache = g.jcache(PARTITIONED_CACHE_NAME);
-
-            if (affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals("zzz", cache.localPeek(key, CachePeekMode.ONHEAP));
-        }
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTopologyListener() throws Exception {
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);
@@ -456,124 +343,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             client.removeTopologyListener(lsnr);
 
             stopGrid(NODES_CNT + 1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDisabledRest() throws Exception {
-        restEnabled = false;
-
-        final Ignite g = startGrid("disabled-rest");
-
-        try {
-            Thread.sleep(2 * TOP_REFRESH_FREQ);
-
-            // As long as we have round robin load balancer this will cause every node to be queried.
-            for (int i = 0; i < NODES_CNT + 1; i++)
-                assertEquals(NODES_CNT + 1, client.compute().refreshTopology(false, false).size());
-
-            final GridClientData data = client.data(PARTITIONED_CACHE_NAME);
-
-            // Check rest-disabled node is unavailable.
-            try {
-                String affKey;
-
-                do {
-                    affKey = UUID.randomUUID().toString();
-                } while (!data.affinity(affKey).equals(g.cluster().localNode().id()));
-
-                data.put(affKey, "asdf");
-
-                assertEquals("asdf", cache(0, PARTITIONED_CACHE_NAME).get(affKey));
-            }
-            catch (GridServerUnreachableException e) {
-                // Thrown for direct client-node connections.
-                assertTrue("Unexpected exception message: " + e.getMessage(),
-                    e.getMessage().startsWith("No available endpoints to connect (is rest enabled for this node?)"));
-            }
-            catch (GridClientException e) {
-                // Thrown for routed client-router-node connections.
-                String msg = e.getMessage();
-
-                assertTrue("Unexpected exception message: " + msg, protocol() == GridClientProtocol.TCP ?
-                    msg.contains("No available endpoints to connect (is rest enabled for this node?)") : // TCP router.
-                    msg.startsWith("No available nodes on the router for destination node ID"));         // HTTP router.
-            }
-
-            // Check rest-enabled nodes are available.
-            String affKey;
-
-            do {
-                affKey = UUID.randomUUID().toString();
-            } while (data.affinity(affKey).equals(g.cluster().localNode().id()));
-
-            data.put(affKey, "fdsa");
-
-            assertEquals("fdsa", cache(0, PARTITIONED_CACHE_NAME).get(affKey));
-        }
-        finally {
-            restEnabled = true;
-
-            G.stop(g.name(), true);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAffinityPut() throws Exception {
-        Thread.sleep(2 * TOP_REFRESH_FREQ);
-
-        assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
-
-        Map<UUID, Ignite> gridsByLocNode = new HashMap<>(NODES_CNT);
-
-        GridClientData partitioned = client.data(PARTITIONED_CACHE_NAME);
-
-        GridClientCompute compute = client.compute();
-
-        for (int i = 0; i < NODES_CNT; i++)
-            gridsByLocNode.put(grid(i).localNode().id(), grid(i));
-
-        for (int i = 0; i < 100; i++) {
-            String key = "key" + i;
-
-            UUID primaryNodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key).id();
-
-            partitioned.put(key, "val" + key);
-
-            for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP);
-
-                if (primaryNodeId.equals(entry.getKey()) || partitioned.affinity(key).equals(entry.getKey()))
-                    assertEquals("val" + key, val);
-                else
-                    assertNull(val);
-            }
-        }
-
-        // Now check that we will see value in near cache in pinned mode.
-        for (int i = 100; i < 200; i++) {
-            String pinnedKey = "key" + i;
-
-            UUID primaryNodeId = grid(0).cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, pinnedKey).id();
-
-            UUID pinnedNodeId = F.first(F.view(gridsByLocNode.keySet(), F.notEqualTo(primaryNodeId)));
-
-            GridClientNode node = compute.node(pinnedNodeId);
-
-            partitioned.pinNodes(node).put(pinnedKey, "val" + pinnedKey);
-
-            for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).localPeek(pinnedKey, CachePeekMode.ONHEAP);
-
-                if (primaryNodeId.equals(entry.getKey()) || pinnedNodeId.equals(entry.getKey()))
-                    assertEquals("val" + pinnedKey, val);
-                else
-                    assertNull(val);
-            }
         }
     }
 
@@ -727,56 +496,5 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
                 assertTrue("Invalid tx flags: " + t, t.syncCommit());
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultithreadedCommand() throws Exception {
-        final GridClientData data = client.data(PARTITIONED_CACHE_NAME);
-        final GridClientCompute compute = client.compute();
-        final AtomicInteger cnt = new AtomicInteger(0);
-
-        multithreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (int i = 0; i < 20; i++) {
-                    String key = UUID.randomUUID().toString();
-                    String val = UUID.randomUUID().toString();
-
-                    switch (cnt.incrementAndGet() % 4) {
-                        case 0: {
-                            assertTrue(data.put(key, val));
-                            assertEquals(val, data.get(key));
-                            assertTrue(data.remove(key));
-
-                            break;
-                        }
-
-                        case 1: {
-                            assertNotNull(data.metrics());
-
-                            break;
-                        }
-
-                        case 2: {
-                            String nodeId = compute.execute(TestTask.class.getName(), null);
-
-                            assertNotNull(nodeId);
-                            assertNotNull(compute.refreshNode(UUID.fromString(nodeId), true, true));
-
-                            break;
-                        }
-
-                        case 3: {
-                            assertEquals(NODES_CNT, compute.refreshTopology(true, true).size());
-
-                            break;
-                        }
-                    }
-                }
-
-                return null;
-            }
-        }, 50, "multithreaded-client-access");
     }
 }

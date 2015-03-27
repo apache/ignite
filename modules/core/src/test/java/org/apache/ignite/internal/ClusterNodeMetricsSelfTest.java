@@ -22,8 +22,13 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -37,6 +42,9 @@ import static org.apache.ignite.events.EventType.*;
  */
 @GridCommonTest(group = "Kernal Self")
 public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Test message size. */
     private static final int MSG_SIZE = 1024;
 
@@ -56,6 +64,12 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(spi);
 
         cfg.setCacheConfiguration();
         cfg.setMetricsUpdateFrequency(0);
@@ -231,8 +245,15 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClusterNodeMetrics() throws Exception {
-        Ignite ignite0 = grid();
-        Ignite ignite1 = startGrid(1);
+        final Ignite ignite0 = grid();
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override
+            public boolean apply() {
+                return ignite0.cluster().nodes().size() == 2 && ignite1.cluster().nodes().size() == 2;
+            }
+        }, 3000L);
 
         ClusterMetrics metrics0 = ignite0.cluster().localNode().metrics();
 
@@ -240,6 +261,12 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             ignite0.cluster().forNode(ignite0.cluster().localNode(), ignite1.cluster().localNode()).metrics();
 
         assertEquals(metrics0.getTotalCpus(), nodesMetrics.getTotalCpus());
+        assertEquals(1, metrics0.getTotalNodes());
+        assertEquals(2, nodesMetrics.getTotalNodes());
+
+        assert metrics0.getHeapMemoryUsed() > 0;
+        assert metrics0.getHeapMemoryTotal() > 0;
+        assert metrics0.getNonHeapMemoryMaximum() > 0;
     }
 
     /**

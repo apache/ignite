@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -82,14 +81,14 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         final int keyCnt = 5000;
         final int logFreq = 500;
 
-        final GridCache<String, Integer> c = cache();
+        final GridCacheAdapter<String, Integer> c = internalCache(jcache());
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
             @Override public Object call() throws Exception {
                 for (int i = 1; i < keyCnt; i++) {
-                    assertTrue(c.putx(String.valueOf(i), i));
+                    c.put(String.valueOf(i), i);
 
                     startLatch.countDown();
 

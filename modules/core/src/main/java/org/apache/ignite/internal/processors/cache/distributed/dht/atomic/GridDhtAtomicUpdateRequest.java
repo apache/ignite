@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -53,7 +54,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private GridCacheVersion writeVer;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -153,7 +154,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         GridCacheVersion futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         boolean forceTransformBackups,
         UUID subjId,
         int taskNameHash,
@@ -375,7 +376,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -678,7 +679,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -850,7 +851,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 19:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

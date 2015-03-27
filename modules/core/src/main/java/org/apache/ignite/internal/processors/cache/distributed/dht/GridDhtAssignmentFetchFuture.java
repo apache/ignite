@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.future.*;
@@ -39,9 +40,6 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Nodes order comparator. */
-    private static final Comparator<ClusterNode> CMP = new GridNodeOrderComparator();
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -55,7 +53,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     private Queue<ClusterNode> availableNodes;
 
     /** Topology version. */
-    private final long topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Pending node from which response is being awaited. */
     private ClusterNode pendingNode;
@@ -66,15 +64,20 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheContext ctx,
-        long topVer,
+        AffinityTopologyVersion topVer,
         Collection<ClusterNode> availableNodes
     ) {
         this.ctx = ctx;
         this.topVer = topVer;
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
-        tmp.addAll(availableNodes);
-        Collections.sort(tmp, CMP);
+
+        for (ClusterNode node : availableNodes) {
+            if (!node.isLocal())
+                tmp.add(node);
+        }
+
+        Collections.sort(tmp, GridNodeOrderComparator.INSTANCE);
 
         this.availableNodes = tmp;
 
@@ -96,7 +99,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
      * @param res Reponse.
      */
     public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
-        if (res.topologyVersion() != topVer) {
+        if (!res.topologyVersion().equals(topVer)) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
                     "[node=" + node + ", res=" + res + ", topVer=" + topVer + ']');

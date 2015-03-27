@@ -223,7 +223,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
@@ -787,7 +787,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     public void _testFormat() throws Exception {
         IgniteKernal grid = (IgniteKernal)G.ignite("grid");
-        GridCache cache = grid.internalCache("dataCache");
+        GridCacheAdapter cache = grid.internalCache("dataCache");
 
         if (dual)
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));

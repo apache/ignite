@@ -124,16 +124,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param i Grid index.
      * @return Cache.
      */
-    @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return ((IgniteKernal)IGNITEs.get(i)).cache(null);
-    }
-
-    /**
-     * @param i Grid index.
-     * @return Cache.
-     */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).jcache(null);
+        return IGNITEs.get(i).cache(null);
     }
 
     /**
@@ -176,7 +168,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         Transaction tx = g.transactions().txStart(concurrency, isolation);
 
         try {
-            g.jcache(null).put(KEY, VALUE);
+            g.cache(null).put(KEY, VALUE);
 
             int checkIdx = (idx + 1) % G.allGrids().size();
 

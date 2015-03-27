@@ -18,7 +18,9 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 
+import javax.cache.*;
 import javax.cache.event.*;
 
 /**
@@ -33,7 +35,7 @@ import javax.cache.event.*;
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
- * method of only on the local node using {@link IgniteCache#localQuery(Query)} method.
+ * method, or only on the local node, if {@link Query#setLocal(boolean)} parameter is set to {@code true}.
  * Note that in case query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins topology,
  * so no updates will be missed.
@@ -57,40 +59,27 @@ import javax.cache.event.*;
  * You can create and execute continuous query like so:
  * <pre name="code" class="java">
  * // Create new continuous query.
- * ContinuousQuery&lt;UUID, Person&gt; qry = new ContinuousQuery&lt;&gt;();
+ * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
  * // Initial iteration query will return all persons with salary above 1000.
- * qry.setInitialQuery(Query.scan(new IgniteBiPredicate&lt;UUID, Person&gt;() {
- *     &#64;Override public boolean apply(UUID id, Person p) {
- *         return p.getSalary() &gt; 1000;
- *     }
- * }));
+ * qry.setInitialQuery(new ScanQuery&lt;&gt;((id, p) -> p.getSalary() &gt; 1000));
  *
  *
  * // Callback that is called locally when update notifications are received.
  * // It simply prints out information about all created persons.
- * qry.setLocalListener(new CacheEntryUpdatedListener&lt;UUID, Person&gt;() {
- *     &#64;Override public void onUpdated(Iterable&lt;CacheEntryEvent&lt;? extends UUID, ? extends Person&gt;&gt; evts) {
- *         for (CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e : evts) {
- *             Person p = e.getValue();
+ * qry.setLocalListener((evts) -> {
+ *     for (CacheEntryEvent&lt;? extends Long, ? extends Person&gt; e : evts) {
+ *         Person p = e.getValue();
  *
- *             X.println("&gt;&gt;&gt;");
- *             X.println("&gt;&gt;&gt; " + p.getFirstName() + " " + p.getLastName() +
- *                 "'s salary is " + p.getSalary());
- *             X.println("&gt;&gt;&gt;");
- *         }
+ *         System.out.println(p.getFirstName() + " " + p.getLastName() + "'s salary is " + p.getSalary());
  *     }
  * });
  *
  * // Continuous listener will be notified for persons with salary above 1000.
- * qry.setRemoteFilter(new CacheEntryEventFilter&lt;UUID, Person&gt;() {
- *     &#64;Override public boolean evaluate(CacheEntryEvent&lt;? extends UUID, ? extends Person&gt; e) {
- *         return e.getValue().getSalary() &gt; 1000;
- *     }
- * });
+ * qry.setRemoteFilter(evt -> evt.getValue().getSalary() &gt; 1000);
  *
  * // Execute query and get cursor that iterates through initial data.
- * QueryCursor&lt;Cache.Entry&lt;UUID, Person&gt;&gt; cur = cache.query(qry);
+ * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);
  * </pre>
  * This will execute query on all nodes that have cache you are working with and
  * listener will start to receive notifications for cache updates.
@@ -103,15 +92,15 @@ import javax.cache.event.*;
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
  */
-public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
+public final class ContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Default buffer size. Size of {@code 1} means that all entries
+     * Default page size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
      */
-    public static final int DFLT_BUF_SIZE = 1;
+    public static final int DFLT_PAGE_SIZE = 1;
 
     /** Maximum default time interval after which buffer will be flushed (if buffering is enabled). */
     public static final long DFLT_TIME_INTERVAL = 0;
@@ -123,22 +112,26 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
     /** Initial query. */
-    private Query initQry;
+    private Query<Cache.Entry<K, V>> initQry;
 
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter. */
-    private CacheEntryEventFilter<K, V> rmtFilter;
-
-    /** Buffer size. */
-    private int bufSize = DFLT_BUF_SIZE;
+    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Time interval. */
     private long timeInterval = DFLT_TIME_INTERVAL;
 
     /** Automatic unsubscription flag. */
     private boolean autoUnsubscribe = DFLT_AUTO_UNSUBSCRIBE;
+
+    /**
+     * Creates new continuous query.
+     */
+    public ContinuousQuery() {
+        setPageSize(DFLT_PAGE_SIZE);
+    }
 
     /**
      * Sets initial query.
@@ -150,7 +143,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * @param initQry Initial query.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setInitialQuery(Query initQry) {
+    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         this.initQry = initQry;
 
         return this;
@@ -161,7 +154,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Initial query.
      */
-    public Query getInitialQuery() {
+    public Query<Cache.Entry<K, V>> getInitialQuery() {
         return initQry;
     }
 
@@ -205,7 +198,7 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      * @param rmtFilter Key-value filter.
      * @return {@code this} for chaining.
      */
-    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventFilter<K, V> rmtFilter) {
+    public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventSerializableFilter<K, V> rmtFilter) {
         this.rmtFilter = rmtFilter;
 
         return this;
@@ -216,46 +209,15 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
      *
      * @return Remote filter.
      */
-    public CacheEntryEventFilter<K, V> getRemoteFilter() {
+    public CacheEntryEventSerializableFilter<K, V> getRemoteFilter() {
         return rmtFilter;
-    }
-
-    /**
-     * Sets buffer size.
-     * <p>
-     * When a cache update happens, entry is first put into a buffer. Entries from buffer will be
-     * sent to the master node only if the buffer is full or time provided via {@link #setTimeInterval(long)} method is
-     * exceeded.
-     * <p>
-     * Default buffer size is {@code 1} which means that entries will be sent immediately (buffering is
-     * disabled).
-     *
-     * @param bufSize Buffer size.
-     * @return {@code this} for chaining.
-     */
-    public ContinuousQuery<K, V> setBufferSize(int bufSize) {
-        if (bufSize <= 0)
-            throw new IllegalArgumentException("Buffer size must be above zero.");
-
-        this.bufSize = bufSize;
-
-        return this;
-    }
-
-    /**
-     * Gets buffer size.
-     *
-     * @return Buffer size.
-     */
-    public int getBufferSize() {
-        return bufSize;
     }
 
     /**
      * Sets time interval.
      * <p>
      * When a cache update happens, entry is first put into a buffer. Entries from buffer will
-     * be sent to the master node only if the buffer is full (its size can be provided via {@link #setBufferSize(int)}
+     * be sent to the master node only if the buffer is full (its size can be provided via {@link #setPageSize(int)}
      * method) or time provided via this method is exceeded.
      * <p>
      * Default time interval is {@code 0} which means that
@@ -299,6 +261,16 @@ public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> {
         this.autoUnsubscribe = autoUnsubscribe;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setPageSize(int pageSize) {
+        return (ContinuousQuery<K, V>)super.setPageSize(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ContinuousQuery<K, V> setLocal(boolean loc) {
+        return (ContinuousQuery<K, V>)super.setLocal(loc);
     }
 
     /**

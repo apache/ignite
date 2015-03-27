@@ -34,8 +34,8 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.net.*;
@@ -681,16 +681,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private NodeIdMessage nodeIdMsg;
 
     /** Received messages count. */
-    private final LongAdder rcvdMsgsCnt = new LongAdder();
+    private final LongAdder8 rcvdMsgsCnt = new LongAdder8();
 
     /** Sent messages count.*/
-    private final LongAdder sentMsgsCnt = new LongAdder();
+    private final LongAdder8 sentMsgsCnt = new LongAdder8();
 
     /** Received bytes count. */
-    private final LongAdder rcvdBytesCnt = new LongAdder();
+    private final LongAdder8 rcvdBytesCnt = new LongAdder8();
 
     /** Sent bytes count.*/
-    private final LongAdder sentBytesCnt = new LongAdder();
+    private final LongAdder8 sentBytesCnt = new LongAdder8();
 
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);

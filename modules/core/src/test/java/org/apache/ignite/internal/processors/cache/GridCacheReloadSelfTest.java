@@ -26,10 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -76,8 +74,8 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
-        cacheCfg.setEvictionPolicy(new CacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
-        cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        cacheCfg.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_ENTRIES));
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
             @Override public Integer load(Integer key) {
@@ -93,7 +91,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(singletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
@@ -163,7 +161,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
                 load(cache, i, true);

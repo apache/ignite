@@ -33,8 +33,8 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import javax.cache.expiry.*;
@@ -826,8 +826,6 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 jobs.remove(jobId);
 
-                job.dispose(false);
-
                 if (ctx.jobUpdateLeader()) {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
@@ -848,6 +846,8 @@ public class HadoopJobTracker extends HadoopComponent {
                         log.error("Can't write statistic due to: ", e);
                     }
                 }
+
+                job.dispose(false);
 
                 break;
             }

@@ -344,7 +344,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            IgniteSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
+            IgniteSshHelper sshHelper = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
@@ -401,7 +401,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
+                        nodeRuns.add(sshHelper.nodeStartCallable(spec, timeout));
 
                         nodeCallCnt++;
                     }

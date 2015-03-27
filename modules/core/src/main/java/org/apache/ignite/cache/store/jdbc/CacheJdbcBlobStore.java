@@ -25,8 +25,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
@@ -164,11 +164,11 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Opened connections. */
     @GridToStringExclude
-    private final LongAdder opened = new LongAdder();
+    private final LongAdder8 opened = new LongAdder8();
 
     /** Closed connections. */
     @GridToStringExclude
-    private final LongAdder closed = new LongAdder();
+    private final LongAdder8 closed = new LongAdder8();
 
     /** Test mode flag. */
     @GridToStringExclude
@@ -178,7 +178,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private boolean initOk;
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         init();
 
         Transaction tx = transaction();

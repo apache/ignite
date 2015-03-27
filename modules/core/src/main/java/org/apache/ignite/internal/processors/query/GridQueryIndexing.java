@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
@@ -49,36 +50,32 @@ public interface GridQueryIndexing {
      */
     public void stop() throws IgniteCheckedException;
 
-
     /**
      * Runs two step query.
      *
-     * @param space Space name.
+     * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(String space, GridCacheTwoStepQuery qry);
+    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry);
 
     /**
      * Parses SQL query into two step query and executes it.
      *
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params);
+    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry);
 
     /**
      * Parses SQL query into two step query and executes it.
      *
-     * @param space Space.
-     * @param type Type name.
-     * @param sqlQry Query.
-     * @param params Parameters.
+     * @param cctx Cache context.
+     * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry, Object[] params);
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -141,6 +138,14 @@ public interface GridQueryIndexing {
     public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
 
     /**
+     * Deregisters cache.
+     *
+     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed to drop cache schema.
+     */
+    public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
+
+    /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param spaceName Space name.
@@ -179,9 +184,10 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param key Key.
+     * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.

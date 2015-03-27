@@ -82,6 +82,6 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     @Override public void remove() {
         it.remove();
 
-        cctx.grid().jcache(cctx.name()).remove(cur.getKey(), cur.getValue());
+        cctx.grid().cache(cctx.name()).remove(cur.getKey(), cur.getValue());
     }
 }

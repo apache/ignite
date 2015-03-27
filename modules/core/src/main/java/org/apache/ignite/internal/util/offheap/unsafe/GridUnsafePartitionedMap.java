@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -60,7 +60,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     private final int parts;
 
     /** */
-    private final LongAdder totalCnt = new LongAdder();
+    private final LongAdder8 totalCnt = new LongAdder8();
 
     /**
      * @param parts Partitions.

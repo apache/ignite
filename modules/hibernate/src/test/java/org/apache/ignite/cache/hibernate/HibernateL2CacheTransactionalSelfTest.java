@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.commons.dbcp.managed.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.h2.jdbcx.*;
@@ -92,7 +91,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
         cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 
-        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
 
         return cfg;
     }

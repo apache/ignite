@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -26,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -65,7 +66,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setBackups(colCfg.getBackups());
         ccfg.setMemoryMode(colCfg.getMemoryMode());
-        ccfg.setDistributionMode(colCfg.getDistributionMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
 

@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Failover tests for colocated cache.
  */
-public class GridCacheColocatedFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
+public class GridCacheColocatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

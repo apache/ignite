@@ -26,19 +26,20 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.stream.*;
 
 import java.util.*;
 
 /**
- * Data center replication cache updater for data streamer.
+ * Data center replication cache receiver for data streamer.
  */
-public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Updater<KeyCacheObject, CacheObject>,
+public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCacheObject, CacheObject>,
     DataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public void update(IgniteCache<KeyCacheObject, CacheObject> cache0,
+    @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache0,
         Collection<Map.Entry<KeyCacheObject, CacheObject>> col) {
         try {
             String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
@@ -52,10 +53,7 @@ public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Upda
             if (log.isDebugEnabled())
                 log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-            IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
-
-            if (!f.isDone())
-                f.get();
+            cache.context().awaitStarted();
 
             CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 
@@ -66,7 +64,7 @@ public class IgniteDrDataStreamerCacheUpdater implements IgniteDataStreamer.Upda
 
                 KeyCacheObject key = entry.getKey();
 
-                // Ensure that updater to not receive special-purpose values for TTL and expire time.
+                // Ensure that receiver to not receive special-purpose values for TTL and expire time.
                 assert entry.ttl() != CU.TTL_NOT_CHANGED && entry.ttl() != CU.TTL_ZERO && entry.ttl() >= 0;
                 assert entry.expireTime() != CU.EXPIRE_TIME_CALCULATE && entry.expireTime() >= 0;
 

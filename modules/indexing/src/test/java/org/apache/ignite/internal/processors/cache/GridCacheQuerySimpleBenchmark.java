@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -96,7 +96,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     public void testPerformance() throws Exception {
         Random rnd = new GridRandom();
 
-        final IgniteCache<Long,Person> c = ignite.jcache("offheap-cache");
+        final IgniteCache<Long,Person> c = ignite.cache("offheap-cache");
 
         X.println("___ PUT start");
 
@@ -110,7 +110,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         final AtomicBoolean end = new AtomicBoolean();
 
-        final LongAdder puts = new LongAdder();
+        final LongAdder8 puts = new LongAdder8();
 
         IgniteInternalFuture<?> fut0 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -128,7 +128,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
             }
         }, 10);
 
-        final LongAdder qrys = new LongAdder();
+        final LongAdder8 qrys = new LongAdder8();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -137,7 +137,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
                 while (!end.get()) {
                     int salary = rnd.nextInt(maxSalary);
 
-                    c.queryFields(new SqlFieldsQuery("select name from Person where salary = ?").setArgs(salary))
+                    c.query(new SqlFieldsQuery("select name from Person where salary = ?").setArgs(salary))
                         .getAll();
 
                     qrys.increment();

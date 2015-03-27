@@ -25,7 +25,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.hadoop.fs.*;
 import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -147,7 +146,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
@@ -272,7 +271,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().cache(
+        IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
             igfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {

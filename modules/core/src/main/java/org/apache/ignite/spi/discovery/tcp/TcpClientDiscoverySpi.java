@@ -27,10 +27,11 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.net.*;
@@ -46,7 +47,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeat
  * <p>
  * This discovery SPI requires at least on server node configured with
  * {@link TcpDiscoverySpi}. It will try to connect to random IP taken from
- * {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} which should point to one of these server
+ * {@link TcpDiscoveryIpFinder} which should point to one of these server
  * nodes and will maintain connection only with this node (will not enter the ring).
  * If this connection is broken, it will try to reconnect using addresses from
  * the same IP finder.
@@ -381,7 +382,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     private boolean joinTopology(boolean recon) throws IgniteSpiException {
         if (!recon)
@@ -735,9 +736,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         stats.onMessageReceived(msg);
 
-                        IgniteSpiException err = null;
-
                         if (joinLatch.getCount() > 0) {
+                            IgniteSpiException err = null;
+
                             if (msg instanceof TcpDiscoveryDuplicateIdMessage)
                                 err = duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
                             else if (msg instanceof TcpDiscoveryAuthFailedMessage)
@@ -893,11 +894,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
 
-                        Collection<Map<Integer, Object>> dataList = msg.oldNodesDiscoveryData();
+                        Map<UUID, Map<Integer, Object>> dataMap = msg.oldNodesDiscoveryData();
 
-                        if (dataList != null) {
-                            for (Map<Integer, Object> discoData : dataList)
-                                exchange.onExchange(newNodeId, discoData);
+                        if (dataMap != null) {
+                            for (Map.Entry<UUID, Map<Integer, Object>> entry : dataMap.entrySet())
+                                exchange.onExchange(newNodeId, entry.getKey(), entry.getValue());
                         }
 
                         locNode.setAttributes(node.attributes());
@@ -920,7 +921,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(newNodeId, data);
+                        exchange.onExchange(newNodeId, newNodeId, data);
                 }
             }
         }

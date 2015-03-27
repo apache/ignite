@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -102,8 +101,8 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
     public void testLuceneIndex() throws Exception {
         final Ignite g = startGrid(0);
 
-        final GridCache<Integer, ObjectValue> cache1 = ((IgniteKernal)g).cache("local1");
-        final GridCache<Integer, ObjectValue> cache2 = ((IgniteKernal)g).cache("local2");
+        final IgniteCache<Integer, ObjectValue> cache1 = g.cache("local1");
+        final IgniteCache<Integer, ObjectValue> cache2 = g.cache("local2");
 
         final AtomicInteger threadIdxGen = new AtomicInteger();
 
@@ -116,9 +115,9 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
                     for (int i = 0; i < keyCnt; i++) {
                         if (threadIdx == 0)
-                            cache1.putx(i, new ObjectValue("test full text more" + i));
+                            cache1.put(i, new ObjectValue("test full text more" + i));
                         else
-                            cache2.putx(i, new ObjectValue("test full text more" + i));
+                            cache2.put(i, new ObjectValue("test full text more" + i));
 
                         if (i % 200 == 0)
                             info("Put entries count: " + i);
@@ -159,8 +158,8 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
     public void testLuceneIndex1() throws Exception {
         final Ignite g = startGrid(0);
 
-        final GridCache<Integer, ObjectValue> cache1 = ((IgniteKernal)g).cache("local1");
-        final GridCache<Integer, ObjectValue> cache2 = ((IgniteKernal)g).cache("local2");
+        final IgniteCache<Integer, ObjectValue> cache1 = g.cache("local1");
+        final IgniteCache<Integer, ObjectValue> cache2 = g.cache("local2");
 
         final AtomicInteger threadIdxGen = new AtomicInteger();
 
@@ -230,8 +229,8 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
     public void testLuceneIndex2() throws Exception {
         final Ignite g = startGrid(0);
 
-        final GridCache<Integer, ObjectValue> cache1 = ((IgniteKernal)g).cache("local1");
-        final GridCache<Integer, ObjectValue> cache2 = ((IgniteKernal)g).cache("local2");
+        final IgniteCache<Integer, ObjectValue> cache1 = g.cache("local1");
+        final IgniteCache<Integer, ObjectValue> cache2 = g.cache("local2");
 
         final AtomicInteger threadIdxGen = new AtomicInteger();
 
@@ -303,8 +302,8 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
     public void testLuceneIndex3() throws Exception {
         final Ignite g = startGrid(0);
 
-        final GridCache<ObjectKey, ObjectValue> cache1 = ((IgniteKernal)g).cache("local1");
-        final GridCache<ObjectKey, ObjectValue> cache2 = ((IgniteKernal)g).cache("local2");
+        final IgniteCache<ObjectKey, ObjectValue> cache1 = g.cache("local1");
+        final IgniteCache<ObjectKey, ObjectValue> cache2 = g.cache("local2");
 
         final AtomicInteger threadIdxGen = new AtomicInteger();
 

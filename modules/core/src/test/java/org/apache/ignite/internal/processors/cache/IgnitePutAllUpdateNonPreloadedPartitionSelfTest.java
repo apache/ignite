@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -56,7 +57,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(backups);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
         ccfg.setRebalanceDelay(-1);
@@ -74,15 +75,15 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                grid(i).jcache(null).rebalance().get();
+                grid(i).cache(null).rebalance().get();
 
             startGrid(GRID_CNT - 1);
 
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             final int keyCnt = 100;
 
-            try (Transaction tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int k = 0; k < keyCnt; k++)
                     cache.get(k);
 

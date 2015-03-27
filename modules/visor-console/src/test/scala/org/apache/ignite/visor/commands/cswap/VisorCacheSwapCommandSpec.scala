@@ -72,13 +72,13 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cswap' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").jcache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=<default>")
     }
 
     it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").jcache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
         visor.cache("-swap -c=cache")
     }

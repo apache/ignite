@@ -26,6 +26,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
@@ -43,7 +44,7 @@ import org.h2.table.*;
 import org.h2.tools.*;
 import org.h2.util.*;
 import org.h2.value.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
@@ -237,25 +238,27 @@ public class GridReduceQueryExecutor implements GridMessageListener {
     }
 
     /**
-     * @param space Space name.
+     * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> query(String space, GridCacheTwoStepQuery qry) {
+    public QueryCursor<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();
 
-        r.pageSize = 1000; // TODO configure correctly page size
+        r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
         r.tbls = new ArrayList<>(qry.mapQueries().size());
+
+        String space = cctx.name();
 
         r.conn = h2.connectionForSpace(space);
 
         // TODO Add topology version.
         ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
 
-        if (ctx.cache().internalCache(space).context().isReplicated()) {
+        if (cctx.isReplicated()) {
             assert dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
 
             dataNodes = dataNodes.forRandom(); // Select random data node to run query on a replicated data.
@@ -307,7 +310,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 //                dropTable(r.conn, tbl.getName()); TODO
             }
 
-            return new QueryCursorImpl<>(new Iter(res));
+            return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
         }
         catch (IgniteCheckedException | InterruptedException | RuntimeException e) {
             U.closeQuiet(r.conn);

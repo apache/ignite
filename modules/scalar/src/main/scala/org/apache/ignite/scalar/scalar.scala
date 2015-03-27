@@ -18,9 +18,10 @@
 package org.apache.ignite.scalar
 
 import org.apache.ignite._
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.jetbrains.annotations.Nullable
 
@@ -263,7 +264,7 @@ object scalar extends ScalarConversions {
      * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
      * typed instance that cannot be used.
      */
-    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.jcache[K, V](null))
+    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.cache[K, V](null))
 
     /**
      * Gets named cache from default grid.
@@ -271,7 +272,23 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable cacheName: String): Option[IgniteCache[K, V]] =
-        Option(Ignition.ignite.jcache(cacheName))
+        Option(Ignition.ignite.cache(cacheName))
+
+    /**
+     * Creates cache cache with specified parameters in default grid.
+     *
+     * @param cacheName Name of the cache to get.
+     */
+    @inline def createCache$[K, V](@Nullable cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
+        indexedTypes: Seq[Class[_]] = Seq.empty): IgniteCache[K, V] = {
+        val cfg = new CacheConfiguration[K, V]()
+
+        cfg.setName(cacheName)
+        cfg.setCacheMode(cacheMode)
+        cfg.setIndexedTypes(indexedTypes:_*)
+
+        Ignition.ignite.createCache(cfg)
+    }
 
     /**
      * Gets named cache from specified grid.
@@ -281,7 +298,7 @@ object scalar extends ScalarConversions {
      */
     @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
         ignite$(gridName) match {
-            case Some(g) => Option(g.jcache(cacheName))
+            case Some(g) => Option(g.cache(cacheName))
             case None => None
         }
 

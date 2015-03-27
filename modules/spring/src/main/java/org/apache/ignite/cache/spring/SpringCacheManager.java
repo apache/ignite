@@ -19,14 +19,12 @@ package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import org.jsr166.*;
 import org.springframework.beans.factory.*;
-import org.springframework.cache.CacheManager;
+import org.springframework.cache.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Implementation of Spring cache abstraction based on Ignite cache.
@@ -115,7 +113,7 @@ import java.util.*;
  * &lt;/beans&gt;
  * </pre>
  * This can be used, for example, when you are running your application
- * in a J2EE Web container and use {@ignitelink org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup}
+ * in a J2EE Web container and use {@ignitelink org.apache.ignite.startup.servlet.ServletContextListenerStartup}
  * for node startup.
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
@@ -124,13 +122,16 @@ import java.util.*;
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  * <h1>Starting Remote Nodes</h1>
- * Remember that the node started inside your application is an entry point
+ * Keep in mind that the node started inside your application is an entry point
  * to the whole topology it connects to. You can start as many remote standalone
  * nodes as you need using {@code bin/ignite.{sh|bat}} scripts provided in
  * Ignite distribution, and all these nodes will participate
- * in caching data.
+ * in caching the data.
  */
 public class SpringCacheManager implements CacheManager, InitializingBean {
+    /** Caches map. */
+    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap8<>();
+
     /** Grid configuration file path. */
     private String cfgPath;
 
@@ -140,8 +141,14 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     /** Grid name. */
     private String gridName;
 
+    /** Dynamic cache configuration template. */
+    private CacheConfiguration<Object, Object> dynamicCacheCfg;
+
+    /** Dynamic near cache configuration template. */
+    private NearCacheConfiguration<Object, Object> dynamicNearCacheCfg;
+
     /** Ignite instance. */
-    protected Ignite grid;
+    private Ignite ignite;
 
     /**
      * Gets configuration file path.
@@ -197,10 +204,45 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         this.gridName = gridName;
     }
 
+    /**
+     * Gets dynamic cache configuration template.
+     *
+     * @return Dynamic cache configuration template.
+     */
+    public CacheConfiguration<Object, Object> getDynamicCacheConfiguration() {
+        return dynamicCacheCfg;
+    }
+
+    /**
+     * Sets dynamic cache configuration template.
+     *
+     * @param dynamicCacheCfg Dynamic cache configuration template.
+     */
+    public void setDynamicCacheConfiguration(CacheConfiguration<Object, Object> dynamicCacheCfg) {
+        this.dynamicCacheCfg = dynamicCacheCfg;
+    }
+
+    /**
+     * Gets dynamic near cache configuration template.
+     *
+     * @return Dynamic near cache configuration template.
+     */
+    public NearCacheConfiguration<Object, Object> getDynamicNearCacheConfiguration() {
+        return dynamicNearCacheCfg;
+    }
+
+    /**
+     * Sets dynamic cache configuration template.
+     *
+     * @param dynamicNearCacheCfg Dynamic cache configuration template.
+     */
+    public void setDynamicNearCacheConfiguration(NearCacheConfiguration<Object, Object> dynamicNearCacheCfg) {
+        this.dynamicNearCacheCfg = dynamicNearCacheCfg;
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings("IfMayBeConditional")
     @Override public void afterPropertiesSet() throws Exception {
-        assert grid == null;
+        assert ignite == null;
 
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
@@ -210,33 +252,44 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         }
 
         if (cfgPath != null)
-            grid = Ignition.start(cfgPath);
+            ignite = Ignition.start(cfgPath);
         else if (cfg != null)
-            grid = Ignition.start(cfg);
+            ignite = Ignition.start(cfg);
         else
-            grid = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(gridName);
     }
 
     /** {@inheritDoc} */
     @Override public org.springframework.cache.Cache getCache(String name) {
-        assert grid != null;
+        assert ignite != null;
 
-        try {
-            return new SpringCache(name, grid, ((IgniteKernal)grid).cache(name), null);
+        SpringCache cache = caches.get(name);
+
+        if (cache == null) {
+            CacheConfiguration<Object, Object> cacheCfg = dynamicCacheCfg != null ?
+                new CacheConfiguration<>(dynamicCacheCfg) : new CacheConfiguration<>();
+
+            NearCacheConfiguration<Object, Object> nearCacheCfg = dynamicNearCacheCfg != null ?
+                new NearCacheConfiguration<>(dynamicNearCacheCfg) : null;
+
+            cacheCfg.setName(name);
+
+            cache = new SpringCache(nearCacheCfg != null ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg) :
+                ignite.getOrCreateCache(cacheCfg));
+
+            SpringCache old = caches.putIfAbsent(name, cache);
+
+            if (old != null)
+                cache = old;
         }
-        catch (IllegalArgumentException ignored) {
-            return null;
-        }
+
+        return cache;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> getCacheNames() {
-        assert grid != null;
+        assert ignite != null;
 
-        return F.viewReadOnly(((IgniteKernal)grid).caches(), new IgniteClosure<GridCache<?,?>, String>() {
-            @Override public String apply(GridCache<?, ?> c) {
-                return c.name();
-            }
-        });
+        return new ArrayList<>(caches.keySet());
     }
 }

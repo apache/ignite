@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -38,7 +38,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
     /** Topology snapshot. */
     @GridToStringInclude
-    private final GridDiscoveryTopologySnapshot topSnapshot;
+    private final AffinityTopologyVersion topVer;
 
     /** Pending candidates. */
     @GridToStringInclude
@@ -49,11 +49,11 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
     private final GridFutureAdapter<Object> releaseFut = new GridFutureAdapter<>();
 
     /**
-     * @param topSnapshot Topology snapshot.
+     * @param topVer Topology version.
      * @param cand Candidate.
      */
-    public GridCacheExplicitLockSpan(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate cand) {
-        this.topSnapshot = topSnapshot;
+    public GridCacheExplicitLockSpan(AffinityTopologyVersion topVer, GridCacheMvccCandidate cand) {
+        this.topVer = topVer;
 
         ensureDeque(cand.key()).addFirst(cand);
     }
@@ -61,19 +61,19 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
     /**
      * Adds candidate to a lock span.
      *
-     * @param topSnapshot Topology snapshot for which candidate is added.
+     * @param topVer Topology snapshot for which candidate is added.
      * @param cand Candidate to add.
      * @return {@code True} if candidate was added, {@code false} if this span is empty and
      *      new span should be created.
      */
-    public boolean addCandidate(GridDiscoveryTopologySnapshot topSnapshot, GridCacheMvccCandidate cand) {
+    public boolean addCandidate(AffinityTopologyVersion topVer, GridCacheMvccCandidate cand) {
         lock();
 
         try {
             if (cands.isEmpty())
                 return false;
 
-            assert this.topSnapshot.topologyVersion() == topSnapshot.topologyVersion();
+            assert this.topVer.equals(this.topVer);
 
             Deque<GridCacheMvccCandidate> deque = ensureDeque(cand.key());
 
@@ -234,8 +234,8 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      *
      * @return Topology snapshot or {@code null} if candidate list is empty.
      */
-    @Nullable public GridDiscoveryTopologySnapshot topologySnapshot() {
-        return releaseFut.isDone() ? null : topSnapshot;
+    @Nullable public AffinityTopologyVersion topologyVersion() {
+        return releaseFut.isDone() ? null : topVer;
     }
 
     /**

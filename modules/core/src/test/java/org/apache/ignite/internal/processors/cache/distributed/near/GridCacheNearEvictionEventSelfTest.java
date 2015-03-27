@@ -37,11 +37,6 @@ public class GridCacheNearEvictionEventSelfTest extends GridCacheEvictionEventAb
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isNearEvictSynchronized() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void testEvictionEvent() throws Exception {
         super.testEvictionEvent();
     }

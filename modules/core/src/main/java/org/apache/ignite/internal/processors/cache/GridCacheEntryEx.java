@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -260,7 +261,7 @@ public interface GridCacheEntryEx {
      *
      * @return Checks if value is valid.
      */
-    public boolean valid(long topVer);
+    public boolean valid(AffinityTopologyVersion topVer);
 
     /**
      * @return {@code True} if partition is in valid.
@@ -345,7 +346,7 @@ public interface GridCacheEntryEx {
         long ttl,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
@@ -381,7 +382,7 @@ public interface GridCacheEntryEx {
         boolean retval,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
@@ -435,6 +436,7 @@ public interface GridCacheEntryEx {
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
@@ -582,7 +584,7 @@ public interface GridCacheEntryEx {
     @Nullable public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
@@ -646,7 +648,7 @@ public interface GridCacheEntryEx {
         long ttl,
         long expireTime,
         boolean preload,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

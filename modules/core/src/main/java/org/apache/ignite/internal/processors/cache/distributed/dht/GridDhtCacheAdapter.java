@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
@@ -32,8 +32,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
@@ -41,8 +41,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
@@ -96,7 +94,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx, long topVer, KeyCacheObject key, int hash,
+            @Override public GridCacheMapEntry create(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key, int hash,
                 CacheObject val, GridCacheMapEntry next, long ttl, int hdrId) {
                 return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
             }
@@ -189,7 +187,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    public long beginMultiUpdate() throws IgniteCheckedException {
+    public AffinityTopologyVersion beginMultiUpdate() throws IgniteCheckedException {
         IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup != null)
@@ -199,7 +197,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         GridDhtTopologyFuture topFut;
 
-        long topVer;
+        AffinityTopologyVersion topVer;
 
         try {
             // While we are holding read lock, register lock future for partition release future.
@@ -207,7 +205,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             topVer = top.topologyVersion();
 
-            MultiUpdateFuture fut = new MultiUpdateFuture(ctx.kernalContext(), topVer);
+            MultiUpdateFuture fut = new MultiUpdateFuture(topVer);
 
             MultiUpdateFuture old = multiTxFuts.putIfAbsent(lockId, fut);
 
@@ -260,11 +258,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Topology version.
      * @return Finish future.
      */
-    @Nullable public IgniteInternalFuture<?> multiUpdateFinishFuture(long topVer) {
+    @Nullable public IgniteInternalFuture<?> multiUpdateFinishFuture(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteUuid, Object> fut = null;
 
         for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
-            if (multiFut.topologyVersion() <= topVer) {
+            if (multiFut.topologyVersion().compareTo(topVer) <= 0) {
                 if (fut == null)
                     fut = new GridCompoundFuture<>();
 
@@ -310,7 +308,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, long topVer) throws GridDhtInvalidPartitionException {
+    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) throws GridDhtInvalidPartitionException {
         return super.entryEx(key, topVer);
     }
 
@@ -329,7 +327,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return DHT entry.
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    public GridDhtCacheEntry entryExx(KeyCacheObject key, long topVer) throws GridDhtInvalidPartitionException {
+    public GridDhtCacheEntry entryExx(KeyCacheObject key, AffinityTopologyVersion topVer) throws GridDhtInvalidPartitionException {
         return (GridDhtCacheEntry)entryEx(key, topVer);
     }
 
@@ -345,7 +343,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @throws GridDhtInvalidPartitionException if entry does not belong to this node and
      *      {@code allowDetached} is {@code false}.
      */
-    public GridCacheEntryEx entryExx(KeyCacheObject key, long topVer, boolean allowDetached, boolean touch) {
+    public GridCacheEntryEx entryExx(KeyCacheObject key, AffinityTopologyVersion topVer, boolean allowDetached, boolean touch) {
         try {
             return allowDetached && !ctx.affinity().localNode(key, topVer) ?
                 new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0) :
@@ -373,7 +371,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final boolean replicate = ctx.isDrEnabled();
 
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
@@ -399,7 +397,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final boolean replicate = ctx.isDrEnabled();
 
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -429,14 +427,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         Object val,
         GridCacheVersion ver,
         @Nullable IgniteBiPredicate<K, V> p,
-        long topVer,
+        AffinityTopologyVersion topVer,
         boolean replicate,
         @Nullable ExpiryPolicy plc) {
         if (p != null && !p.apply(key.<K>value(ctx.cacheObjectContext(), false), (V)val))
             return;
 
         try {
-            GridDhtLocalPartition part = top.localPartition(ctx.affinity().partition(key), -1, true);
+            GridDhtLocalPartition part = top.localPartition(ctx.affinity().partition(key),
+                AffinityTopologyVersion.NONE, true);
 
             // Reserve to make sure that partition does not get unloaded.
             if (part.reserve()) {
@@ -483,7 +482,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public int primarySize() {
         int sum = 0;
 
-        long topVer = ctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
@@ -495,7 +494,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -581,7 +580,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         LinkedHashMap<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         boolean reload,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
@@ -609,7 +608,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Get request.
      */
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
-        assert isAffinityNode(cacheCfg);
+        assert ctx.affinityNode();
 
         long ttl = req.accessTtl();
 
@@ -648,7 +647,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     res.error(e);
                 }
 
-                res.invalidPartitions(fut.invalidPartitions(), ctx.discovery().topologyVersion());
+                res.invalidPartitions(fut.invalidPartitions(),
+                    new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -677,10 +677,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
 
-                    long topVer = ctx.discovery().topologyVersion();
+                    AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
-                        List<ClusterNode> nodes = ctx.affinity().nodes((K)e.getKey(), topVer);
+                        List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
                             ClusterNode node = nodes.get(i);
@@ -786,7 +786,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        cache.context().evicts().touch(entry, -1L);
+                        cache.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -828,11 +828,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<K, V>> iterator() {
             final GridDhtLocalPartition part = ctx.topology().localPartition(partId,
-                ctx.discovery().topologyVersion(), false);
+                ctx.discovery().topologyVersionEx(), false);
 
             Iterator<GridDhtCacheEntry> partIt = part == null ? null : part.entries().iterator();
 
-            return new PartitionEntryIterator<>(partIt);
+            return new PartitionEntryIterator(partIt);
         }
 
         /** {@inheritDoc} */
@@ -881,7 +881,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         /** {@inheritDoc} */
         @Override public int size() {
             GridDhtLocalPartition part = ctx.topology().localPartition(partId,
-                ctx.discovery().topologyVersion(), false);
+                new AffinityTopologyVersion(ctx.discovery().topologyVersion()), false);
 
             return part != null ? part.publicSize() : 0;
         }
@@ -894,9 +894,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
-        CacheDistributionMode mode = configuration().getDistributionMode();
-
-        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearLocally() :
+        return ctx.affinityNode() ? super.splitClearLocally() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();
     }
 
@@ -904,7 +902,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry.isDht();
 
-        GridDhtLocalPartition part = topology().localPartition(entry.partition(), -1, false);
+        GridDhtLocalPartition part = topology().localPartition(entry.partition(), AffinityTopologyVersion.NONE,
+            false);
 
         // Do not remove entry on replica topology. Instead, add entry to removal queue.
         // It will be cleared eventually.
@@ -929,7 +928,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (primary && backup)
             return iterator(map.entries0().iterator(), !ctx.keepPortable());
         else {
-            final long topVer = ctx.affinity().affinityTopologyVersion();
+            final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
@@ -998,7 +997,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Complex partition iterator for both partition and swap iteration.
      */
-    private class PartitionEntryIterator<K, V> extends GridIteratorAdapter<Cache.Entry<K, V>> {
+    private class PartitionEntryIterator extends GridIteratorAdapter<Cache.Entry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1042,7 +1041,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            ctx.grid().jcache(ctx.name()).remove(last.getKey(), last.getValue());
+            ctx.grid().cache(ctx.name()).remove(last.getKey(), last.getValue());
         }
 
         /**
@@ -1069,32 +1068,25 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Multi update future.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private static class MultiUpdateFuture extends GridFutureAdapter<IgniteUuid> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Topology version. */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
-         * Empty constructor required by {@link Externalizable}.
-         */
-        public MultiUpdateFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
          * @param topVer Topology version.
          */
-        private MultiUpdateFuture(GridKernalContext ctx, long topVer) {
+        private MultiUpdateFuture(@NotNull AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
 
         /**
          * @return Topology version.
          */
-        private long topologyVersion() {
+        private AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
     }

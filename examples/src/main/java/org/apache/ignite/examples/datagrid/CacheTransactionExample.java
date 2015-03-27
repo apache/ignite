@@ -18,6 +18,9 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.transactions.*;
 
 import java.io.*;
@@ -29,14 +32,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Demonstrates how to use cache transactions.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheTransactionExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
+    private static final String CACHE_NAME = CacheTransactionExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -45,34 +48,39 @@ public class CacheTransactionExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
-            // Clean up caches on all nodes before run.
-            ignite.jcache(CACHE_NAME).clear();
+            CacheConfiguration<Integer, Account> cfg = new CacheConfiguration<>();
 
-            IgniteCache<Integer, Account> cache = ignite.jcache(CACHE_NAME);
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            // Initialize.
-            cache.put(1, new Account(1, 100));
-            cache.put(2, new Account(1, 200));
+            NearCacheConfiguration<Integer, Account> nearCacheCfg = new NearCacheConfiguration<>();
 
-            System.out.println();
-            System.out.println(">>> Accounts before deposit: ");
-            System.out.println(">>> " + cache.get(1));
-            System.out.println(">>> " + cache.get(2));
+            try (IgniteCache<Integer, Account> cache = ignite.createCache(cfg, nearCacheCfg)) {
+                // Initialize.
+                cache.put(1, new Account(1, 100));
+                cache.put(2, new Account(1, 200));
 
-            // Make transactional deposits.
-            deposit(1, 100);
-            deposit(2, 200);
+                System.out.println();
+                System.out.println(">>> Accounts before deposit: ");
+                System.out.println(">>> " + cache.get(1));
+                System.out.println(">>> " + cache.get(2));
 
-            System.out.println();
-            System.out.println(">>> Accounts after transfer: ");
-            System.out.println(">>> " + cache.get(1));
-            System.out.println(">>> " + cache.get(2));
+                // Make transactional deposits.
+                deposit(cache, 1, 100);
+                deposit(cache, 2, 200);
 
-            System.out.println(">>> Cache transaction example finished.");
+                System.out.println();
+                System.out.println(">>> Accounts after transfer: ");
+                System.out.println(">>> " + cache.get(1));
+                System.out.println(">>> " + cache.get(2));
+
+                System.out.println(">>> Cache transaction example finished.");
+            }
         }
     }
 
@@ -83,16 +91,11 @@ public class CacheTransactionExample {
      * @param amount Amount to deposit.
      * @throws IgniteException If failed.
      */
-    private static void deposit(int acctId, double amount) throws IgniteException {
-        // Clone every object we get from cache, so we can freely update it.
-        IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
-
+    private static void deposit(IgniteCache<Integer, Account> cache, int acctId, double amount) throws IgniteException {
         try (Transaction tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account acct0 = cache.get(acctId);
+            Account acct = cache.get(acctId);
 
-            assert acct0 != null;
-
-            Account acct = new Account(acct0.id, acct0.balance);
+            assert acct != null;
 
             // Deposit into account.
             acct.update(amount);

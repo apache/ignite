@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Affinity interface implementation.
  */
-public class GridCacheAffinityProxy<K, V> implements CacheAffinity<K>, Externalizable {
+public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class GridCacheAffinityProxy<K, V> implements CacheAffinity<K>, Externali
     private GridCacheGateway<K, V> gate;
 
     /** Affinity delegate. */
-    private CacheAffinity<K> delegate;
+    private Affinity<K> delegate;
 
     /** Context. */
     private GridCacheContext<K, V> cctx;
@@ -52,7 +52,7 @@ public class GridCacheAffinityProxy<K, V> implements CacheAffinity<K>, Externali
      * @param cctx Context.
      * @param delegate Delegate object.
      */
-    public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, CacheAffinity<K> delegate) {
+    public GridCacheAffinityProxy(GridCacheContext<K, V> cctx, Affinity<K> delegate) {
         gate = cctx.gate();
         this.delegate = delegate;
         this.cctx = cctx;

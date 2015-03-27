@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -473,7 +474,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     // ensure proper lock ordering for removed entries.
                     cctx.tm().addCommittedTx(this);
 
-                    long topVer = topologyVersion();
+                    AffinityTopologyVersion topVer = topologyVersion();
 
                     // Node that for near transactions we grab all entries.
                     for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
@@ -570,7 +571,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }
@@ -581,7 +583,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)
-                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId);
+                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
                                     }
                                     else if (op == RELOAD) {
                                         CacheObject reloaded = cached.innerReload();
@@ -589,8 +591,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         if (nearCached != null) {
                                             nearCached.innerReload();
 
-                                            nearCached.updateOrEvict(cached.version(), reloaded,
-                                                cached.expireTime(), cached.ttl(), nodeId);
+                                            nearCached.updateOrEvict(cached.version(),
+                                                reloaded,
+                                                cached.expireTime(),
+                                                cached.ttl(),
+                                                nodeId,
+                                                topVer);
                                         }
                                     }
                                     else if (op == READ) {
@@ -616,7 +622,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }

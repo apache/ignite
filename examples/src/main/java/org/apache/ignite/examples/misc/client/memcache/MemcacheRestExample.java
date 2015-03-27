@@ -49,7 +49,7 @@ public class MemcacheRestExample {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 
-            IgniteCache<String, Object> cache = ignite.jcache(null);
+            IgniteCache<String, Object> cache = ignite.cache(null);
 
             client = startMemcachedClient(host, port);
 

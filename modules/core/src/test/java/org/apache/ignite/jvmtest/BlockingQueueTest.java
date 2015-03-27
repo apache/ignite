@@ -20,7 +20,7 @@ package org.apache.ignite.jvmtest;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 
@@ -106,7 +106,7 @@ public class BlockingQueueTest {
 
         X.println(">>> Starting test for: " + testName);
 
-        final LongAdder adder = new LongAdder();
+        final LongAdder8 adder = new LongAdder8();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

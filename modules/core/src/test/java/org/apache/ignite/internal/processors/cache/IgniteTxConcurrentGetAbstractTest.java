@@ -95,7 +95,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
 
         final Ignite ignite = grid();
 
-        ignite.jcache(null).put(key, "val");
+        ignite.cache(null).put(key, "val");
 
         GridCacheEntryEx dhtEntry = dht(ignite).peekEx(key);
 
@@ -129,7 +129,7 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
                     ", entry=" + dhtEntry + ']');
 
-            String val = ignite.<String, String>jcache(null).get(key);
+            String val = ignite.<String, String>cache(null).get(key);
 
             assertNotNull(val);
             assertEquals("val", val);

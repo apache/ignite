@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -41,7 +40,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
     private boolean replicatedAffinity = true;
 
     /** */
-    private CacheRebalanceMode preloadMode = SYNC;
+    private long rebalanceDelay;
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
@@ -49,7 +48,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         if (replicatedAffinity)
             // replicate entries to all nodes
-            cacheCfg.setAffinity(new CacheAffinityFunction() {
+            cacheCfg.setAffinity(notSerializableProxy(new AffinityFunction() {
                 /** {@inheritDoc} */
                 @Override public void reset() {
                 }
@@ -65,7 +64,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
+                @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
                     List<ClusterNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
 
                     return Collections.singletonList(nodes);
@@ -74,9 +73,9 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 /** {@inheritDoc} */
                 @Override public void removeNode(UUID nodeId) {
                 }
-            });
+            }, AffinityFunction.class));
 
-        cacheCfg.setRebalanceMode(preloadMode);
+        cacheCfg.setRebalanceDelay(rebalanceDelay);
 
         return cacheCfg;
     }
@@ -94,13 +93,13 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
      */
     public void testForcePreload() throws Exception {
         replicatedAffinity = false;
-        preloadMode = NONE;
+        rebalanceDelay = -1;
 
         Ignite g1 = startGrid("g1");
 
         Collection<Integer> keys = new HashSet<>();
 
-        IgniteCache<Integer, String> cache = g1.jcache(null);
+        IgniteCache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);
@@ -116,7 +115,8 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
 
         for (Object key : g2Keys)
-            g2.jcache(null).put(key, "changed val");
+            // Need to force keys loading.
+            assertEquals("val", g2.cache(null).getAndPut(key, "changed val"));
 
         Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 

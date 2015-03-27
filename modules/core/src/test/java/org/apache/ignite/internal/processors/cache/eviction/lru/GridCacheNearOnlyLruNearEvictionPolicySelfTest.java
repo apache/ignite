@@ -27,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -65,14 +64,15 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        if (cnt == 0)
+            c.setClientMode(true);
+
         CacheConfiguration cc = new CacheConfiguration();
 
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(cacheMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cc.setDistributionMode(cnt == 0 ? NEAR_ONLY : PARTITIONED_ONLY);
         cc.setRebalanceMode(SYNC);
-        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setBackups(0);
 
@@ -136,6 +136,11 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
         startGrids(GRID_COUNT);
 
         try {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+            nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
+
+            grid(0).createNearCache(null, nearCfg);
+
             int cnt = 1000;
 
             info("Inserting " + cnt + " keys to cache.");
@@ -151,7 +156,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(0).jcache(null);
+                IgniteCache<Integer, String> cache = grid(0).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

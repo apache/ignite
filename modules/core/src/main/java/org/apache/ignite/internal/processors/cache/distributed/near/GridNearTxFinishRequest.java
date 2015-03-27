@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -46,7 +47,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private boolean storeEnabled;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Subject ID. */
     private UUID subjId;
@@ -88,7 +89,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean syncRollback,
         boolean explicitLock,
         boolean storeEnabled,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
@@ -150,7 +151,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -200,7 +201,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -262,7 +263,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 25:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -121,21 +121,19 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).jcache(null).put(key, initVal);
+            grid(originatingNode()).cache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
-
         info("Node being checked: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
@@ -152,7 +150,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache = txIgniteNode.jcache(null);
+                IgniteCache<Integer, String> cache = txIgniteNode.cache(null);
 
                 assertNotNull(cache);
 
@@ -212,7 +210,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.jcache(null);
+                        IgniteCache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 
@@ -229,7 +227,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.jcache(null).get(e.getKey()));
+                    g.cache(null).get(e.getKey()));
             }
         }
     }

@@ -26,8 +26,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.nio.*;
@@ -581,7 +581,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         SwapSpaceSpiListener lsnr = evictLsnr;
 
         if (lsnr != null)
-            lsnr.onSwapEvent(evtType, spaceName, null);
+            lsnr.onSwapEvent(evtType, spaceName, null, null);
     }
 
     /**

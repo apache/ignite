@@ -65,16 +65,8 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @param i Grid index.
      * @return Cache.
      */
-    @Override protected <K, V> GridCache<K, V> cache(int i) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param i Grid index.
-     * @return Cache.
-     */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).jcache(null);
+        return IGNITEs.get(i).cache(null);
     }
 
     /**

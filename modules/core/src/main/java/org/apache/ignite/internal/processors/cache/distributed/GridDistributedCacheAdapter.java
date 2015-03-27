@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -144,7 +145,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
         try {
-            long topVer;
+            AffinityTopologyVersion topVer;
 
             do {
                 topVer = ctx.affinity().affinityTopologyVersion();
@@ -157,7 +158,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                         new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
                 }
             }
-            while (ctx.affinity().affinityTopologyVersion() > topVer);
+            while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) > 0);
         }
         catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
@@ -169,7 +170,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         GridFutureAdapter<Void> opFut = new GridFutureAdapter<>();
 
-        long topVer = ctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         removeAllAsync(opFut, topVer);
 
@@ -180,7 +181,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param opFut Future.
      * @param topVer Topology version.
      */
-    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final long topVer) {
+    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final AffinityTopologyVersion topVer) {
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
@@ -192,9 +193,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     try {
                         fut.get();
 
-                        long topVer0 = ctx.affinity().affinityTopologyVersion();
+                        AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
 
-                        if (topVer0 == topVer)
+                        if (topVer0.equals(topVer))
                             opFut.onDone();
                         else
                             removeAllAsync(opFut, topVer0);
@@ -238,7 +239,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         private String cacheName;
 
         /** Topology version. */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /** Injected grid instance. */
         @IgniteInstanceResource
@@ -255,7 +256,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * @param cacheName Cache name.
          * @param topVer Topology version.
          */
-        private GlobalRemoveAllCallable(String cacheName, long topVer) {
+        private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.topVer = topVer;
         }
@@ -273,13 +274,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             ctx.gate().enter();
 
             try {
-                if (ctx.affinity().affinityTopologyVersion() != topVer)
+                if (!ctx.affinity().affinityTopologyVersion().equals(topVer))
                     return null; // Ignore this remove request because remove request will be sent again.
 
                 GridDhtCacheAdapter<K, V> dht;
+                GridNearCacheAdapter<K, V> near = null;
 
-                if (cacheAdapter instanceof GridNearCacheAdapter)
-                    dht = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+                if (cacheAdapter instanceof GridNearCacheAdapter) {
+                    near = ((GridNearCacheAdapter<K, V>)cacheAdapter);
+                    dht = near.dht();
+                }
                 else
                     dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
@@ -287,7 +291,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                          (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
                     ((DataStreamerImpl)dataLdr).maxRemapCount(0);
 
-                    dataLdr.updater(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
+                    dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
                     for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
@@ -308,6 +312,15 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     while (it.hasNext())
                         dataLdr.removeDataInternal(it.next());
                 }
+
+                if (near != null) {
+                    GridCacheVersion obsoleteVer = ctx.versions().next();
+
+                    for (GridCacheEntryEx e : near.map().allEntries0()) {
+                        if (!e.valid(topVer) && e.markObsolete(obsoleteVer))
+                            near.removeEntry(e);
+                    }
+                }
             }
             finally {
                 ctx.gate().leave();
@@ -319,13 +332,13 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
     }
 }

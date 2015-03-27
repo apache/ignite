@@ -27,8 +27,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.processor.*;
@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
+ * Tests {@link CacheInterceptor}.
  */
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
@@ -74,6 +74,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = false;
 
         assertEquals(0, interceptor.invokeCnt.get());
+
+        atomicClockModeDelay(jcache(0));
     }
 
     /** {@inheritDoc} */
@@ -152,11 +154,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testGet(String key) throws Exception {
         // Try when value is not in cache.
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return null;
-            }
-        };
+        interceptor.retInterceptor = new NullGetInterceptor();
 
         log.info("Get 1.");
 
@@ -170,11 +168,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.reset();
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return 1;
-            }
-        };
+        interceptor.retInterceptor = new OneGetInterceptor();
 
         log.info("Get 2.");
 
@@ -196,11 +190,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Try when value is in cache.
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return null;
-            }
-        };
+        interceptor.retInterceptor = new NullGetInterceptor();
 
         log.info("Get 3.");
 
@@ -216,11 +206,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.reset();
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return (Integer)val + 1;
-            }
-        };
+        interceptor.retInterceptor = new GetIncrementInterceptor();
 
         log.info("Get 4.");
 
@@ -236,11 +222,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.reset();
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return (Integer)val + 1;
-            }
-        };
+        interceptor.retInterceptor = new GetIncrementInterceptor();
 
         log.info("GetAsync 1.");
 
@@ -268,11 +250,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         for (int i = 0; i < 1000; i++)
             keys.add(String.valueOf(i));
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                return null;
-            }
-        };
+        interceptor.retInterceptor = new NullGetInterceptor();
 
         IgniteCache<String, Integer> cache = jcache(0);
 
@@ -287,13 +265,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.reset();
 
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onGet(Object key, Object val) {
-                int k = Integer.valueOf((String)key);
-
-                return k % 2 == 0 ? null : (k * 2);
-            }
-        };
+        interceptor.retInterceptor = new GetAllInterceptor1();
 
         map = cache.getAll(keys);
 
@@ -320,27 +292,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         for (int j = 0; j < 2; j++) {
             interceptor.reset();
 
-            interceptor.retInterceptor = new InterceptorAdapter() {
-                @Nullable @Override public Object onGet(Object key, Object val) {
-                    int k = Integer.valueOf((String)key);
-
-                    switch (k % 3) {
-                        case 0:
-                            return null;
-
-                        case 1:
-                            return val;
-
-                        case 2:
-                            return k * 3;
-
-                        default:
-                            fail();
-                    }
-
-                    return null;
-                }
-            };
+            interceptor.retInterceptor = new GetAllInterceptor2();
 
             if (j == 0)
                 map = cache.getAll(keys);
@@ -435,11 +387,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void testCancelUpdate(String key, Operation op) throws Exception {
         // Interceptor returns null to disabled update.
-        CacheInterceptor retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-                return null;
-            }
-        };
+        CacheInterceptor retInterceptor = new NullPutInterceptor();
 
         interceptor.retInterceptor = retInterceptor;
 
@@ -517,11 +465,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void testModifyUpdate(String key, Operation op) throws Exception {
         // Interceptor returns incremented new value.
-        CacheInterceptor retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-                return (Integer)newVal + 1;
-            }
-        };
+        CacheInterceptor retInterceptor = new PutIncrementInterceptor();
 
         // Execute update when value is null.
 
@@ -597,11 +541,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     @SuppressWarnings("unchecked")
     private void testCancelRemove(String key, Operation op) throws Exception {
         // Interceptor disables remove and returns null.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-                return new IgniteBiTuple(true, null);
-            }
-        };
+        interceptor.retInterceptor = new BeforeRemoveInterceptor(new IgniteBiTuple(true, null));
 
         // Execute remove when value is null.
 
@@ -622,11 +562,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.reset();
 
         // Interceptor disables remove and changes return value.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-                return new IgniteBiTuple(true, 900);
-            }
-        };
+        interceptor.retInterceptor = new BeforeRemoveInterceptor(new IgniteBiTuple(true, 900));
 
         // Execute remove when value is null, interceptor changes return value.
 
@@ -659,11 +595,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = false;
 
         // Interceptor disables remove and returns null.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-                return new IgniteBiTuple(true, null);
-            }
-        };
+        interceptor.retInterceptor = new BeforeRemoveInterceptor(new IgniteBiTuple(true, null));
 
         log.info("Remove 3 " + op);
 
@@ -680,11 +612,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.reset();
 
         // Interceptor disables remove and changes return value.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-                return new IgniteBiTuple(true, 1000);
-            }
-        };
+        interceptor.retInterceptor = new BeforeRemoveInterceptor(new IgniteBiTuple(true, 1000));
 
         log.info("Remove 4 " + op);
 
@@ -895,11 +823,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void testNearNodeKey(@Nullable TransactionConcurrency txConcurrency,
         @Nullable TransactionIsolation txIsolation, @Nullable Operation op) throws Exception {
         // Interceptor returns incremented new value.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-                return (Integer)newVal + 1;
-            }
-        };
+        interceptor.retInterceptor = new PutIncrementInterceptor();
 
         String key1 = primaryKey(0);
         String key2 = backupKey(0);
@@ -909,6 +833,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Put from grid 1 to be sure grid 0 does not have value for near key.
         jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
+
+        atomicClockModeDelay(jcache(1));
 
         interceptor.disabled = false;
 
@@ -952,11 +878,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void testBatchUpdate(Operation op) throws Exception {
         // Interceptor returns incremented new value.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-                return (Integer)newVal + 1;
-            }
-        };
+        interceptor.retInterceptor = new PutIncrementInterceptor();
 
         Map<String, Integer> map = new HashMap<>();
 
@@ -1003,14 +925,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.reset();
 
         // Interceptor returns incremented new value, cancels update for one key.
-        interceptor.retInterceptor = new InterceptorAdapter() {
-            @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-                if (entry.getKey().equals(key1))
-                    return null;
-
-                return (Integer)newVal + 1;
-            }
-        };
+        interceptor.retInterceptor = new BatchPutInterceptor1(key1);
 
         map.put(key1, 100);
         map.put(key2, 200);
@@ -1085,7 +1000,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 //No-op
             }
         };
-
 
         log.info("Batch remove 1: " + op);
 
@@ -1443,7 +1357,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1468,7 +1382,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1490,7 +1404,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1520,7 +1434,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).jcache(null).get(key));
+                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(null).get(key));
         }
         finally {
             interceptor.disabled = false;
@@ -1594,7 +1508,29 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      *
      */
-    private class Interceptor implements CacheInterceptor {
+    private static class BeforeRemoveInterceptor extends InterceptorAdapter {
+        /**
+         *
+         */
+        private IgniteBiTuple ret;
+
+        /**
+         * @param ret Return value.
+         */
+        private BeforeRemoveInterceptor(IgniteBiTuple ret) {
+            this.ret = ret;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+            return ret;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Interceptor implements CacheInterceptor {
         /** */
         private final Map<Object, Object> getMap = new ConcurrentHashMap8<>();
 
@@ -1629,7 +1565,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             Object ret = retInterceptor.onGet(key, val);
 
-            log.info("Get [key=" + key + ", val=" + val + ", ret=" + ret + ']');
+            System.out.println("Get [key=" + key + ", val=" + val + ", ret=" + ret + ']');
 
             if (val != null) {
                 Object old = getMap.put(key, val);
@@ -1652,7 +1588,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             Object ret = retInterceptor.onBeforePut(entry, newVal);
 
-            log.info("Before put [key=" + entry.getKey() + ", oldVal=" + entry.getValue()+ ", newVal=" + newVal
+            System.out.println("Before put [key=" + entry.getKey() + ", oldVal=" + entry.getValue()+ ", newVal=" + newVal
                 + ", ret=" + ret + ']');
 
             invokeCnt.incrementAndGet();
@@ -1674,7 +1610,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             if (disabled)
                 return;
 
-            log.info("After put [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
+            System.out.println("After put [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
 
             invokeCnt.incrementAndGet();
 
@@ -1694,7 +1630,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             IgniteBiTuple ret = retInterceptor.onBeforeRemove(entry);
 
-            log.info("Before remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ", ret=" + ret + ']');
+            System.out.println("Before remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ", ret=" + ret + ']');
 
             invokeCnt.incrementAndGet();
 
@@ -1717,7 +1653,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
             retInterceptor.onAfterRemove(entry);
 
-            log.info("After remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
+            System.out.println("After remove [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
 
             invokeCnt.incrementAndGet();
 
@@ -1742,6 +1678,137 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             beforeRmvMap.clear();
 
             retInterceptor = null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class BatchRemoveInterceptor extends InterceptorAdapter {
+        /** */
+        private final String key1;
+
+        /**
+         * @param key1 Key.
+         */
+        public BatchRemoveInterceptor(String key1) {
+            this.key1 = key1;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+            return new IgniteBiTuple(entry.getKey().equals(key1), 999);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PutIncrementInterceptor extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            return (Integer)newVal + 1;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NullPutInterceptor extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NullGetInterceptor extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, Object val) {
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAllInterceptor1 extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, Object val) {
+            int k = Integer.valueOf((String)key);
+
+            return k % 2 == 0 ? null : (k * 2);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAllInterceptor2 extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, Object val) {
+            int k = Integer.valueOf((String)key);
+
+            switch (k % 3) {
+                case 0:
+                    return null;
+
+                case 1:
+                    return val;
+
+                case 2:
+                    return k * 3;
+
+                default:
+                    fail();
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class BatchPutInterceptor1 extends InterceptorAdapter {
+        /** */
+        private final String key1;
+
+        /**
+         * @param key1 Key.
+         */
+        public BatchPutInterceptor1(String key1) {
+            this.key1 = key1;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            if (entry.getKey().equals(key1))
+                return null;
+
+            return (Integer)newVal + 1;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetIncrementInterceptor extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, Object val) {
+            return (Integer)val + 1;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class OneGetInterceptor extends InterceptorAdapter {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, Object val) {
+            return 1;
         }
     }
 }

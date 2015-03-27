@@ -20,7 +20,7 @@ package org.apache.ignite.internal.cluster;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.concurrent.*;

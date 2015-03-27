@@ -22,8 +22,8 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
@@ -212,8 +212,8 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
-        delegate.txEnd(commit);
+    @Override public void sessionEnd(boolean commit) {
+        delegate.sessionEnd(commit);
     }
 
     /**

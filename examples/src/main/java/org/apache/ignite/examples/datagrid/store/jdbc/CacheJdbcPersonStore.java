@@ -19,7 +19,7 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -70,7 +70,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         Map<String, Connection> props = ses.properties();
 
         try (Connection conn = props.remove(ATTR_NAME)) {

@@ -299,7 +299,7 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 

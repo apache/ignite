@@ -26,6 +26,6 @@ public class HibernateL2CacheExampleMultiNodeSelfTest extends HibernateL2CacheEx
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, HibernateL2CacheExampleNodeStartup.configuration());
+            startGrid("node-" + i, "examples/config/example-ignite.xml");
     }
 }

@@ -29,11 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -73,11 +71,11 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setWriteBehindEnabled(true);
         cc.setWriteBehindFlushFrequency(WRITE_BEHIND_FLUSH_FREQ);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setNearConfiguration(new NearCacheConfiguration());
 
         CacheStore store = stores[idx] = new GridCacheTestStore();
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -139,7 +137,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkSingleWrites() throws Exception {
         prepare();
 
-        IgniteCache<Integer, String> cache = grid(0).jcache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(null);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
@@ -158,7 +156,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         for (int i = 0; i < 100; i++)
             map.put(i, String.valueOf(i));
 
-        grid(0).jcache(null).putAll(map);
+        grid(0).cache(null).putAll(map);
 
         checkWrites();
     }
@@ -169,7 +167,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkTxWrites() throws Exception {
         prepare();
 
-        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(null);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)

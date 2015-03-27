@@ -101,8 +101,6 @@ public class IgniteClientTestSuite extends TestSuite {
 
         suite.addTestSuite(ClientByteUtilsTest.class);
 
-        suite.addTest(new TestSuite(ClientTopologyCacheSelfTest.class));
-
         // Router tests.
         suite.addTest(new TestSuite(TcpRouterSelfTest.class));
         // TODO uncomment when fixed https://issues.apache.org/jira/browse/IGNITE-433

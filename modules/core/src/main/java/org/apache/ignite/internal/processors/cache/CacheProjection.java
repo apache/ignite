@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.transactions.*;
@@ -130,13 +130,13 @@ import java.util.concurrent.*;
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
  * With {@code affinity-based-group-locking} the keys are grouped by <i>affinity-key</i>. This means that
- * only keys with identical affinity-key (see {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapped}) can participate in the
+ * only keys with identical affinity-key (see {@link AffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-group-locked} transactions are started via
  * <code>txStartAffinity(Object, TransactionConcurrency, TransactionIsolation, long, int)</code> method.
  * <p>
  * With {@code partition-based-group-locking} the keys are grouped by partition ID. This means that
- * only keys belonging to identical partition (see {@link org.apache.ignite.cache.affinity.CacheAffinity#partition(Object)}) can participate in the
+ * only keys belonging to identical partition (see {@link Affinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-group-locked} transactions are started via
  * <code>txStartPartition(int, TransactionConcurrency, TransactionIsolation, long, int)</code> method.
@@ -1268,7 +1268,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param keys Keys to clearLocally.
      */
-    public void clearLocallyAll(Set<K> keys);
+    public void clearLocallyAll(Set<? extends K> keys);
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
@@ -1294,7 +1294,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to clear.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      */
-    public void clearAll(Set<K> keys) throws IgniteCheckedException;
+    public void clearAll(Set<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
@@ -1326,7 +1326,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to clear.
      * @return Clear future.
      */
-    public IgniteInternalFuture<?> clearAsync(Set<K> keys);
+    public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys);
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote

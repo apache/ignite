@@ -48,12 +48,11 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setSwapEnabled(true);
         cfg.setEvictSynchronized(false);
-        cfg.setEvictNearSynchronized(false);
 
         return cfg;
     }
@@ -64,7 +63,7 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setMemoryMode(OFFHEAP_VALUES);
@@ -79,7 +78,7 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setMemoryMode(OFFHEAP_TIERED);
@@ -91,5 +90,5 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode distributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 }
