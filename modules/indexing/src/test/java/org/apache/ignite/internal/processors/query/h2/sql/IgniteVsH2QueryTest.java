@@ -35,8 +35,6 @@ import java.io.*;
 import java.sql.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  * Test to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned) 
  * which have the same data models and data content. 
@@ -87,15 +85,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         cc.setName(name);
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictNearSynchronized(false);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cc.setDistributionMode(PARTITIONED_ONLY);
 
         if (mode == CacheMode.PARTITIONED)
             cc.setIndexedTypes(
                 Integer.class, Organization.class,
-                CacheAffinityKey.class, Person.class,
-                CacheAffinityKey.class, Purchase.class
+                AffinityKey.class, Person.class,
+                AffinityKey.class, Purchase.class
             );
         else if (mode == CacheMode.REPLICATED)
             cc.setIndexedTypes(
@@ -114,9 +110,9 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrids(4);
 
-        pCache = ignite.jcache("part");
+        pCache = ignite.cache("part");
         
-        rCache = ignite.jcache("repl");
+        rCache = ignite.cache("repl");
 
         awaitPartitionMapExchange();
         
@@ -408,7 +404,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         List<List<?>> h2Res = executeH2Query(sql, args);
 
-        List<List<?>> cacheRes = cache.queryFields(new SqlFieldsQuery(sql).setArgs(args)).getAll();
+        List<List<?>> cacheRes = cache.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
 
         assertRsEquals(h2Res, cacheRes, order);
         
@@ -681,8 +677,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /**
          * @return Custom affinity key to guarantee that person is always collocated with organization.
          */
-        public CacheAffinityKey<Integer> key() {
-            return new CacheAffinityKey<>(id, orgId);
+        public AffinityKey<Integer> key() {
+            return new AffinityKey<>(id, orgId);
         }
 
         /** {@inheritDoc} */
@@ -824,8 +820,8 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
         /**
          * @return Custom affinity key to guarantee that purchase is always collocated with person.
          */
-        public CacheAffinityKey<Integer> key() {
-            return new CacheAffinityKey<>(id, personId);
+        public AffinityKey<Integer> key() {
+            return new AffinityKey<>(id, personId);
         }
 
         /** {@inheritDoc} */
