@@ -1,0 +1,711 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    POM file.
+-->
+<project
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>16</version>
+    </parent>
+
+    <properties>
+        <ignite.edition>fabric</ignite.edition>
+        <hadoop.version>2.4.1</hadoop.version>
+        <spring.version>4.1.0.RELEASE</spring.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
+        <doxygen.exec>doxygen</doxygen.exec>
+        <git.exec>git</git.exec>
+    </properties>
+
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-parent</artifactId>
+    <version>1</version>
+    <packaging>pom</packaging>
+
+    <url>http://ignite.incubator.apache.org</url>
+
+    <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <mailingLists>
+        <mailingList>
+            <name>Ignite Dev List</name>
+            <subscribe>dev-subscribe@ignite.incubator.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@ignite.incubator.apache.org</unsubscribe>
+            <post>dev@ignite.incubator.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/incubator-ignite-dev</archive>
+        </mailingList>
+    </mailingLists>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.apache.org/jira/browse/IGNITE</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <id>dsetrakyan</id>
+            <name>Dmitriy Setrakyan</name>
+            <email>dsetrakyan at apache dot org</email>
+        </developer>
+        <developer>
+            <id>agoncharuk</id>
+            <name>Alexey Goncharuk</name>
+            <email>agoncharuk at apache dot org</email>
+        </developer>
+        <developer>
+            <id>vkulichenko</id>
+            <name>Valentin Kulichenko</name>
+            <email>vkulichenko at apache dot org</email>
+        </developer>
+        <developer>
+            <id>svladykin</id>
+            <name>Sergi Vladykin</name>
+            <email>sergi dot vladykin at gmail dot com</email>
+        </developer>
+        <developer>
+            <id>yzhdanov</id>
+            <name>Yakov Zhdanov</name>
+            <email>yzhdanov at apache dot org</email>
+        </developer>
+        <developer>
+            <id>sboikov</id>
+            <name>Semyon Boikov</name>
+            <email>sboikov at gridgain dot com</email>
+        </developer>
+        <developer>
+            <id>vozerov</id>
+            <name>Vladimir Ozerov</name>
+            <email>vozerov at gridgain dot com</email>
+        </developer>
+    </developers>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.sun.jdmk</groupId>
+                        <artifactId>jmxtools</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jmx</groupId>
+                        <artifactId>jmxri</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <configuration>
+                        <jvmArgs>
+                            <jvmArg>-Xms512m</jvmArg>
+                            <jvmArg>-Xmx1024m</jvmArg>
+                        </jvmArgs>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.1</version>
+                    <configuration>
+                        <taglets>
+                            <taglet>
+                                <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
+                                <tagletArtifact>
+                                    <groupId>org.apache.ignite</groupId>
+                                    <artifactId>ignite-tools</artifactId>
+                                    <version>${project.version}</version>
+                                </tagletArtifact>
+                            </taglet>
+                        </taglets>
+                        <doctitle>Ignite ${project.version}</doctitle>
+                        <windowtitle>Ignite ${project.version}</windowtitle>
+                        <breakiterator>true</breakiterator>
+                        <verbose>true</verbose>
+                        <show>protected</show>
+                        <use>true</use>
+                        <author>false</author>
+                        <version>false</version>
+                        <additionalparam>${javadoc.opts}</additionalparam>
+                        <links>
+                            <link>http://docs.oracle.com/javase/7/docs/api/</link>
+                            <link>http://hadoop.apache.org/docs/current/api/</link>
+                        </links>
+                        <groups>
+                            <group>
+                                <title>Common Grid APIs</title>
+                                <packages>
+                                    org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler
+                                </packages>
+                            </group>
+                            <group>
+                                <title>Messaging APIs</title>
+                                <packages>org.apache.ignite.messaging</packages>
+                            </group>
+                            <group>
+                                <title>Event Notification APIs</title>
+                                <packages>org.apache.ignite.events</packages>
+                            </group>
+                            <group>
+                                <title>Compute Grid APIs</title>
+                                <packages>org.apache.ignite.compute*</packages>
+                            </group>
+                            <group>
+                                <title>Data Grid APIs</title>
+                                <packages>
+                                    org.apache.ignite.cache*:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.dataload
+                                </packages>
+                            </group>
+                            <group>
+                                <title>Service Grid APIs</title>
+                                <packages>org.apache.ignite.services</packages>
+                            </group>
+                            <group>
+                                <title>File System APIs</title>
+                                <packages>org.apache.ignite.igfs*</packages>
+                            </group>
+                            <group>
+                                <title>Hadoop Accelerator APIs</title>
+                                <packages>org.apache.ignite.hadoop*</packages>
+                            </group>
+                            <group>
+                                <title>Streaming APIs</title>
+                                <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
+                            </group>
+                            <group>
+                                <title>Security APIs</title>
+                                <packages>org.apache.ignite.plugin.security</packages>
+                            </group>
+                            <group>
+                                <title>MXBeans classes</title>
+                                <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
+                            </group>
+                            <group>
+                                <title>SPI: CheckPoint</title>
+                                <packages>org.apache.ignite.spi.checkpoint*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Collision</title>
+                                <packages>org.apache.ignite.spi.collision*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Indexing</title>
+                                <packages>org.apache.ignite.spi.indexing*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Load Balancing</title>
+                                <packages>org.apache.ignite.spi.loadbalancing*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Communication</title>
+                                <packages>org.apache.ignite.spi.communication*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Deployment</title>
+                                <packages>org.apache.ignite.spi.deployment*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Swap Space</title>
+                                <packages>org.apache.ignite.spi.swapspace*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Discovery</title>
+                                <packages>org.apache.ignite.spi.discovery*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Failover</title>
+                                <packages>org.apache.ignite.spi.failover*</packages>
+                            </group>
+                            <group>
+                                <title>SPI: Event Storage</title>
+                                <packages>org.apache.ignite.spi.eventstorage*</packages>
+                            </group>
+                            <group>
+                                <title>Segmentation Detection</title>
+                                <packages>org.apache.ignite.plugin.segmentation</packages>
+                            </group>
+                            <group>
+                                <title>Ignite plugin API</title>
+                                <packages>org.apache.ignite.plugin*</packages>
+                            </group>
+                            <group>
+                                <title>Logging</title>
+                                <packages>org.apache.ignite.logger*</packages>
+                            </group>
+                            <group>
+                                <title>Loaders</title>
+                                <packages>org.apache.ignite.startup*</packages>
+                            </group>
+                            <group>
+                                <title>Marshallers</title>
+                                <packages>org.apache.ignite.marshaller*</packages>
+                            </group>
+                            <group>
+                                <title>Visor Plugins</title>
+                                <packages>org.apache.ignite.visor.plugin</packages>
+                            </group>
+                            <group>
+                                <title>Spring Caching</title>
+                                <packages>org.apache.ignite.cache.spring</packages>
+                            </group>
+                        </groups>
+                        <header>
+                            <![CDATA[
+                                    Ignite - In-Memory Data Fabric
+                                ]]>
+                        </header>
+                        <bottom>
+                            <![CDATA[
+                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
+                                    <tr>
+                                        <td>
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                        <td width="100%" align="right" valign="center">
+                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
+                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" valign="top" align="left">
+                                            <table style="padding-left: 0; margin: 0">
+                                                <tbody style="padding: 0; margin: 0">
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>Ignite Fabric</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ver. <strong>${project.version}</strong>
+                                                        </td>
+                                                    </tr>
+                                                    <tr style="padding: 0; margin: 0">
+                                                        <td>
+                                                            <b>Release Date</b>
+                                                        </td>
+                                                        <td>:&nbsp;&nbsp;
+                                                            ${maven.build.timestamp}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    </table>
+                                ]]>
+                        </bottom>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <forkCount>0</forkCount>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>source</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <excludeResources>true</excludeResources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.0.0-beta-3</version>
+
+                <configuration>
+                    <flattenMode>minimum</flattenMode>
+                    <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
+                </configuration>
+
+                <executions>
+                    <!-- enable flattening -->
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- ensure proper cleanup before start -->
+                    <execution>
+                        <id>flatten.clean.before</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ensure proper cleanup after install -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>flatten.clean.after</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>**/pom-installed.xml</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4</version>
+                <configuration>
+                    <rules>
+                        <requireJavaVersion>
+                            <version>[1.7,)</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>check-licenses</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.rat</groupId>
+                        <artifactId>apache-rat-plugin</artifactId>
+                        <version>0.11</version>
+                        <configuration>
+                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
+                            <licenses>
+                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
+                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
+                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
+                                    <fullText>
+                                        Licensed to the Apache Software Foundation (ASF) under one or more
+                                        contributor license agreements.  See the NOTICE file distributed with
+                                        this work for additional information regarding copyright ownership.
+                                        The ASF licenses this file to You under the Apache License, Version 2.0
+                                        (the "License"); you may not use this file except in compliance with
+                                        the License.  You may obtain a copy of the License at
+
+                                        http://www.apache.org/licenses/LICENSE-2.0
+
+                                        Unless required by applicable law or agreed to in writing, software
+                                        distributed under the License is distributed on an "AS IS" BASIS,
+                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                        See the License for the specific language governing permissions and
+                                        limitations under the License.
+                                    </fullText>
+                                </license>
+                            </licenses>
+                            <licenseFamilies>
+                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                                    <familyName>Ignite Apache License 2.0</familyName>
+                                </licenseFamily>
+                            </licenseFamilies>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <configuration>
+                                    <excludes>
+                                        <exclude>work/**</exclude>
+                                        <exclude>**/target/**</exclude>
+                                        <exclude>**/*.log</exclude>
+                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
+                                        <exclude>**/*.dylib</exclude><!--bin-files-->
+                                        <exclude>**/*.gar</exclude><!--bin-files-->
+                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
+                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
+                                        <exclude>**/*.iml</exclude><!--IDEA files-->
+                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/*.sql</exclude><!--sql files -->
+                                        <!--special excludes-->
+                                        <exclude>DEVNOTES.txt</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
+                                        <exclude>src/main/java/org/jsr166/*.java</exclude>
+                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
+                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
+                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
+                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
+                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
+                                        <!--shmem-->
+                                        <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
+                                        <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
+                                        <exclude>ipc/shmem/compile</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/config.guess</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/config.sub</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/configure</exclude><!--free software-->
+                                        <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/configure.ac</exclude><!--cannot be changed-->
+                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/install-sh</exclude><!--free license-->
+                                        <exclude>ipc/shmem/depcomp</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/libtool</exclude><!--auto generated-->
+                                        <exclude>ipc/shmem/missing</exclude><!--generated by Autoconf and licensed under AL-->
+                                        <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
+                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->
+                                        <exclude>ipc/shmem/include/org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h</exclude><!--auto generated files-->
+                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude><!--tmp files-->
+                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
+                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-libs</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                                    <outputDirectory>target/libs</outputDirectory>
+                                    <includeScope>runtime</includeScope>
+                                    <excludeTransitive>true</excludeTransitive>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>module-javadoc</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <stylesheetfile>
+                                        ${project.basedir}/${parent.relativePath}/../assembly/docfiles/javadoc.css
+                                    </stylesheetfile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>surefire-fork-count-1</id>
+            <activation>
+                <property>
+                    <!-- To activate this profile set the following property. -->
+                    <name>FORK_COUNT_SET_TO_1</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.17</version>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>java8</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+            <properties>
+                <javadoc.opts>-Xdoclint:none</javadoc.opts>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

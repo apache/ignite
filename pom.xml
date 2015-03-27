@@ -20,111 +20,36 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>16</version>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>parent</relativePath>
     </parent>
-
-    <properties>
-        <ignite.version>1.0.0</ignite.version>
-        <ignite.edition>fabric</ignite.edition>
-        <hadoop.version>2.4.1</hadoop.version>
-        <spring.version>4.1.0.RELEASE</spring.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
-        <doxygen.exec>doxygen</doxygen.exec>
-        <git.exec>git</git.exec>
-    </properties>
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>${ignite.version}</version>
+    <version>1.0.1-RC1-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-    <url>http://ignite.incubator.apache.org</url>
-
-    <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-
-    <mailingLists>
-        <mailingList>
-            <name>Ignite Dev List</name>
-            <subscribe>dev-subscribe@ignite.incubator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@ignite.incubator.apache.org</unsubscribe>
-            <post>dev@ignite.incubator.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/incubator-ignite-dev</archive>
-        </mailingList>
-    </mailingLists>
-
-    <issueManagement>
-        <system>jira</system>
-        <url>http://issues.apache.org/jira/browse/IGNITE</url>
-    </issueManagement>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
         <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
+        <tag>HEAD</tag>
     </scm>
 
-    <developers>
-        <developer>
-            <id>dsetrakyan</id>
-            <name>Dmitriy Setrakyan</name>
-            <email>dsetrakyan at apache dot org</email>
-        </developer>
-        <developer>
-            <id>agoncharuk</id>
-            <name>Alexey Goncharuk</name>
-            <email>agoncharuk at apache dot org</email>
-        </developer>
-        <developer>
-            <id>vkulichenko</id>
-            <name>Valentin Kulichenko</name>
-            <email>vkulichenko at apache dot org</email>
-        </developer>
-        <developer>
-            <id>svladykin</id>
-            <name>Sergi Vladykin</name>
-            <email>sergi dot vladykin at gmail dot com</email>
-        </developer>
-        <developer>
-            <id>yzhdanov</id>
-            <name>Yakov Zhdanov</name>
-            <email>yzhdanov at apache dot org</email>
-        </developer>
-        <developer>
-            <id>sboikov</id>
-            <name>Semyon Boikov</name>
-            <email>sboikov at gridgain dot com</email>
-        </developer>
-        <developer>
-            <id>vozerov</id>
-            <name>Vladimir Ozerov</name>
-            <email>vozerov at gridgain dot com</email>
-        </developer>
-    </developers>
-
     <modules>
+        <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
-        <module>modules/tools</module>
         <module>modules/spring</module>
         <module>modules/hibernate</module>
         <module>modules/web</module>
@@ -144,487 +69,7 @@
         <module>modules/codegen</module>
     </modules>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.jdmk</groupId>
-                        <artifactId>jmxtools</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jmx</groupId>
-                        <artifactId>jmxri</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
-            <version>9.0.5.v20130815</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-http</artifactId>
-            <version>9.0.5.v20130815</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.0.5.v20130815</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>9.0.5.v20130815</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.30</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.2.0</version>
-                    <configuration>
-                        <jvmArgs>
-                            <jvmArg>-Xms512m</jvmArg>
-                            <jvmArg>-Xmx1024m</jvmArg>
-                        </jvmArgs>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>scala-compile-first</id>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                                <goal>compile</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>scala-test-compile</id>
-                            <phase>process-test-resources</phase>
-                            <goals>
-                                <goal>testCompile</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
-                <configuration>
-                    <forkCount>0</forkCount>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-libs</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
-                            <outputDirectory>target/libs</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <excludeTransitive>true</excludeTransitive>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>dependencies</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}</outputDirectory>
-                            <finalName>libs</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>dependencies-optional</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}/libs</outputDirectory>
-                            <finalName>optional</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>dependencies-schema-import</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>target/release-package/bin</outputDirectory>
-                            <finalName>include</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
-                <executions>
-                    <execution>
-                        <id>source</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <excludeResources>true</excludeResources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.0.0-beta-3</version>
-
-                <configuration>
-                    <flattenMode>minimum</flattenMode>
-                    <flattenedPomFilename>pom-installed.xml</flattenedPomFilename>
-                </configuration>
-
-                <executions>
-                    <!-- enable flattening -->
-                    <execution>
-                        <id>flatten</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>flatten</goal>
-                        </goals>
-                    </execution>
-
-                    <!-- ensure proper cleanup before start -->
-                    <execution>
-                        <id>flatten.clean.before</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- ensure proper cleanup after install -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>flatten.clean.after</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}</directory>
-                                    <includes>
-                                        <include>**/pom-installed.xml</include>
-                                    </includes>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>2.5.2</version>
-                <inherited>false</inherited>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <inherited>false</inherited>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4</version>
-                <configuration>
-                    <rules>
-                        <requireJavaVersion>
-                            <version>[1.7,)</version>
-                        </requireJavaVersion>
-                    </rules>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <profiles>
-        <profile>
-            <id>check-licenses</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.rat</groupId>
-                        <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.11</version>
-                        <configuration>
-                            <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
-                            <licenses>
-                                <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
-                                    <licenseFamilyCategory>IAL20</licenseFamilyCategory>
-                                    <licenseFamilyName>Ignite Apache License 2.0</licenseFamilyName>
-                                    <fullText>
-                                        Licensed to the Apache Software Foundation (ASF) under one or more
-                                        contributor license agreements.  See the NOTICE file distributed with
-                                        this work for additional information regarding copyright ownership.
-                                        The ASF licenses this file to You under the Apache License, Version 2.0
-                                        (the "License"); you may not use this file except in compliance with
-                                        the License.  You may obtain a copy of the License at
-
-                                        http://www.apache.org/licenses/LICENSE-2.0
-
-                                        Unless required by applicable law or agreed to in writing, software
-                                        distributed under the License is distributed on an "AS IS" BASIS,
-                                        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-                                        See the License for the specific language governing permissions and
-                                        limitations under the License.
-                                    </fullText>
-                                </license>
-                            </licenses>
-                            <licenseFamilies>
-                                <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
-                                    <familyName>Ignite Apache License 2.0</familyName>
-                                </licenseFamily>
-                            </licenseFamilies>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <excludes>
-                                        <exclude>work/**</exclude>
-                                        <exclude>**/target/**</exclude>
-                                        <exclude>**/*.log</exclude>
-                                        <exclude>**/*.m4</exclude><!--Free Software Foundation notice-->
-                                        <exclude>**/*.dylib</exclude><!--bin-files-->
-                                        <exclude>**/*.gar</exclude><!--bin-files-->
-                                        <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
-                                        <exclude>**/*.timestamp</exclude><!--tmp-files-->
-                                        <exclude>**/*.iml</exclude><!--IDEA files-->
-                                        <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
-                                        <exclude>**/keystore/*.jks</exclude><!--bin-files-->
-                                        <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
-                                        <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
-                                        <exclude>**/*.sql</exclude><!--sql files -->
-                                        <!--special excludes-->
-                                        <exclude>DEVNOTES.txt</exclude>
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
-                                        <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
-                                        <exclude>src/main/java/org/jsr166/*.java</exclude>
-                                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
-                                        <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
-                                        <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
-                                        <!--shmem-->
-                                        <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/compile</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.guess</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.sub</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/configure</exclude><!--free software-->
-                                        <exclude>ipc/shmem/config.h.in</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/configure.ac</exclude><!--cannot be changed-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/install-sh</exclude><!--free license-->
-                                        <exclude>ipc/shmem/depcomp</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/config.status</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/libtool</exclude><!--auto generated-->
-                                        <exclude>ipc/shmem/missing</exclude><!--generated by Autoconf and licensed under AL-->
-                                        <exclude>ipc/shmem/stamp-h1</exclude><!--tmp timestamp-->
-                                        <exclude>ipc/shmem/ltmain.sh</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/include/org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h</exclude><!--auto generated files-->
-                                        <exclude>ipc/shmem/igniteshmem/.libs/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
-                                        <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
-                                    </excludes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
+   <profiles>
         <profile>
             <id>test</id>
             <build>
@@ -652,28 +97,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>surefire-fork-count-1</id>
-            <activation>
-                <property>
-                    <!-- To activate this profile set the following property. -->
-                    <name>FORK_COUNT_SET_TO_1</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.17</version>
-                        <configuration>
-                            <forkCount>1</forkCount>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -723,200 +146,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.1</version>
                         <executions>
-                            <execution>
-                                <id>module-javadoc</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <phase>package</phase>
-                                <configuration>
-                                    <taglets>
-                                        <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
-                                            <tagletArtifact>
-                                                <groupId>org.apache.ignite</groupId>
-                                                <artifactId>ignite-tools</artifactId>
-                                                <version>${ignite.version}</version>
-                                            </tagletArtifact>
-                                        </taglet>
-                                    </taglets>
-                                    <doctitle>Ignite ${ignite.version}</doctitle>
-                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
-                                    <breakiterator>true</breakiterator>
-                                    <verbose>true</verbose>
-                                    <show>protected</show>
-                                    <use>true</use>
-                                    <author>false</author>
-                                    <version>false</version>
-                                    <additionalparam>${javadoc.opts}</additionalparam>
-                                    <links>
-                                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                                        <link>http://hadoop.apache.org/docs/current/api/</link>
-                                    </links>
-                                    <stylesheetfile>${project.basedir}/${parent.relativePath}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <groups>
-                                        <group>
-                                            <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
-                                        </group>
-                                        <group>
-                                            <title>Messaging APIs</title>
-                                            <packages>org.apache.ignite.messaging</packages>
-                                        </group>
-                                        <group>
-                                            <title>Event Notification APIs</title>
-                                            <packages>org.apache.ignite.events</packages>
-                                        </group>
-                                        <group>
-                                            <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
-                                        </group>
-                                        <group>
-                                            <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.datastreamer</packages>
-                                        </group>
-                                        <group>
-                                            <title>Service Grid APIs</title>
-                                            <packages>org.apache.ignite.services</packages>
-                                        </group>
-                                        <group>
-                                            <title>File System APIs</title>
-                                            <packages>org.apache.ignite.igfs:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.igfs.secondary</packages>
-                                        </group>
-                                        <group>
-                                            <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.hadoop:org.apache.ignite.hadoop.fs:org.apache.ignite.hadoop.fs.v1:org.apache.ignite.hadoop.fs.v2:org.apache.ignite.hadoop.mapreduce</packages>
-                                        </group>
-                                        <group>
-                                            <title>Streaming APIs</title>
-                                            <packages>org.apache.ignite.streamer:org.apache.ignite.streamer.router:org.apache.ignite.streamer.window:org.apache.ignite.streamer.index:org.apache.ignite.streamer.index.hash:org.apache.ignite.streamer.index.tree:org.apache.ignite.stream</packages>
-                                        </group>
-                                        <group>
-                                            <title>Security APIs</title>
-                                            <packages>org.apache.ignite.plugin.security</packages>
-                                        </group>
-                                        <group>
-                                            <title>MXBeans classes</title>
-                                            <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: CheckPoint</title>
-                                            <packages>org.apache.ignite.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Collision</title>
-                                            <packages>org.apache.ignite.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Load Balancing</title>
-                                            <packages>org.apache.ignite.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Communication</title>
-                                            <packages>org.apache.ignite.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Deployment</title>
-                                            <packages>org.apache.ignite.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Swap Space</title>
-                                            <packages>org.apache.ignite.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Discovery</title>
-                                            <packages>org.apache.ignite.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Failover</title>
-                                            <packages>org.apache.ignite.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Event Storage</title>
-                                            <packages>org.apache.ignite.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
-                                        </group>
-                                        <group>
-                                            <title>Segmentation Detection</title>
-                                            <packages>org.apache.ignite.plugin.segmentation</packages>
-                                        </group>
-                                        <group>
-                                            <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
-                                        </group>
-                                        <group>
-                                            <title>Logging</title>
-                                            <packages>org.apache.ignite.logger:org.apache.ignite.logger.log4j:org.apache.ignite.logger.java:org.apache.ignite.logger.tomcat:org.apache.ignite.logger.jcl:org.apache.ignite.logger.slf4j:org.apache.ignite.logger.jboss</packages>
-                                        </group>
-                                        <group>
-                                            <title>Loaders</title>
-                                            <packages>org.apache.ignite.startup:org.apache.ignite.startup.cmdline:org.apache.ignite.startup.servlet:org.apache.ignite.startup.tomcat</packages>
-                                        </group>
-                                        <group>
-                                            <title>Marshallers</title>
-                                            <packages>org.apache.ignite.marshaller:org.apache.ignite.marshaller.optimized:org.apache.ignite.marshaller.jdk</packages>
-                                        </group>
-                                    </groups>
-                                    <header>
-                                        <![CDATA[
-                                    Ignite - In-Memory Data Fabric
-                                ]]>
-                                    </header>
-                                    <bottom>
-                                        <![CDATA[
-                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
-                                    <tr>
-                                        <td>
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                        <td width="100%" align="right" valign="center">
-                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
-                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="2" valign="top" align="left">
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Ignite Fabric</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${ignite.version}</strong>
-                                                        </td>
-                                                    </tr>
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Release Date</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ${maven.build.timestamp}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    </table>
-                                ]]>
-                                    </bottom>
-                                </configuration>
-                            </execution>
-
                             <execution>
                                 <id>core-javadoc</id>
                                 <goals>
@@ -924,199 +154,10 @@
                                 </goals>
                                 <phase>process-test-classes</phase>
                                 <configuration>
-                                    <taglets>
-                                        <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
-                                            <tagletArtifact>
-                                                <groupId>org.apache.ignite</groupId>
-                                                <artifactId>ignite-tools</artifactId>
-                                                <version>${ignite.version}</version>
-                                            </tagletArtifact>
-                                        </taglet>
-                                    </taglets>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <doctitle>Ignite ${ignite.version}</doctitle>
-                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
-                                    <breakiterator>true</breakiterator>
-                                    <verbose>true</verbose>
-                                    <show>protected</show>
-                                    <use>true</use>
-                                    <author>false</author>
-                                    <version>false</version>
-                                    <additionalparam>${javadoc.opts}</additionalparam>
-                                    <links>
-                                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                                        <link>http://hadoop.apache.org/docs/current/api/</link>
-                                    </links>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.jsr166:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
-                                    <groups>
-                                        <group>
-                                            <title>Common Grid APIs</title>
-                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler</packages>
-                                        </group>
-                                        <group>
-                                            <title>Messaging APIs</title>
-                                            <packages>org.apache.ignite.messaging</packages>
-                                        </group>
-                                        <group>
-                                            <title>Event Notification APIs</title>
-                                            <packages>org.apache.ignite.events</packages>
-                                        </group>
-                                        <group>
-                                            <title>Compute Grid APIs</title>
-                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify:org.apache.ignite.compute.gridify.aop:org.apache.ignite.compute.gridify.aop.aspectj:org.apache.ignite.compute.gridify.aop.spring</packages>
-                                        </group>
-                                        <group>
-                                            <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.igfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.datastreamer</packages>
-                                        </group>
-                                        <group>
-                                            <title>Service Grid APIs</title>
-                                            <packages>org.apache.ignite.services</packages>
-                                        </group>
-                                        <group>
-                                            <title>File System APIs</title>
-                                            <packages>org.apache.ignite.igfs:org.apache.ignite.igfs.mapreduce:org.apache.ignite.igfs.mapreduce.records:org.apache.ignite.igfs.secondary</packages>
-                                        </group>
-                                        <group>
-                                            <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.hadoop:org.apache.ignite.hadoop.fs:org.apache.ignite.hadoop.fs.v1:org.apache.ignite.hadoop.fs.v2:org.apache.ignite.hadoop.mapreduce</packages>
-                                        </group>
-                                        <group>
-                                            <title>Streaming APIs</title>
-                                            <packages>org.apache.ignite.streamer:org.apache.ignite.streamer.router:org.apache.ignite.streamer.window:org.apache.ignite.streamer.index:org.apache.ignite.streamer.index.hash:org.apache.ignite.streamer.index.tree:org.apache.ignite.stream</packages>
-                                        </group>
-                                        <group>
-                                            <title>Security APIs</title>
-                                            <packages>org.apache.ignite.plugin.security</packages>
-                                        </group>
-                                        <group>
-                                            <title>MXBeans classes</title>
-                                            <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: CheckPoint</title>
-                                            <packages>org.apache.ignite.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Collision</title>
-                                            <packages>org.apache.ignite.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.noop</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Load Balancing</title>
-                                            <packages>org.apache.ignite.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Communication</title>
-                                            <packages>org.apache.ignite.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Deployment</title>
-                                            <packages>org.apache.ignite.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Swap Space</title>
-                                            <packages>org.apache.ignite.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Discovery</title>
-                                            <packages>org.apache.ignite.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Failover</title>
-                                            <packages>org.apache.ignite.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
-                                        </group>
-                                        <group>
-                                            <title>SPI: Event Storage</title>
-                                            <packages>org.apache.ignite.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
-                                        </group>
-                                        <group>
-                                            <title>Segmentation Detection</title>
-                                            <packages>org.apache.ignite.plugin.segmentation</packages>
-                                        </group>
-                                        <group>
-                                            <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication</packages>
-                                        </group>
-                                        <group>
-                                            <title>Logging</title>
-                                            <packages>org.apache.ignite.logger:org.apache.ignite.logger.log4j:org.apache.ignite.logger.java:org.apache.ignite.logger.tomcat:org.apache.ignite.logger.jcl:org.apache.ignite.logger.slf4j:org.apache.ignite.logger.jboss</packages>
-                                        </group>
-                                        <group>
-                                            <title>Loaders</title>
-                                            <packages>org.apache.ignite.startup:org.apache.ignite.startup.cmdline:org.apache.ignite.startup.servlet:org.apache.ignite.startup.tomcat</packages>
-                                        </group>
-                                        <group>
-                                            <title>Marshallers</title>
-                                            <packages>org.apache.ignite.marshaller:org.apache.ignite.marshaller.optimized:org.apache.ignite.marshaller.jdk</packages>
-                                        </group>
-                                        <group>
-                                            <title>Visor Plugins</title>
-                                            <packages>org.apache.ignite.visor.plugin</packages>
-                                        </group>
-                                        <group>
-                                            <title>Spring Caching</title>
-                                            <packages>org.apache.ignite.cache.spring</packages>
-                                        </group>
-                                    </groups>
-                                    <header>
-                                        <![CDATA[
-                                    Apache Ignite - In-Memory Data Fabric
-                                ]]>
-                                    </header>
-                                    <bottom>
-                                        <![CDATA[
-                                    <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
-                                    <tr>
-                                        <td>
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                        <td width="100%" align="right" valign="center">
-                                            <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
-                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="2" valign="top" align="left">
-                                            <table style="padding-left: 0; margin: 0">
-                                                <tbody style="padding: 0; margin: 0">
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Apache Ignite Fabric</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${ignite.version}</strong>
-                                                        </td>
-                                                    </tr>
-                                                    <tr style="padding: 0; margin: 0">
-                                                        <td>
-                                                            <b>Release Date</b>
-                                                        </td>
-                                                        <td>:&nbsp;&nbsp;
-                                                            ${maven.build.timestamp}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    </table>
-                                ]]>
-                                    </bottom>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -1131,7 +172,7 @@
                             <dependency>
                                 <groupId>org.apache.ignite</groupId>
                                 <artifactId>ignite-tools</artifactId>
-                                <version>${ignite.version}</version>
+                                <version>${project.version}</version>
                             </dependency>
                         </dependencies>
                         <executions>
@@ -1145,19 +186,18 @@
                                     <target>
                                         <copy todir="${basedir}/target/javadoc/core">
                                             <fileset dir="assembly/docfiles">
-                                                <include name="img/**"/>
-                                                <include name="*.js"/>
+                                                <include name="img/**" />
+                                                <include name="*.js" />
                                             </fileset>
                                         </copy>
 
-                                        <taskdef name="doctask"
-                                                 classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
+                                        <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
                                         <doctask css="dotted" dir="target/javadoc/core">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
+                                            <include name="**/*.html" />
+                                            <exclude name="overview-frame.html" />
+                                            <exclude name="allclasses-frame.html" />
+                                            <exclude name="**/class-use/*" />
                                         </doctask>
                                     </target>
                                 </configuration>
@@ -1244,24 +284,25 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${ignite.version}.zip"
-                                             encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package"
-                                                        prefix="ignite-${ignite.edition}-${ignite.version}"
-                                                        filemode="755">
-                                                <include name="**/*.sh"/>
-                                                <include name="**/configure"/>
-                                                <include name="**/install-sh"/>
-                                                <include name="**/compile"/>
-                                                <include name="**/missing"/>
+                                        <replaceregexp file="${basedir}/target/release-package/examples/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
+
+                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}" filemode="755">
+                                                <include name="**/*.sh" />
+                                                <include name="**/configure" />
+                                                <include name="**/install-sh" />
+                                                <include name="**/compile" />
+                                                <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package"
-                                                        prefix="ignite-${ignite.edition}-${ignite.version}">
-                                                <exclude name="**/*.sh"/>
-                                                <exclude name="**/configure"/>
-                                                <exclude name="**/install-sh"/>
-                                                <exclude name="**/compile"/>
-                                                <exclude name="**/missing"/>
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}">
+                                                <exclude name="**/*.sh" />
+                                                <exclude name="**/configure" />
+                                                <exclude name="**/install-sh" />
+                                                <exclude name="**/compile" />
+                                                <exclude name="**/missing" />
                                             </zipfileset>
                                         </zip>
                                     </target>
@@ -1277,6 +318,39 @@
                         <inherited>false</inherited>
                         <executions>
                             <execution>
+                                <id>dependencies</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>${basedir}</outputDirectory>
+                                    <finalName>libs</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>dependencies-optional</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml
+                                        </descriptor>
+                                    </descriptors>
+                                    <outputDirectory>${basedir}/libs</outputDirectory>
+                                    <finalName>optional</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
                                 <id>release</id>
                                 <phase>prepare-package</phase>
                                 <goals>
@@ -1290,40 +364,24 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
-        <profile>
-            <id>benchmarks</id>
-            <modules>
-                <module>modules/yardstick</module>
-            </modules>
-        </profile>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
 
-        <profile>
-            <id>scala</id>
-
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <modules>
-                <module>modules/scalar</module>
-                <module>modules/visor-console</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-                        <executions>
                             <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>prepare-package</phase>
@@ -1364,24 +422,24 @@
         </profile>
 
         <profile>
-            <id>java8</id>
+            <id>benchmarks</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>scala</id>
+
             <activation>
-                <jdk>[1.8,)</jdk>
+                <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <javadoc.opts>-Xdoclint:none</javadoc.opts>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+
+            <modules>
+                <module>modules/scalar</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
         </profile>
     </profiles>
 </project>
