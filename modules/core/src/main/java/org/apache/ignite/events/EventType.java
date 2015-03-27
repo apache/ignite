@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.IgnitePredicate;
 
 import java.util.*;
 
@@ -29,7 +31,7 @@ import java.util.*;
  * <p>
  * Note that this interface defines not only
  * individual type constants but arrays of types as well to be conveniently used with
- * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method:
+ * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method:
  * <ul>
  * <li>{@link #EVTS_CACHE}</li>
  * <li>{@link #EVTS_CACHE_LIFECYCLE}</li>
@@ -661,7 +663,7 @@ public interface EventType {
      *
      * @see CacheRebalancingEvent
      */
-    public static final int EVT_CACHE_REBALANCE_DATA_LOST = 86;
+    public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
      * Built-in event type: query executed.
@@ -712,14 +714,6 @@ public interface EventType {
      * @see CacheEvent
      */
     public static final int EVT_CACHE_NODES_LEFT = 100;
-
-    /**
-     * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     */
-    public static final int EVT_VISOR_EVENTS_LOST = 115;
 
     /**
      * Built-in event type: IGFS file created.
@@ -867,7 +861,7 @@ public interface EventType {
 
     /**
      * All checkpoint events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
      *
      * @see CheckpointEvent
@@ -880,7 +874,7 @@ public interface EventType {
 
     /**
      * All deployment events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all deployment events.
      *
      * @see DeploymentEvent
@@ -921,7 +915,7 @@ public interface EventType {
      * {@link #EVTS_DISCOVERY_ALL} array.
      * <p>
      * This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all discovery events <b>except</b> for {@link #EVT_NODE_METRICS_UPDATED}.
      *
      * @see DiscoveryEvent
@@ -937,7 +931,7 @@ public interface EventType {
 
     /**
      * All discovery events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all discovery events.
      *
      * @see DiscoveryEvent
@@ -954,7 +948,7 @@ public interface EventType {
 
     /**
      * All grid job execution events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all grid job execution events.
      *
      * @see JobEvent
@@ -974,7 +968,7 @@ public interface EventType {
 
     /**
      * All grid task execution events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all grid task execution events.
      *
      * @see TaskEvent
@@ -990,7 +984,7 @@ public interface EventType {
 
     /**
      * All cache events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cache events.
      */
     public static final int[] EVTS_CACHE = {
@@ -1008,7 +1002,7 @@ public interface EventType {
 
     /**
      * All cache rebalance events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cache rebalance events.
      */
     public static final int[] EVTS_CACHE_REBALANCE = {
@@ -1017,12 +1011,13 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_LOADED,
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
-        EVT_CACHE_REBALANCE_OBJECT_UNLOADED
+        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+        EVT_CACHE_REBALANCE_PART_DATA_LOST
     };
 
     /**
      * All cache lifecycle events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cache lifecycle events.
      */
     public static final int[] EVTS_CACHE_LIFECYCLE = {
@@ -1033,7 +1028,7 @@ public interface EventType {
 
     /**
      * All cache query events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cache query events.
      */
     public static final int[] EVTS_CACHE_QUERY = {
@@ -1043,7 +1038,7 @@ public interface EventType {
 
     /**
      * All swap space events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
      * @see SwapSpaceEvent
@@ -1058,7 +1053,7 @@ public interface EventType {
 
     /**
      * All Igfs events. This array can be directly passed into
-     * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
      * @see IgfsEvent

@@ -47,7 +47,6 @@ with actual Ignite version you are interested in):
 
 2. Or import individual Apache Ignite modules a la carte.
 
-
 Alternatively you can import Ignite modules a la carte, one by one.
 The only required module is 'ignite-core', all others are optional.
 Here is how it can be imported into your POM file:

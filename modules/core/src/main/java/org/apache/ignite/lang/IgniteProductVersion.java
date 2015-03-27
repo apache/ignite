@@ -257,7 +257,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 
-        if (verStr.endsWith("-DEV")) // Development version, just cut it out.
+        if (verStr.endsWith("-DEV") || verStr.endsWith("-n/a")) // Development or built from source ZIP.
             verStr = verStr.substring(0, verStr.length() - 4);
 
         Matcher match = VER_PATTERN.matcher(verStr);

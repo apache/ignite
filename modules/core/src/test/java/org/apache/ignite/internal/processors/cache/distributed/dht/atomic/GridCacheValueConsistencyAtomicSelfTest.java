@@ -42,7 +42,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
 
     /** {@inheritDoc} */
     @Override protected int iterationCount() {
-        return 400_000;
+        return 100_000;
     }
 
     /**

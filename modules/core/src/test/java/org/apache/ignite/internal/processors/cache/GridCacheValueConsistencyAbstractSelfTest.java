@@ -51,7 +51,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60000;
+        return 5 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -228,7 +228,18 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @throws Exception If failed.
      */
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        final int range = 10000;
+       for (int i = 0; i < 10; i++) {
+           log.info("Iteration: " + i);
+
+           putRemoveConsistencyMultithreaded();
+       }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void putRemoveConsistencyMultithreaded() throws Exception {
+        final int range = 10_000;
 
         final int iterCnt = iterationCount();
 
@@ -292,11 +303,18 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                         boolean primary = aff.isPrimary(ignite.cluster().localNode(), i);
                         boolean backup = aff.isBackup(ignite.cluster().localNode(), i);
 
-                        log.error("Invalid value detected [val=" + val +
+                        log.error("Invalid value detected [key=" + i +
+                            ", val=" + val +
                             ", firstVal=" + firstVal +
                             ", node=" + g +
                             ", primary=" + primary +
                             ", backup=" + backup + ']');
+
+                        log.error("All values: ");
+
+                        printValues(aff, i);
+
+                        break;
                     }
                 }
             }
@@ -315,6 +333,27 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         for (int g = 0; g < gridCount(); g++)
             checkKeySet(grid(g));
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param key Key.
+     */
+    private void printValues(Affinity<Integer> aff, int key) {
+        for (int g = 0; g < gridCount(); g++) {
+            Ignite ignite = grid(g);
+
+            boolean primary = aff.isPrimary(ignite.cluster().localNode(), key);
+            boolean backup = aff.isBackup(ignite.cluster().localNode(), key);
+
+            Object val = ignite.cache(null).localPeek(key, CachePeekMode.ONHEAP);
+
+            log.error("Node value [key=" + key +
+                ", val=" + val +
+                ", node=" + g +
+                ", primary=" + primary +
+                ", backup=" + backup + ']');
+        }
     }
 
     /**
