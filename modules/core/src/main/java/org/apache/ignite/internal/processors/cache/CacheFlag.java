@@ -47,17 +47,7 @@ public enum CacheFlag {
     SKIP_STORE,
 
     /** Skip swap space for reads and writes. */
-    SKIP_SWAP,
-
-    /**
-     * Switches a cache projection to work in {@code 'invalidation'} mode.
-     * Instead of updating remote entries with new values, small invalidation
-     * messages will be sent to set the values to {@code null}.
-     *
-     * @see Transaction#isInvalidate()
-     * @see org.apache.ignite.configuration.CacheConfiguration#isInvalidate()
-     */
-    INVALIDATE;
+    SKIP_SWAP;
 
     /** */
     private static final CacheFlag[] VALS = values();
