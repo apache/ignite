@@ -32,17 +32,6 @@ import javax.cache.processor.*;
  * </ul>
  */
 public enum CacheFlag {
-    /**
-     * Clone values prior to returning them to user.
-     * <p>
-     * Whenever values are returned from cache, they cannot be directly updated
-     * as cache holds the same references internally. If it is needed to
-     * update values that are returned from cache, this flag will provide
-     * automatic cloning of values prior to returning so they can be directly
-     * updated.
-     */
-    CLONE,
-
     /** Skips store, i.e. no read-through and no write-through behavior. */
     SKIP_STORE;
 

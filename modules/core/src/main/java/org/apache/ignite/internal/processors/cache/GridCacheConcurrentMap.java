@@ -36,8 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-
 /**
  * Concurrent implementation of cache map.
  */
@@ -1830,7 +1828,6 @@ public class GridCacheConcurrentMap {
 
             prjPerCall = ctx.projectionPerCall();
             forcedFlags = ctx.forcedFlags();
-            clone = ctx.hasFlag(CLONE);
         }
 
         /** {@inheritDoc} */
@@ -1856,7 +1853,7 @@ public class GridCacheConcurrentMap {
          * @return Value iterator.
          */
         Iterator<V> valueIterator() {
-            return new ValueIterator<>(map, filter, ctx, clone);
+            return new ValueIterator<>(map, filter, ctx);
         }
 
         /**
@@ -2073,9 +2070,6 @@ public class GridCacheConcurrentMap {
         /** Context. */
         private GridCacheContext<K, V> ctx;
 
-        /** */
-        private boolean clone;
-
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -2087,17 +2081,14 @@ public class GridCacheConcurrentMap {
          * @param map Base map.
          * @param filter Value filter.
          * @param ctx Cache context.
-         * @param clone Clone flag.
          */
         private ValueIterator(
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
-            GridCacheContext ctx,
-            boolean clone) {
+            GridCacheContext ctx) {
             it = new Iterator0<>(map, true, filter, -1, -1);
 
             this.ctx = ctx;
-            this.clone = clone;
         }
 
         /** {@inheritDoc} */
@@ -2112,12 +2103,7 @@ public class GridCacheConcurrentMap {
             // Cached value.
             V val = it.currentValue();
 
-            try {
-                return clone ? ctx.cloneValue(val) : val;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            return val;
         }
 
         /** {@inheritDoc} */
@@ -2129,7 +2115,6 @@ public class GridCacheConcurrentMap {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(it);
             out.writeObject(ctx);
-            out.writeBoolean(clone);
         }
 
         /** {@inheritDoc} */
@@ -2137,7 +2122,6 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            clone = in.readBoolean();
         }
     }
 

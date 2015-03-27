@@ -451,7 +451,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
-            ctx.hasFlag(CLONE),
             taskName,
             deserializePortable,
             false);
@@ -472,7 +471,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return getAllInternal(keys,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
-            ctx.hasFlag(CLONE),
             taskName,
             deserializePortable,
             false);
@@ -495,11 +493,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
         final boolean storeEnabled = ctx.readThrough();
-        final boolean clone = ctx.hasFlag(CLONE);
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, swapOrOffheap, storeEnabled, clone, taskName, deserializePortable, skipVals);
+                return getAllInternal(keys, swapOrOffheap, storeEnabled, taskName, deserializePortable, skipVals);
             }
         });
     }
@@ -510,7 +507,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param keys Keys to remove.
      * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
      * @param storeEnabled Store enabled flag.
-     * @param clone {@code True} if returned values should be cloned.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable .
      * @return Key-value map.
@@ -520,7 +516,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
         boolean swapOrOffheap,
         boolean storeEnabled,
-        boolean clone,
         String taskName,
         boolean deserializePortable,
         boolean skipVals
@@ -600,17 +595,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             }
         }
 
-        if (success || !storeEnabled) {
-            if (!clone)
-                return vals;
-
-            Map<K, V> map = new GridLeanMap<>();
-
-            for (Map.Entry<K, V> e : vals.entrySet())
-                map.put(e.getKey(), ctx.cloneValue(e.getValue()));
-
-            return map;
-        }
+        if (success || !storeEnabled)
+            return vals;
 
         return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry, skipVals)
             .get();

@@ -1007,7 +1007,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
         assertEquals(t.getMessage(), ((Throwable)marshalUnmarshal(t)).getMessage());
 
-        CacheFlagException flagEx = new CacheFlagException(CacheFlag.CLONE);
+        CacheFlagException flagEx = new CacheFlagException(CacheFlag.SKIP_STORE);
 
         assertEquals(flagEx.flags(), ((CacheFlagException)marshalUnmarshal(flagEx)).flags());
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -117,19 +118,21 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             assert atomicsCache != null;
 
-            dsView = atomicsCache.flagsOn(CLONE);
+            dsView = atomicsCache;
 
-            cntDownLatchView = atomicsCache.flagsOn(CLONE);
+            cntDownLatchView = atomicsCache;
 
-            atomicLongView = atomicsCache.flagsOn(CLONE);
+            atomicLongView = atomicsCache;
 
-            atomicRefView = atomicsCache.flagsOn(CLONE);
+            atomicRefView = atomicsCache;
 
-            atomicStampedView = atomicsCache.flagsOn(CLONE);
+            atomicStampedView = atomicsCache;
 
-            seqView = atomicsCache.flagsOn(CLONE);
+            seqView = atomicsCache;
 
             dsCacheCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
+
+            CacheConfiguration cfg = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).configuration();
         }
     }
 

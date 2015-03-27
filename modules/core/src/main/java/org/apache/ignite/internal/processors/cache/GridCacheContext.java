@@ -1338,63 +1338,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param flag Flag to check.
-     */
-    public void denyOnFlag(CacheFlag flag) {
-        assert flag != null;
-
-        if (hasFlag(flag))
-            throw new CacheFlagException(flag);
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void denyOnFlags(CacheFlag[] flags) {
-        assert !F.isEmpty(flags);
-
-        if (hasAnyFlags(flags))
-            throw new CacheFlagException(flags);
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void denyOnFlags(Collection<CacheFlag> flags) {
-        assert !F.isEmpty(flags);
-
-        if (hasAnyFlags(flags))
-            throw new CacheFlagException(flags);
-    }
-
-    /**
-     * Clones cached object depending on whether or not {@link CacheFlag#CLONE} flag
-     * is set thread locally.
-     *
-     * @param obj Object to clone.
-     * @return Clone of the given object.
-     * @throws IgniteCheckedException If failed to clone.
-     */
-    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws IgniteCheckedException {
-        return hasFlag(CLONE) ? cloneValue(obj) : obj;
-    }
-
-    /**
-     * @param f Target future.
-     * @return Wrapped future that is aware of cloning behaviour.
-     */
-    public IgniteInternalFuture<V> wrapClone(IgniteInternalFuture<V> f) {
-        if (!hasFlag(CLONE))
-            return f;
-
-        return f.chain(new CX1<IgniteInternalFuture<V>, V>() {
-            @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                return cloneValue(f.get());
-            }
-        });
-    }
-
-    /**
      * Creates Runnable that can be executed safely in a different thread inheriting
      * the same thread local projection as for the current thread. If no projection is
      * set for current thread then there's no need to create new object and method simply
