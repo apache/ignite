@@ -557,6 +557,9 @@ public class HadoopJobTracker extends HadoopComponent {
 
             // Iteration over all local entries is correct since system cache is REPLICATED.
             for (Object metaObj : jobMetaCache().values()) {
+                if (!(metaObj instanceof HadoopJobMetadata))
+                    continue;
+
                 HadoopJobMetadata meta = (HadoopJobMetadata)metaObj;
 
                 HadoopJobId jobId = meta.jobId();
