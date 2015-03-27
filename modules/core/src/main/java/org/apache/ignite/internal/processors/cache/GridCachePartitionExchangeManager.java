@@ -914,7 +914,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (cacheCtx.isLocal())
                                     continue;
 
-                                changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
+                                changed |= cacheCtx.topology().afterExchange(exchFut);
 
                                 // Preload event notification.
                                 if (cacheCtx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED)) {
