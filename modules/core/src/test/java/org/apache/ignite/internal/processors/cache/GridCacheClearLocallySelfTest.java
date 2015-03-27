@@ -37,7 +37,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
 
 /**
- * Test {@link GridCache#clearLocally()} operations in multinode environment with nodes having caches with different names.
+ * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
  */
 public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     /** Local cache. */
@@ -59,16 +59,16 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Local caches. */
-    private GridCache<Integer, Integer>[] cachesLoc;
+    private IgniteCache<Integer, Integer>[] cachesLoc;
 
     /** Partitioned caches. */
-    private GridCache<Integer, Integer>[] cachesPartitioned;
+    private IgniteCache<Integer, Integer>[] cachesPartitioned;
 
     /** Colocated caches. */
-    private GridCache<Integer, Integer>[] cachesColocated;
+    private IgniteCache<Integer, Integer>[] cachesColocated;
 
     /** Replicated caches. */
-    private GridCache<Integer, Integer>[] cachesReplicated;
+    private IgniteCache<Integer, Integer>[] cachesReplicated;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -137,10 +137,10 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUp() throws Exception {
-        cachesLoc = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesPartitioned = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesColocated = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
-        cachesReplicated = (GridCache<Integer, Integer>[])Array.newInstance(GridCache.class, GRID_CNT);
+        cachesLoc = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
+        cachesPartitioned = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
+        cachesColocated = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
+        cachesReplicated = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = startGrid(i);
@@ -154,15 +154,15 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             if (i == 2)
                 ignite.cache(CACHE_PARTITIONED);
 
-            cachesLoc[i] = ((IgniteKernal)ignite).getCache(CACHE_LOCAL);
-            cachesPartitioned[i] = ((IgniteKernal)ignite).getCache(CACHE_PARTITIONED);
-            cachesColocated[i] = ((IgniteKernal)ignite).getCache(CACHE_COLOCATED);
-            cachesReplicated[i] = ((IgniteKernal)ignite).getCache(CACHE_REPLICATED);
+            cachesLoc[i] = ignite.cache(CACHE_LOCAL);
+            cachesPartitioned[i] = ignite.cache(CACHE_PARTITIONED);
+            cachesColocated[i] = ignite.cache(CACHE_COLOCATED);
+            cachesReplicated[i] = ignite.cache(CACHE_REPLICATED);
         }
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on LOCAL cache with no split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on LOCAL cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -171,7 +171,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on LOCAL cache with split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on LOCAL cache with split.
      *
      * @throws Exception If failed.
      */
@@ -180,7 +180,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on PARTITIONED cache with no split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on PARTITIONED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -189,7 +189,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on PARTITIONED cache with split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on PARTITIONED cache with split.
      *
      * @throws Exception If failed.
      */
@@ -198,7 +198,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on co-located cache with no split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on co-located cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -207,7 +207,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on co-located cache with split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on co-located cache with split.
      *
      * @throws Exception If failed.
      */
@@ -216,7 +216,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on REPLICATED cache with no split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on REPLICATED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -225,7 +225,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCache#clearLocally()} on REPLICATED cache with split.
+     * Test {@link IgniteCache#localClearAll(java.util.Set)} on REPLICATED cache with split.
      *
      * @throws Exception If failed.
      */
@@ -246,13 +246,13 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         switch (mode) {
             case TEST_LOCAL: {
                 // Check on only one node.
-                GridCache<Integer, Integer> cache = cachesLoc[0];
+                IgniteCache<Integer, Integer> cache = cachesLoc[0];
 
                 fillCache(cache, keysCnt);
 
-                cache.clearLocally();
+                cache.localClearAll(keySet(cache));
 
-                assert cache.isEmpty();
+                assert cache.localSize() == 0;
 
                 break;
             }
@@ -263,25 +263,24 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
                 // Ensure correct no-op clean of CLIENT_ONLY cache.
                 warmCache(cachesPartitioned[2], keysCnt);
-                assert cachesPartitioned[2].isEmpty() : cachesPartitioned[2].values();
-                cachesPartitioned[2].clearLocally();
-                assert cachesPartitioned[2].isEmpty();
+                assert cachesPartitioned[2].localSize() == 0;
+                assert cachesPartitioned[2].localSize() == 0;
 
                 stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
                 // Ensure correct clearLocally of NEA_ONLY cache.
                 warmCache(cachesPartitioned[1], keysCnt);
-                assert !cachesPartitioned[1].isEmpty();
-                cachesPartitioned[1].clearLocally();
-                assert cachesPartitioned[1].isEmpty();
+                assert cachesPartitioned[1].localSize() != 0;
+                cachesPartitioned[1].localClearAll(keySet(cachesPartitioned[1]));
+                assert cachesPartitioned[1].localSize() == 0;
                 fillCache(cachesPartitioned[1], keysCnt);
 
                 stopGrid(1); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
                 // Ensure correct clearLocally of NEAR_PARTITIONED cache.
-                assert !cachesPartitioned[0].isEmpty();
-                cachesPartitioned[0].clearLocally();
-                assert cachesPartitioned[0].isEmpty();
+                assert cachesPartitioned[0].localSize() != 0;
+                cachesPartitioned[0].localClearAll(keySet(cachesPartitioned[0]));
+                assert cachesPartitioned[0].localSize() == 0;
 
                 break;
             }
@@ -289,16 +288,16 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             default: {
                 assert mode == Mode.TEST_COLOCATED || mode == Mode.TEST_REPLICATED;
 
-                GridCache<Integer, Integer>[] caches = mode == Mode.TEST_COLOCATED ? cachesColocated : cachesReplicated;
+                IgniteCache<Integer, Integer>[] caches = mode == Mode.TEST_COLOCATED ? cachesColocated : cachesReplicated;
 
                 fillCache(caches[0], keysCnt);
 
-                for (GridCache<Integer, Integer> cache : caches) {
-                    assert !cache.isEmpty();
+                for (IgniteCache<Integer, Integer> cache : caches) {
+                    assert cache.localSize() != 0;
 
-                    cache.clearLocally();
+                    cache.localClearAll(keySet(cache));
 
-                    assert cache.isEmpty();
+                    assert cache.localSize() == 0;
                 }
             }
         }
@@ -311,8 +310,8 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @param keysCnt Amount of keys to put.
      * @throws Exception If failed.
      */
-    private void fillCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        try (Transaction tx = cache.txStart()) {
+    private void fillCache(IgniteCache<Integer, Integer> cache, int keysCnt) throws Exception {
+        try (Transaction tx = cache.unwrap(Ignite.class).transactions().txStart()) {
             for (int i = 0; i < keysCnt; i++)
                 cache.put(i, i);
 
@@ -327,7 +326,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @param keysCnt Amount of keys to get.
      * @throws Exception If failed.
      */
-    private void warmCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
+    private void warmCache(IgniteCache<Integer, Integer> cache, int keysCnt) throws Exception {
         for (int i = 0; i < keysCnt; i++)
             cache.get(i);
     }

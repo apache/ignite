@@ -74,12 +74,12 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int logFreq = 50;
         final String txt = "Value";
 
-        final GridCache<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).getCache(null);
+        final GridCacheAdapter<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).internalCache(null);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < keyCnt; i++) {
-                        c.putx(i, new H2TextValue(txt));
+                        c.put(i, new H2TextValue(txt));
 
                         if (i % logFreq == 0)
                             X.println("Stored values: " + i);

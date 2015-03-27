@@ -106,10 +106,10 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      * Check CacheAffinityProxy methods.
      */
     private void checkAffinity() {
-        checkAffinity(grid(0).affinity(null), cache(1, null).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), cache(1, CACHE1).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), cache(1, CACHE1).affinity());
-        checkAffinity(grid(0).affinity(CACHE2), cache(1, CACHE2).affinity());
+        checkAffinity(grid(0).affinity(null), internalCache(1, null).affinity());
+        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
+        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
+        checkAffinity(grid(0).affinity(CACHE2), internalCache(1, CACHE2).affinity());
     }
 
     /**
@@ -128,14 +128,20 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check affinityKey method.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
-    private void checkAffinityKey(Affinity testAff,Affinity aff) {
+    private void checkAffinityKey(Affinity testAff, Affinity aff) {
         for (int i = 0; i < 10000; i++)
             assertEquals(testAff.affinityKey(i), aff.affinityKey(i));
     }
 
     /**
      * Check allPartitions, backupPartitions and primaryPartitions methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkPartitions(Affinity testAff, Affinity aff) {
         for (ClusterNode n : nodes()) {
@@ -149,6 +155,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check isBackup, isPrimary and isPrimaryOrBackup methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkIsBackupOrPrimary(Affinity testAff, Affinity aff) {
         for (int i = 0; i < 10000; i++)
@@ -163,6 +172,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check mapKeyToNode, mapKeyToPrimaryAndBackups methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkMapKeyToNode(Affinity testAff, Affinity aff) {
         for (int i = 0; i < 10000; i++) {
@@ -174,6 +186,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check mapPartitionToPrimaryAndBackups and mapPartitionToNode methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkMapPartitionToNode(Affinity testAff, Affinity aff) {
         assertEquals(aff.partitions(), testAff.partitions());
@@ -188,6 +203,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check mapKeysToNodes methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkMapKeysToNodes(Affinity testAff, Affinity aff) {
         List<Integer> keys = new ArrayList<>(10000);
@@ -200,6 +218,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check mapPartitionsToNodes methods.
+     *
+     * @param testAff Affinity1.
+     * @param aff Affinity2.
      */
     private void checkMapPartitionsToNodes(Affinity testAff, Affinity aff) {
         List<Integer> parts = new ArrayList<>(aff.partitions());
@@ -212,6 +233,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check equal arrays.
+     *
+     * @param arr1 Array 1.
+     * @param arr2 Array 2.
      */
     private static void checkEqualIntArray(int[] arr1, int[] arr2) {
         assertEquals(arr1.length, arr2.length);
@@ -232,6 +256,9 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /**
      * Check equal collections.
+     *
+     * @param col1 Collection 1.
+     * @param col2 Collection 2.
      */
     private static void checkEqualCollection(Collection<ClusterNode> col1, Collection<ClusterNode> col2) {
         assertEquals(col1.size(), col2.size());

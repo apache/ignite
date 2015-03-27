@@ -158,7 +158,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 ", id=" + grid(i).localNode().id() + ']');
 
             try {
-                run.run(cache(i));
+                run.run(jcache(i));
 
                 waitForEvents(i, evtCnts);
             }
@@ -203,17 +203,17 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
         runTest(
             new TestCacheRunnable() {
-                @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+                @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                     String key = "key";
                     Integer val = 1;
 
-                    assert cache.put(key, val) == null;
+                    assert cache.getAndPut(key, val) == null;
 
                     assert cache.containsKey(key);
 
                     assertEquals(val, cache.get(key));
 
-                    assertEquals(val, cache.remove(key));
+                    assertEquals(val, cache.getAndRemove(key));
 
                     assert !cache.containsKey(key);
                 }
@@ -229,7 +229,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -237,15 +237,15 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.put(key, val) == null;
+                assert cache.getAndPut(key, val) == null;
 
                 assert cache.containsKey(key);
 
                 assert val.equals(cache.get(key));
 
-                assert val.equals(cache.remove(key));
+                assert val.equals(cache.getAndRemove(key));
 
                 assert !cache.containsKey(key);
 
@@ -261,7 +261,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -269,19 +269,19 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.put(key, val) == null;
+                assert cache.getAndPut(key, val) == null;
 
                 assert cache.containsKey(key);
 
                 assert val.equals(cache.get(key));
 
-                assert val.equals(cache.remove(key));
+                assert val.equals(cache.getAndRemove(key));
 
                 assert !cache.containsKey(key);
 
-                assert cache.put(key, val) == null;
+                cache.put(key, val);
 
                 assert cache.containsKey(key);
 
@@ -301,7 +301,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             return;
 
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -309,13 +311,19 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                assert cache.putAsync(key, val).get() == null;
+                asyncCache.getAndPut(key, val);
+
+                assert asyncCache.future().get() == null;
 
                 assert cache.containsKey(key);
 
-                assert val.equals(cache.getAsync(key).get());
+                asyncCache.get(key);
 
-                assert val.equals(cache.removeAsync(key).get());
+                assert val.equals(asyncCache.future().get());
+
+                asyncCache.getAndRemove(key);
+
+                assert val.equals(asyncCache.future().get());
 
                 assert !cache.containsKey(key);
             }
@@ -327,7 +335,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsyncTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -335,15 +345,21 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.putAsync(key, val).get() == null;
+                asyncCache.getAndPut(key, val);
+
+                assert asyncCache.future().get() == null;
 
                 assert cache.containsKey(key);
 
-                assert val.equals(cache.getAsync(key).get());
+                asyncCache.get(key);
 
-                assert val.equals(cache.removeAsync(key).get());
+                assert val.equals(asyncCache.future().get());
+
+                asyncCache.getAndRemove(key);
+
+                assert val.equals(asyncCache.future().get());
 
                 assert !cache.containsKey(key);
 
@@ -359,7 +375,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsyncTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -367,19 +385,27 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.putAsync(key, val).get() == null;
+                asyncCache.getAndPut(key, val);
+
+                assert asyncCache.future().get() == null;
 
                 assert cache.containsKey(key);
 
-                assert val.equals(cache.getAsync(key).get());
+                asyncCache.get(key);
 
-                assert val.equals(cache.removeAsync(key).get());
+                assert val.equals(asyncCache.future().get());
+
+                asyncCache.getAndRemove(key);
+
+                assert val.equals(asyncCache.future().get());
 
                 assert !cache.containsKey(key);
 
-                assert cache.putAsync(key, val).get() == null;
+                asyncCache.getAndPut(key, val);
+
+                assert asyncCache.future().get() == null;
 
                 assert cache.containsKey(key);
 
@@ -395,7 +421,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovex() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -403,11 +429,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                assert cache.putx(key, val);
+                cache.put(key, val);
 
                 assert cache.containsKey(key);
 
-                assert cache.removex(key);
+                assert cache.remove(key);
 
                 assert !cache.containsKey(key);
             }
@@ -419,7 +445,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -427,13 +453,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.putx(key, val);
+                cache.put(key, val);
 
                 assert cache.containsKey(key);
 
-                assert cache.removex(key);
+                assert cache.remove(key);
 
                 assert !cache.containsKey(key);
 
@@ -449,7 +475,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovexTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -457,17 +483,17 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                Transaction tx = cache.txStart();
+                Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                assert cache.putx(key, val);
+                cache.put(key, val);
 
                 assert cache.containsKey(key);
 
-                assert cache.removex(key);
+                assert cache.remove(key);
 
                 assert !cache.containsKey(key);
 
-                assert cache.putx(key, val);
+                cache.put(key, val);
 
                 assert cache.containsKey(key);
 
@@ -483,7 +509,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsent() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 Map.Entry<String, Integer> e = iter.next();
@@ -491,8 +517,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                assert cache.putIfAbsent(key, val) == null;
-                assert val.equals(cache.putIfAbsent(key, val));
+                assert cache.getAndPutIfAbsent(key, val) == null;
+                assert val.equals(cache.getAndPutIfAbsent(key, val));
 
                 assert cache.containsKey(key);
 
@@ -501,8 +527,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 key = e.getKey();
                 val = e.getValue();
 
-                assert cache.putxIfAbsent(key, val);
-                assert !cache.putxIfAbsent(key, val);
+                assert cache.putIfAbsent(key, val);
+                assert !cache.putIfAbsent(key, val);
 
                 assert cache.containsKey(key);
             }
@@ -514,7 +540,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsentTx() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 Map.Entry<String, Integer> e = iter.next();
@@ -522,10 +548,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                try (Transaction tx = cache.txStart()) {
-                    assert cache.putIfAbsent(key, val) == null;
+                try (Transaction tx = grid(0).transactions().txStart();) {
+                    assert cache.getAndPutIfAbsent(key, val) == null;
 
-                    assertEquals(val, cache.putIfAbsent(key, val));
+                    assertEquals(val, cache.getAndPutIfAbsent(key, val));
 
                     assert cache.containsKey(key);
 
@@ -534,8 +560,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                     key = e.getKey();
                     val = e.getValue();
 
-                    assert cache.putxIfAbsent(key, val);
-                    assert !cache.putxIfAbsent(key, val);
+                    assert cache.putIfAbsent(key, val);
+                    assert !cache.putIfAbsent(key, val);
 
                     assert cache.containsKey(key);
 
@@ -552,7 +578,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsentAsync() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 Map.Entry<String, Integer> e = iter.next();
@@ -560,8 +588,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                assert cache.putIfAbsentAsync(key, val).get() == null;
-                assert val.equals(cache.putIfAbsentAsync(key, val).get());
+                asyncCache.getAndPutIfAbsent(key, val);
+
+                assert asyncCache.future().get() == null;
+
+                asyncCache.getAndPutIfAbsent(key, val);
+
+                assert val.equals(asyncCache.future().get());
 
                 assert cache.containsKey(key);
 
@@ -570,8 +603,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 key = e.getKey();
                 val = e.getValue();
 
-                assert cache.putxIfAbsentAsync(key, val).get();
-                assert !cache.putxIfAbsentAsync(key, val).get();
+                asyncCache.putIfAbsent(key, val);
+
+                assert ((Boolean)asyncCache.future().get()).booleanValue();
+
+                asyncCache.putIfAbsent(key, val);
+
+                assert !((Boolean)asyncCache.future().get()).booleanValue();
 
                 assert cache.containsKey(key);
             }
@@ -586,18 +624,25 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt)};
 
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+                IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
-                try (Transaction tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                try (Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                     Map.Entry<String, Integer> e = iter.next();
 
                     String key = e.getKey();
                     Integer val = e.getValue();
 
-                    assert cache.putIfAbsentAsync(key, val).get() == null;
-                    assert val.equals(cache.putIfAbsentAsync(key, val).get());
+                    asyncCache.getAndPutIfAbsent(key, val);
+
+                    assert asyncCache.future().get() == null;
+
+                    asyncCache.getAndPutIfAbsent(key, val);
+
+                    assert val.equals(asyncCache.future().get());
 
                     assert cache.containsKey(key);
 
@@ -606,8 +651,13 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                     key = e.getKey();
                     val = e.getValue();
 
-                    assert cache.putxIfAbsentAsync(key, val).get();
-                    assert !cache.putxIfAbsentAsync(key, val).get();
+                    asyncCache.putIfAbsent(key, val);
+
+                    assert ((Boolean)asyncCache.future().get()).booleanValue();
+
+                    asyncCache.putIfAbsent(key, val);
+
+                    assert !((Boolean)asyncCache.future().get()).booleanValue();
 
                     assert cache.containsKey(key);
 
@@ -620,113 +670,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     }
 
     /**
-     * @throws Exception If test failed.
-     */
-    public void testFilteredPutRemovex() throws Exception {
-        runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
-
-                assert e != null;
-
-                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
-                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
-
-                String key = e.getKey();
-                Integer val = e.getValue();
-
-                assert !cache.putx(key, val, hasPeekVal);
-                assert cache.putx(key, val, noPeekVal);
-
-                assert cache.containsKey(key);
-
-                assert !cache.removex(key, noPeekVal);
-                assert cache.removex(key, hasPeekVal);
-
-                assert !cache.containsKey(key);
-            }
-        }, F.t(EVT_CACHE_OBJECT_PUT, gridCnt), F.t(EVT_CACHE_OBJECT_REMOVED, gridCnt));
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testFilteredPutRemovexTx1() throws Exception {
-        runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                assert cache.keySet().isEmpty() : "Key set is not empty.";
-
-                Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
-
-                assert e != null;
-
-                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
-                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
-
-                String key = e.getKey();
-                Integer val = e.getValue();
-
-                // Optimistic.
-                try (Transaction tx = cache.txStart()) {
-                    assert !cache.putx(key, val, hasPeekVal);
-                    assert cache.putx(key, val, noPeekVal);
-
-                    assert cache.containsKey(key);
-
-                    assert !cache.removex(key, noPeekVal);
-                    assert cache.removex(key);
-
-                    assert !cache.containsKey(key);
-
-                    tx.commit();
-                }
-
-                assert !cache.containsKey(key);
-            }
-        }, F.t(EVT_CACHE_OBJECT_REMOVED, gridCnt));
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    public void testFilteredPutRemovexTx2() throws Exception {
-        runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
-
-                assert e != null;
-
-                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
-                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
-
-                String key = e.getKey();
-                Integer val = e.getValue();
-
-                try (Transaction tx = cache.txStart()) {
-                    assert !cache.putx(key, val, hasPeekVal);
-                    assert cache.putx(key, val, noPeekVal);
-
-                    assert cache.containsKey(key);
-
-                    assert !cache.removex(key, noPeekVal);
-                    assert cache.removex(key, hasPeekVal);
-
-                    assert !cache.containsKey(key);
-
-                    assert !cache.putx(key, val, hasPeekVal);
-                    assert cache.putx(key, val, noPeekVal);
-
-                    assert cache.containsKey(key);
-
-                    tx.commit();
-                }
-
-                assert cache.containsKey(key);
-            }
-        }, F.t(EVT_CACHE_OBJECT_PUT, gridCnt));
-    }
-
-    /**
      *
      */
     private static interface TestCacheRunnable {
@@ -734,7 +677,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param cache Cache.
          * @throws IgniteCheckedException If any exception occurs.
          */
-        void run(GridCache<String, Integer> cache) throws IgniteCheckedException;
+        void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException;
     }
 
     /**

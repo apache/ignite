@@ -168,7 +168,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)internalCache().configuration().getEvictionPolicy();
+        return (T)grid().cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -177,7 +177,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)internalCache(i).configuration().getEvictionPolicy();
+        return (T)grid(i).cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -186,7 +186,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = internalCache(i).configuration();
+        CacheConfiguration cfg = grid(i).cache(null).getConfiguration(CacheConfiguration.class);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 

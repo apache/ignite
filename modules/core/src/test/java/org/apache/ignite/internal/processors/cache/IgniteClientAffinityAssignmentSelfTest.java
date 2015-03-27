@@ -178,14 +178,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     private void checkAffinity(long topVer) throws Exception {
         awaitTopology(topVer);
 
-        Affinity<Object> aff = ((IgniteKernal)grid(0)).getCache(null).affinity();
+        Affinity<Object> aff = grid(0).affinity(null);
 
         for (Ignite grid : Ignition.allGrids()) {
             try {
                 if (grid.cluster().localNode().id().equals(grid(0).localNode().id()))
                     continue;
 
-                Affinity<Object> checkAff = ((IgniteKernal)grid).getCache(null).affinity();
+                Affinity<Object> checkAff = grid.affinity(null);
 
                 for (int p = 0; p < PARTS; p++)
                     assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));

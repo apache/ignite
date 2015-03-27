@@ -657,7 +657,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 10_000L);
 
         for (int idx = 0; idx < gridCount(); idx++) {
-            assertEquals(1, cache(idx).get(key)); // Try get.
+            assertEquals(1, jcache(idx).get(key)); // Try get.
 
             checkTtl(key, 10_000L);
         }
@@ -718,7 +718,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             checkTtl(key, 60_000L);
 
             for (int idx = 0; idx < gridCount(); idx++) {
-                assertEquals(1, cache(idx).get(key)); // Try get.
+                assertEquals(1, jcache(idx).get(key)); // Try get.
 
                 checkTtl(key, 60_000L);
             }
@@ -733,7 +733,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             checkTtl(key, 61_000L);
 
             for (int idx = 0; idx < gridCount(); idx++) {
-                assertEquals(2, cache(idx).get(key)); // Try get.
+                assertEquals(2, jcache(idx).get(key)); // Try get.
 
                 checkTtl(key, 61_000L);
             }
@@ -746,7 +746,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 tx.commit();
 
             for (int idx = 0; idx < gridCount(); idx++)
-                assertNull(cache(idx).get(key));
+                assertNull(jcache(idx).get(key));
         }
     }
 
@@ -921,7 +921,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 60_000L);
 
         IgniteCache<Object, Object> cache =
-            cache(0).affinity().isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
+            grid(0).affinity(null).isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
 
         assertEquals(1, cache.get(key));
 

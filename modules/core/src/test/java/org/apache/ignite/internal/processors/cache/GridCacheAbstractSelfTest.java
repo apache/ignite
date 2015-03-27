@@ -112,47 +112,29 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     final int fi = i;
 
                     assertTrue(
-                        "Cache is not empty: " + cache(i).entrySet(),
+                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize()
+                        + ", local entries " + entrySet(jcache(fi).localEntries()),
                         GridTestUtils.waitForCondition(
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
-                                    GridCache<Object, Object> cache = internalCache(fi);
-
-                                    // Fix for tests where mapping was removed at primary node
-                                    // but was not removed at others.
-                                    // removeAll() removes mapping only when it presents at a primary node.
-                                    // To remove all mappings used force remove by key.
-                                    if (cache.size() > 0) {
-                                        for (Object k : cache.keySet())
-                                            cache.remove(k);
+                                    if (jcache(fi).size() > 0) {
+                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
+                                            jcache(fi).remove(k.getKey());
                                     }
 
-                                    if (offheapTiered(cache)) {
-                                        Iterator it = cache.offHeapIterator();
-
-                                        while (it.hasNext()) {
-                                            it.next();
-
-                                            it.remove();
-                                        }
-
-                                        if (cache.offHeapIterator().hasNext())
-                                            return false;
-                                    }
-
-                                    return cache.isEmpty();
+                                    return jcache(fi).localSize() == 0;
                                 }
                             },
                             getTestTimeout()));
 
-                    int primaryKeySize = cache(i).primarySize();
-                    int keySize = cache(i).size();
-                    int size = cache(i).size();
-                    int globalSize = cache(i).globalSize();
-                    int globalPrimarySize = cache(i).globalPrimarySize();
+                    int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
+                    int keySize = jcache(i).localSize();
+                    int size = jcache(i).localSize();
+                    int globalSize = jcache(i).size();
+                    int globalPrimarySize = jcache(i).size(CachePeekMode.PRIMARY);
 
                     info("Size after [idx=" + i +
                         ", size=" + size +
@@ -160,10 +142,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         ", primarySize=" + primaryKeySize +
                         ", globalSize=" + globalSize +
                         ", globalPrimarySize=" + globalPrimarySize +
-                        ", keySet=" + cache(i).keySet() + ']');
+                        ", entrySet=" + jcache(i).localEntries() + ']');
 
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + cache(i).entrySet() + ']',
-                        0, cache(i).size());
+                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
+                        0, jcache(i).localSize());
 
                     break;
                 }
@@ -178,13 +160,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            Iterator<Map.Entry<String, Integer>> it = cache(i).swapIterator();
-
-            while (it.hasNext()) {
-                Map.Entry<String, Integer> entry = it.next();
-
-                cache(i).remove(entry.getKey());
-            }
+            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
+                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
@@ -359,23 +336,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index of grid.
-     * @return Cache instance casted to work with string and integer types for convenience.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Override protected GridCache<String, Integer> cache(int idx) {
-        return ((IgniteKernal)grid(idx)).getCache(null);
-    }
-
-    /**
-     * @return Default cache instance casted to work with string and integer types for convenience.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Override protected GridCache<String, Integer> cache() {
-        return cache(0);
-    }
-
-    /**
      * @return Default cache instance.
      */
     @SuppressWarnings({"unchecked"})
@@ -420,14 +380,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
      */
-    protected boolean offheapTiered(GridCache cache) {
-        return cache.configuration().getMemoryMode() == OFFHEAP_TIERED;
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
-     */
     protected <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
         return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
     }
@@ -454,35 +406,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected boolean containsKey(IgniteCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param val Value.
-     * @return {@code True} if cache contains given value.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsValue(GridCache cache, Object val) throws Exception {
-        return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param val Value.
-     * @return {@code True} if offheap contains given value.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsOffheapValue(GridCache cache, Object val) throws Exception {
-        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
-            Map.Entry e = it.next();
-
-            if (val.equals(e.getValue()))
-                return true;
-        }
-
-        return false;
     }
 
     /**
