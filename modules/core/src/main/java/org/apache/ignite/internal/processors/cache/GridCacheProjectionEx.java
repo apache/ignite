@@ -201,9 +201,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -226,9 +223,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -248,9 +242,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.
@@ -272,9 +263,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.

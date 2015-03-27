@@ -849,8 +849,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     @Nullable @Override public final CacheObject innerReload()
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        cctx.denyOnFlag(READ);
-
         CU.checkStore(cctx);
 
         GridCacheVersion startVer;
@@ -2324,8 +2322,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     /** {@inheritDoc} */
     @Override public boolean clear(GridCacheVersion ver, boolean readers,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        cctx.denyOnFlag(READ);
-
         boolean ret;
         boolean rmv;
         boolean marked;

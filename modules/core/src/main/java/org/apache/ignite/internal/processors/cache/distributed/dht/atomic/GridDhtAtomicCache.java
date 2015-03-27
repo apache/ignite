@@ -686,8 +686,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.denyOnLocalRead();
-
         Map<? extends K, EntryProcessor> invokeMap =
             Collections.singletonMap(key, (EntryProcessor)entryProcessor);
 
@@ -727,8 +725,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        ctx.denyOnLocalRead();
-
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
                 return entryProcessor;
@@ -762,8 +758,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (keyCheck)
             validateCacheKeys(map.keySet());
-
-        ctx.denyOnLocalRead();
 
         return updateAllAsync0(null,
             map,

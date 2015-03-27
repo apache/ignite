@@ -536,9 +536,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -575,9 +572,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -604,9 +598,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -637,9 +628,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -671,9 +659,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -702,9 +687,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -728,9 +710,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -754,9 +733,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -783,9 +759,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -813,9 +786,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -838,9 +808,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -864,9 +831,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -887,9 +851,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -912,9 +873,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -935,9 +893,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param m Key-value pairs to store in cache.
      * @param filter Optional entry filter. If provided, then entry will
@@ -958,9 +913,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param m Key-value pairs to store in cache.
      * @param filter Optional entry filter. If provided, then entry will
@@ -1165,9 +1117,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to evict from cache.
      * @return {@code True} if entry could be evicted, {@code false} otherwise.
@@ -1182,10 +1131,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
-     */
+     * */
     public void evictAll();
 
     /**
@@ -1196,9 +1142,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
@@ -1215,9 +1158,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * entries from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      */
     public void clearLocally();
 
@@ -1232,9 +1172,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to clearLocally.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
@@ -1254,9 +1191,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to clearLocally.
      */
@@ -1351,9 +1285,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1384,9 +1315,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1408,9 +1336,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1435,9 +1360,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1459,9 +1381,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.
@@ -1484,9 +1403,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.
@@ -1506,9 +1422,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys whose mappings are to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1528,9 +1441,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys whose mappings are to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
@@ -1557,9 +1467,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If flags validation failed.
@@ -1585,9 +1492,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1611,9 +1515,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1637,9 +1538,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1663,9 +1561,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1689,9 +1584,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param key Key to unlock.
      * @param filter Optional filter that needs to pass prior to unlock taking effect.
@@ -1710,9 +1602,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to unlock.
      * @param filter Optional filter which needs to pass for individual entries
@@ -1823,9 +1712,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}, {@link CacheFlag#READ}.
      *
      * @param key Key to promote entry for.
      * @return Unswapped entry value or {@code null} for non-existing key.
@@ -1841,7 +1727,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * This method is not transactional.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}, {@link CacheFlag#READ}.
+     * {@link CacheFlag#SKIP_SWAP}
      *
      * @param keys Keys to promote entries for.
      * @throws IgniteCheckedException If promote failed.

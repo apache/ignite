@@ -156,9 +156,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Thread local forced flags that affect any projection in the same thread. */
     private ThreadLocal<CacheFlag[]> forcedFlags = new ThreadLocal<>();
 
-    /** Constant array to avoid recreation. */
-    private static final CacheFlag[] FLAG_READ = new CacheFlag[]{READ};
-
     /** Cache name. */
     private String cacheName;
 
@@ -1110,9 +1107,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (F.isEmpty(p))
             return true;
 
-        // We should allow only local read-only operations within filter checking.
-        CacheFlag[] oldFlags = forceFlags(FLAG_READ);
-
         try {
             boolean pass = F.isAll(e, p);
 
@@ -1124,9 +1118,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         catch (RuntimeException ex) {
             throw U.cast(ex);
-        }
-        finally {
-            forceFlags(oldFlags);
         }
     }
 
@@ -1184,15 +1175,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return true;
-    }
-
-    /**
-     * Forces LOCAL and READ flags.
-     *
-     * @return Forced flags that were set prior to method call.
-     */
-    @Nullable public CacheFlag[] forceLocalRead() {
-        return forceFlags(FLAG_READ);
     }
 
     /**
@@ -1363,13 +1345,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (hasFlag(flag))
             throw new CacheFlagException(flag);
-    }
-
-    /**
-     *
-     */
-    public void denyOnLocalRead() {
-        denyOnFlags(FLAG_READ);
     }
 
     /**

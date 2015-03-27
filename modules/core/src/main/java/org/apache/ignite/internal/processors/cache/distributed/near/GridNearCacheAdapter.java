@@ -521,7 +521,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
+        ctx.denyOnFlags(F.asList(SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
         return dht().promote(key, deserializePortable);
@@ -529,7 +529,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
+        ctx.denyOnFlags(F.asList(SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
         return dht().promote(key);
@@ -537,7 +537,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
+        ctx.denyOnFlags(F.asList(SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.

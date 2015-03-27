@@ -30,18 +30,8 @@ import javax.cache.processor.*;
  * <li>{@link CacheProjection#flagsOn(CacheFlag...)}</li>
  * <li>{@link CacheProjection#flagsOff(CacheFlag...)}</li>
  * </ul>
- * Also, some flags, like {@link #READ} may be implicitly set whenever
- * creating new projections and passing entries to predicate filters.
  */
 public enum CacheFlag {
-    /**
-     * Only operations that don't change cached data are allowed.
-     * This flag is automatically set on underlying projection for
-     * all the entries that are given to predicate filters to make
-     * sure that data cannot be updated during predicate evaluation.
-     */
-    READ,
-
     /**
      * Clone values prior to returning them to user.
      * <p>
