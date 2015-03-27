@@ -127,7 +127,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         assertFalse(prj.nodes().contains(grid(1).localNode()));
         assertTrue(prj.nodes().contains(grid(2).localNode()));
         assertTrue(prj.nodes().contains(grid(3).localNode()));
-        assertTrue(prj.nodes().contains(grid(4).localNode()));
+        assertFalse(prj.nodes().contains(grid(4).localNode()));
     }
 
     /**
