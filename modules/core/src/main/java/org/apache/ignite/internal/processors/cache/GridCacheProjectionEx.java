@@ -44,14 +44,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
 
     /**
-     * Gets predicate on which this projection is based on or {@code null}
-     * if predicate is not defined.
-     *
-     * @return Filter on which this projection is based on.
-     */
-    @Nullable public CacheEntryPredicate predicate();
-
-    /**
      * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.

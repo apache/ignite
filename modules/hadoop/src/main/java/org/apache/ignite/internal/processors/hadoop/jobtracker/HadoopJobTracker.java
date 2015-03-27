@@ -129,8 +129,7 @@ public class HadoopJobTracker extends HadoopComponent {
                         throw new IllegalStateException(e);
                     }
 
-                    jobMetaPrj = prj = (GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata>)
-                        sysCache.projection(HadoopJobId.class, HadoopJobMetadata.class);
+                    jobMetaPrj = prj = sysCache;
 
                     if (ctx.configuration().getFinishedJobInfoTtl() > 0) {
                         ExpiryPolicy finishedJobPlc = new ModifiedExpiryPolicy(

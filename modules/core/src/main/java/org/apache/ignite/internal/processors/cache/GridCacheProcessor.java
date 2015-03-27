@@ -2189,9 +2189,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Projection over utility cache.
      */
     public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
-        GridCacheAdapter<K, V> cache = internalCache(CU.UTILITY_CACHE_NAME);
+        GridCache<K, V> cache = cache(CU.UTILITY_CACHE_NAME);
 
-        return (GridCacheProjectionEx<K, V>)cache.projection(keyCls, valCls);
+        return (GridCacheProjectionEx<K, V>)cache;
     }
 
     /**

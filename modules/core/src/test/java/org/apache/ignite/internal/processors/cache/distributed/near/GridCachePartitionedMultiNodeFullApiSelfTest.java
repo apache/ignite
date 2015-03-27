@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -25,9 +26,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -298,7 +299,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Generating keys for test...");
 
-        GridCacheAdapter<String, Integer> cache0 = ((IgniteKernal)grid(0)).internalCache();
+        IgniteCache<String, Integer> cache0 = jcache(0);
 
         for (int i = 0; i < 5; i++) {
             while (true) {
@@ -317,43 +318,42 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Finished generating keys for test.");
 
-        GridCacheAdapter<String, Integer> cache2 = ((IgniteKernal)grid(2)).internalCache();
+        IgniteCache<String, Integer> cache2 = jcache(2);
 
         assertEquals(Integer.valueOf(0), cache2.get(keys.get(0)));
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
 
-        assertEquals(0, cache0.nearSize());
-        assertEquals(5, cache0.size() - cache0.nearSize());
+        assertEquals(0, cache0.localSize(NEAR));
+        assertEquals(5, cache0.localSize() - cache0.localSize(NEAR));
 
-        GridCacheAdapter<String, Integer> cache1 = ((IgniteKernal)grid(1)).internalCache();
+        IgniteCache<String, Integer> cache1 = jcache(1);
 
-        assertEquals(0, cache1.nearSize());
-        assertEquals(5, cache1.size() - cache1.nearSize());
+        assertEquals(0, cache1.localSize(NEAR));
+        assertEquals(5, cache1.localSize() - cache1.localSize(NEAR));
 
-        assertEquals(nearEnabled() ? 2 : 0, cache2.nearSize());
-        assertEquals(0, cache2.size() - cache2.nearSize());
+        assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
+        assertEquals(0, cache2.localSize() - cache2.localSize(NEAR));
 
-        CacheEntryPredicate prjFilter = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                try {
-                    Integer val = CU.value(e.rawGetOrUnmarshal(false), e.context(), false);
 
-                    return val != null && val >= 1 && val <= 3;
-                }
-                catch (IgniteCheckedException err) {
-                    throw new IgniteException(err);
-                }
-            }
-        };
+        assertEquals(0, projectionSize(cache0, NEAR));
+        assertEquals(3, projectionSize(cache0) - projectionSize(cache0, NEAR));
 
-        assertEquals(0, cache0.projection(prjFilter).nearSize());
-        assertEquals(3, cache0.projection(prjFilter).size() - cache0.projection(prjFilter).nearSize());
+        assertEquals(0, projectionSize(cache1, NEAR));
+        assertEquals(3, projectionSize(cache1) - projectionSize(cache1, NEAR));
 
-        assertEquals(0, cache1.projection(prjFilter).nearSize());
-        assertEquals(3, cache1.projection(prjFilter).size() - cache1.projection(prjFilter).nearSize());
+        assertEquals(nearEnabled() ? 1 : 0, projectionSize(cache2, NEAR));
+        assertEquals(0, projectionSize(cache2) - projectionSize(cache2, NEAR));
+    }
 
-        assertEquals(nearEnabled() ? 1 : 0, cache2.projection(prjFilter).nearSize());
-        assertEquals(0, cache2.projection(prjFilter).size() - cache2.projection(prjFilter).nearSize());
+    private int projectionSize(IgniteCache<String, Integer> cache, CachePeekMode... modes) {
+        int size = 0;
+
+        for (Cache.Entry<String, Integer> e : cache.localEntries(modes)) {
+            if (e.getValue() != null && e.getValue() >= 1 && e.getValue() <= 3)
+                size++;
+        }
+
+        return size;
     }
 
     /**
