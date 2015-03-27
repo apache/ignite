@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.transactions.*;
@@ -130,13 +130,13 @@ import java.util.concurrent.*;
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
  * With {@code affinity-based-group-locking} the keys are grouped by <i>affinity-key</i>. This means that
- * only keys with identical affinity-key (see {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapped}) can participate in the
+ * only keys with identical affinity-key (see {@link AffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-group-locked} transactions are started via
  * <code>txStartAffinity(Object, TransactionConcurrency, TransactionIsolation, long, int)</code> method.
  * <p>
  * With {@code partition-based-group-locking} the keys are grouped by partition ID. This means that
- * only keys belonging to identical partition (see {@link org.apache.ignite.cache.affinity.CacheAffinity#partition(Object)}) can participate in the
+ * only keys belonging to identical partition (see {@link Affinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-group-locked} transactions are started via
  * <code>txStartPartition(int, TransactionConcurrency, TransactionIsolation, long, int)</code> method.

@@ -15,26 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity;
+package org.apache.ignite.schema;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.*;
 
 /**
- * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
- * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
+ * Starts demo node. You can start as many demo nodes as you like for the demo.
  */
-public class CacheAffinityNodeIdHashResolver implements CacheAffinityNodeHashResolver {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class DemoNode {
+    /**
+     * Starts demo node.
+     *
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If example execution failed.
+     */
+    public static void main(String[] args) throws IgniteException {
+        System.out.println(">>> Start demo node...");
 
-    /** {@inheritDoc} */
-    @Override public Object resolve(ClusterNode node) {
-        return node.id();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheAffinityNodeIdHashResolver.class, this);
+        Ignition.start("examples/config/example-ignite.xml");
     }
 }

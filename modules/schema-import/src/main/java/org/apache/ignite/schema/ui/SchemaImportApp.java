@@ -885,8 +885,8 @@ public class SchemaImportApp extends Application {
             "Check to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only ONE key field annotated with @CacheAffinityKeyMapped annotation");
+            "Check to annotate key filed with @AffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -977,7 +977,7 @@ public class SchemaImportApp extends Application {
 
         regexPnl.add(buttonsPane(Pos.CENTER_LEFT, false,
             button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
-                    " with the given replacement.",
+                    " with the given replacement",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))

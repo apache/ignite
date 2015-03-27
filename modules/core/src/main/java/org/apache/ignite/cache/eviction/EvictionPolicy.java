@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cache.eviction;
 
+import org.apache.ignite.cache.eviction.fifo.*;
+import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.cache.eviction.random.*;
+
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
  * cache entries based on {@link #onEntryAccessed(boolean, EvictableEntry)} notifications and
@@ -25,9 +29,9 @@ package org.apache.ignite.cache.eviction;
  * <p>
  * Ignite comes with following eviction policies out-of-the-box:
  * <ul>
- * <li>{@link org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy}</li>
- * <li>{@link org.apache.ignite.cache.eviction.random.CacheRandomEvictionPolicy}</li>
- * <li>{@link org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy}</li>
+ * <li>{@link LruEvictionPolicy}</li>
+ * <li>{@link RandomEvictionPolicy}</li>
+ * <li>{@link FifoEvictionPolicy}</li>
  * </ul>
  * <p>
  * The eviction policy thread-safety is ensured by Ignition. Implementations of this interface should
@@ -39,7 +43,7 @@ package org.apache.ignite.cache.eviction;
  * The eviction order is preserved by attaching light-weight meta-data to existing
  * cache entries.
  */
-public interface CacheEvictionPolicy<K, V> {
+public interface EvictionPolicy<K, V> {
     /**
      * Callback for whenever entry is accessed.
      *

@@ -18,7 +18,6 @@
 package org.apache.ignite.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -27,8 +26,8 @@ import java.util.*;
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
  * {@ignitelink org.apache.ignite.cache.jta.CacheTmLookup}
- * interface. Cache transactions can also be started explicitly directly from {@link CacheProjection} API
- * via any of the {@code 'CacheProjection.txStart(..)'} methods.
+ * interface. Cache transactions can also be started explicitly directly from {@link IgniteTransactions} API
+ * via any of the {@code 'IgniteTransactions.txStart(..)'} methods.
  * <p>
  * Cache transactions support the following isolation levels:
  * <ul>
@@ -66,8 +65,7 @@ import java.util.*;
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
- *  {@link org.apache.ignite.configuration.CacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
+ *  {@link org.apache.ignite.configuration.CacheConfiguration#setWriteSynchronizationMode}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link TransactionIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic

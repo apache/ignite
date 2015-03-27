@@ -43,7 +43,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final CacheAffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
+    public static final AffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
 
     /** */
     protected GridCacheAbstractUsersAffinityMapperSelfTest() {
@@ -125,7 +125,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         private int key;
 
         /** Affinity key. */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private String affKey;
 
         /**

@@ -45,6 +45,25 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         IpcSharedMemoryNativeLoader.load();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        // Start and stop server endpoint to let GC worker
+        // make a run and cleanup resources.
+
+        U.setWorkDirectory(null, U.getIgniteHome());
+
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
+
+        new IgniteTestResources().inject(srv);
+
+        try {
+            srv.start();
+        }
+        finally {
+            srv.close();
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -207,7 +226,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         try {
             // Run client endpoint.
             client = (IpcSharedMemoryClientEndpoint) IpcEndpointFactory.connectEndpoint(
-                    "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log);
+                "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log);
 
             OutputStream os = client.outputStream();
 
@@ -238,7 +257,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
             assertTrue(i >= interactionsCntBeforeSrvKilling);
 
             assertTrue(X.hasCause(e, IgniteCheckedException.class));
-            assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains("Shared memory segment has been closed"));
+            assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains(
+                "Shared memory segment has been closed"));
         }
         finally {
             U.closeQuiet(client);

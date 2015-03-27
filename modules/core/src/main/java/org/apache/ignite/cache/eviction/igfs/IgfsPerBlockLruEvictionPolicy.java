@@ -34,8 +34,7 @@ import java.util.regex.*;
 /**
  * IGFS eviction policy which evicts particular blocks.
  */
-public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<IgfsBlockKey, byte[]>,
-    CacheIgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
+public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKey, byte[]>, IgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,7 +63,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
     /**
      * Default constructor.
      */
-    public CacheIgfsPerBlockLruEvictionPolicy() {
+    public IgfsPerBlockLruEvictionPolicy() {
         // No-op.
     }
 
@@ -74,7 +73,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      * @param maxSize Maximum size. When reached, eviction begins.
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      */
-    public CacheIgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
+    public IgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
         this(maxSize, maxBlocks, null);
     }
 
@@ -85,8 +84,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      * @param excludePaths Collection of regex for path which must not be evicted.
      */
-    public CacheIgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks,
-        @Nullable Collection<String> excludePaths) {
+    public IgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks, @Nullable Collection<String> excludePaths) {
         this.maxSize = maxSize;
         this.maxBlocks = maxBlocks;
         this.excludePaths = excludePaths;
@@ -188,7 +186,7 @@ public class CacheIgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<I
      * @return Peeked value.
      */
     @Nullable private byte[] peek(EvictableEntry<IgfsBlockKey, byte[]> entry) {
-        return (byte[])((EvictableEntryImpl)entry).peek();
+        return (byte[])((CacheEvictableEntryImpl)entry).peek();
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -50,7 +51,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60000;
+        return 5 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -227,7 +228,18 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @throws Exception If failed.
      */
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        final int range = 10000;
+       for (int i = 0; i < 10; i++) {
+           log.info("Iteration: " + i);
+
+           putRemoveConsistencyMultithreaded();
+       }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void putRemoveConsistencyMultithreaded() throws Exception {
+        final int range = 10_000;
 
         final int iterCnt = iterationCount();
 
@@ -269,17 +281,42 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         int present = 0;
         int absent = 0;
 
+        Affinity<Integer> aff = ignite(0).affinity(null);
+
+        boolean invalidVal = false;
+
         for (int i = 0; i < range; i++) {
             Long firstVal = null;
 
             for (int g = 0; g < gridCount(); g++) {
-                Long val = (Long)grid(g).cache(null).localPeek(i, CachePeekMode.ONHEAP);
+                Ignite ignite = grid(g);
+
+                Long val = (Long)ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP);
 
                 if (firstVal == null && val != null)
                     firstVal = val;
 
-                assert val == null || firstVal.equals(val) : "Invalid value detected [val=" + val +
-                    ", firstVal=" + firstVal + ']';
+                if (val != null) {
+                    if (!firstVal.equals(val)) {
+                        invalidVal = true;
+
+                        boolean primary = aff.isPrimary(ignite.cluster().localNode(), i);
+                        boolean backup = aff.isBackup(ignite.cluster().localNode(), i);
+
+                        log.error("Invalid value detected [key=" + i +
+                            ", val=" + val +
+                            ", firstVal=" + firstVal +
+                            ", node=" + g +
+                            ", primary=" + primary +
+                            ", backup=" + backup + ']');
+
+                        log.error("All values: ");
+
+                        printValues(aff, i);
+
+                        break;
+                    }
+                }
             }
 
             if (firstVal == null)
@@ -288,12 +325,35 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                 present++;
         }
 
+        assertFalse("Inconsistent value found.", invalidVal);
+
         info("Finished check [present=" + present + ", absent=" + absent + ']');
 
         info("Checking keySet consistency");
 
         for (int g = 0; g < gridCount(); g++)
             checkKeySet(grid(g));
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param key Key.
+     */
+    private void printValues(Affinity<Integer> aff, int key) {
+        for (int g = 0; g < gridCount(); g++) {
+            Ignite ignite = grid(g);
+
+            boolean primary = aff.isPrimary(ignite.cluster().localNode(), key);
+            boolean backup = aff.isBackup(ignite.cluster().localNode(), key);
+
+            Object val = ignite.cache(null).localPeek(key, CachePeekMode.ONHEAP);
+
+            log.error("Node value [key=" + key +
+                ", val=" + val +
+                ", node=" + g +
+                ", primary=" + primary +
+                ", backup=" + backup + ']');
+        }
     }
 
     /**

@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+package org.apache.ignite.cache.eviction.igfs;
 
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.igfs.*;
+
+import javax.cache.*;
 
 /**
- * MBean for {@code random} eviction policy.
+ * IGFS eviction filter which will not evict blocks of particular files.
  */
-@MXBeanDescription("MBean for random cache eviction policy.")
-public interface CacheRandomEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
+public class IgfsEvictionFilter implements EvictionFilter {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @MXBeanDescription("Sets maximum allowed cache size.")
-    public void setMaxSize(int max);
+    /** {@inheritDoc} */
+    @Override public boolean evictAllowed(Cache.Entry entry) {
+        Object key = entry.getKey();
+
+        return !(key instanceof IgfsBlockKey && ((IgfsBlockKey)key).evictExclude());
+    }
 }

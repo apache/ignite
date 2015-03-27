@@ -369,7 +369,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     try {
-                        customEvtLsnr.apply(data);
+                        if (customEvtLsnr != null)
+                            customEvtLsnr.apply(data);
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to notify direct custom event listener: " + data, e);
@@ -1206,6 +1207,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return predicate != null && predicate.nearNode(node);
     }
 
+    /**
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return {@code True} if node has client cache (without near cache).
+     */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
         CachePredicate predicate = registeredCaches.get(cacheName);
 
@@ -2448,7 +2454,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /**
          * @param node Node to check.
-         * @return {@code True} if near cache is present on the given nodes.
+         * @return {@code True} if client cache is present on the given nodes.
          */
         public boolean clientNode(ClusterNode node) {
             if (node.isDaemon())

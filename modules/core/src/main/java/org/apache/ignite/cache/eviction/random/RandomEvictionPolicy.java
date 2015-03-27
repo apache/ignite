@@ -34,8 +34,7 @@ import java.io.*;
  * Random eviction will provide the best performance over any key set in which every
  * key has the same probability of being accessed.
  */
-public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
-    CacheRandomEvictionPolicyMBean, Externalizable {
+public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomEvictionPolicyMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,7 +44,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
     /**
      * Constructs random eviction policy with all defaults.
      */
-    public CacheRandomEvictionPolicy() {
+    public RandomEvictionPolicy() {
         // No-op.
     }
 
@@ -54,7 +53,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
      */
-    public CacheRandomEvictionPolicy(int max) {
+    public RandomEvictionPolicy(int max) {
         A.ensure(max > 0, "max > 0");
 
         this.max = max;
@@ -110,6 +109,6 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheRandomEvictionPolicy.class, this);
+        return S.toString(RandomEvictionPolicy.class, this);
     }
 }

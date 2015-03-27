@@ -82,7 +82,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
 
         // Affinity tests.
-        suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
+        suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
@@ -120,6 +120,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
         // suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class); TODO Ignite-257.
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
+        suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
+        suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
@@ -250,6 +252,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalSelfTest.class);
@@ -278,7 +281,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
-        // suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO: uncomment when fix GG-2239
 
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
@@ -320,7 +322,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Transform.
         suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         suite.addTestSuite(GridCacheEntryVersionSelfTest.class);
         suite.addTestSuite(GridCacheVersionSelfTest.class);

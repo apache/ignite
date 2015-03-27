@@ -46,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 /**
  * Base class for eviction tests.
  */
-public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolicy<?, ?>>
+public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -76,7 +76,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     protected int gridCnt = 2;
 
     /** */
-    protected CacheEvictionFilter<?, ?> filter;
+    protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -148,12 +148,12 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param prefix Prefix.
      * @param p Policy.
      */
-    protected void info(String prefix, CacheEvictionPolicy<?, ?> p) {
+    protected void info(String prefix, EvictionPolicy<?, ?> p) {
         info(prefix + ": " + p.toString());
     }
 
     /** @param p Policy. */
-    protected void info(CacheEvictionPolicy<?, ?> p) {
+    protected void info(EvictionPolicy<?, ?> p) {
         info(p.toString());
     }
 

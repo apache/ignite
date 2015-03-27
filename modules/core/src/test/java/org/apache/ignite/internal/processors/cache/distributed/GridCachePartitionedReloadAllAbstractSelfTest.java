@@ -200,7 +200,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         fut.get();
 
-        CacheAffinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(null);
 
         for (IgniteCache<Integer, String> cache : caches) {
             for (Integer key : map.keySet()) {

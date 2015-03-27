@@ -77,7 +77,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @return Terminal ID.
      */
-    @CacheAffinityKeyMapped
+    @AffinityKeyMapped
     @Nullable public String terminalId() {
         GridDsiMessage msg = message();
 

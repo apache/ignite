@@ -24,7 +24,7 @@ import org.yardstickframework.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 

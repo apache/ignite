@@ -42,8 +42,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** */
     private static final int NEAR_SIZE_OVERHEAD = 36;
 
-    /** ID of primary node from which this entry was last read. */
-    private volatile UUID primaryNodeId;
+    /** Topology version at the moment when value was initialized from primary node. */
+    private volatile long topVer = -1L;
 
     /** DHT version which caused the last update. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -93,27 +93,47 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean valid(AffinityTopologyVersion topVer) {
         assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
-        UUID primaryNodeId = this.primaryNodeId;
+        long topVer0 = this.topVer;
 
-        if (primaryNodeId == null)
+        if (topVer0 == topVer.topologyVersion())
+            return true;
+
+        if (topVer0 == -1L || topVer.topologyVersion() < topVer0)
             return false;
 
-        if (cctx.discovery().node(primaryNodeId) == null) {
-            this.primaryNodeId = null;
+        try {
+            ClusterNode primary = null;
+
+            for (long ver = topVer0; ver <= topVer.topologyVersion(); ver++) {
+                ClusterNode primary0 = cctx.affinity().primary(part, new AffinityTopologyVersion(ver));
+
+                if (primary0 == null) {
+                    this.topVer = -1L;
+
+                    return false;
+                }
+
+                if (primary == null)
+                    primary = primary0;
+                else {
+                    if (!primary.equals(primary0)) {
+                        this.topVer = -1L;
+
+                        return false;
+                    }
+                }
+            }
+
+            this.topVer = topVer.topologyVersion();
+
+            return true;
+        }
+        catch (IllegalStateException ignore) {
+            // Do not have affinity history.
+            this.topVer = -1L;
 
             return false;
         }
-
-        // Make sure that primary node is alive before returning this value.
-        ClusterNode primary = cctx.affinity().primary(key(), topVer);
-
-        if (primary != null && primary.id().equals(primaryNodeId))
-            return true;
-
-        // Primary node changed.
-        this.primaryNodeId = null;
-
-        return false;
     }
 
     /**
@@ -150,7 +170,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                     }
                                 }
 
-                                recordNodeId(cctx.affinity().primary(key, topVer).id());
+                                recordNodeId(cctx.affinity().primary(key, topVer).id(), topVer);
 
                                 dhtVer = e.isNew() || e.isDeleted() ? null : e.version();
 
@@ -186,7 +206,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     public boolean resetFromPrimary(CacheObject val,
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
-        UUID primaryNodeId)
+        UUID primaryNodeId,
+        AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException, IgniteCheckedException
     {
         assert dhtVer != null;
@@ -196,7 +217,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         synchronized (this) {
             checkObsolete();
 
-            this.primaryNodeId = primaryNodeId;
+            primaryNode(primaryNodeId, topVer);
 
             if (!F.eq(this.dhtVer, dhtVer)) {
                 value(val);
@@ -224,7 +245,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         @Nullable CacheObject val,
         long expireTime,
         long ttl,
-        UUID primaryNodeId)
+        UUID primaryNodeId,
+        AffinityTopologyVersion topVer)
     {
         assert dhtVer != null;
 
@@ -244,7 +266,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                         ttlAndExpireTimeExtras((int) ttl, expireTime);
 
-                        this.primaryNodeId = primaryNodeId;
+                        primaryNode(primaryNodeId, topVer);
                     }
                 }
             }
@@ -278,18 +300,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         }
     }
 
-    /**
-     * @return ID of primary node from which this value was loaded.
-     */
-    UUID nodeId() {
-        return primaryNodeId;
-    }
-
     /** {@inheritDoc} */
-    @Override protected void recordNodeId(UUID primaryNodeId) {
+    @Override protected void recordNodeId(UUID primaryNodeId, AffinityTopologyVersion topVer) {
         assert Thread.holdsLock(this);
 
-        this.primaryNodeId = primaryNodeId;
+        primaryNode(primaryNodeId, topVer);
     }
 
     /**
@@ -363,7 +378,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 boolean hasVal = hasValueUnlocked();
 
                 if (isNew() || !valid || expVer == null || expVer.equals(this.dhtVer)) {
-                    this.primaryNodeId = primaryNodeId;
+                    primaryNode(primaryNodeId, topVer);
 
                     // Change entry only if dht version has changed.
                     if (!dhtVer.equals(dhtVersion())) {
@@ -601,8 +616,27 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
-        primaryNodeId = null;
+        topVer = -1L;
         dhtVer = null;
+    }
+
+    /**
+     * @param nodeId Primary node ID.
+     */
+    private void primaryNode(UUID nodeId, AffinityTopologyVersion topVer) {
+        assert Thread.holdsLock(this);
+        assert nodeId != null;
+
+        ClusterNode primary = cctx.affinity().primary(part, topVer);
+
+        if (primary == null || !nodeId.equals(primary.id())) {
+            this.topVer = -1L;
+
+            return;
+        }
+
+        if (topVer.topologyVersion() > this.topVer)
+            this.topVer = topVer.topologyVersion();
     }
 
     /** {@inheritDoc} */

@@ -17,12 +17,10 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 import javax.cache.*;
 import java.io.*;
-import java.util.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
@@ -34,7 +32,7 @@ import java.util.*;
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
  */
-public interface CacheEvictionFilter<K, V> extends Serializable {
+public interface EvictionFilter<K, V> extends Serializable {
     /**
      * Checks if entry may be evicted from cache.
      *

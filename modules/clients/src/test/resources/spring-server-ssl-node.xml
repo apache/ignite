@@ -120,7 +120,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>

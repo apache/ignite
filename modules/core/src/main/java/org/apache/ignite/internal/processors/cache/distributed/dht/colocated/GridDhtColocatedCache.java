@@ -617,6 +617,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
+        final boolean retval,
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter
@@ -638,6 +639,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     topVer,
                     keys,
                     txRead,
+                    retval,
                     timeout,
                     accessTtl,
                     filter);
@@ -660,6 +662,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             topVer,
                             keys,
                             txRead,
+                            retval,
                             timeout,
                             accessTtl,
                             filter);
@@ -690,6 +693,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
+        boolean retval,
         final long timeout,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter) {
@@ -702,6 +706,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 topVer,
                 cnt,
                 txRead,
+                retval,
                 timeout,
                 tx,
                 threadId,

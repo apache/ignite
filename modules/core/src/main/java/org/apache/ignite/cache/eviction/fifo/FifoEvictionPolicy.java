@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.lru;
+package org.apache.ignite.cache.eviction.fifo;
 
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
@@ -27,36 +27,35 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Eviction policy based on {@code Least Recently Used (LRU)} algorithm. This
- * implementation is very efficient since it is lock-free and does not
- * create any additional table-like data structures. The {@code LRU} ordering
- * information is maintained by attaching ordering metadata to cache entries.
+ * Eviction policy based on {@code First In First Out (FIFO)} algorithm. This
+ * implementation is very efficient since it does not create any additional
+ * table-like data structures. The {@code FIFO} ordering information is
+ * maintained by attaching ordering metadata to cache entries.
  */
-public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
-    CacheLruEvictionPolicyMBean, Externalizable {
+public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, FifoEvictionPolicyMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Maximum size. */
     private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
-    /** Queue. */
+    /** FIFO queue. */
     private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /**
-     * Constructs LRU eviction policy with all defaults.
+     * Constructs FIFO eviction policy with all defaults.
      */
-    public CacheLruEvictionPolicy() {
+    public FifoEvictionPolicy() {
         // No-op.
     }
 
     /**
-     * Constructs LRU eviction policy with maximum size.
+     * Constructs FIFO eviction policy with maximum size. Empty entries are allowed.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
      */
-    public CacheLruEvictionPolicy(int max) {
+    public FifoEvictionPolicy(int max) {
         A.ensure(max > 0, "max > 0");
 
         this.max = max;
@@ -102,6 +101,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
             if (!entry.isCached())
                 return;
 
+            // Shrink only if queue was changed.
             if (touch(entry))
                 shrink();
         }
@@ -115,7 +115,7 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
 
     /**
      * @param entry Entry to touch.
-     * @return {@code True} if new node has been added to queue by this call.
+     * @return {@code True} if queue has been changed by this call.
      */
     private boolean touch(EvictableEntry<K, V> entry) {
         Node<EvictableEntry<K, V>> node = entry.meta();
@@ -147,21 +147,13 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
                     return false;
             }
         }
-        else if (queue.unlinkx(node)) {
-            // Move node to tail.
-            Node<EvictableEntry<K, V>> newNode = queue.offerLastx(entry);
-
-            if (!entry.replaceMeta(node, newNode))
-                // Was concurrently added, need to clear it from queue.
-                queue.unlinkx(newNode);
-        }
 
         // Entry is already in queue.
         return false;
     }
 
     /**
-     * Shrinks queue to maximum allowed size.
+     * Shrinks FIFO queue to maximum allowed size.
      */
     private void shrink() {
         int max = this.max;
@@ -194,6 +186,6 @@ public class CacheLruEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V>,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheLruEvictionPolicy.class, this, "size", queue.sizex());
+        return S.toString(FifoEvictionPolicy.class, this);
     }
 }

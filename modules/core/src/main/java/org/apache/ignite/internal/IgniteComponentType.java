@@ -112,6 +112,13 @@ public enum IgniteComponentType {
     }
 
     /**
+     * @return Component module name.
+     */
+    public String module() {
+        return module;
+    }
+
+    /**
      * Check whether real component class is in classpath.
      *
      * @return {@code True} if in classpath.

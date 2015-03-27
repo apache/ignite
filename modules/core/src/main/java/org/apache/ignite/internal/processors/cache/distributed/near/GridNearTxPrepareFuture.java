@@ -933,7 +933,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                     CacheVersionedValue tup = entry.getValue();
 
                                     nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                                        tup.version(), m.node().id());
+                                        tup.version(), m.node().id(), tx.topologyVersion());
                                 }
                                 else if (txEntry.cached().detached()) {
                                     GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
