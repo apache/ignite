@@ -416,6 +416,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
 
+        suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
+
         return suite;
     }
 }
